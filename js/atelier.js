@@ -28,7 +28,8 @@ function atEl(tag,cls,html){ const e=document.createElement(tag); if(cls) e.clas
 function atMod(title,fr){ const m=atEl("section","at-mod"); m.appendChild(atEl("h3","",title+(fr?'<span class="fr">'+fr+'</span>':""))); return m; }
 function atKnobs(list){ const row=atEl("div","at-knobs"); list.forEach(sp=>row.appendChild(makeKnob(sp))); return row; }
 function atFields(items){ const f=atEl("div","fields"); items.forEach(it=>f.appendChild(mkCtl(it))); return f; }
-function atCanvas(id,h){ const c=atEl("canvas","at-cv"); c.id=id; c.style.height=(h||64)+"px"; return c; }
+const AT_LABELS={atWA:"Forme d'onde de l'oscillateur A",atWB:"Forme d'onde de l'oscillateur B",atFil:"Courbe de réponse du filtre",atEA:"Enveloppe de volume",atEF:"Enveloppe du filtre",atE2:"Enveloppe 2"};
+function atCanvas(id,h){ const c=atEl("canvas","at-cv"); c.id=id; c.style.height=(h||64)+"px"; c.setAttribute("role","img"); c.setAttribute("aria-label",AT_LABELS[id]||"Aperçu"); return c; }
 
 /* ---------- aperçus ---------- */
 function fit(cv){
@@ -71,7 +72,6 @@ function drawEnv(id,key){
   const pts=[[0,0],[E.a,1]]; for(let k=1;k<=10;k++){ const t=E.d*k/10; pts.push([E.a+t,E.s+(1-E.s)*Math.exp(-t/(Math.max(0.01,E.d)/3))]); } pts.push([E.a+E.d+hold,E.s]);
   c.strokeStyle=g.rub; c.lineWidth=1.8; c.beginPath(); pts.forEach(([t,v],i)=>{ i?c.lineTo(px(t),py(v)):c.moveTo(px(t),py(v)); });
   for(let k=1;k<=10;k++){ const t=E.r*k/10; c.lineTo(px(E.a+E.d+hold+t),py(E.s*Math.exp(-t/(Math.max(0.01,E.r)/3)))); } c.stroke();
-  c.fillStyle=g.ink2; c.font='italic 11px "Alegreya", Georgia, serif'; c.fillText("note tenue, puis relâchée",6,12);
 }
 function atDraw(){
   if(!AT.built||MODE!=="atelier") return;
@@ -94,6 +94,7 @@ function fillPatchSelect(sel){
   const g1=document.createElement("optgroup"); g1.label="Patches de l'atelier"; SYN_PATCHES.forEach(([n],i)=>{ const o=document.createElement("option"); o.value="f"+i; o.textContent=n; g1.appendChild(o); }); sl.appendChild(g1);
   const up=userPatches(); if(up.length){ const g2=document.createElement("optgroup"); g2.label="Mes patches"; up.forEach((p,i)=>{ const o=document.createElement("option"); o.value="u"+i; o.textContent=p.name; g2.appendChild(o); }); sl.appendChild(g2); }
   if(sel) sl.value=sel;
+  const del=$("synDelBtn"); if(del) del.disabled=sl.value[0]!=="u";
 }
 
 /* ---------- clavier ---------- */
@@ -153,20 +154,20 @@ function buildAtelier(){
   const bar=atEl("div","at-bar");
   bar.innerHTML='<div class="at-title"><span class="kicker">atelier</span><span class="nm" id="synPatchName">Pad doux</span></div>'+
     '<button class="btn" id="atMach" type="button" aria-pressed="true">La machine joue</button>'+
-    '<div class="ctl"><label for="synPatch">Patch</label><select id="synPatch"></select></div>'+
-    '<div class="row"><button class="lnk" id="synRandom" type="button">Tirer un patch au sort</button><button class="lnk" id="synSaveBtn" type="button">Enregistrer</button><button class="lnk" id="synDelBtn" type="button">Supprimer</button></div>'+
-    '<div class="ctl atname"><label for="synName">Nom pour enregistrer</label><input type="text" id="synName" maxlength="40" placeholder="Mon patch"></div>';
+    '<div class="ctl atpatch"><label for="synPatch">Patch</label><select id="synPatch"></select></div>'+
+    '<button class="lnk" id="synRandom" type="button">Au sort</button>'+
+    '<details class="fin atsave"><summary>Enregistrer ou supprimer</summary><div class="row"><div class="ctl atname"><label for="synName">Nom</label><input type="text" id="synName" maxlength="40" placeholder="Mon patch"></div><button class="lnk" id="synSaveBtn" type="button">Enregistrer sous ce nom</button><button class="lnk" id="synDelBtn" type="button">Supprimer le patch choisi</button></div></details>';
   sec.appendChild(bar);
   sec.appendChild(atEl("p","hint","",)).id="atHint";
   const grid=atEl("div","at-grid"), c1=atEl("div","at-col"), c2=atEl("div","at-col"), c3=atEl("div","at-col");
   /* oscillateurs */
-  [["oscA","Oscillator A","oscillateur A","atWA",true],["oscB","Oscillator B","oscillateur B","atWB",false]].forEach(([k,t,fr,cvid,isA])=>{
+  [["oscA","Sonus A","oscillateur A","atWA",true],["oscB","Sonus B","oscillateur B","atWB",false]].forEach(([k,t,fr,cvid,isA])=>{
     const m=atMod(t,fr); m.appendChild(atCanvas(cvid,58));
     m.appendChild(atKnobs([synKnob(k+".wave","Table",0,1,{fmt:v=>SYN_WAVES[Math.min(SYN_WAVES.length-1,Math.round(v*(SYN_WAVES.length-1)))]}),synKnob(k+".det","Désaccord",-50,50,{fmt:fmtC,step:1}),synKnob(k+".lvl","Niveau",0,1,{fmt:fmtP}),synKnob(k+".spread","Écart",0,40,{fmt:v=>Math.round(v)+" ¢",step:1})]));
     m.appendChild(atFields([{k:"syn."+k+".oct",type:"select",label:"Octave",opts:octOpts,num:true},{k:"syn."+k+".semi",type:"select",label:"Intervalle",opts:semiOpts,num:true},{k:"syn."+k+".uni",type:"select",label:"Unisson",opts:uniOpts,num:true}]));
     c1.appendChild(m);
   });
-  const m3=atMod("Sub, bruit, FM","sous-octave, souffle, modulation de fréquence");
+  const m3=atMod("Additamenta","sous-oscillateur, bruit, FM");
   m3.appendChild(atKnobs([synKnob("sub.lvl","Sous-osc.",0,1,{fmt:fmtP}),synKnob("noise.lvl","Bruit",0,1,{fmt:fmtP}),synKnob("fm.amt","FM",0,1.5,{fmt:v=>v.toFixed(2)}),synKnob("fm.ratio","Rapport FM",0.5,8,{step:0.5,fmt:v=>"× "+v.toFixed(1)})]));
   m3.appendChild(atFields([{k:"syn.sub.shape",type:"select",label:"Forme du sous-oscillateur",opts:[["sine","Sinus"],["square","Carré"]]}]));
   c1.appendChild(m3);
@@ -175,8 +176,8 @@ function buildAtelier(){
   mf.appendChild(atKnobs([synKnob("fil.cut","Coupure",40,16000,{log:true,fmt:fmtHz}),synKnob("fil.res","Résonance",0.1,14,{log:true,fmt:v=>v.toFixed(1)}),synKnob("fil.key","Clavier",0,1,{fmt:fmtP}),synKnob("fil.env","Enveloppe",-4800,4800,{fmt:fmtC,step:50})]));
   mf.appendChild(atFields([{k:"syn.fil.type",type:"select",label:"Type de filtre",opts:[["lowpass","Passe-bas"],["highpass","Passe-haut"],["bandpass","Passe-bande"],["notch","Coupe-bande"]]}]));
   c2.appendChild(mf);
-  [["envA","Volume","atEA"],["envF","Filtre","atEF"],["env2","Enveloppe 2 (modulation)","atE2"]].forEach(([k,t,id])=>{
-    const m=atMod("Involucrum","enveloppe : "+t); m.appendChild(atCanvas(id,52));
+  [["envA","volume","atEA"],["envF","filtre","atEF"],["env2","modulation","atE2"]].forEach(([k,t,id])=>{
+    const m=atMod("Involucrum",(t==="modulation"?"enveloppe 2, pour la modulation":"enveloppe du "+t)); m.appendChild(atCanvas(id,52));
     m.appendChild(atKnobs([synKnob(k+".a","Attaque",0.002,6,{log:true,fmt:fmtS}),synKnob(k+".d","Déclin",0.01,6,{log:true,fmt:fmtS}),synKnob(k+".s","Maintien",0,1,{fmt:fmtP}),synKnob(k+".r","Relâche",0.01,8,{log:true,fmt:fmtS})]));
     c2.appendChild(m);
   });
@@ -215,7 +216,7 @@ function buildAtelier(){
   $("atPanic").onclick=atReleaseAll;
   $("atMach").onclick=()=>setMach(S.mach===false);
   fillPatchSelect("f0");
-  $("synPatch").onchange=()=>{ const v=$("synPatch").value; if(v[0]==="f") loadSynPatch(SYN_PATCHES[+v.slice(1)][1],SYN_PATCHES[+v.slice(1)][0]); else{ const p=userPatches()[+v.slice(1)]; if(p) loadSynPatch(p.syn,p.name); } };
+  $("synPatch").onchange=()=>{ const v=$("synPatch").value; $("synDelBtn").disabled=v[0]!=="u"; if(v[0]==="f") loadSynPatch(SYN_PATCHES[+v.slice(1)][1],SYN_PATCHES[+v.slice(1)][0]); else{ const p=userPatches()[+v.slice(1)]; if(p) loadSynPatch(p.syn,p.name); } };
   $("synRandom").onclick=()=>{ S.syn=synRandom(Math.random); setPatchName("Patch tiré au sort"); syncUI(); atelierSync(); };
   $("synSaveBtn").onclick=()=>{ const nm=($("synName").value||"").trim()||"Patch "+(userPatches().length+1), a=userPatches(); a.push({name:nm,syn:clone(S.syn)}); putUserPatches(a); fillPatchSelect("u"+(a.length-1)); setPatchName(nm); $("synName").value=""; };
   $("synDelBtn").onclick=()=>{ const v=$("synPatch").value; if(v[0]!=="u") return; const a=userPatches(); a.splice(+v.slice(1),1); putUserPatches(a); fillPatchSelect("f0"); };
@@ -239,8 +240,9 @@ function setMode(m){
   JEU.on=jeu; document.body.classList.toggle("jeu",jeu); document.body.classList.toggle("atelier",at);
   $("jeu").hidden=!jeu; if($("atelier")) $("atelier").hidden=!at;
   const rw=document.querySelector(".ringwrap"); if(rw) (jeu?$("ringSlot"):document.querySelector(".marge")).appendChild(rw);
-  $("jeuBtn").setAttribute("aria-pressed",jeu?"true":"false"); $("jeuBtn").textContent=jeu?"Retour aux réglages":"Mode Jeu";
-  $("atelierBtn").setAttribute("aria-pressed",at?"true":"false"); $("atelierBtn").textContent=at?"Retour aux réglages":"Atelier";
+  $("reglBtn").setAttribute("aria-pressed",(!jeu&&!at)?"true":"false");
+  $("jeuBtn").setAttribute("aria-pressed",jeu?"true":"false");
+  $("atelierBtn").setAttribute("aria-pressed",at?"true":"false");
   try{ localStorage.setItem("bourdon.mode",m); }catch(e){}
   if(old==="atelier"&&!at) atReleaseAll();
   if(jeu){ jeuSync(); jeuState(); }

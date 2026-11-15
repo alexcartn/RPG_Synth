@@ -144,7 +144,7 @@ function buildJeu(){
   pc.appendChild(mkCtl({k:"play.inst",type:"select",label:"Instrument de ton jeu",opts:[["","Comme la mélodie"]].concat(INST_OPTS)}));
   pc.appendChild(mkCtl({k:"play.oct",type:"select",label:"Registre",opts:[[12,"Grave"],[24,"Médium"],[36,"Aigu"],[48,"Très aigu"]],num:true}));
   pc.appendChild(mkCtl({k:"play.lvl",type:"range",label:"Niveau de ton jeu",min:0,max:1,step:0.01,fmt:pct}));
-  $("jeuBtn").onclick=()=>setJeu(!JEU.on);
+  $("jeuBtn").onclick=()=>setMode("jeu");
   $("jeuFreeze").onclick=()=>{ if(!live) return; JEU.frozen=live.eng.freeze(!JEU.frozen); $("jeuFreeze").setAttribute("aria-pressed",JEU.frozen?"true":"false"); syncUI(); };
   $("jeuReroll").onclick=()=>{ if(live) live.eng.reroll(); };
   document.addEventListener("keydown",jeuKeys);

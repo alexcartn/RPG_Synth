@@ -30,11 +30,15 @@
     <figcaption class="legend" aria-hidden="true"><span class="k mel">mélodie</span><span class="k canon">canon</span><span class="k pad">nappes</span><span class="k loop">boucles</span><span class="k pend">pendules</span><span class="k perc">percussion</span></figcaption>
   </figure>
 
+  <nav class="modes" id="modes" aria-label="Mode de travail">
+    <button class="lnk" id="reglBtn" type="button" aria-pressed="true">Réglages</button>
+    <button class="lnk" id="jeuBtn" type="button" aria-pressed="false">Jeu</button>
+    <button class="lnk" id="atelierBtn" type="button" aria-pressed="false">Atelier</button>
+  </nav>
+
   <div class="evt" id="evt" role="group" aria-label="Sons à la demande">
     <span class="evlab">Eventus<span class="evnote" id="evNote"> pendant la lecture</span></span>
     <div class="evbtns" id="evBtns"></div>
-    <button class="lnk" id="atelierBtn" type="button" aria-pressed="false">Atelier</button>
-    <button class="lnk" id="jeuBtn" type="button" aria-pressed="false">Mode Jeu</button>
     <button class="lnk" id="nextStep" type="button" hidden>Étape suivante ›</button>
   </div>
 

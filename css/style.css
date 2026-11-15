@@ -321,7 +321,6 @@ canvas#curveCv{display:block; width:100%; height:150px; background:var(--parch-2
 }
 
 /* ---------- mode Jeu ---------- */
-#jeuBtn{margin-left:auto}
 body.jeu .cols, body.jeu .toc{display:none}
 .jeu{margin:0 0 var(--sp-2xl)}
 .jeu-top{display:flex; flex-wrap:wrap; align-items:center; gap:var(--sp-md) var(--sp-xl); padding:var(--sp-md) 0 var(--sp-xl); border-bottom:1px solid var(--rule)}
@@ -369,8 +368,6 @@ body.jeu .note-g .note-c:not(.on){opacity:.35}
 }
 
 /* ---------- atelier de synthèse ---------- */
-#atelierBtn{margin-left:auto}
-#atelierBtn + #jeuBtn{margin-left:var(--sp-lg)}
 body.atelier .cols, body.atelier .toc{display:none}
 .atelier{margin:0 0 var(--sp-2xl)}
 .at-bar{display:flex; flex-wrap:wrap; align-items:flex-end; gap:var(--sp-md) var(--sp-xl); padding:var(--sp-md) 0 var(--sp-lg); border-bottom:1px solid var(--rule)}
@@ -435,4 +432,44 @@ body.atelier .evt{justify-content:flex-end; margin-bottom:var(--sp-sm)}
   .at-kbbar .btn{padding:8px 10px; font-size:.85rem; letter-spacing:.04em}
   .piano{height:84px}
   .at-kb{padding-top:var(--sp-sm)}
+}
+
+/* ---------- passe de finition : interrupteur de mode, barre de l'atelier, modules ---------- */
+.modes{display:flex; align-items:baseline; gap:var(--sp-xl); margin:0 0 var(--sp-md)}
+.modes .lnk{font:italic 400 1.2rem/1 var(--body); color:var(--ink-2); padding:var(--sp-xs) 0; border-bottom:2px solid transparent}
+.modes .lnk:hover{color:var(--ink)}
+.modes .lnk[aria-pressed="true"]{color:var(--ink); border-bottom-color:var(--rubric)}
+#nextStep{margin-left:auto}
+.evt{justify-content:flex-start}
+body.atelier .evt{justify-content:flex-start}
+.at-bar{align-items:center; gap:var(--sp-sm) var(--sp-xl)}
+.atpatch{flex:1 1 18ch; max-width:30ch}
+.atsave{flex:1 1 100%; margin-top:0}
+.atsave > summary{padding:var(--sp-xs) 0}
+.atsave .row{display:flex; flex-wrap:wrap; align-items:flex-end; gap:var(--sp-sm) var(--sp-xl); margin-top:var(--sp-sm)}
+.atsave .atname input{width:20ch}
+.at-mod .fields{grid-template-columns:repeat(3,minmax(0,1fr))}
+.at-mod .fields > .ctl:last-child:nth-child(odd){grid-column:auto}
+.at-slot .fields{grid-template-columns:1fr 1fr}
+.at-slot .fields > .ctl:last-child{grid-column:1 / -1}
+.piano{height:112px}
+@media (max-width:700px){
+  .modes{gap:var(--sp-lg)}
+  .at-bar{gap:var(--sp-sm) var(--sp-md); padding-top:var(--sp-sm)}
+  .at-title{flex:1 1 auto}
+  .atpatch{max-width:none}
+  .at-mod .fields{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .at-bar .ctl, .at-bar .atname input{width:auto}
+  .atsave .atname input{width:100%}
+  .piano{height:84px}
+}
+.atsave .lnk:disabled{opacity:.4; cursor:default}
+details.atsave{margin-top:0}
+.at-mod .fields > .ctl:only-child{grid-column:1 / -1}
+#atHint{margin:var(--sp-sm) 0 0; max-width:none}
+@media (max-width:640px){
+  body.jeu .evbtns{display:flex; flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none; gap:var(--sp-xs)}
+  body.jeu .evbtns::-webkit-scrollbar{display:none}
+  body.jeu .evb{flex:none; padding:10px 14px}
+  body.jeu .jeu-top{padding-bottom:var(--sp-md)}
 }

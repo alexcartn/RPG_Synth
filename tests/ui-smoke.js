@@ -80,7 +80,7 @@ setTimeout(async()=>{
  d.getElementById('jeuFreeze').click(); console.log('figer :',w.eval('S.mel.deja'),w.eval('S.mel.loop')); d.getElementById('jeuFreeze').click(); console.log('relâché :',w.eval('S.mel.deja'));
  d.getElementById('jeuReroll').click();
  w.eval('live.eng.replan("all")'); w.eval('live.eng.replan("mel")');
- d.getElementById('jeuBtn').click(); console.log('retour aux réglages, cercle revenu',!!d.querySelector('.marge .ringwrap'));
+ d.getElementById('reglBtn').click(); console.log('retour aux réglages, cercle revenu',!!d.querySelector('.marge .ringwrap'));
  // atelier : mode, patches, notes tenues, machine en sourdine
  d.getElementById('atelierBtn').click(); await new Promise(r=>setTimeout(r,100));
  console.log('atelier : mode',w.eval('MODE'),'| boutons',d.querySelectorAll('#atelier .knob').length,'| touches',d.querySelectorAll('#piano .pk').length,'| patches',d.getElementById('synPatch').options.length);
@@ -89,7 +89,7 @@ setTimeout(async()=>{
  console.log('atelier : notes tenues',w.eval('AT.notes.size')); d.getElementById('atPanic').click();
  d.getElementById('atMach').click(); console.log('atelier : machine en sourdine',w.eval('S.mach===false')); d.getElementById('atMach').click();
  w.eval('live.eng.synOn(0,0.7).release()');
- d.getElementById('atelierBtn').click();
+ d.getElementById('reglBtn').click();
  // sons à la demande, courbe de tension, campagne
  const evb=[...d.querySelectorAll('#evBtns button')]; console.log('pad : boutons',evb.length,'actifs',evb.filter(b=>!b.disabled).length);
  evb.forEach(b=>b.click()); await new Promise(r=>setTimeout(r,100));

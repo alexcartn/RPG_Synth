@@ -12,7 +12,7 @@ class Ctx{constructor(){this.sampleRate=44100;this.currentTime=0;this.destinatio
  createBuffer(c,l,sr){const d=[...Array(c)].map(()=>new Float32Array(l));return{numberOfChannels:c,length:l,sampleRate:sr,getChannelData:i=>d[i]}}
  createConvolver(){return new Node()}createOscillator(){return new Node()}createBiquadFilter(){return new Node()}createBufferSource(){return new Node()}createStereoPanner(){return new Node()}createAnalyser(){return new Node()}close(){}}
 class Off extends Ctx{constructor(c,l,sr){super();this.sampleRate=sr;this._c=c;this._l=l}startRendering(){const b=this.createBuffer(this._c,this._l,this.sampleRate);b.getChannelData(0)[100]=.3;b.getChannelData(1)[100]=.3;return Promise.resolve(b)}}
-const dom=new JSDOM(html,{runScripts:'dangerously',virtualConsole:vc,pretendToBeVisual:true,beforeParse(w){w.TextEncoder=TextEncoder;w.AudioContext=Ctx;w.OfflineAudioContext=Off;w.HTMLCanvasElement.prototype.getContext=()=>({clearRect(){},beginPath(){},moveTo(){},lineTo(){},stroke(){}});}});
+const dom=new JSDOM(html,{runScripts:'dangerously',virtualConsole:vc,pretendToBeVisual:true,url:'http://localhost/',beforeParse(w){w.TextEncoder=TextEncoder;w.AudioContext=Ctx;w.lamejs={Mp3Encoder:class{encodeBuffer(){return new Int8Array(8)}flush(){return new Int8Array(2)}}};w.OfflineAudioContext=Off;w.HTMLCanvasElement.prototype.getContext=()=>({clearRect(){},beginPath(){},moveTo(){},lineTo(){},stroke(){},arc(){},fill(){}});}});
 const w=dom.window,d=w.document;
 setTimeout(async()=>{
  console.log('chapitres',d.querySelectorAll('.chap').length,'controles',d.querySelectorAll('.ctl input,.ctl select').length,'ring',d.querySelectorAll('.note-g').length);
@@ -20,14 +20,25 @@ setTimeout(async()=>{
  console.log('play pressed',d.getElementById('play').getAttribute('aria-pressed'),'noeuds',nodes);
  d.querySelectorAll('#presets .lnk').forEach(b=>b.click());
  await new Promise(r=>setTimeout(r,800));
+ // fondu enchaîné : scène mémorisée puis rappelée pendant la lecture
+ d.getElementById('saveScene').click();
+ const sc=d.querySelectorAll('#scenes .lnk'); console.log('scenes',sc.length);
+ sc[0].click(); await new Promise(r=>setTimeout(r,300));
+ console.log('apres fondu, lecture',d.getElementById('play').getAttribute('aria-pressed'),'noeuds',nodes);
+ // tension, boucles, pendules, déjà-vu pendant la lecture
+ const set=(id,v)=>{const e=d.getElementById(id);e.value=v;e.dispatchEvent(new w.Event('input'));e.dispatchEvent(new w.Event('change'));};
+ set('c_tension','0.9'); set('c_loops_lvl','0.6'); set('c_pend_lvl','0.5'); set('c_mel_deja','0.9');
+ await new Promise(r=>setTimeout(r,2200));
+ console.log('pendules visibles',!d.getElementById('pend').hidden);
  d.getElementById('play').click();
- for(const [stems,midi,loop] of [[false,false,false],[true,true,true]]){
+ for(const [stems,midi,loop,fmt] of [[false,false,false,'wav'],[false,false,false,'mp3-192'],[true,true,true,'both']]){
+  d.getElementById('fmt').value=fmt;
   d.getElementById('xStems').checked=stems;d.getElementById('xMidi').checked=midi;d.getElementById('xLoop').checked=loop;
   if(stems)d.getElementById('dur').value='60';
-  w.URL.createObjectURL=()=>'blob:x';
+  w.URL.createObjectURL=()=>'blob:x';w.URL.revokeObjectURL=()=>{};
   d.getElementById('exp').click();
   for(let i=0;i<60&&d.getElementById('exp').disabled;i++)await new Promise(r=>setTimeout(r,200));
-  console.log('export',stems,'=>',d.getElementById('status').textContent);
+  console.log('export',fmt,stems,'=>',d.getElementById('status').textContent);
  }
  // toggle ring note, libre
  d.querySelectorAll('.note-g')[3].dispatchEvent(new w.Event('click'));

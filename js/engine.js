@@ -6,11 +6,13 @@ function buildEngine(ctx, S, o){
   o = o||{};
   const seed=S.seed>>>0, sr=ctx.sampleRate;
   const R={m:mulberry32(seed), d:mulberry32(seed^0xA1B2C3), p:mulberry32(seed^0x51ED27), a:mulberry32(seed^0x7F4A7C),
-           s:mulberry32(seed^0x3C6EF3), v:mulberry32(seed^0x2545F4), n:mulberry32(seed^0x85ebca6b), w:mulberry32(seed^0x1234567)};
+           s:mulberry32(seed^0x3C6EF3), v:mulberry32(seed^0x2545F4), n:mulberry32(seed^0x85ebca6b), w:mulberry32(seed^0x1234567), l:mulberry32(seed^0x1F2E3D4B)};
   const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
   const G=v=>{const g=ctx.createGain(); g.gain.value=v; return g;};
   const PAN=v=>{ if(ctx.createStereoPanner){const p=ctx.createStereoPanner(); p.pan.value=v; return p;} return G(1); };
   const freq=mkFreq(S);
+  const PEND_N0=3, pendN=()=>clamp(Math.round(S.pend.count),3,10);
+  const tens=()=>S.tension===undefined?0.5:S.tension;
   const E=30/S.tempo, PAT=METERS[S.meter].p, barE=PAT.length, bar=barE*E;
   const want=n=>!o.solo||o.solo===n;
   const events=[];
@@ -83,20 +85,22 @@ function buildEngine(ctx, S, o){
     if(dly){const ds=G(dly); it.connect(ds); ds.connect(dIn);}
     return {in:lvl, lvl, it};
   }
-  const B={drone:bus(0.45,0.1), mel:bus(0.9,1), pad:bus(0.8,0.6), perc:bus(0.2,0), amb:bus(0.3,0)};
+  const B={drone:bus(0.45,0.1), mel:bus(0.9,1), pad:bus(0.8,0.6), perc:bus(0.2,0), amb:bus(0.3,0), loops:bus(0.9,0.8), pend:bus(0.9,0.7)};
   const canonG=G(0); canonG.connect(B.mel.it);
   const murG=G(0), fireG=G(0), windG=G(0), dripG=G(0);
   [murG,fireG,windG,dripG].forEach(g=>g.connect(B.amb.in));
 
   function setLevels(){
-    const lv=(n,v)=>want(n)?v:0;
-    B.drone.lvl.gain.value=lv("drone",S.drone.lvl);
+    const lv=(n,v)=>want(n)?v:0, k=(tens()-0.5)*2;
+    B.drone.lvl.gain.value=lv("drone",S.drone.lvl*(1+0.3*k));
     B.mel.lvl.gain.value=lv("mel",S.mel.lvl);
     canonG.gain.value=lv("mel",S.canon.lvl);
-    B.pad.lvl.gain.value=lv("pad",S.pad.lvl);
-    B.perc.lvl.gain.value=lv("perc",S.perc.lvl);
+    B.pad.lvl.gain.value=lv("pad",S.pad.lvl*(1-0.5*k));
+    B.perc.lvl.gain.value=lv("perc",S.perc.lvl*(1+k));
     B.amb.lvl.gain.value=lv("amb",1);
-    murG.gain.value=S.amb.murmur; fireG.gain.value=S.amb.feu*1.2; windG.gain.value=S.amb.vent*0.9; dripG.gain.value=S.amb.gouttes*0.8;
+    B.loops.lvl.gain.value=lv("loops",S.loops.lvl);
+    B.pend.lvl.gain.value=lv("pend",S.pend.lvl);
+    murG.gain.value=S.amb.murmur*(1-0.6*k); fireG.gain.value=S.amb.feu*1.2; windG.gain.value=S.amb.vent*0.9; dripG.gain.value=S.amb.gouttes*0.8;
     wet.gain.value=S.fx.rev*2;
     dOut.gain.value=S.fx.dly; dfb.gain.value=Math.min(0.9,S.fx.fb);
     dl.delayTime.value=E*S.fx.dlyDiv; dr.delayTime.value=E*S.fx.dlyDiv*1.0;
@@ -284,9 +288,41 @@ function buildEngine(ctx, S, o){
     return 1;
   }
 
+  /* ---------- mémoire (déjà-vu) ---------- */
+  const memM=[], memP=[]; let nPhrase=0, nChord=0, idx=0;
+  const nearest=(pool,x)=>{let bi=pool[0],bd=1e9; pool.forEach(p=>{const d=Math.abs(p-x); if(d<bd){bd=d;bi=p;}}); return bi;};
+  /* boucle de L cases ; avec la probabilité p on rejoue la case, sinon on la tire de nouveau */
+  function recall(mem,n,L,p,rnd,gen){
+    const j=n%L;
+    if(p>0&&mem[j]!==undefined&&rnd()<p) return mem[j];
+    const v=gen(); mem[j]=v; return v;
+  }
+  function genPhrase(pool,stab,dens){
+    if(lastOff.v!==null){ let bi=0,bd=1e9; pool.forEach((p,j)=>{const d=Math.abs(p-lastOff.v); if(d<bd){bd=d;bi=j;}}); idx=bi; }
+    else idx=Math.floor(pool.length/3);
+    const n=4+Math.floor(R.m()*(3+5*dens)), durs=dens>0.6?[1,1,1,2,2,3]:[1,1,2,2,3,4], notes=[];
+    let e=0;
+    for(let i=0;i<n;i++){
+      let st;
+      if(R.m()<S.mel.leap*0.5) st=(R.m()<0.5?-1:1)*(3+Math.floor(R.m()*3));
+      else st=[-2,-1,-1,1,1,2][Math.floor(R.m()*6)];
+      idx=clamp(idx+st,0,pool.length-1);
+      if(i===n-1){
+        for(let k=0;k<=3;k++){
+          if(idx+k<pool.length&&stab.indexOf(((pool[idx+k]%12)+12)%12)>=0){idx+=k;break;}
+          if(idx-k>=0&&stab.indexOf(((pool[idx-k]%12)+12)%12)>=0){idx-=k;break;}
+        }
+      }
+      const dE=durs[Math.floor(R.m()*6)], vel=0.16+R.m()*0.1, grace=R.m()<S.mel.orn, gdir=R.m()<0.5?-1:1;
+      notes.push({e,off:pool[idx],dE,vel,grace,gdir}); e+=dE;
+    }
+    return {notes,end:e,gr:R.m(),pool};
+  }
+
   /* ---------- ordonnanceur ---------- */
   const cur={mel:0,drone:0,clink:0,perc:0,k:0,pad:0,int:0,fire:0,wind:0,drip:0};
-  let idx=0; const lastOff={v:null};
+  let loopsL=[], pendK=[];
+  const lastOff={v:null};
   function rec(tr,t,off,dur,vel){ if(o.record) events.push({tr,t,off,dur,vel}); }
   function canonNote(t,off,vel,len,iv){
     const n=iv.length, wide=poolOf(iv,-24,72), k=wide.indexOf(off); if(k<0) return;
@@ -319,51 +355,41 @@ function buildEngine(ctx, S, o){
       } else { R.p(); }
       cur.perc+=E; cur.k++;
     }
-    /* mélodie et canon */
+    /* mélodie et canon : chaque phrase est mémorisée, le déjà-vu décide de la rejouer */
     while(cur.mel<until){
       const sc=secOf(cur.mel), iv=ivOf(S,sc.key), stab=stableOf(iv), I=inten(cur.mel);
       const evo=S.form.shape==="constante"?0:(I-0.5)*S.form.amount;
-      const dens=clamp(S.mel.dens+evo,0,1);
+      const dens=clamp(S.mel.dens+evo+(tens()-0.5)*0.6,0,1);
       const lo=12+12*S.mel.reg, hi=lo+12*S.mel.span, pool=poolOf(iv,lo,hi);
       if(!pool.length){cur.mel+=bar; continue;}
-      if(lastOff.v!==null){ let bi=0,bd=1e9; pool.forEach((p,j)=>{const d=Math.abs(p-lastOff.v); if(d<bd){bd=d;bi=j;}}); idx=bi; }
-      else idx=Math.floor(pool.length/3);
-      const n=4+Math.floor(R.m()*(3+5*dens)), durs=dens>0.6?[1,1,1,2,2,3]:[1,1,2,2,3,4];
+      const gen=()=>genPhrase(pool,stab,dens);
+      let ph=recall(memM,nPhrase++,Math.max(1,Math.round(S.mel.loop)),S.mel.deja,R.m,gen);
+      if(ph.pool!==pool){ /* rejouée : recaler sur la gamme de la section */
+        ph={notes:ph.notes.map(n=>({...n,off:nearest(pool,n.off)})),end:ph.end,gr:ph.gr};
+      }
       let t=cur.mel;
-      for(let i=0;i<n;i++){
-        let s;
-        if(R.m()<S.mel.leap*0.5) s=(R.m()<0.5?-1:1)*(3+Math.floor(R.m()*3));
-        else s=[-2,-1,-1,1,1,2][Math.floor(R.m()*6)];
-        idx=clamp(idx+s,0,pool.length-1);
-        if(i===n-1){
-          for(let k=0;k<=3;k++){
-            if(idx+k<pool.length&&stab.indexOf(((pool[idx+k]%12)+12)%12)>=0){idx+=k;break;}
-            if(idx-k>=0&&stab.indexOf(((pool[idx-k]%12)+12)%12)>=0){idx-=k;break;}
-          }
-        }
-        const off=pool[idx], dE=durs[Math.floor(R.m()*6)], tt=sw(t), vel=0.16+R.m()*0.1, len=E*dE*0.92;
-        const grace=R.m()<S.mel.orn&&pool.length>2;
-        const gdir=R.m()<0.5?-1:1;
+      ph.notes.forEach(nt=>{
+        const off=nt.off, tt=sw(cur.mel+nt.e*E), vel=nt.vel, len=E*nt.dE*0.92;
         if(want("mel")&&S.mel.lvl>0.001){
           const fn=INST[S.mel.inst]||INST.luth;
-          if(grace&&(S.mel.inst==="luth"||S.mel.inst==="harpe"||S.mel.inst==="carillon")){
-            const gi=clamp(idx+gdir,0,pool.length-1); fn(tt-0.07,freq(pool[gi]),vel*0.55,0.08,B.mel.in,0);
+          if(nt.grace&&pool.length>2&&(S.mel.inst==="luth"||S.mel.inst==="harpe"||S.mel.inst==="carillon")){
+            const gi=clamp(pool.indexOf(off)+nt.gdir,0,pool.length-1); fn(tt-0.07,freq(pool[gi]),vel*0.55,0.08,B.mel.in,0);
           }
           fn(tt,freq(off),vel,len,B.mel.in,(R.v()*2-1)*0.35);
-          if(S.canon.lvl>0.001) canonNote(t,off,vel,len,iv);
+          if(S.canon.lvl>0.001) canonNote(cur.mel+nt.e*E,off,vel,len,iv);
         }
         rec(0,tt,off,len,vel);
         if(o.onNote) o.onNote(tt,off,"mel");
         lastOff.v=off;
-        t+=E*dE;
-      }
+      });
+      t=cur.mel+ph.end*E;
       const bars=Math.ceil((t-t0)/bar-1e-6);
-      cur.mel=t0+bar*(bars+Math.round(R.m()*2*(1.6-1.5*dens)));
+      cur.mel=t0+bar*(bars+Math.round(ph.gr*2*(1.6-1.5*dens)));
     }
     /* nappes */
     while(cur.pad<until){
       const t=cur.pad, sc=secOf(t), iv=ivOf(S,sc.key), n=iv.length;
-      const d=(R.s()<0.35+0.4*(1-S.pad.motion))?0:Math.floor(R.s()*n);
+      const d=recall(memP,nChord++,Math.max(1,Math.round(S.pad.loop)),S.pad.deja,R.s,()=>(R.s()<0.35+0.4*(1-S.pad.motion))?0:Math.floor(R.s()*n))%n;
       const len=S.pad.len*bar, vc=clamp(Math.round(S.pad.voices),2,4);
       if(want("pad")&&S.pad.lvl>0.001){
         const offs=[degOff(iv,d),degOff(iv,d+2),degOff(iv,d+4),degOff(iv,d+6)].slice(0,vc).map(x=>x+12);
@@ -380,6 +406,35 @@ function buildEngine(ctx, S, o){
         fifthGl.forEach(({p,m})=>{p.setValueAtTime(f0*m,t); p.exponentialRampToValueAtTime(f1*m,t+4); p.setValueAtTime(f1*m,t+4+hold); p.exponentialRampToValueAtTime(f0*m,t+8+hold);});
       }
       cur.drone=t+8+hold+(30+R.d()*50)*(1.8-1.6*S.drone.glide);
+    }
+    /* boucles de bande à longueurs incommensurables (Eno) */
+    if(S.loops.lvl>0.001&&want("loops")){
+      const fn=INST[S.loops.inst]||INST.carillon;
+      loopsL.forEach(lp=>{
+        while(lp.next<until){
+          const tt=lp.next, iv=ivOf(S,secOf(tt).key), off=degOff(iv,lp.deg)+12*lp.oct, vel=lp.vel*(0.85+0.3*R.l());
+          fn(tt,freq(off),vel,E*10,B.loops.in,lp.pan);
+          rec(3,tt,off,E*10,vel);
+          if(o.onNote) o.onNote(tt,off,"loop");
+          lp.next+=lp.len;
+        }
+      });
+    } else loopsL.forEach(lp=>{ while(lp.next<until) lp.next+=lp.len; });
+    /* pendules : un coup quand chaque pendule repasse par le bas, tous alignés à chaque période */
+    {
+      const N=pendN(), T=S.pend.period*bar, fn=INST[S.pend.inst]||INST.carillon, on=S.pend.lvl>0.001&&want("pend");
+      for(let i=0;i<N;i++){
+        const c=PEND_N0+i;
+        while(true){
+          const tt=t0+T*(0.25+pendK[i])/c; if(tt>=until) break;
+          pendK[i]++;
+          if(!on) continue;
+          const iv=ivOf(S,secOf(tt).key), off=degOff(iv,i)+12, vel=0.17-0.07*i/N;
+          fn(tt,freq(off),vel,E*6,B.pend.in,(i/Math.max(1,N-1)*2-1)*0.6);
+          rec(4,tt,off,E*6,vel);
+          if(o.onNote) o.onNote(tt,off,"pend");
+        }
+      }
     }
     /* lieu */
     if(want("amb")){
@@ -414,7 +469,20 @@ function buildEngine(ctx, S, o){
     cur.perc=t+bar*Math.ceil(4/bar); cur.k=0; cur.mel=t+bar*Math.ceil(7/bar); cur.pad=t; cur.int=t;
     cur.drone=t+25+R.d()*20; cur.clink=t+10; cur.fire=t; cur.wind=t; cur.drip=t+4;
     bands.forEach(b=>b.cur=t);
+    const nl=clamp(Math.round(S.loops.count),1,5), lens=[29,31,37,41,43,47,53,59].slice();
+    loopsL=[];
+    for(let i=0;i<nl;i++){
+      const L=lens.splice(Math.floor(R.l()*lens.length),1)[0]*E*S.loops.speed, deg=[0,4,2,1,3][i];
+      loopsL.push({len:L, next:t+(0.15+0.85*R.l())*L, deg, oct:i===0?1:1+Math.floor(R.l()*2), pan:(R.l()*2-1)*0.7, vel:0.13+R.l()*0.04});
+    }
+    pendK=Array.from({length:pendN()},()=>0);
   }
-  function stop(now){ master.gain.cancelScheduledValues(now); master.gain.setTargetAtTime(0,now,0.4); }
-  return {start,schedule,setLevels,setReverb,stop,events,out,master,secAt:t=>secOf(t),bar,E,t0f:()=>t0};
+  function stop(now,tc){ master.gain.cancelScheduledValues(now); master.gain.setTargetAtTime(0,now,tc||0.4); }
+  /* fondu enchaîné : l'ancien moteur s'éteint sur d secondes puis libère ses oscillateurs */
+  function fadeOut(now,d){
+    master.gain.cancelScheduledValues(now); master.gain.setValueAtTime(master.gain.value,now); master.gain.linearRampToValueAtTime(0,now+d);
+    starts.forEach(x=>{try{x.stop(now+d+0.2);}catch(e){}});
+  }
+  const pendX=t=>Array.from({length:pendN()},(_,i)=>Math.cos(2*Math.PI*(PEND_N0+i)*(t-t0)/(S.pend.period*bar)));
+  return {start,schedule,setLevels,setReverb,stop,fadeOut,pendX,events,out,master,secAt:t=>secOf(t),bar,E,t0f:()=>t0};
 }

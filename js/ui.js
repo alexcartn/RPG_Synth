@@ -11,29 +11,55 @@ function setP(path,v){const ks=path.split("."); const last=ks.pop(); ks.reduce((
 function startLive(){
   const AC=window.AudioContext||window.webkitAudioContext;
   const ctx=new AC();
-  const eng=buildEngine(ctx,S,{onNote:(t,off,kind)=>{ if(!live) return; const ms=Math.max(0,(t-live.ctx.currentTime)*1000); setTimeout(()=>flashNote(off,kind),ms); }});
-  live={ctx,eng,t0:ctx.currentTime+0.1};
+  const eng=buildEngine(ctx,S,{onNote:noteFlash});
+  live={ctx,eng,t0:ctx.currentTime+0.1,olds:[]};
   eng.start(live.t0,5,0);
   eng.schedule(ctx.currentTime+8);
   timer=setInterval(()=>eng.schedule(ctx.currentTime+8),400);
   const an=ctx.createAnalyser(); an.fftSize=2048; eng.master.connect(an); live.an=an;
   setPlayUI(true); scopeOn=true; drawScope(); updateRingCap();
 }
+function noteFlash(t,off,kind){ if(!live) return; const ms=Math.max(0,(t-live.ctx.currentTime)*1000); setTimeout(()=>flashNote(off,kind),ms); }
 function stopLive(){
   if(!live) return;
   clearInterval(timer);
-  const {ctx,eng}=live; live=null; scopeOn=false;
+  const {ctx,eng,olds}=live; live=null; scopeOn=false;
+  olds.forEach(e=>e.stop(ctx.currentTime));
   eng.stop(ctx.currentTime);
   setTimeout(()=>{try{ctx.close();}catch(e){}},1600);
   setPlayUI(false); updateRingCap();
 }
-function restartIfLive(){ if(live){ stopLive(); setTimeout(startLive,250); } }
+/* fondu enchaîné : un nouveau moteur démarre pendant que l'ancien s'éteint, sans coupure */
+function crossfade(d){
+  const {ctx,eng:old}=live, t=ctx.currentTime+0.05;
+  const eng=buildEngine(ctx,S,{onNote:noteFlash});
+  eng.start(t,d,0); eng.schedule(ctx.currentTime+8);
+  old.fadeOut(t,d);
+  clearInterval(timer); timer=setInterval(()=>eng.schedule(ctx.currentTime+8),400);
+  eng.master.connect(live.an);
+  live.olds.push(old); live.eng=eng; live.lastKey=null;
+  setTimeout(()=>{ if(live) live.olds=live.olds.filter(x=>x!==old); },d*1000+500);
+  updateRingCap();
+}
+function restartIfLive(d){ if(live) crossfade(d||1.5); }
 function setPlayUI(on){
   ["play","play2"].forEach(id=>{const b=$(id); b.textContent=on?"Arrêter":"Jouer"; b.setAttribute("aria-pressed",on?"true":"false");});
 }
 $("play").onclick=$("play2").onclick=()=>{live?stopLive():startLive();};
 
+function drawPend(){
+  const cv=$("pend"), on=live&&scopeOn&&S.pend.lvl>0.001;
+  cv.hidden=!on; if(!on) return;
+  const c=cv.getContext("2d"), W=cv.width, H=cv.height, N=Math.round(S.pend.count), xs=live.eng.pendX(live.ctx.currentTime);
+  const cs=getComputedStyle(document.documentElement), ink=cs.getPropertyValue("--ink").trim()||"#3a2e22", rub=cs.getPropertyValue("--rubric").trim()||"#a3301c";
+  c.clearRect(0,0,W,H);
+  c.strokeStyle=ink; c.globalAlpha=.25; c.lineWidth=1; c.beginPath(); c.moveTo(0,H/2); c.lineTo(W,H/2); c.stroke(); c.globalAlpha=1;
+  const pts=xs.slice(0,N).map((x,i)=>[W*(i+0.5)/N, H/2-x*H*0.38]);
+  c.strokeStyle=ink; c.lineWidth=1.2; c.beginPath(); pts.forEach(([x,y],i)=>i?c.lineTo(x,y):c.moveTo(x,y)); c.stroke();
+  c.fillStyle=rub; pts.forEach(([x,y])=>{c.beginPath(); c.arc(x,y,5,0,Math.PI*2); c.fill();});
+}
 function drawScope(){
+  drawPend();
   if(!live||!scopeOn) { const cv=$("scope"); cv.getContext("2d").clearRect(0,0,cv.width,cv.height); return; }
   const cv=$("scope"), c=cv.getContext("2d"), an=live.an, buf=new Uint8Array(an.fftSize);
   an.getByteTimeDomainData(buf);
@@ -147,7 +173,12 @@ const UI=[
    {k:"pad.timbre",type:"select",label:"Timbre",opts:[["choeur","Chœur"],["cordes","Cordes"],["orgue","Orgue"]]},
    {k:"pad.len",type:"range",label:"Durée d'un accord",min:1,max:8,step:1,fmt:v=>v+(v>1?" mesures":" mesure")},
    {k:"pad.motion",type:"range",label:"Mouvement harmonique",min:0,max:1,step:0.01,fmt:pct},
-   {k:"pad.voices",type:"range",label:"Voix par accord",min:2,max:4,step:1,fmt:v=>v+" voix"}]}]},
+   {k:"pad.voices",type:"range",label:"Voix par accord",min:2,max:4,step:1,fmt:v=>v+" voix"}]},
+  {fin:"Déjà-vu : mémoire de la mélodie et des nappes", items:[
+   {k:"mel.deja",type:"range",label:"Mélodie : retour du passé",min:0,max:1,step:0.01,fmt:v=>v<0.01?"jamais":pct(v),restart:true},
+   {k:"mel.loop",type:"range",label:"Mélodie : longueur de la boucle",min:1,max:8,step:1,fmt:v=>v+(v>1?" phrases":" phrase"),restart:true},
+   {k:"pad.deja",type:"range",label:"Nappes : retour du passé",min:0,max:1,step:0.01,fmt:v=>v<0.01?"jamais":pct(v),restart:true},
+   {k:"pad.loop",type:"range",label:"Nappes : longueur de la boucle",min:1,max:8,step:1,fmt:v=>v+(v>1?" accords":" accord"),restart:true}]}]},
  {num:"V", title:"Lieu", sub:"La salle autour de la musique : de la taverne bruyante à la crypte qui goutte.", groups:[
   {items:[
    {k:"amb.murmur",type:"range",label:"Murmure de salle",min:0,max:1,step:0.01,fmt:pct},
@@ -172,7 +203,18 @@ const UI=[
   {items:[
    {k:"form.shape",type:"select",label:"Forme",opts:[["constante","Constante"],["arche","Arche"],["vagues","Vagues"],["escalier","Escalier"]]},
    {k:"form.period",type:"range",label:"Période",min:1,max:10,step:0.5,fmt:v=>v+" min"},
-   {k:"form.amount",type:"range",label:"Amplitude",min:0,max:1,step:0.01,fmt:pct}]}]}
+   {k:"form.amount",type:"range",label:"Amplitude",min:0,max:1,step:0.01,fmt:pct}]}]},
+ {num:"VIII", title:"Boucles et pendules", sub:"Deux machines à hasard réglé : des boucles de bande de longueurs premières entre elles, et des pendules qui se désynchronisent puis se retrouvent.", groups:[
+  {h:"Boucles de bande", items:[
+   {k:"loops.lvl",type:"range",label:"Niveau (0 = absentes)",min:0,max:1,step:0.01,fmt:pct},
+   {k:"loops.inst",type:"select",label:"Instrument",opts:[["carillon","Carillon"],["harpe","Harpe"],["luth","Luth"],["flute","Flûte"],["orgue","Orgue positif"]]},
+   {k:"loops.count",type:"range",label:"Nombre de boucles",min:1,max:5,step:1,fmt:v=>v+(v>1?" boucles":" boucle"),restart:true},
+   {k:"loops.speed",type:"range",label:"Durée des boucles",min:0.6,max:2,step:0.05,fmt:v=>"× "+v.toFixed(2),restart:true}]},
+  {h:"Pendules", items:[
+   {k:"pend.lvl",type:"range",label:"Niveau (0 = absents)",min:0,max:1,step:0.01,fmt:pct},
+   {k:"pend.inst",type:"select",label:"Instrument",opts:[["carillon","Carillon"],["harpe","Harpe"],["luth","Luth"],["flute","Flûte"],["orgue","Orgue positif"]]},
+   {k:"pend.count",type:"range",label:"Nombre de pendules",min:3,max:10,step:1,fmt:v=>v+" pendules",restart:true},
+   {k:"pend.period",type:"range",label:"Période de resynchronisation",min:8,max:48,step:2,fmt:v=>v+" mesures",restart:true}]}]}
 ];
 
 const CTL=[];
@@ -206,6 +248,7 @@ function mkCtl(it){
 }
 function buildChapters(){
   const host=$("chapters");
+  $("tensionHost").appendChild(mkCtl({k:"tension",type:"range",label:"Tension",min:0,max:1,step:0.01,fmt:v=>v<0.35?"calme":v>0.65?"tendue":"neutre"}));
   UI.forEach(ch=>{
     const sec=document.createElement("section"); sec.className="chap";
     const hd=document.createElement("header");
@@ -227,14 +270,38 @@ function syncUI(){
 }
 function updateTempo(){ $("tempoNum").textContent=S.tempo; $("tempoCap").textContent="noires par minute · "+S.meter; }
 
-/* préréglages */
+/* préréglages et scènes : chaque changement se fait par fondu enchaîné quand la lecture tourne */
+const fadeSec=()=>parseFloat($("fade").value)||4;
+function loadScene(state,btn){
+  S=merge(clone(DEFAULT),clone(state));
+  document.querySelectorAll("#presets .lnk,#scenes .lnk").forEach(x=>x.removeAttribute("aria-current"));
+  if(btn) btn.setAttribute("aria-current","true");
+  syncUI(); restartIfLive(fadeSec());
+}
 function buildPresets(){
   const row=$("presets");
   PRESETS.forEach(([name,over])=>{
     const b=document.createElement("button"); b.type="button"; b.className="lnk"; b.textContent=name;
-    b.onclick=()=>{ S=merge(clone(DEFAULT),clone(over)); [...row.children].forEach(x=>x.removeAttribute("aria-current")); b.setAttribute("aria-current","true"); syncUI(); restartIfLive(); };
+    b.onclick=()=>loadScene(over,b);
     row.appendChild(b);
   });
+  drawScenes();
 }
+const SCENE_KEY="bourdon.scenes";
+function getScenes(){ try{ const a=JSON.parse(localStorage.getItem(SCENE_KEY)||"[]"); return Array.isArray(a)?a:[]; }catch(e){ return []; } }
+function putScenes(a){ try{ localStorage.setItem(SCENE_KEY,JSON.stringify(a)); }catch(e){} }
+function drawScenes(){
+  const row=$("scenes"); row.innerHTML="";
+  getScenes().forEach(sc=>{
+    const b=document.createElement("button"); b.type="button"; b.className="lnk"; b.textContent=sc.name; b.onclick=()=>loadScene(sc.state,b); row.appendChild(b);
+  });
+  $("clearScenes").hidden=!row.children.length;
+}
+$("saveScene").onclick=()=>{
+  const a=getScenes(); if(a.length>=8){ a.shift(); }
+  const n=(a.reduce((m,x)=>Math.max(m,x.n||0),0))+1;
+  a.push({n,name:"Scène "+n+" · "+NOTES[S.root],state:clone(S)}); putScenes(a); drawScenes();
+};
+$("clearScenes").onclick=()=>{ putScenes([]); drawScenes(); };
 $("seed").onchange=()=>{ S.seed=Math.max(1,Math.min(999999,parseInt($("seed").value)||1)); $("seed").value=S.seed; restartIfLive(); };
 $("dice").onclick=()=>{ S.seed=1+Math.floor(Math.random()*999999); $("seed").value=S.seed; restartIfLive(); };

@@ -35,15 +35,30 @@
         </div>
       </div>
       <div class="tempo"><b id="tempoNum">120</b><span id="tempoCap">noires par minute</span></div>
+      <div class="tension" id="tensionHost"></div>
       <div class="ringwrap">
         <svg id="ring" viewBox="0 0 200 200" role="group" aria-label="Cercle des douze hauteurs"></svg>
         <p class="ringcap" id="ringcap"></p>
         <p class="ringhint">Touche une note du cercle pour bâtir ta propre gamme.</p>
       </div>
-      <div class="scopewrap"><canvas id="scope" width="680" height="112" aria-label="Forme d'onde"></canvas></div>
+      <div class="scopewrap">
+        <canvas id="scope" width="680" height="112" aria-label="Forme d'onde"></canvas>
+        <canvas id="pend" width="680" height="112" aria-label="Pendules" hidden></canvas>
+      </div>
       <div class="presets">
         <span class="ctl"><label>Préréglages</label></span>
         <div class="row" id="presets"></div>
+      </div>
+      <div class="presets scenes">
+        <span class="ctl"><label for="fade">Mes scènes</label></span>
+        <div class="row" id="scenes"></div>
+        <div class="row">
+          <button class="lnk" id="saveScene" type="button">Mémoriser la scène actuelle</button>
+          <button class="lnk" id="clearScenes" type="button">Tout effacer</button>
+        </div>
+        <div class="ctl fadebox"><label for="fade">Fondu enchaîné</label>
+          <select id="fade"><option value="0.5">Sec (0,5 s)</option><option value="4">Court (4 s)</option><option value="10" selected>Moyen (10 s)</option><option value="25">Long (25 s)</option></select>
+        </div>
       </div>
     </aside>
   </div>

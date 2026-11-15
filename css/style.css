@@ -71,8 +71,13 @@ h1::first-letter{font:700 1.3em/.7 "UnifrakturCook","IM Fell English",serif; col
 .note-g{cursor:pointer; outline:none}
 .note-g:focus-visible .note-c{stroke:var(--ink); stroke-width:2.4}
 .scopewrap{border-top:1px solid var(--rule); padding-top:var(--sp-md)}
-canvas#scope{width:100%; height:56px; display:block; background:var(--parch-2); border-bottom:1px solid var(--rule)}
+canvas#scope,canvas#pend{width:100%; height:56px; display:block; background:var(--parch-2); border-bottom:1px solid var(--rule)}
+canvas#pend{margin-top:var(--sp-xs)}
+canvas#pend[hidden]{display:none}
 .presets{border-top:1px solid var(--rule); padding-top:var(--sp-md)}
+.tension{border-top:1px solid var(--rule); padding-top:var(--sp-md)}
+.scenes .fadebox{margin-top:var(--sp-md)}
+.scenes .row:empty{display:none}
 .presets .row{display:flex; flex-wrap:wrap; gap:var(--sp-xs) var(--sp-lg); margin-top:var(--sp-sm)}
 
 /* chapitres */

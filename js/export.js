@@ -43,16 +43,16 @@ function zipStore(files){
 
 function vlq(n){const b=[n&0x7f]; n>>=7; while(n>0){b.unshift((n&0x7f)|0x80); n>>=7;} return b;}
 function midiFile(events,Sx){
-  const PPQ=480, spq=60/Sx.tempo, base=36+Sx.root, trs=[[],[],[]];
+  const PPQ=480, spq=60/Sx.tempo, base=36+Sx.root, trs=[[],[],[],[],[]];
   events.forEach(e=>{
     const note=Math.max(0,Math.min(127,base+e.off)), t=Math.round(e.t/spq*PPQ), d=Math.max(30,Math.round(e.dur/spq*PPQ)), vel=Math.max(1,Math.min(127,Math.round(40+e.vel*200)));
     trs[e.tr].push({t,on:true,note,vel},{t:t+d,on:false,note,vel:0});
   });
   const m=METERS[Sx.meter], tempoUs=Math.round(60e6/Sx.tempo);
-  const hdr=[0x4d,0x54,0x68,0x64,0,0,0,6,0,1,0,4,(PPQ>>8)&255,PPQ&255];
+  const hdr=[0x4d,0x54,0x68,0x64,0,0,0,6,0,1,0,6,(PPQ>>8)&255,PPQ&255];
   const chunk=(bytes)=>[0x4d,0x54,0x72,0x6b,(bytes.length>>>24)&255,(bytes.length>>>16)&255,(bytes.length>>>8)&255,bytes.length&255,...bytes];
   const tempoTrack=[0,0xff,0x51,3,(tempoUs>>16)&255,(tempoUs>>8)&255,tempoUs&255, 0,0xff,0x58,4,m.n,m.d,24,8, 0,0xff,0x2f,0];
-  const names=["Melodie","Canon","Nappes"];
+  const names=["Melodie","Canon","Nappes","Boucles","Pendules"];
   const tracks=[chunk(tempoTrack)];
   trs.forEach((evs,i)=>{
     evs.sort((a,b)=>a.t-b.t||(a.on?1:-1));
@@ -63,13 +63,19 @@ function midiFile(events,Sx){
   return new Uint8Array([...hdr,...tracks.flat()]);
 }
 
-async function renderOffline(Sx,dur,o){
+async function renderOffline(Sx,dur,o,onProg){
   const sr=44100, tail=o.loop?8:0, total=dur+tail;
   const ctx=new OfflineAudioContext(2,Math.ceil(sr*total),sr);
   const eng=buildEngine(ctx,Sx,{solo:o.solo,noComp:o.noComp,record:o.record});
   eng.start(0,o.loop?0.05:5,o.loop?0:total);
   eng.schedule(total);
+  /* points de contrôle : le rendu s'interrompt brièvement pour annoncer sa progression */
+  if(onProg&&ctx.suspend){
+    const q=128/sr, steps=20;
+    for(let k=1;k<steps;k++){ const t=Math.floor(total*k/steps/q)*q; ctx.suspend(t).then(()=>{ onProg(k/steps); ctx.resume(); }).catch(()=>{}); }
+  }
   const buf=await ctx.startRendering();
+  if(onProg) onProg(1);
   let L=buf.getChannelData(0), R=buf.getChannelData(1);
   if(o.loop){
     const N=Math.floor(sr*dur), tn=Math.floor(sr*tail), L2=new Float32Array(N), R2=new Float32Array(N);
@@ -82,14 +88,42 @@ async function renderOffline(Sx,dur,o){
   return {L,R,sr,events:eng.events};
 }
 
+/* MP3 : encodeur lamejs chargé à la demande (SRI), jamais pour qui n'exporte pas en MP3 */
+const LAME_URL="https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.1/lame.min.js", LAME_SRI="sha384-xuasJXVcyv3hZq0eYpelEkBC8l4yufatZXDsKuyCU2rqfhDCb+ftuE/mSfZAteiK";
+let lamePromise=null;
+function loadLame(){
+  if(window.lamejs&&window.lamejs.Mp3Encoder) return Promise.resolve();
+  if(!lamePromise) lamePromise=new Promise((ok,ko)=>{
+    const sc=document.createElement("script"); sc.src=LAME_URL; sc.integrity=LAME_SRI; sc.crossOrigin="anonymous";
+    sc.onload=()=>(window.lamejs&&window.lamejs.Mp3Encoder)?ok():ko(new Error("encodeur MP3 inutilisable"));
+    sc.onerror=()=>{ lamePromise=null; ko(new Error("encodeur MP3 introuvable : une connexion est nécessaire la première fois, sinon exporte en WAV")); };
+    document.head.appendChild(sc);
+  });
+  return lamePromise;
+}
+async function mp3FromChannels(L,R,sr,gain,kbps){
+  await loadLame();
+  const enc=new lamejs.Mp3Encoder(2,sr,kbps), BLK=1152, parts=[], l16=new Int16Array(BLK), r16=new Int16Array(BLK);
+  const q=x=>{x*=gain; return x>1?32767:x<-1?-32768:Math.round(x*32767);};
+  for(let i=0,b=0;i<L.length;i+=BLK,b++){
+    const n=Math.min(BLK,L.length-i), a=n===BLK?l16:new Int16Array(n), c=n===BLK?r16:new Int16Array(n);
+    for(let j=0;j<n;j++){ a[j]=q(L[i+j]); c[j]=q(R[i+j]); }
+    const out=enc.encodeBuffer(a,c); if(out.length) parts.push(new Uint8Array(out));
+    if(b%200===199) await new Promise(r=>setTimeout(r,0));
+  }
+  const end=enc.flush(); if(end.length) parts.push(new Uint8Array(end));
+  const all=new Uint8Array(parts.reduce((n,x)=>n+x.length,0)); let o=0; parts.forEach(x=>{all.set(x,o); o+=x.length;});
+  return all;
+}
+
 function saveFiles(files,baseName){
-  const single=files.length===1&&/\.wav$/.test(files[0].name);
-  const blob=single?new Blob([files[0].data],{type:"audio/wav"}):zipStore(files);
+  const single=files.length===1&&/\.(wav|mp3)$/.test(files[0].name);
+  const blob=single?(files[0].data instanceof Blob?files[0].data:new Blob([files[0].data],{type:"audio/wav"})):zipStore(files);
   const a=document.createElement("a");
   a.href=URL.createObjectURL(blob); a.download=single?files[0].name:baseName+".zip";
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(()=>URL.revokeObjectURL(a.href),10000);
-  return single?"wav":"zip";
+  return single?files[0].name.slice(-3):"zip";
 }
 
 function codeOf(){ return btoa(unescape(encodeURIComponent(JSON.stringify(S)))); }
@@ -98,12 +132,13 @@ function fromCode(c){ return JSON.parse(decodeURIComponent(escape(atob(c.trim())
 function buildExport(host){
   const sec=document.createElement("section"); sec.className="chap";
   sec.innerHTML=
-    '<header><span class="num">VIII</span><div><h2>Export</h2><p class="sub">Rendu hors ligne, plus vite que le temps réel, avec la graine et les réglages actuels. WAV 16 bits stéréo à 44,1 kHz.</p></div></header>'+
+    '<header><span class="num">IX</span><div><h2>Export</h2><p class="sub">Rendu hors ligne avec la graine et les réglages actuels, stéréo 44,1 kHz. Compte une à deux minutes pour trois minutes de musique, la progression est affichée.</p></div></header>'+
     '<div class="fields">'+
       '<div class="ctl"><label for="dur">Durée</label><select id="dur"><option value="60">1 minute</option><option value="120">2 minutes</option><option value="180" selected>3 minutes</option><option value="300">5 minutes</option><option value="480">8 minutes</option></select></div>'+
+      '<div class="ctl"><label for="fmt">Format audio</label><select id="fmt"><option value="wav">WAV 16 bits (sans perte)</option><option value="mp3-320">MP3 320 kb/s</option><option value="mp3-192">MP3 192 kb/s</option><option value="both">WAV et MP3 320 kb/s</option></select><p class="hint">Le MP3 est dix fois plus léger, pratique pour écouter ou envoyer. Pour retravailler dans un logiciel, ou pour une boucle sans couture, garde le WAV : le MP3 ajoute un léger silence en tête.</p></div>'+
       '<div class="ctl"><label class="chk"><span><input type="checkbox" id="xLoop">Boucle sans couture</span></label><p class="hint">Fondu enchaîné de la fin sur le début : le fichier boucle sans clic.</p></div>'+
-      '<div class="ctl"><label class="chk"><span><input type="checkbox" id="xStems">Stems séparés</span></label><p class="hint">Bourdon, mélodie et canon, nappes, percussion, lieu. Sans compresseur, à sommer dans ton logiciel. 3 minutes maximum.</p></div>'+
-      '<div class="ctl"><label class="chk"><span><input type="checkbox" id="xMidi">Fichier MIDI</span></label><p class="hint">Pistes mélodie, canon et nappes. Les tempéraments non égaux ne passent pas en MIDI.</p></div>'+
+      '<div class="ctl"><label class="chk"><span><input type="checkbox" id="xStems">Stems séparés</span></label><p class="hint">Bourdon, mélodie et canon, nappes, percussion, lieu, boucles et pendules si activés. Sans compresseur, à sommer dans ton logiciel. 3 minutes maximum.</p></div>'+
+      '<div class="ctl"><label class="chk"><span><input type="checkbox" id="xMidi">Fichier MIDI</span></label><p class="hint">Pistes mélodie, canon, nappes, boucles et pendules. Les tempéraments non égaux ne passent pas en MIDI.</p></div>'+
     '</div>'+
     '<div class="row" style="margin-top:24px"><button class="btn main" id="exp" type="button">Rendre et exporter</button></div>'+
     '<p class="status" id="status" role="status" aria-live="polite"></p>'+
@@ -118,32 +153,40 @@ function buildExport(host){
 }
 
 async function doExport(){
-  const btn=$("exp"); btn.disabled=true;
+  const btn=$("exp"), label=btn.textContent; btn.disabled=true; btn.textContent="Rendu en cours...";
   try{
-    const Sx=clone(S), dur=parseInt($("dur").value), loop=$("xLoop").checked, stems=$("xStems").checked, midi=$("xMidi").checked;
+    const Sx=clone(S), dur=parseInt($("dur").value), loop=$("xLoop").checked, stems=$("xStems").checked, midi=$("xMidi").checked, fmt=$("fmt").value;
+    const wantWav=fmt==="wav"||fmt==="both", kbps=fmt==="mp3-192"?192:320, wantMp3=fmt!=="wav";
     if(stems&&dur>180){ status("Stems : 3 minutes maximum. Choisis une durée plus courte.","err"); return; }
     const root=NOTES[Sx.root].replace("#","d"), mode=(Sx.scales[0]||"mode"), base="bourdon_"+root+"_"+mode+"_"+Sx.tempo+"bpm_graine"+Sx.seed+"_"+(dur/60)+"min";
-    const files=[];
-    status("Rendu du mix, quelques secondes..."); await nextFrame();
-    const mix=await renderOffline(Sx,dur,{loop,record:midi});
-    const g=0.891/(peakOf(mix.L,mix.R)||1);
-    files.push({name:base+(loop?"_boucle":"")+".wav", data:wavFromChannels(mix.L,mix.R,mix.sr,g)});
+    const files=[], t0=Date.now();
+    const prog=lab=>p=>status(lab+" : "+Math.round(p*100)+" %, "+Math.round((Date.now()-t0)/1000)+" s écoulées...");
+    /* un fichier audio : WAV, MP3, ou les deux */
+    const addAudio=async(name,L,R,sr,g)=>{
+      if(wantWav) files.push({name:name+".wav", data:wavFromChannels(L,R,sr,g)});
+      if(wantMp3){ status("Encodage MP3 de "+name.split("/").pop()+"..."); await nextFrame(); files.push({name:name+".mp3", data:await mp3FromChannels(L,R,sr,g,kbps)}); }
+    };
+    status("Rendu du mix : 0 %..."); await nextFrame();
+    const mix=await renderOffline(Sx,dur,{loop,record:midi},prog("Rendu du mix"));
+    await addAudio(base+(loop?"_boucle":""),mix.L,mix.R,mix.sr,0.891/(peakOf(mix.L,mix.R)||1));
     if(midi){ files.push({name:base+".mid", data:midiFile(mix.events,Sx)}); }
     if(stems){
       const groups=[["drone","bourdon"],["mel","melodie_canon"],["pad","nappes"],["perc","percussion"],["amb","lieu"]];
+      if(Sx.loops.lvl>0.001) groups.push(["loops","boucles"]);
+      if(Sx.pend.lvl>0.001) groups.push(["pend","pendules"]);
       const res=[]; let mp=0;
       for(let i=0;i<groups.length;i++){
-        status("Stem "+(i+1)+" sur "+groups.length+" : "+groups[i][1]+"..."); await nextFrame();
-        const r=await renderOffline(Sx,dur,{loop:false,solo:groups[i][0],noComp:true}); res.push(r); mp=Math.max(mp,peakOf(r.L,r.R));
+        const r=await renderOffline(Sx,dur,{loop:false,solo:groups[i][0],noComp:true},prog("Stem "+(i+1)+" sur "+groups.length+" ("+groups[i][1]+")")); res.push(r); mp=Math.max(mp,peakOf(r.L,r.R));
       }
       const gs=0.7/(mp||1);
-      res.forEach((r,i)=>files.push({name:"stems/"+base+"_"+groups[i][1]+".wav", data:wavFromChannels(r.L,r.R,r.sr,gs)}));
+      for(let i=0;i<res.length;i++) await addAudio("stems/"+base+"_"+groups[i][1],res[i].L,res[i].R,res[i].sr,gs);
     }
-    files.push({name:base+"_reglages.json", data:new TextEncoder().encode(JSON.stringify(Sx,null,2))});
+    const alone=files.length===1;
+    if(!alone) files.push({name:base+"_reglages.json", data:new TextEncoder().encode(JSON.stringify(Sx,null,2))});
     status("Emballage des fichiers..."); await nextFrame();
-    const kind=saveFiles(files.length===2&&!midi&&!stems?[files[0],files[1]]:files,base);
-    status(kind==="wav"?"Fichier WAV enregistré.":"Prêt : le .zip contient "+files.length+" fichier"+(files.length>1?"s":"")+" (WAV"+(midi?", MIDI":"")+", réglages).","ok");
+    const kind=saveFiles(alone?[{name:files[0].name,data:new Blob([files[0].data],{type:files[0].name.endsWith("mp3")?"audio/mpeg":"audio/wav"})}]:files,base);
+    status(kind==="zip"?"Prêt : le .zip contient "+files.length+" fichiers (audio"+(midi?", MIDI":"")+", réglages).":"Fichier "+kind.toUpperCase()+" enregistré.","ok");
   }catch(e){
-    status(e&&e.code==="declined"?"Enregistrement annulé.":"Échec de l'export : "+(e&&e.message||e),"err");
-  }finally{ btn.disabled=false; }
+    status("Échec de l'export : "+(e&&e.message||e),"err");
+  }finally{ btn.disabled=false; btn.textContent=label; }
 }

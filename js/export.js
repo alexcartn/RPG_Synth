@@ -130,9 +130,9 @@ function codeOf(){ return btoa(unescape(encodeURIComponent(JSON.stringify(S))));
 function fromCode(c){ return JSON.parse(decodeURIComponent(escape(atob(c.trim())))); }
 
 function buildExport(host){
-  const sec=document.createElement("section"); sec.className="chap";
+  const sec=document.createElement("section"); sec.className="chap"; sec.id="ch-IX";
   sec.innerHTML=
-    '<header><span class="num">IX</span><div><h2>Export</h2><p class="sub">Rendu hors ligne avec la graine et les réglages actuels, stéréo 44,1 kHz. Compte une à deux minutes pour trois minutes de musique, la progression est affichée.</p></div></header>'+
+    '<header><span class="num">IX</span><div><h2>Transcriptio</h2><p class="sub"><span class="fr">Export</span> Rendu hors ligne avec la graine et les réglages actuels, stéréo 44,1 kHz. Compte une à deux minutes pour trois minutes de musique, la progression est affichée.</p></div></header>'+
     '<div class="fields">'+
       '<div class="ctl"><label for="dur">Durée</label><select id="dur"><option value="60">1 minute</option><option value="120">2 minutes</option><option value="180" selected>3 minutes</option><option value="300">5 minutes</option><option value="480">8 minutes</option></select></div>'+
       '<div class="ctl"><label for="fmt">Format audio</label><select id="fmt"><option value="wav">WAV 16 bits (sans perte)</option><option value="mp3-320">MP3 320 kb/s</option><option value="mp3-192">MP3 192 kb/s</option><option value="both">WAV et MP3 320 kb/s</option></select><p class="hint">Le MP3 est dix fois plus léger, pratique pour écouter ou envoyer. Pour retravailler dans un logiciel, ou pour une boucle sans couture, garde le WAV : le MP3 ajoute un léger silence en tête.</p></div>'+
@@ -140,7 +140,7 @@ function buildExport(host){
       '<div class="ctl"><label class="chk"><span><input type="checkbox" id="xStems">Stems séparés</span></label><p class="hint">Bourdon, mélodie et canon, nappes, percussion, lieu, boucles et pendules si activés. Sans compresseur, à sommer dans ton logiciel. 3 minutes maximum.</p></div>'+
       '<div class="ctl"><label class="chk"><span><input type="checkbox" id="xMidi">Fichier MIDI</span></label><p class="hint">Pistes mélodie, canon, nappes, boucles et pendules. Les tempéraments non égaux ne passent pas en MIDI.</p></div>'+
     '</div>'+
-    '<div class="row" style="margin-top:24px"><button class="btn main" id="exp" type="button">Rendre et exporter</button></div>'+
+    '<div class="row" style="margin-top:24px"><button class="btn main" id="exp" type="button">Transcribere</button></div>'+
     '<p class="status" id="status" role="status" aria-live="polite"></p>'+
     '<details class="fin"><summary>Code de partage des réglages</summary>'+
       '<div class="fields"><div class="ctl"><label for="codeOut">Ton code</label><textarea id="codeOut" readonly></textarea><div class="row"><button class="lnk" id="copyCode" type="button">Copier le code</button></div></div>'+
@@ -185,7 +185,7 @@ async function doExport(){
     if(!alone) files.push({name:base+"_reglages.json", data:new TextEncoder().encode(JSON.stringify(Sx,null,2))});
     status("Emballage des fichiers..."); await nextFrame();
     const kind=saveFiles(alone?[{name:files[0].name,data:new Blob([files[0].data],{type:files[0].name.endsWith("mp3")?"audio/mpeg":"audio/wav"})}]:files,base);
-    status(kind==="zip"?"Prêt : le .zip contient "+files.length+" fichiers (audio"+(midi?", MIDI":"")+", réglages).":"Fichier "+kind.toUpperCase()+" enregistré.","ok");
+    status(kind==="zip"?"Prêt : le codex (.zip) contient "+files.length+" fichiers (audio"+(midi?", MIDI":"")+", réglages).":"Fichier "+kind.toUpperCase()+" enregistré.","ok");
   }catch(e){
     status("Échec de l'export : "+(e&&e.message||e),"err");
   }finally{ btn.disabled=false; btn.textContent=label; }

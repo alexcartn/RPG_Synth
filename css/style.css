@@ -13,6 +13,7 @@
   --caps: "IM Fell English SC", "IM Fell English", Georgia, serif;
   --body: "Alegreya", "Iowan Old Style", Georgia, serif;
   --ease: cubic-bezier(.22,1,.36,1);
+  --toc-h:46px;
 }
 *{box-sizing:border-box}
 html{background:var(--parch)}
@@ -33,11 +34,13 @@ h1::first-letter{font:700 1.3em/.7 "UnifrakturCook","IM Fell English",serif; col
 .lede{font:italic 400 1.2rem/1.45 var(--body); color:var(--ink-2); margin:0; max-width:46ch}
 
 .cols{display:grid; grid-template-columns:minmax(0,1fr) 340px; gap:clamp(24px,5vw,72px); align-items:start}
-.marge{position:sticky; top:var(--sp-xl); display:flex; flex-direction:column; gap:var(--sp-xl); order:2}
+.marge{position:sticky; top:calc(var(--toc-h) + var(--sp-lg)); max-height:calc(100vh - var(--toc-h) - var(--sp-2xl)); overflow-y:auto; overscroll-behavior:contain; scrollbar-width:thin; scrollbar-color:var(--rule) transparent;
+  display:flex; flex-direction:column; gap:var(--sp-lg); order:2; padding-bottom:var(--sp-md)}
+.marge .lecture{order:1} .marge .tempo{order:2} .marge .tension{order:3} .marge .presets{order:4} .marge .scenes{order:5} .marge .ringwrap{order:6} .marge .scopewrap{order:7}
 .text{order:1; min-width:0}
 @media (max-width:920px){
   .cols{grid-template-columns:1fr}
-  .marge{position:static; order:-1}
+  .marge{position:static; order:-1; max-height:none; overflow:visible}
 }
 
 /* marge */
@@ -142,6 +145,10 @@ input[type=checkbox]{accent-color:var(--rubric); width:16px; height:16px; margin
   .dock .seal{width:64px; height:64px; font-size:1rem; box-shadow: inset 0 0 0 4px var(--rubric), inset 0 0 0 5px var(--gold)}
   .dock .seal[aria-pressed="true"]{box-shadow: inset 0 0 0 4px var(--ink), inset 0 0 0 5px var(--gold)}
   .lecture .seal{display:none}
+  .dock .dockT{display:flex; flex:1 1 auto; max-width:320px; gap:2px}
+  .dock .dockT .l{align-items:baseline}
+  .marge .tension{display:none}
+  .dock{justify-content:flex-start; gap:var(--sp-xl); padding-left:max(var(--sp-lg),env(safe-area-inset-left)); padding-right:max(var(--sp-lg),env(safe-area-inset-right))}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none !important}}
 
@@ -165,13 +172,6 @@ button, select, input, summary, .note-g{-webkit-tap-highlight-color:transparent;
   .dock{padding-bottom:calc(var(--sp-md) + env(safe-area-inset-bottom))}
   /* la marge devient une pile compacte : lecture, tension, ambiances, puis cercle et oscilloscope */
   .marge{gap:var(--sp-lg)}
-  .marge .lecture{order:1}
-  .marge .tempo{order:2}
-  .marge .tension{order:3}
-  .marge .presets{order:4}
-  .marge .scenes{order:5}
-  .marge .ringwrap{order:6}
-  .marge .scopewrap{order:7}
   .ringwrap svg{max-width:240px}
   .chap{padding:var(--sp-lg) 0 var(--sp-xl)}
   .fields{gap:var(--sp-lg)}
@@ -192,3 +192,39 @@ button, select, input, summary, .note-g{-webkit-tap-highlight-color:transparent;
   .chap > header{gap:var(--sp-md)}
   .tempo b{font-size:2.4rem}
 }
+
+/* ---------- latin et table des matières ---------- */
+[hidden]{display:none !important}
+html{scroll-padding-top:calc(var(--toc-h) + var(--sp-md))}
+@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
+.fr{font:italic 400 1rem/1.4 var(--body); color:var(--ink); letter-spacing:0}
+.chap .sub .fr{color:var(--ink-2); font-style:normal; font-variant:small-caps; letter-spacing:.04em; margin-right:.25em}
+.group > h3 .fr{margin-left:var(--sp-sm); font-size:.95rem; color:var(--ink-2); text-transform:none}
+.group > h3{color:var(--ink-2)}
+.toc{position:sticky; top:0; z-index:6; height:var(--toc-h); display:flex; align-items:center; gap:var(--sp-xl); overflow-x:auto; scrollbar-width:none; margin:0 0 var(--sp-xl);
+  background:oklch(0.925 0.03 88); border-bottom:1px solid var(--rule); white-space:nowrap}
+.toc::-webkit-scrollbar{display:none}
+.toc a{flex:none; font:400 .95rem/1 var(--caps); letter-spacing:.07em; color:var(--ink-2); text-decoration:none; padding:var(--sp-sm) 0; border-bottom:1px solid transparent}
+.toc a .n{color:var(--rubric); margin-right:.5em; font-size:.85em}
+.toc a:hover{color:var(--ink)}
+.toc a[aria-current="true"]{color:var(--ink); border-bottom-color:var(--rubric)}
+.chap{scroll-margin-top:calc(var(--toc-h) + var(--sp-md))}
+
+/* les curseurs ou menus orphelins prennent toute la largeur au lieu de laisser un trou */
+.fields > .ctl:last-child:nth-child(odd){grid-column:1/-1}
+
+/* le rouge reste rare : préréglages et scènes en encre, l'actif seul en cinabre */
+.presets .lnk{color:var(--ink)}
+.presets .lnk:hover{color:var(--rubric)}
+.presets .lnk[aria-current="true"]{color:var(--rubric); border-bottom-color:var(--rubric)}
+
+/* marge compacte */
+.marge .tempo{padding-top:var(--sp-sm)}
+.marge .tempo b{font-size:2.4rem}
+.marge .ringwrap svg{max-width:230px}
+.marge .ringcap{min-height:0}
+.marge .ringhint{display:none}
+.scenes .fadebox{margin-top:var(--sp-sm); flex-direction:row; align-items:baseline; gap:var(--sp-md)}
+.scenes .fadebox label{flex:none}
+.scopewrap canvas{margin-top:0}
+.dockT{display:none}

@@ -99,6 +99,7 @@ const DEFAULT = {
   fx:{rev:0.4, size:2.6, dark:0.5, dly:0, dlyDiv:1.5, fb:0.4, sat:0.15, wow:0.12, veil:0.3, hiss:0},
   form:{shape:"constante", period:4, amount:0.5},
   evt:{lvl:0.7},
+  play:{lvl:0.8, inst:"", oct:24},
   nature:{pluie:0, mer:0, nuit:0, ruisseau:0, oiseaux:0},
   curve:{mode:"off", dur:6, pts:Array.from({length:96},()=>0.5)}
 };

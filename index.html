@@ -33,10 +33,30 @@
   <div class="evt" id="evt" role="group" aria-label="Sons à la demande">
     <span class="evlab">Eventus<span class="evnote" id="evNote"> pendant la lecture</span></span>
     <div class="evbtns" id="evBtns"></div>
+    <button class="lnk" id="jeuBtn" type="button" aria-pressed="false">Mode Jeu</button>
     <button class="lnk" id="nextStep" type="button" hidden>Étape suivante ›</button>
   </div>
 
   <nav class="toc" id="toc" aria-label="Chapitres"></nav>
+
+  <section class="jeu" id="jeu" hidden aria-label="Mode Jeu">
+    <div class="jeu-top">
+      <button class="seal" id="play3" aria-pressed="false">Jouer</button>
+      <div class="jeu-actions">
+        <button class="btn" id="jeuFreeze" type="button" aria-pressed="false" disabled>Figer</button>
+        <button class="btn" id="jeuReroll" type="button" disabled>Autre phrase</button>
+      </div>
+      <p class="hint" id="jeuHint"></p>
+    </div>
+    <div class="jeu-grid">
+      <div class="jeu-knobs" id="knobs" role="group" aria-label="Boutons"></div>
+      <div class="jeu-xy">
+        <canvas id="xy" tabindex="0" role="img" aria-label="Pad à deux axes : touche ou glisse pour régler les deux boutons choisis"></canvas>
+        <div class="xysel"><label>Horizontal <select id="xSel"></select></label><label>Vertical <select id="ySel"></select></label></div>
+      </div>
+      <div class="jeu-ring"><div id="ringSlot"></div><div id="playCtl" class="fields"></div></div>
+    </div>
+  </section>
 
   <div class="cols">
     <main class="text" id="chapters"></main>
@@ -99,6 +119,7 @@
 <script src="js/viz.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/table.js"></script>
+<script src="js/jeu.js"></script>
 <script src="js/export.js"></script>
 <script src="js/main.js"></script>
 <script src="js/pwa.js"></script>

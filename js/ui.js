@@ -8,6 +8,38 @@ let live=null, timer=null, raf=0, lastFrame=0;
 function getP(path){return path.split(".").reduce((a,k)=>a[k],S);}
 function setP(path,v){const ks=path.split("."); const last=ks.pop(); ks.reduce((a,k)=>a[k],S)[last]=v;}
 
+/* planification : 4 secondes d'avance quand la page est visible (réglages presque immédiats), 10 en arrière-plan */
+const lookahead=()=>document.hidden?10:4;
+function tickSchedule(){ if(live) live.eng.schedule(live.ctx.currentTime+lookahead()); }
+document.addEventListener("visibilitychange",tickSchedule);
+
+/* réglages immédiats : quelles voix replanifier quand un réglage change, sans redémarrer le moteur */
+const GAIN_ONLY={"mel.lvl":"mel","canon.lvl":"mel","pad.lvl":"pad","loops.lvl":"loops","pend.lvl":"pend"};
+function replanTarget(k,prev,now){
+  if(k in GAIN_ONLY) return ((prev>0.001)!==(now>0.001))?GAIN_ONLY[k]:null; /* seulement quand une voix s'allume ou s'éteint */
+  if(k.startsWith("mel.")||k.startsWith("canon.")) return "mel";
+  if(k.startsWith("pad.")) return "pad";
+  if(k.startsWith("loops.")) return "loops";
+  if(k.startsWith("pend.")) return "pend";
+  if(k.startsWith("scales.")||k==="sectionBars") return "all";
+  return null;
+}
+let replanTimer=0, replanPending=null;
+function replanSoon(what,now){
+  if(!live) return;
+  if(now){ clearTimeout(replanTimer); replanTimer=0; replanPending=null; live.eng.replan(what); return; }
+  replanPending=(replanPending&&replanPending!==what)?"all":what;
+  if(replanTimer) return;
+  replanTimer=setTimeout(()=>{ replanTimer=0; const w=replanPending; replanPending=null; if(live&&w) live.eng.replan(w); },160);
+}
+/* un réglage qui change : on applique, on replanifie la voix concernée, et on ne redémarre que ce qui l'exige */
+function paramChanged(k,prev,now,final,restart){
+  if(!live) return;
+  if(!restart) live.eng.setLevels();
+  const w=replanTarget(k,prev,now);
+  if(w&&!restart) replanSoon(w,final);
+}
+
 /* qualité audio : économe par défaut sur téléphone et machines modestes, au choix de la personne ensuite */
 function defaultQuality(){
   try{ if(matchMedia("(pointer:coarse)").matches||(navigator.hardwareConcurrency||8)<=4||(navigator.deviceMemory||8)<=4) return "eco"; }catch(e){}
@@ -25,8 +57,8 @@ function startLive(){
   live={ctx,eng,t0:ctx.currentTime+0.1,olds:[]};
   vizClear();
   eng.start(live.t0,5,0);
-  eng.schedule(ctx.currentTime+8);
-  timer=setInterval(()=>eng.schedule(ctx.currentTime+8),400);
+  eng.schedule(ctx.currentTime+lookahead());
+  timer=setInterval(tickSchedule,150);
   setPlayUI(true); updateRingCap();
   { const m=parseInt($("sleep").value,10)||0; if(m) sleepSet(m); }
   if(!raf) raf=requestAnimationFrame(frame);
@@ -53,20 +85,21 @@ function stopLive(){
 function crossfade(d){
   const {ctx,eng:old}=live, t=ctx.currentTime+0.05;
   const eng=buildEngine(ctx,S,engineOpts());
-  eng.start(t,d,0); eng.schedule(ctx.currentTime+8);
+  eng.start(t,d,0); eng.schedule(ctx.currentTime+lookahead());
   old.fadeOut(t,d);
-  clearInterval(timer); timer=setInterval(()=>eng.schedule(ctx.currentTime+8),400);
-  live.olds.push(old); live.eng=eng; live.lastKey=null; sleepApply();
+  clearInterval(timer); timer=setInterval(tickSchedule,150);
+  live.olds.push(old); live.eng=eng; live.lastKey=null; sleepApply(); if(typeof jeuReset==="function") jeuReset();
   setTimeout(()=>{ if(live) live.olds=live.olds.filter(x=>x!==old); },d*1000+500);
   updateRingCap();
 }
-function restartIfLive(d){ if(live) crossfade(d||1.5); }
+function restartIfLive(d){ if(live) crossfade(d||0.6); }
 function setPlayUI(on){
   if(window.keepAwake) window.keepAwake(on);
   evtState();
-  ["play","play2"].forEach(id=>{const b=$(id); b.textContent=on?"Arrêter":"Jouer"; b.setAttribute("aria-pressed",on?"true":"false");});
+  ["play","play2","play3"].forEach(id=>{const b=$(id); b.textContent=on?"Arrêter":"Jouer"; b.setAttribute("aria-pressed",on?"true":"false");});
+  if(typeof jeuState==="function") jeuState();
 }
-$("play").onclick=$("play2").onclick=()=>{live?stopLive():startLive();};
+$("play").onclick=$("play2").onclick=$("play3").onclick=()=>{live?stopLive():startLive();};
 
 function drawPend(){
   const cv=$("pend"), wrap=cv.parentNode, on=live&&S.pend.lvl>0.001;
@@ -83,7 +116,7 @@ function drawPend(){
 /* une image : 30 par seconde en mode économe, 60 sinon */
 function frame(ts){
   raf=0; if(!live) return;
-  if(!isEco()||ts-lastFrame>=33){ lastFrame=ts; vizDraw(live.ctx.currentTime,live.eng); drawPend(); tableFrame(); }
+  if(!isEco()||ts-lastFrame>=33){ lastFrame=ts; vizDraw(live.ctx.currentTime,live.eng); drawPend(); tableFrame(); jeuFrame(); }
   raf=requestAnimationFrame(frame);
 }
 
@@ -138,11 +171,12 @@ function flashNote(off,kind){
   r.c.classList.add("hit"); setTimeout(()=>r.c.classList.remove("hit"),kind==="canon"?260:380);
 }
 function toggleNote(p){
+  if(typeof JEU!=="undefined"&&JEU.on){ jeuPlayRing(p); return; }
   if(p===0) return;
   if(S.scales[0]!=="libre"){ const base=ivOf(S,S.scales[0]); S.custom=Array.from({length:24},(_,i)=>base.indexOf(i/2)>=0?1:0); S.scales[0]="libre"; }
   else if(S.custom.length<24 && p%2===1){ S.custom=Array.from({length:24},(_,i)=>i%2?0:S.custom[i/2]); }
   if(S.custom.length>=24) S.custom[p]=S.custom[p]?0:1; else S.custom[p/2]=S.custom[p/2]?0:1;
-  syncUI();
+  syncUI(); if(live) replanSoon("all",true);
 }
 setInterval(()=>{ if(live){ const k=curScaleKey(); if(k!==live.lastKey){live.lastKey=k; updateRingCap();} } },500);
 
@@ -157,7 +191,7 @@ const UI=[
    {k:"scales.0",type:"select",label:"Gamme principale",groups:SCALE_OPTS,restart:false,ring:true},
    {k:"scales.1",type:"select",label:"Puis (facultatif)",groups:SCALE_OPTS,blank:"Aucune",ring:true},
    {k:"scales.2",type:"select",label:"Puis encore (facultatif)",groups:SCALE_OPTS,blank:"Aucune",ring:true},
-   {k:"sectionBars",type:"range",label:"Durée d'une section",min:4,max:64,step:4,fmt:v=>v+" mesures",restart:true}]},
+   {k:"sectionBars",type:"range",label:"Durée d'une section",min:4,max:64,step:4,fmt:v=>v+" mesures"}]},
   {fin:"Temperatio : accord et tempérament", items:[
    {k:"temper",type:"select",label:"Tempérament",opts:[["egal","Égal"],["juste","Juste (intonation pure)"],["pyth","Pythagoricien"],["meso","Mésotonique (quart de comma)"]],restart:true},
    {k:"a4",type:"range",label:"Diapason (La)",min:410,max:450,step:1,fmt:v=>v+" Hz",restart:true}]}]},
@@ -201,10 +235,10 @@ const UI=[
    {k:"pad.motion",type:"range",label:"Mouvement harmonique",min:0,max:1,step:0.01,fmt:pct},
    {k:"pad.voices",type:"range",label:"Voix par accord",min:2,max:4,step:1,fmt:v=>v+" voix"}]},
   {fin:"Memoria : déjà-vu de la mélodie et des nappes", items:[
-   {k:"mel.deja",type:"range",label:"Mélodie : retour du passé",min:0,max:1,step:0.01,fmt:v=>v<0.01?"jamais":pct(v),restart:true},
-   {k:"mel.loop",type:"range",label:"Mélodie : longueur de la boucle",min:1,max:8,step:1,fmt:v=>v+(v>1?" phrases":" phrase"),restart:true},
-   {k:"pad.deja",type:"range",label:"Nappes : retour du passé",min:0,max:1,step:0.01,fmt:v=>v<0.01?"jamais":pct(v),restart:true},
-   {k:"pad.loop",type:"range",label:"Nappes : longueur de la boucle",min:1,max:8,step:1,fmt:v=>v+(v>1?" accords":" accord"),restart:true}]}]},
+   {k:"mel.deja",type:"range",label:"Mélodie : retour du passé",min:0,max:1,step:0.01,fmt:v=>v<0.01?"jamais":pct(v)},
+   {k:"mel.loop",type:"range",label:"Mélodie : longueur de la boucle",min:1,max:8,step:1,fmt:v=>v+(v>1?" phrases":" phrase")},
+   {k:"pad.deja",type:"range",label:"Nappes : retour du passé",min:0,max:1,step:0.01,fmt:v=>v<0.01?"jamais":pct(v)},
+   {k:"pad.loop",type:"range",label:"Nappes : longueur de la boucle",min:1,max:8,step:1,fmt:v=>v+(v>1?" accords":" accord")}]}]},
  {num:"V", title:"Locus", fr:"Lieu", sub:"La salle autour de la musique : de la taverne bruyante à la crypte qui goutte.", groups:[
   {items:[
    {k:"amb.murmur",type:"range",label:"Murmure de salle",min:0,max:1,step:0.01,fmt:pct},
@@ -240,19 +274,19 @@ const UI=[
    {k:"form.period",type:"range",label:"Période",min:1,max:10,step:0.5,fmt:v=>v+" min"},
    {k:"form.amount",type:"range",label:"Amplitude",min:0,max:1,step:0.01,fmt:pct}]},
   {h:"Tensio", hf:"courbe de tension", items:[
-   {k:"curve.mode",type:"select",label:"Courbe",opts:[["off","Désactivée"],["loop","Répétée"],["once","Une fois, puis elle tient"]],restart:true},
+   {k:"curve.mode",type:"select",label:"Courbe",opts:[["off","Désactivée"],["loop","Répétée"],["once","Une fois, puis elle tient"]]},
    {k:"curve.dur",type:"range",label:"Durée de la courbe",min:1,max:20,step:1,fmt:v=>v+(v>1?" minutes":" minute")}], node:()=>curveEditor()}]},
  {num:"VIII", title:"Rotae et Pendula", fr:"Boucles et pendules", sub:"Deux machines à hasard réglé : des boucles de bande de longueurs premières entre elles, et des pendules qui se désynchronisent puis se retrouvent.", groups:[
   {h:"Rotae", hf:"boucles de bande", items:[
    {k:"loops.lvl",type:"range",label:"Niveau (0 = absentes)",min:0,max:1,step:0.01,fmt:pct},
    {k:"loops.inst",type:"select",label:"Instrument",opts:INST_OPTS},
-   {k:"loops.count",type:"range",label:"Nombre de boucles",min:1,max:5,step:1,fmt:v=>v+(v>1?" boucles":" boucle"),restart:true},
-   {k:"loops.speed",type:"range",label:"Durée des boucles",min:0.6,max:2,step:0.05,fmt:v=>"× "+v.toFixed(2),restart:true}]},
+   {k:"loops.count",type:"range",label:"Nombre de boucles",min:1,max:5,step:1,fmt:v=>v+(v>1?" boucles":" boucle")},
+   {k:"loops.speed",type:"range",label:"Durée des boucles",min:0.6,max:2,step:0.05,fmt:v=>"× "+v.toFixed(2)}]},
   {h:"Pendula", hf:"pendules", items:[
    {k:"pend.lvl",type:"range",label:"Niveau (0 = absents)",min:0,max:1,step:0.01,fmt:pct},
    {k:"pend.inst",type:"select",label:"Instrument",opts:INST_OPTS},
-   {k:"pend.count",type:"range",label:"Nombre de pendules",min:3,max:10,step:1,fmt:v=>v+" pendules",restart:true},
-   {k:"pend.period",type:"range",label:"Période de resynchronisation",min:8,max:48,step:2,fmt:v=>v+" mesures",restart:true}]}]}
+   {k:"pend.count",type:"range",label:"Nombre de pendules",min:3,max:10,step:1,fmt:v=>v+" pendules"},
+   {k:"pend.period",type:"range",label:"Période de resynchronisation",min:8,max:48,step:2,fmt:v=>v+" mesures"}]}]}
 ];
 
 const CTL=[];
@@ -276,10 +310,10 @@ function mkCtl(it){
   const entry={it,el,out};
   const upd=()=>{ if(out) out.textContent=it.fmt(parseFloat(el.value)); };
   if(it.type==="range"){
-    el.addEventListener("input",()=>{ setP(it.k,parseFloat(el.value)); upd(); if(it.k==="tension") releaseCurve(); if(live&&!it.restart){live.eng.setLevels();} if(it.k==="tempo"||it.k==="meter") updateTempo(); });
-    el.addEventListener("change",()=>{ if(it.reverb&&live) live.eng.setReverb(); if(it.restart) restartIfLive(); });
+    el.addEventListener("input",()=>{ const prev=getP(it.k), v=parseFloat(el.value); setP(it.k,v); upd(); if(it.k==="tension") releaseCurve(); paramChanged(it.k,prev,v,false,it.restart); if(it.k==="tempo"||it.k==="meter") updateTempo(); });
+    el.addEventListener("change",()=>{ if(it.reverb&&live) live.eng.setReverb(); if(it.restart) restartIfLive(); else if(live){ const w=replanTarget(it.k,-1,parseFloat(el.value)); if(w&&!(it.k in GAIN_ONLY)) replanSoon(w,true); } });
   }else{
-    el.addEventListener("change",()=>{ const v=it.num?parseFloat(el.value):el.value; setP(it.k,v); if(live&&!it.restart) live.eng.setLevels(); if(it.restart) restartIfLive(); if(it.ring||it.k==="root") updateRingCap(); if(it.k==="tempo"||it.k==="meter") updateTempo(); });
+    el.addEventListener("change",()=>{ const prev=getP(it.k), v=it.num?parseFloat(el.value):el.value; setP(it.k,v); paramChanged(it.k,prev,v,true,it.restart); if(it.restart) restartIfLive(); if(it.ring||it.k==="root") updateRingCap(); if(it.k==="tempo"||it.k==="meter") updateTempo(); });
   }
   entry.upd=upd; CTL.push(entry);
   return wrap;
@@ -331,7 +365,7 @@ function buildChapters(){
 }
 function syncUI(){
   CTL.forEach(({it,el,upd,sync2})=>{ el.value=String(getP(it.k)); if(el.tagName==="SELECT"&&el.value!==String(getP(it.k))){ el.value=""; } upd(); if(sync2) sync2(); });
-  $("seed").value=S.seed; updateTempo(); updateRingCap(); if(typeof curveDraw==="function") curveDraw();
+  $("seed").value=S.seed; updateTempo(); updateRingCap(); if(typeof curveDraw==="function") curveDraw(); if(typeof jeuSync==="function") jeuSync();
 }
 function updateTempo(){ $("tempoNum").textContent=S.tempo; $("tempoCap").textContent="noires par minute · "+S.meter; }
 

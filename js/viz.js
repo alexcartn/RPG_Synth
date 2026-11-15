@@ -4,7 +4,7 @@
    ============================================================ */
 const VIZ={ev:[], lo:12, hi:48, cols:null, dpr:1, w:0, h:0, last:0};
 const VIZ_PAST=7, VIZ_FUTURE=9;
-const PITCHED={mel:1,canon:1,pad:1,loop:1,pend:1};
+const PITCHED={mel:1,canon:1,pad:1,loop:1,pend:1,play:1};
 
 function vizPush(t,off,kind,dur,vel,label){ VIZ.ev.push({t,off,kind,dur:dur||0,vel:vel||0.2,label}); }
 function vizClear(){ VIZ.ev.length=0; }
@@ -80,7 +80,7 @@ function vizDraw(now,eng){
     }
     const y=yOf(e.off), sounding=played&&age<=Math.max(e.dur,0.25);
     if(e.kind==="pad"){ c.globalAlpha=fade*(played?0.22:0.1); c.fillStyle=C.ink2; c.fillRect(x,y-3,w,6); c.globalAlpha=fade*0.35; c.fillStyle=C.ink2; c.fillRect(x,y-3,w,1); continue; }
-    const col=e.kind==="mel"?C.rub:e.kind==="canon"?C.gold:C.verd;
+    const col=e.kind==="mel"?C.rub:e.kind==="canon"?C.gold:e.kind==="play"?C.ink:C.verd;
     c.globalAlpha=fade; c.strokeStyle=col; c.fillStyle=col; c.lineWidth=1.2;
     if(e.kind==="pend"){ c.save(); c.translate(x,y); c.rotate(Math.PI/4); if(played) c.fillRect(-3.2,-3.2,6.4,6.4); else c.strokeRect(-3.2,-3.2,6.4,6.4); c.restore(); }
     else{ /* neume : un carré plein suivi d'un filet pour la durée */

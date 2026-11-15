@@ -27,7 +27,7 @@ function buildTable(){
     if(tg==="SELECT"||tg==="TEXTAREA"||(tg==="INPUT"&&t.type!=="range"&&t.type!=="checkbox")) return;
     const n=parseInt(e.key,10);
     if(n>=1&&n<=EVTS.length){ fireEvent(EVTS[n-1][0]); e.preventDefault(); }
-    else if(e.key==="n"||e.key==="N"){ campNext(); }
+    else if((e.key==="n"||e.key==="N")&&!(typeof JEU!=="undefined"&&JEU.on)){ campNext(); }
   });
   $("nextStep").onclick=$("nextStep2").onclick=()=>campNext();
 }
@@ -141,7 +141,7 @@ let curveSeen=false;
 function setCurveMode(m){
   S.curve.mode=m;
   const e=CTL.find(c=>c.it.k==="curve.mode"); if(e) e.el.value=m;
-  if(live) restartIfLive(1);
+  if(live) live.eng.setLevels();
 }
 /* le curseur reprend la main : la courbe s'arrête là où elle en est */
 function releaseCurve(){

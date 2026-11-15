@@ -319,3 +319,51 @@ canvas#curveCv{display:block; width:100%; height:150px; background:var(--parch-2
   .marge{gap:var(--sp-md)}
   .evlab{flex:1 1 100%}
 }
+
+/* ---------- mode Jeu ---------- */
+#jeuBtn{margin-left:auto}
+body.jeu .cols, body.jeu .toc{display:none}
+.jeu{margin:0 0 var(--sp-2xl)}
+.jeu-top{display:flex; flex-wrap:wrap; align-items:center; gap:var(--sp-md) var(--sp-xl); padding:var(--sp-md) 0 var(--sp-xl); border-bottom:1px solid var(--rule)}
+.jeu-top .seal{width:84px; height:84px; font-size:1.1rem}
+.jeu-actions{display:flex; gap:var(--sp-md); flex-wrap:wrap}
+.btn[aria-pressed="true"]{background:var(--ink); color:var(--parch)}
+.btn:disabled{opacity:.4; cursor:default}
+.jeu-top .hint{flex:1 1 24ch; max-width:56ch; margin:0}
+.jeu-grid{display:grid; grid-template-columns:minmax(0,1.35fr) minmax(0,1fr) minmax(0,1fr); gap:var(--sp-2xl); padding-top:var(--sp-xl); align-items:start}
+.jeu-knobs{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--sp-xl) var(--sp-md)}
+.knob{display:flex; flex-direction:column; align-items:center; gap:2px; cursor:ns-resize; touch-action:none; user-select:none; -webkit-user-select:none; outline:none; border-radius:0}
+.knob svg{width:100%; max-width:92px; display:block}
+.knob .tk line{stroke:var(--ink-2); stroke-width:1; opacity:.6}
+.knob .trk{fill:none; stroke:var(--rule); stroke-width:3; stroke-linecap:butt}
+.knob .val{fill:none; stroke:var(--rubric); stroke-width:3.4; stroke-linecap:butt}
+.knob .cap{fill:var(--parch-2); stroke:var(--ink); stroke-width:1.4}
+.knob .ndl{stroke:var(--ink); stroke-width:2.2; stroke-linecap:butt}
+.knob .kl{font:400 .92rem/1.1 var(--caps); letter-spacing:.06em; color:var(--ink-2); text-align:center}
+.knob .kv{font:italic 400 1.1rem/1.1 var(--display); color:var(--ink); font-variant-numeric:tabular-nums}
+.knob:hover .cap{fill:var(--parch-3)}
+.knob:focus-visible svg{outline:2px solid var(--rubric); outline-offset:3px}
+.jeu-xy canvas{display:block; width:100%; aspect-ratio:1; background:var(--parch-2); border:1px solid var(--rule); touch-action:none; cursor:crosshair}
+.jeu-xy canvas:focus-visible{outline:2px solid var(--rubric); outline-offset:3px}
+.xysel{display:flex; gap:var(--sp-md); margin-top:var(--sp-sm)}
+.xysel label{flex:1; font:400 .92rem/1.2 var(--caps); letter-spacing:.05em; color:var(--ink-2); display:flex; flex-direction:column; gap:var(--sp-xs)}
+.jeu-ring .ringwrap{border-top:0; padding-top:0}
+.jeu-ring .ringwrap svg{max-width:300px}
+.jeu-ring .ringhint{display:none}
+body.jeu .note-g{cursor:pointer}
+body.jeu .note-g .note-c:not(.on){opacity:.35}
+.jeu-ring .fields{margin-top:var(--sp-md); grid-template-columns:1fr}
+@media (max-width:1100px){ .jeu-grid{grid-template-columns:1fr 1fr} .jeu-knobs{grid-column:1 / -1} }
+@media (max-width:640px){
+  .jeu-grid{grid-template-columns:1fr; gap:var(--sp-xl)}
+  .jeu-knobs{gap:var(--sp-lg) var(--sp-sm)}
+  .jeu-top .seal{display:none}
+  .knob .kl{font-size:.8rem; letter-spacing:.03em}
+  .knob .kv{font-size:1rem}
+}
+@media (max-width:640px){
+  .jeu-xy canvas{aspect-ratio:4/3}
+  body.jeu .head .lede, body.jeu .legend{display:none}
+  body.jeu .head{margin-bottom:var(--sp-sm)}
+  body.jeu .score canvas{height:104px}
+}

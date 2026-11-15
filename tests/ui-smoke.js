@@ -12,7 +12,7 @@ const html=fs.readFileSync(require('path').join(root,'index.html'),'utf8').repla
  const unlisted=[...idx.matchAll(/(?:src|href)="((?:js|css)\/[^"]+)"/g)].map(m=>m[1]).filter(f=>!list.includes(f));
  console.log('pwa : fichiers du cache',list.length,'manquants',miss.length?miss:'aucun','icones manquantes',missI.length?missI:'aucune','hors cache',unlisted.length?unlisted:'aucun');
  if(miss.length||missI.length||unlisted.length){console.log('ECHEC PWA');process.exit(1)}}
-const errs=[];const vc=new VirtualConsole();vc.on('jsdomError',e=>{const m=String(e.detail||e.message||e);if(!/Not implemented: navigation/.test(m))errs.push(m)});vc.on('error',e=>errs.push(String(e)));
+const errs=[];const vc=new VirtualConsole();vc.on('jsdomError',e=>{const m=String(e.detail||e.message||e);if(!/Not implemented: (navigation|window.scrollTo)/.test(m))errs.push(m)});vc.on('error',e=>errs.push(String(e)));
 class Param{constructor(){this.value=0}setValueCurveAtTime(){return this}setValueAtTime(){return this}linearRampToValueAtTime(){return this}exponentialRampToValueAtTime(){return this}setTargetAtTime(){return this}cancelScheduledValues(){return this}}
 let nodes=0;
 class Node{constructor(){this.gain=new Param();this.frequency=new Param();this.detune=new Param();this.Q=new Param();this.pan=new Param();this.delayTime=new Param();this.threshold=new Param();this.ratio=new Param();this.attack=new Param();this.release=new Param();nodes++}connect(x){return x}disconnect(){}start(){}stop(){}getByteTimeDomainData(b){b.fill(128)}}
@@ -64,6 +64,18 @@ setTimeout(async()=>{
  await new Promise(r=>setTimeout(r,1500));
  console.log('nature : lecture toujours active',d.getElementById('play').getAttribute('aria-pressed'));
  for(const k of ['pluie','mer','nuit','ruisseau','oiseaux']){ const e=d.getElementById('c_nature_'+k); e.value='0'; e.dispatchEvent(new w.Event('input')); e.dispatchEvent(new w.Event('change')); }
+ // mode Jeu : boutons, pad XY, cercle jouable, clavier, figer, replanification
+ d.getElementById('jeuBtn').click(); await new Promise(r=>setTimeout(r,150));
+ console.log('jeu : actif',w.eval('JEU.on'),'| boutons',d.querySelectorAll('#knobs .knob').length,'| cercle déplacé',!!d.querySelector('#ringSlot .ringwrap'));
+ {const kb=d.querySelector('#knobs .knob'); const v0=w.eval('S.vol'); kb.dispatchEvent(new w.KeyboardEvent('keydown',{key:'ArrowDown',bubbles:true})); console.log('bouton au clavier : volume',v0,'→',w.eval('S.vol.toFixed(2)'),'| curseur du chapitre',d.getElementById('c_vol').value);}
+ d.dispatchEvent(new w.KeyboardEvent('keydown',{code:'KeyZ',key:'w',bubbles:true})); d.dispatchEvent(new w.KeyboardEvent('keydown',{code:'KeyA',key:'q',bubbles:true}));
+ await new Promise(r=>setTimeout(r,60));
+ console.log('notes jouées au clavier :',w.eval("VIZ.ev.filter(e=>e.kind==='play').length"));
+ d.querySelectorAll('.note-g')[0].dispatchEvent(new w.Event('click')); d.querySelectorAll('.note-g')[4].dispatchEvent(new w.Event('click'));
+ d.getElementById('jeuFreeze').click(); console.log('figer :',w.eval('S.mel.deja'),w.eval('S.mel.loop')); d.getElementById('jeuFreeze').click(); console.log('relâché :',w.eval('S.mel.deja'));
+ d.getElementById('jeuReroll').click();
+ w.eval('live.eng.replan("all")'); w.eval('live.eng.replan("mel")');
+ d.getElementById('jeuBtn').click(); console.log('retour aux réglages, cercle revenu',!!d.querySelector('.marge .ringwrap'));
  // sons à la demande, courbe de tension, campagne
  const evb=[...d.querySelectorAll('#evBtns button')]; console.log('pad : boutons',evb.length,'actifs',evb.filter(b=>!b.disabled).length);
  evb.forEach(b=>b.click()); await new Promise(r=>setTimeout(r,100));

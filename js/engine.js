@@ -111,8 +111,12 @@ function buildEngine(ctx, S, o){
     if(dly){const ds=G(dly); it.connect(ds); ds.connect(dIn);}
     return {in:lvl, lvl, tm, it};
   }
-  const B={drone:bus(0.45,0.1), mel:bus(0.9,1), pad:bus(0.8,0.6), perc:bus(0.2,0), amb:bus(0.3,0), loops:bus(0.9,0.8), pend:bus(0.9,0.7), evt:bus(0.55,0.35)};
+  const B={drone:bus(0.45,0.1), mel:bus(0.9,1), pad:bus(0.8,0.6), perc:bus(0.2,0), amb:bus(0.3,0), loops:bus(0.9,0.8), pend:bus(0.9,0.7), evt:bus(0.55,0.35), play:bus(0.85,0.9)};
   const canonG=G(0); const lCanon=link(canonG,B.mel.it);
+  /* chaque voix planifiée passe par un gain "de génération" : replan() le coupe et en crée un neuf, ce qui rend les réglages immédiats */
+  const V={};
+  const newGen=name=>{ const v=V[name], g=G(1); g.connect(v.dst); v.node=g; };
+  [["mel",B.mel.in],["canon",canonG],["pad",B.pad.in],["loops",B.loops.in],["pend",B.pend.in]].forEach(([n,d])=>{ V[n]={dst:d,node:null}; newGen(n); });
   const murG=G(0), fireG=G(0), windG=G(0), dripG=G(0);
   const lMur=link(murG,B.amb.in), lFire=link(fireG,B.amb.in), lWind=link(windG,B.amb.in); dripG.connect(B.amb.in);
   /* sons de nature : chaque lit n'est construit que s'il est utilisé, et débranché quand il retombe à zéro */
@@ -128,6 +132,7 @@ function buildEngine(ctx, S, o){
     B.perc.lvl.gain.value=lv("perc",S.perc.lvl);
     B.amb.lvl.gain.value=lv("amb",1);
     B.evt.lvl.gain.value=S.evt?S.evt.lvl:0.7;
+    B.play.lvl.gain.value=S.play?S.play.lvl:0.8;
     volG.gain.value=S.vol===undefined?1:S.vol;
     { const nt=S.nature||{}, wa=want("amb");
       NATS.forEach(k=>{ if(wa&&(nt[k]||0)>0.001) ensureNature(k); });
@@ -394,7 +399,7 @@ function buildEngine(ctx, S, o){
   function padVoice(t,len,f,timbre){
     const a=Math.min(3,len*0.45), rel=Math.min(3.5,len*0.8), e=G(0);
     e.gain.setValueAtTime(0,t); e.gain.linearRampToValueAtTime(0.09,t+a); e.gain.setValueAtTime(0.09,t+len); e.gain.linearRampToValueAtTime(0,t+len+rel);
-    e.connect(B.pad.in);
+    e.connect(V.pad.node);
     const end=t+len+rel+0.1, os=[];
     const add=(type,fr,det,dst,gain)=>{const x=ctx.createOscillator(); x.type=type; x.frequency.value=fr; x.detune.value=det; if(gain!==undefined){const g=G(gain); x.connect(g); g.connect(dst);} else x.connect(dst); os.push(x); return x;};
     if(timbre==="orgue"){ [[1,1],[2,0.45],[3,0.22],[4,0.12]].forEach(([m,a2])=>add("sine",f*m,0,e,a2*0.9)); }
@@ -603,7 +608,7 @@ function buildEngine(ctx, S, o){
 
   /* ---------- ordonnanceur ---------- */
   const cur={mel:0,drone:0,clink:0,perc:0,k:0,pad:0,int:0,fire:0,wind:0,drip:0,bird:0};
-  let loopsL=[], pendK=[];
+  let loopsL=[], pendK=[], lastPh=null, lastD=null, frozen=null;
   const lastOff={v:null};
   function rec(tr,t,off,dur,vel){ if(o.record) events.push({tr,t,off,dur,vel}); }
   function canonNote(t,off,vel,len,iv){
@@ -611,7 +616,7 @@ function buildEngine(ctx, S, o){
     const shifts={"uni":0,"oct+":n,"oct-":-n,"q+":Math.round(n*4/7),"q-":-Math.round(n*4/7),"t+":Math.round(n*2/7)};
     const k2=clamp(k+(shifts[S.canon.shift]||0),0,wide.length-1), off2=wide[k2];
     const tt=sw(t+S.canon.delay*bar);
-    (INST[S.canon.inst]||INST.harpe)(tt,freq(off2),vel*0.9,len,canonG,(R.v()*2-1)*0.5);
+    (INST[S.canon.inst]||INST.harpe)(tt,freq(off2),vel*0.9,len,V.canon.node,(R.v()*2-1)*0.5);
     rec(1,tt,off2,len,vel*0.9);
     if(o.onNote) o.onNote(tt,off2,"canon",len,vel*0.9);
   }
@@ -651,6 +656,7 @@ function buildEngine(ctx, S, o){
       if(!pool.length){cur.mel+=bar; continue;}
       const gen=()=>genPhrase(pool,stab,dens);
       let ph=recall(memM,nPhrase++,Math.max(1,Math.round(S.mel.loop)),S.mel.deja,R.m,gen);
+      lastPh=ph;
       if(ph.pool!==pool){ /* rejouée : recaler sur la gamme de la section */
         ph={notes:ph.notes.map(n=>({...n,off:nearest(pool,n.off)})),end:ph.end,gr:ph.gr};
       }
@@ -660,9 +666,9 @@ function buildEngine(ctx, S, o){
         if(want("mel")&&S.mel.lvl>0.001){
           const fn=INST[S.mel.inst]||INST.luth;
           if(nt.grace&&pool.length>2&&(S.mel.inst==="luth"||S.mel.inst==="harpe"||S.mel.inst==="carillon"||S.mel.inst==="oud"||S.mel.inst==="kalimba")){
-            const gi=clamp(pool.indexOf(off)+nt.gdir,0,pool.length-1); fn(tt-0.07,freq(pool[gi]),vel*0.55,0.08,B.mel.in,0);
+            const gi=clamp(pool.indexOf(off)+nt.gdir,0,pool.length-1); fn(tt-0.07,freq(pool[gi]),vel*0.55,0.08,V.mel.node,0);
           }
-          fn(tt,freq(off),vel,len,B.mel.in,(R.v()*2-1)*0.35);
+          fn(tt,freq(off),vel,len,V.mel.node,(R.v()*2-1)*0.35);
           if(S.canon.lvl>0.001) canonNote(cur.mel+nt.e*E,off,vel,len,iv);
         }
         rec(0,tt,off,len,vel);
@@ -676,7 +682,7 @@ function buildEngine(ctx, S, o){
     /* nappes */
     while(cur.pad<until){
       const t=cur.pad, sc=secOf(t), iv=ivOf(S,sc.key), n=iv.length;
-      const d=recall(memP,nChord++,Math.max(1,Math.round(S.pad.loop)),S.pad.deja,R.s,()=>(R.s()<0.35+0.4*(1-S.pad.motion))?0:Math.floor(R.s()*n))%n;
+      const dRaw=recall(memP,nChord++,Math.max(1,Math.round(S.pad.loop)),S.pad.deja,R.s,()=>(R.s()<0.35+0.4*(1-S.pad.motion))?0:Math.floor(R.s()*n)); lastD=dRaw; const d=dRaw%n;
       const len=S.pad.len*bar, vc=clamp(Math.round(S.pad.voices),2,o.lite?3:4);
       if(want("pad")&&S.pad.lvl>0.001){
         const offs=[degOff(iv,d),degOff(iv,d+2),degOff(iv,d+4),degOff(iv,d+6)].slice(0,vc).map(x=>x+12);
@@ -700,7 +706,7 @@ function buildEngine(ctx, S, o){
       loopsL.forEach(lp=>{
         while(lp.next<until){
           const tt=lp.next, iv=ivOf(S,secOf(tt).key), off=degOff(iv,lp.deg)+12*lp.oct, vel=lp.vel*(0.85+0.3*R.l());
-          fn(tt,freq(off),vel,E*10,B.loops.in,lp.pan);
+          fn(tt,freq(off),vel,E*10,V.loops.node,lp.pan);
           rec(3,tt,off,E*10,vel);
           if(o.onNote) o.onNote(tt,off,"loop",E*10,vel);
           lp.next+=lp.len;
@@ -717,7 +723,7 @@ function buildEngine(ctx, S, o){
           pendK[i]++;
           if(!on) continue;
           const iv=ivOf(S,secOf(tt).key), off=degOff(iv,i)+12, vel=0.17-0.07*i/N;
-          fn(tt,freq(off),vel,E*6,B.pend.in,(i/Math.max(1,N-1)*2-1)*0.6);
+          fn(tt,freq(off),vel,E*6,V.pend.node,(i/Math.max(1,N-1)*2-1)*0.6);
           rec(4,tt,off,E*6,vel);
           if(o.onNote) o.onNote(tt,off,"pend",E*6,vel);
         }
@@ -753,13 +759,56 @@ function buildEngine(ctx, S, o){
     cur.perc=t+bar*Math.ceil(4/bar); cur.k=0; cur.mel=t+bar*Math.ceil(7/bar); cur.pad=t; cur.int=t;
     cur.drone=t+25+R.d()*20; cur.clink=t+10; cur.fire=t; cur.wind=t; cur.drip=t+4; cur.bird=t+3; started=true;
     bands.forEach(b=>b.cur=t);
+    initLoops(t);
+    pendK=Array.from({length:pendN()},()=>0);
+  }
+  function initLoops(t){
     const nl=clamp(Math.round(S.loops.count),1,5), lens=[29,31,37,41,43,47,53,59].slice();
     loopsL=[];
     for(let i=0;i<nl;i++){
       const L=lens.splice(Math.floor(R.l()*lens.length),1)[0]*E*S.loops.speed, deg=[0,4,2,1,3][i];
       loopsL.push({len:L, next:t+(0.15+0.85*R.l())*L, deg, oct:i===0?1:1+Math.floor(R.l()*2), pan:(R.l()*2-1)*0.7, vel:0.13+R.l()*0.04});
     }
-    pendK=Array.from({length:pendN()},()=>0);
+  }
+  /* replan : coupe les notes déjà planifiées d'une voix et en planifie de nouvelles tout de suite, avec les réglages actuels */
+  function replan(what){
+    if(!started) return;
+    const now=ctx.currentTime, all=what==="all";
+    const kill=(name,tc)=>{
+      const old=V[name].node; old.gain.cancelScheduledValues(now); old.gain.setTargetAtTime(0,now,tc||0.03);
+      if(typeof setTimeout==="function") setTimeout(()=>{ try{ old.disconnect(); }catch(e){} },1500);
+      newGen(name);
+    };
+    if(all||what==="mel"){ kill("mel"); kill("canon"); cur.mel=t0+Math.ceil((now+0.04-t0)/E)*E; }
+    if(all||what==="pad"){ kill("pad",0.15); cur.pad=now+0.04; }
+    if(all||what==="loops"){ kill("loops",0.05); initLoops(now); }
+    if(all||what==="pend"){
+      kill("pend",0.05); const T=Math.max(1,S.pend.period*bar);
+      pendK=Array.from({length:pendN()},(_,i)=>Math.max(0,Math.ceil(((now-t0)/T)*(PEND_N0+i)-0.25)));
+    }
+  }
+  /* figer : la dernière phrase et le dernier accord tournent en boucle jusqu'à ce qu'on relâche */
+  function freeze(on){
+    if(on&&!frozen){
+      frozen={mdeja:S.mel.deja, mloop:S.mel.loop, pdeja:S.pad.deja, ploop:S.pad.loop};
+      S.mel.deja=1; S.mel.loop=1; S.pad.deja=1; S.pad.loop=1;
+      memM.length=0; if(lastPh) memM[0]=lastPh; nPhrase=0;
+      memP.length=0; if(lastD!==null) memP[0]=lastD; nChord=0;
+      replan("mel"); replan("pad");
+    }else if(!on&&frozen){
+      S.mel.deja=frozen.mdeja; S.mel.loop=frozen.mloop; S.pad.deja=frozen.pdeja; S.pad.loop=frozen.ploop; frozen=null;
+    }
+    return !!frozen;
+  }
+  /* autre phrase : on oublie la mémoire et on repart sur du neuf */
+  function reroll(){ memM.length=0; memP.length=0; nPhrase=0; nChord=0; replan("mel"); replan("pad"); }
+  /* jouer une note à la main : même instrument que la mélodie ou un autre, et le canon la reprend s'il est actif */
+  function play(off,vel){
+    const t=ctx.currentTime+0.01, inst=(S.play&&S.play.inst)||S.mel.inst, fn=INST[inst]||INST.luth, len=E*3, v=vel||0.22;
+    fn(t,freq(off),v,len,B.play.in,0);
+    if(S.canon.lvl>0.001) canonNote(t,off,v,len,ivOf(S,secOf(t).key));
+    if(o.onNote) o.onNote(t,off,"play",len,v);
+    return t;
   }
   function stop(now,tc){ master.gain.cancelScheduledValues(now); master.gain.setTargetAtTime(0,now,tc||0.4); }
   /* fondu enchaîné : l'ancien moteur s'éteint sur d secondes puis libère ses oscillateurs */
@@ -768,5 +817,5 @@ function buildEngine(ctx, S, o){
     starts.forEach(x=>{try{x.stop(now+d+0.2);}catch(e){}});
   }
   const pendX=t=>Array.from({length:pendN()},(_,i)=>Math.cos(2*Math.PI*(PEND_N0+i)*(t-t0)/(S.pend.period*bar)));
-  return {start,schedule,setLevels,setReverb,stop,fadeOut,sleepFade,sleepClear,pendX,fire,tensNow:()=>tensAt(ctx.currentTime),tensPos:()=>{ if(!curveOn()) return -1; const L=Math.max(30,S.curve.dur*60), x=(ctx.currentTime-t0)/L; return S.curve.mode==='loop'?((x%1)+1)%1:clamp(x,0,1); },events,out,master,secAt:t=>secOf(t),bar,E,t0f:()=>t0};
+  return {start,schedule,setLevels,setReverb,stop,fadeOut,sleepFade,sleepClear,replan,freeze,reroll,play,pendX,fire,tensNow:()=>tensAt(ctx.currentTime),tensPos:()=>{ if(!curveOn()) return -1; const L=Math.max(30,S.curve.dur*60), x=(ctx.currentTime-t0)/L; return S.curve.mode==='loop'?((x%1)+1)%1:clamp(x,0,1); },events,out,master,secAt:t=>secOf(t),bar,E,t0f:()=>t0};
 }

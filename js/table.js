@@ -11,7 +11,7 @@ function fireEvent(name){
   const b=document.querySelector('[data-evt="'+name+'"]');
   if(b){ b.classList.add("hit"); setTimeout(()=>b.classList.remove("hit"),450); }
 }
-function evtState(){ document.querySelectorAll("#evBtns button").forEach(b=>{ b.disabled=!live; }); }
+function evtState(){ document.querySelectorAll("#evBtns button").forEach(b=>{ b.disabled=!live; }); const n=$("evNote"); if(n) n.hidden=!!live; }
 
 function buildTable(){
   const host=$("evBtns");

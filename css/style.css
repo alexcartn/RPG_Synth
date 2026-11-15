@@ -36,7 +36,7 @@ h1::first-letter{font:700 1.3em/.7 "UnifrakturCook","IM Fell English",serif; col
 .cols{display:grid; grid-template-columns:minmax(0,1fr) 340px; gap:clamp(24px,5vw,72px); align-items:start}
 .marge{position:sticky; top:calc(var(--toc-h) + var(--sp-lg)); max-height:calc(100vh - var(--toc-h) - var(--sp-2xl)); overflow-y:auto; overscroll-behavior:contain; scrollbar-width:thin; scrollbar-color:var(--rule) transparent;
   display:flex; flex-direction:column; gap:var(--sp-lg); order:2; padding-bottom:var(--sp-md)}
-.marge .lecture{order:1} .marge .tempo{order:2} .marge .tension{order:3} .marge .sleepbox{order:3} .marge .presets{order:4} .marge .scenes{order:5} .marge .ringwrap{order:6} .marge .pendwrap{order:7} .marge .qualite{order:8}
+.marge .lecture{order:1} .marge .tempo{order:2} .marge .tension{order:3} .marge .sleepbox{order:4} .marge > .presets{order:5} .marge .ringwrap{order:6} .marge .pendwrap{order:7} .marge .seance{order:8}
 .text{order:1; min-width:0}
 @media (max-width:920px){
   .cols{grid-template-columns:1fr}
@@ -287,3 +287,35 @@ canvas#curveCv{display:block; width:100%; height:150px; background:var(--parch-2
 .note-g.q .note-c{stroke-width:.8; stroke:var(--ink-2); fill:var(--parch); opacity:.8}
 .note-g.q .note-c.on{fill:var(--rubric); stroke:var(--rubric); opacity:1}
 .note-g.q:focus-visible .note-c{stroke:var(--ink); stroke-width:2}
+
+/* ---------- passe de finition : en-tête compact, marge allégée ---------- */
+.sleepbox .ctl{flex-direction:row; flex-wrap:wrap; align-items:baseline; gap:var(--sp-xs) var(--sp-md)}
+.sleepbox .ctl label{flex:none}
+.sleepbox .ctl select{flex:1 1 12ch; margin-top:0; width:auto}
+.sleepbox .hint{flex-basis:100%; margin-top:0; min-height:0}
+.sleepbox .hint:empty{display:none}
+.seance{margin-top:0}
+.seance > summary{padding:var(--sp-sm) 0}
+.seance .presets:first-of-type{margin-top:var(--sp-md)}
+.seance .qualite{margin-top:var(--sp-md)}
+@media (min-width:921px){
+  .head{max-width:none; display:grid; grid-template-columns:auto minmax(0,44ch); column-gap:clamp(32px,7vw,112px); align-items:end; margin-bottom:var(--sp-xl)}
+  .head .kicker{grid-column:1 / -1}
+  .head h1{grid-column:1; margin:0}
+  .head .installrow{grid-column:2; grid-row:2; margin:0 0 var(--sp-sm)}
+  .head .lede{grid-column:2; grid-row:3; align-self:end; padding-bottom:.55em}
+  .head h1{grid-row:2 / 4}
+}
+@media (max-width:920px){
+  .lede{font-size:1.06rem; line-height:1.4}
+  .head{margin-bottom:var(--sp-lg)}
+  .evt{margin-bottom:var(--sp-md)}
+}
+
+#presetGloss:empty{display:none}
+.evnote{margin-left:.6em; font:italic 400 .92rem/1 var(--body); letter-spacing:0; text-transform:none; color:var(--ink-2)}
+.marge .ringcap{margin-top:var(--sp-xs)}
+@media (max-width:920px){
+  .marge{gap:var(--sp-md)}
+  .evlab{flex:1 1 100%}
+}

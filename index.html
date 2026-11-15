@@ -31,7 +31,7 @@
   </figure>
 
   <div class="evt" id="evt" role="group" aria-label="Sons à la demande">
-    <span class="evlab">Eventus</span>
+    <span class="evlab">Eventus<span class="evnote" id="evNote"> pendant la lecture</span></span>
     <div class="evbtns" id="evBtns"></div>
     <button class="lnk" id="nextStep" type="button" hidden>Étape suivante ›</button>
   </div>
@@ -55,7 +55,7 @@
       <div class="tempo"><b id="tempoNum">120</b><span id="tempoCap">noires par minute</span></div>
       <div class="tension" id="tensionHost"></div>
       <div class="presets sleepbox">
-        <div class="ctl"><label for="sleep">Extinction progressive</label>
+        <div class="ctl"><label for="sleep">Extinction</label>
           <select id="sleep"><option value="0">Désactivée</option><option value="15">Dans 15 minutes</option><option value="30">Dans 30 minutes</option><option value="45">Dans 45 minutes</option><option value="60">Dans 1 heure</option><option value="90">Dans 1 h 30</option><option value="120">Dans 2 heures</option></select>
           <p class="hint" id="sleepNote" aria-live="off"></p></div>
       </div>
@@ -70,11 +70,8 @@
         <div class="row" id="presets"></div>
         <p class="hint" id="presetGloss"></p>
       </div>
-      <div class="presets qualite">
-        <div class="ctl"><label for="quality">Qualité audio</label>
-          <select id="quality"><option value="high">Haute</option><option value="eco">Économe</option></select>
-          <p class="hint" id="qualityHint">Économe : réverbération plus courte, bourdon allégé. Conseillé sur téléphone ou ordinateur modeste. L'export reste toujours en haute qualité.</p></div>
-      </div>
+      <details class="fin seance">
+      <summary>Scènes et qualité audio</summary>
       <div class="presets scenes">
         <span class="ctl"><label>Scaenae</label></span>
         <div class="row" id="scenes"></div>
@@ -86,6 +83,12 @@
           <select id="fade"><option value="0.5">Sec (0,5 s)</option><option value="4">Court (4 s)</option><option value="10" selected>Moyen (10 s)</option><option value="25">Long (25 s)</option></select>
         </div>
       </div>
+      <div class="presets qualite">
+        <div class="ctl"><label for="quality">Qualité audio</label>
+          <select id="quality"><option value="high">Haute</option><option value="eco">Économe</option></select>
+          <p class="hint" id="qualityHint">Économe : réverbération plus courte, bourdon allégé. Conseillé sur téléphone ou ordinateur modeste. L'export reste toujours en haute qualité.</p></div>
+      </div>
+      </details>
     </aside>
   </div>
 </div>

@@ -51,6 +51,11 @@ setTimeout(async()=>{
  for(const tm of ['anche','orgue','choeur','bol','pur']) w.eval(`(()=>{const e=buildEngine(new AudioContext(),merge(clone(DEFAULT),{drone:{timbre:"${tm}"}}),{});e.start(0,5,0);})()`);
  for(const tm of ['choeur','cordes','orgue','synthe','verre']) w.eval(`(()=>{const e=buildEngine(new AudioContext(),merge(clone(DEFAULT),{pad:{lvl:.5,timbre:"${tm}"}}),{});e.start(0,5,0);e.schedule(60);})()`);
  console.log('timbres : construits sans erreur');
+ // musique modale, cordes physiques, acoustiques et adaptation
+ w.eval(`(()=>{ for(const [n,o] of PRESETS){ for(const lg of ["modal","hasard"]) for(const md of ["physique","classique"]){ const S2=merge(clone(DEFAULT),clone(o)); S2.mus={logic:lg,model:md}; const e=buildEngine(new AudioContext(),S2,{record:true}); e.start(0,5,0); e.schedule(120); e.replan("all"); e.freeze(true); e.freeze(false); e.reroll(); } }
+   for(const room of ["gen","chapelle","salle","grotte","plaque"]){ const S2=merge(clone(DEFAULT),{fx:{room}}); buildEngine(new AudioContext(),S2,{}).setReverb(); }
+   for(const mode of ["off","heure","apaiser"]){ const S2=merge(clone(DEFAULT),{adapt:{mode,amount:1,span:30}}); const e=buildEngine(new AudioContext(),S2,{}); e.start(0,5,0); e.schedule(60); e.adaptNow(); e.tensNow(); } })()`);
+ console.log('musique modale, cordes physiques, acoustiques, adaptation : aucun échec sur', w.eval('PRESETS.length'), 'préréglages');
  // quarts de ton : cercle à 24 positions, noms, MIDI avec pitch bend ; sons de nature
  console.log('cercle : positions',d.querySelectorAll('.note-g').length,'dont quarts de ton',d.querySelectorAll('.note-g.q').length);
  {const sel=d.getElementById('c_scales_0'); sel.value='bayati'; sel.dispatchEvent(new w.Event('change')); await new Promise(r=>setTimeout(r,100));

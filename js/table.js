@@ -203,8 +203,21 @@ function curveDraw(){
     if(pos>=0){ const x=Math.round(pos*W)+0.5, val=live.eng.tensNow(); c.strokeStyle=gold; c.lineWidth=1.5; c.beginPath(); c.moveTo(x,0); c.lineTo(x,H); c.stroke(); c.fillStyle=gold; c.beginPath(); c.arc(x,Y(val),4,0,Math.PI*2); c.fill(); }
   }
 }
+/* adaptation : une ligne qui dit où en est la musique */
+function adaptNote(){ const p=document.createElement("p"); p.className="hint"; p.id="adaptNote"; p.setAttribute("aria-live","off"); return p; }
+let adaptShown="", adaptT=0;
+function adaptUpdate(){
+  const el=$("adaptNote"); if(!el) return;
+  const now=Date.now(); if(now-adaptT<1000) return; adaptT=now;
+  let txt="";
+  if(S.adapt.mode==="heure"){ const d=new Date(), h=d.getHours(), e=live?live.eng.adaptNow():null, part=h<6?"nuit":h<10?"matin":h<14?"midi":h<18?"après-midi":h<22?"soirée":"nuit"; txt="Il est "+d.getHours()+" h "+String(d.getMinutes()).padStart(2,"0")+" ("+part+")"+(e!==null?" : énergie "+Math.round(e*100)+" %, ":", ")+"la musique devient plus calme et plus sombre le soir et la nuit, plus claire et plus dense en journée."; }
+  else if(S.adapt.mode==="apaiser"){ const e=live?live.eng.adaptNow():null; txt="La musique s'apaise peu à peu sur "+S.adapt.span+" minutes"+(e!==null?" : énergie "+Math.round(e*100)+" %.":"."); }
+  else txt="Désactivée : la musique ne dépend ni de l'heure ni de la durée d'écoute.";
+  if(txt!==adaptShown){ adaptShown=txt; el.textContent=txt; }
+}
 /* appelée à chaque image pendant la lecture : le curseur suit la courbe, le trait avance */
 function tableFrame(){
+  adaptUpdate();
   if(!live||S.curve.mode==="off") return;
   const val=live.eng.tensNow(), T=CTL.find(c=>c.it.k==="tension");
   if(T&&Math.abs(parseFloat(T.el.value)-val)>0.004){ T.el.value=val; T.upd(); if(T.sync2) T.sync2(); }

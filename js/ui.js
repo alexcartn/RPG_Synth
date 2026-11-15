@@ -21,7 +21,7 @@ function replanTarget(k,prev,now){
   if(k.startsWith("pad.")) return "pad";
   if(k.startsWith("loops.")) return "loops";
   if(k.startsWith("pend.")) return "pend";
-  if(k.startsWith("scales.")||k==="sectionBars") return "all";
+  if(k.startsWith("scales.")||k==="sectionBars"||k.startsWith("mus.")) return "all";
   return null;
 }
 let replanTimer=0, replanPending=null;
@@ -214,6 +214,9 @@ const UI=[
    {k:"drone.width",type:"range",label:"Largeur (désaccord)",min:0,max:1,step:0.01,fmt:pct,restart:true},
    {k:"drone.drift",type:"range",label:"Dérive",min:0,max:1,step:0.01,fmt:pct,restart:true}]}]},
  {num:"IV", title:"Voces", fr:"Voix", sub:"Mélodie, canon décalé et nappes d'accords construits sur la gamme de la section.", groups:[
+  {h:"Musica", hf:"logique musicale et timbres", items:[
+   {k:"mus.logic",type:"select",label:"Logique musicale",opts:[["modal","Modale : la mélodie suit les accords"],["hasard","Hasard (ancienne version)"]]},
+   {k:"mus.model",type:"select",label:"Cordes et timbres",opts:[["physique","Cordes pincées par modèle physique"],["classique","Synthèse classique"]]}]},
   {h:"Cantus", hf:"mélodie", items:[
    {k:"mel.inst",type:"select",label:"Instrument",opts:INST_OPTS},
    {k:"mel.lvl",type:"range",label:"Niveau",min:0,max:1,step:0.01,fmt:pct},
@@ -260,6 +263,7 @@ const UI=[
    {k:"fx.rev",type:"range",label:"Réverb",min:0,max:1,step:0.01,fmt:pct},
    {k:"fx.size",type:"range",label:"Taille de la salle",min:0.5,max:9,step:0.1,fmt:v=>v.toFixed(1)+" s",reverb:true},
    {k:"fx.dark",type:"range",label:"Ombre (réverb sourde)",min:0,max:1,step:0.01,fmt:pct,reverb:true},
+   {k:"fx.room",type:"select",label:"Acoustique du lieu",opts:[["gen","Générique"],["chapelle","Chapelle de pierre"],["salle","Salle de bois"],["grotte","Grotte"],["plaque","Plaque métallique"]],reverb:true},
    {k:"fx.dly",type:"range",label:"Écho",min:0,max:1,step:0.01,fmt:pct},
    {k:"fx.dlyDiv",type:"select",label:"Valeur de l'écho",opts:[[1.5,"Croche pointée"],[2,"Noire"],[3,"Noire pointée"]],num:true},
    {k:"fx.fb",type:"range",label:"Répétitions de l'écho",min:0,max:0.9,step:0.01,fmt:pct}]},
@@ -275,7 +279,11 @@ const UI=[
    {k:"form.amount",type:"range",label:"Amplitude",min:0,max:1,step:0.01,fmt:pct}]},
   {h:"Tensio", hf:"courbe de tension", items:[
    {k:"curve.mode",type:"select",label:"Courbe",opts:[["off","Désactivée"],["loop","Répétée"],["once","Une fois, puis elle tient"]]},
-   {k:"curve.dur",type:"range",label:"Durée de la courbe",min:1,max:20,step:1,fmt:v=>v+(v>1?" minutes":" minute")}], node:()=>curveEditor()}]},
+   {k:"curve.dur",type:"range",label:"Durée de la courbe",min:1,max:20,step:1,fmt:v=>v+(v>1?" minutes":" minute")}], node:()=>curveEditor()},
+  {h:"Adaptatio", hf:"selon l'heure ou la durée d'écoute", items:[
+   {k:"adapt.mode",type:"select",label:"Adaptation",opts:[["off","Aucune"],["heure","Selon l'heure de la journée"],["apaiser","S'apaiser avec la durée d'écoute"]]},
+   {k:"adapt.amount",type:"range",label:"Force de l'adaptation",min:0,max:1,step:0.01,fmt:pct},
+   {k:"adapt.span",type:"range",label:"Durée de l'apaisement",min:10,max:120,step:5,fmt:v=>v+" minutes"}], node:()=>adaptNote()}]},
  {num:"VIII", title:"Rotae et Pendula", fr:"Boucles et pendules", sub:"Deux machines à hasard réglé : des boucles de bande de longueurs premières entre elles, et des pendules qui se désynchronisent puis se retrouvent.", groups:[
   {h:"Rotae", hf:"boucles de bande", items:[
    {k:"loops.lvl",type:"range",label:"Niveau (0 = absentes)",min:0,max:1,step:0.01,fmt:pct},
@@ -313,7 +321,7 @@ function mkCtl(it){
     el.addEventListener("input",()=>{ const prev=getP(it.k), v=parseFloat(el.value); setP(it.k,v); upd(); if(it.k==="tension") releaseCurve(); paramChanged(it.k,prev,v,false,it.restart); if(it.k==="tempo"||it.k==="meter") updateTempo(); });
     el.addEventListener("change",()=>{ if(it.reverb&&live) live.eng.setReverb(); if(it.restart) restartIfLive(); else if(live){ const w=replanTarget(it.k,-1,parseFloat(el.value)); if(w&&!(it.k in GAIN_ONLY)) replanSoon(w,true); } });
   }else{
-    el.addEventListener("change",()=>{ const prev=getP(it.k), v=it.num?parseFloat(el.value):el.value; setP(it.k,v); paramChanged(it.k,prev,v,true,it.restart); if(it.restart) restartIfLive(); if(it.ring||it.k==="root") updateRingCap(); if(it.k==="tempo"||it.k==="meter") updateTempo(); });
+    el.addEventListener("change",()=>{ const prev=getP(it.k), v=it.num?parseFloat(el.value):el.value; setP(it.k,v); paramChanged(it.k,prev,v,true,it.restart); if(it.reverb&&live) live.eng.setReverb(); if(it.restart) restartIfLive(); if(it.ring||it.k==="root") updateRingCap(); if(it.k==="tempo"||it.k==="meter") updateTempo(); });
   }
   entry.upd=upd; CTL.push(entry);
   return wrap;

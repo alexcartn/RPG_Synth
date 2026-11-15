@@ -90,20 +90,27 @@ function frame(ts){
 /* ---------- cercle des hauteurs ---------- */
 const ringSvg=$("ring"), NS="http://www.w3.org/2000/svg";
 const ringEls=[];
+/* cercle de 24 positions : les grands points sont les douze demi-tons, les petits entre eux sont les quarts de ton */
+const noteName=i=>Number.isInteger(i)?NOTES[(S.root+i)%12]:NOTES[(S.root+Math.ceil(i))%12]+"↓";
 function buildRing(){
   ringSvg.innerHTML="";
   const guide=document.createElementNS(NS,"circle"); guide.setAttribute("cx",100); guide.setAttribute("cy",100); guide.setAttribute("r",70);
   guide.setAttribute("fill","none"); guide.setAttribute("stroke","currentColor"); guide.setAttribute("stroke-opacity",".25"); guide.setAttribute("stroke-width","0.8");
   ringSvg.appendChild(guide);
-  for(let pc=0;pc<12;pc++){
-    const a=pc/12*Math.PI*2-Math.PI/2, x=100+Math.cos(a)*70, y=100+Math.sin(a)*70;
-    const g=document.createElementNS(NS,"g"); g.setAttribute("class","note-g"); g.setAttribute("tabindex","0"); g.setAttribute("role","button");
-    const c=document.createElementNS(NS,"circle"); c.setAttribute("cx",x); c.setAttribute("cy",y); c.setAttribute("r",pc===0?10:8); c.setAttribute("class","note-c");
-    const tx=100+Math.cos(a)*91, ty=100+Math.sin(a)*91+3;
-    const t=document.createElementNS(NS,"text"); t.setAttribute("x",tx); t.setAttribute("y",ty); t.setAttribute("class","note-t");
-    g.appendChild(c); g.appendChild(t); ringSvg.appendChild(g);
-    g.addEventListener("click",()=>toggleNote(pc));
-    g.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault(); toggleNote(pc);}});
+  for(let p=0;p<24;p++){
+    const q=p%2===1, a=p/24*Math.PI*2-Math.PI/2, x=100+Math.cos(a)*70, y=100+Math.sin(a)*70;
+    const g=document.createElementNS(NS,"g"); g.setAttribute("class","note-g"+(q?" q":"")); g.setAttribute("tabindex","0"); g.setAttribute("role","button");
+    if(q){ const hit=document.createElementNS(NS,"circle"); hit.setAttribute("cx",x); hit.setAttribute("cy",y); hit.setAttribute("r",7); hit.setAttribute("fill","transparent"); g.appendChild(hit); }
+    const c=document.createElementNS(NS,"circle"); c.setAttribute("cx",x); c.setAttribute("cy",y); c.setAttribute("r",q?3.2:(p===0?10:8)); c.setAttribute("class","note-c");
+    g.appendChild(c);
+    let t=null;
+    if(!q){
+      const tx=100+Math.cos(a)*91, ty=100+Math.sin(a)*91+3;
+      t=document.createElementNS(NS,"text"); t.setAttribute("x",tx); t.setAttribute("y",ty); t.setAttribute("class","note-t"); g.appendChild(t);
+    }
+    ringSvg.appendChild(g);
+    g.addEventListener("click",()=>toggleNote(p));
+    g.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault(); toggleNote(p);}});
     ringEls.push({g,c,t});
   }
 }
@@ -113,27 +120,28 @@ function curScaleKey(){
 }
 function drawRing(){
   const key=curScaleKey(), iv=ivOf(S,key);
-  ringEls.forEach((r,pc)=>{
-    const on=iv.indexOf(pc)>=0;
-    r.c.setAttribute("class","note-c"+(on?" on":"")+(pc===0?" root":""));
-    r.t.textContent=NOTES[(S.root+pc)%12];
-    r.g.setAttribute("aria-label",NOTES[(S.root+pc)%12]+(on?", dans la gamme":", hors gamme")+(pc===0?", tonique":""));
+  ringEls.forEach((r,p)=>{
+    const deg=p/2, on=iv.indexOf(deg)>=0;
+    r.c.setAttribute("class","note-c"+(on?" on":"")+(p===0?" root":""));
+    if(r.t) r.t.textContent=NOTES[(S.root+deg)%12];
+    r.g.setAttribute("aria-label",noteName(deg)+(p%2?" (quart de ton)":"")+(on?", dans la gamme":", hors gamme")+(p===0?", tonique":""));
     r.g.setAttribute("aria-pressed",on?"true":"false");
   });
 }
 function updateRingCap(){
   const key=curScaleKey(), iv=ivOf(S,key), nm=(SC[key]||SC.mixolydien).n;
-  $("ringcap").innerHTML="<strong>"+NOTES[S.root]+" "+nm.toLowerCase()+"</strong><br>"+iv.map(i=>NOTES[(S.root+i)%12]).join(" ");
+  $("ringcap").innerHTML="<strong>"+NOTES[S.root]+" "+nm.toLowerCase()+"</strong><br>"+iv.map(noteName).join(" ");
   drawRing();
 }
 function flashNote(off,kind){
-  const pc=((off%12)+12)%12, r=ringEls[pc]; if(!r) return;
+  const p=Math.round((((off%12)+12)%12)*2)%24, r=ringEls[p]; if(!r) return;
   r.c.classList.add("hit"); setTimeout(()=>r.c.classList.remove("hit"),kind==="canon"?260:380);
 }
-function toggleNote(pc){
-  if(pc===0) return;
-  if(S.scales[0]!=="libre"){ const base=ivOf(S,S.scales[0]); S.custom=Array.from({length:12},(_,i)=>base.indexOf(i)>=0?1:0); S.scales[0]="libre"; }
-  S.custom[pc]=S.custom[pc]?0:1;
+function toggleNote(p){
+  if(p===0) return;
+  if(S.scales[0]!=="libre"){ const base=ivOf(S,S.scales[0]); S.custom=Array.from({length:24},(_,i)=>base.indexOf(i/2)>=0?1:0); S.scales[0]="libre"; }
+  else if(S.custom.length<24 && p%2===1){ S.custom=Array.from({length:24},(_,i)=>i%2?0:S.custom[i/2]); }
+  if(S.custom.length>=24) S.custom[p]=S.custom[p]?0:1; else S.custom[p/2]=S.custom[p/2]?0:1;
   syncUI();
 }
 setInterval(()=>{ if(live){ const k=curScaleKey(); if(k!==live.lastKey){live.lastKey=k; updateRingCap();} } },500);
@@ -204,6 +212,12 @@ const UI=[
    {k:"amb.feu",type:"range",label:"Feu de cheminée",min:0,max:1,step:0.01,fmt:pct},
    {k:"amb.vent",type:"range",label:"Vent",min:0,max:1,step:0.01,fmt:pct},
    {k:"amb.gouttes",type:"range",label:"Gouttes (crypte)",min:0,max:1,step:0.01,fmt:pct}]},
+  {h:"Natura", hf:"sons de nature", items:[
+   {k:"nature.pluie",type:"range",label:"Pluie",min:0,max:1,step:0.01,fmt:pct},
+   {k:"nature.mer",type:"range",label:"Vagues (mer)",min:0,max:1,step:0.01,fmt:pct},
+   {k:"nature.nuit",type:"range",label:"Nuit (grillons)",min:0,max:1,step:0.01,fmt:pct},
+   {k:"nature.ruisseau",type:"range",label:"Ruisseau",min:0,max:1,step:0.01,fmt:pct},
+   {k:"nature.oiseaux",type:"range",label:"Oiseaux",min:0,max:1,step:0.01,fmt:pct}]},
   {h:"Eventus", hf:"sons à la demande", items:[
    {k:"evt.lvl",type:"range",label:"Niveau des sons du pad (touches 1 à 8)",min:0,max:1,step:0.01,fmt:pct}]}]},
  {num:"VI", title:"Spatium et Patina", fr:"Espace et patine", sub:"Réverbération, écho et le grain d'une vieille bande.", groups:[

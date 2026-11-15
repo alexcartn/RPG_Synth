@@ -283,3 +283,7 @@ canvas#curveCv{display:block; width:100%; height:150px; background:var(--parch-2
 .sleepbox select{margin-top:var(--sp-xs)}
 #presetGloss{margin-top:var(--sp-sm); font-style:italic; min-height:1.3em}
 .presets .ctl + .row{margin-top:var(--sp-sm)}
+
+.note-g.q .note-c{stroke-width:.8; stroke:var(--ink-2); fill:var(--parch); opacity:.8}
+.note-g.q .note-c.on{fill:var(--rubric); stroke:var(--rubric); opacity:1}
+.note-g.q:focus-visible .note-c{stroke:var(--ink); stroke-width:2}

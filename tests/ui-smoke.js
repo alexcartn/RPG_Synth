@@ -51,6 +51,19 @@ setTimeout(async()=>{
  for(const tm of ['anche','orgue','choeur','bol','pur']) w.eval(`(()=>{const e=buildEngine(new AudioContext(),merge(clone(DEFAULT),{drone:{timbre:"${tm}"}}),{});e.start(0,5,0);})()`);
  for(const tm of ['choeur','cordes','orgue','synthe','verre']) w.eval(`(()=>{const e=buildEngine(new AudioContext(),merge(clone(DEFAULT),{pad:{lvl:.5,timbre:"${tm}"}}),{});e.start(0,5,0);e.schedule(60);})()`);
  console.log('timbres : construits sans erreur');
+ // quarts de ton : cercle à 24 positions, noms, MIDI avec pitch bend ; sons de nature
+ console.log('cercle : positions',d.querySelectorAll('.note-g').length,'dont quarts de ton',d.querySelectorAll('.note-g.q').length);
+ {const sel=d.getElementById('c_scales_0'); sel.value='bayati'; sel.dispatchEvent(new w.Event('change')); await new Promise(r=>setTimeout(r,100));
+  console.log('Bayati :',d.getElementById('ringcap').textContent);
+  const mid=w.eval(`(()=>{const S2=merge(clone(DEFAULT),{scales:["bayati","",""],mel:{lvl:.6}});const e=buildEngine(new AudioContext(),S2,{record:true});e.start(0,5,0);e.schedule(120);const m=midiFile(e.events,S2);let n=0;for(let i=0;i<m.length;i++)if(m[i]===0xE0)n++;return {octets:m.length,bends:n,frac:e.events.filter(x=>x.off%1!==0).length};})()`);
+  console.log('MIDI quarts de ton :',JSON.stringify(mid));
+  d.querySelectorAll('.note-g.q')[2].dispatchEvent(new w.Event('click'));
+  console.log('gamme libre 24 cases :',w.eval('S.custom.length'),'| gamme',w.eval('S.scales[0]'));
+  sel.value='mixolydien'; sel.dispatchEvent(new w.Event('change'));}
+ for(const k of ['pluie','mer','nuit','ruisseau','oiseaux']){ const e=d.getElementById('c_nature_'+k); e.value='0.6'; e.dispatchEvent(new w.Event('input')); e.dispatchEvent(new w.Event('change')); }
+ await new Promise(r=>setTimeout(r,1500));
+ console.log('nature : lecture toujours active',d.getElementById('play').getAttribute('aria-pressed'));
+ for(const k of ['pluie','mer','nuit','ruisseau','oiseaux']){ const e=d.getElementById('c_nature_'+k); e.value='0'; e.dispatchEvent(new w.Event('input')); e.dispatchEvent(new w.Event('change')); }
  // sons à la demande, courbe de tension, campagne
  const evb=[...d.querySelectorAll('#evBtns button')]; console.log('pad : boutons',evb.length,'actifs',evb.filter(b=>!b.disabled).length);
  evb.forEach(b=>b.click()); await new Promise(r=>setTimeout(r,100));

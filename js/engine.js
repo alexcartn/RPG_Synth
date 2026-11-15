@@ -6,7 +6,7 @@ function buildEngine(ctx, S, o){
   o = o||{};
   const seed=S.seed>>>0, sr=ctx.sampleRate;
   const R={m:mulberry32(seed), d:mulberry32(seed^0xA1B2C3), p:mulberry32(seed^0x51ED27), a:mulberry32(seed^0x7F4A7C),
-           s:mulberry32(seed^0x3C6EF3), v:mulberry32(seed^0x2545F4), n:mulberry32(seed^0x85ebca6b), w:mulberry32(seed^0x1234567), l:mulberry32(seed^0x1F2E3D4B)};
+           s:mulberry32(seed^0x3C6EF3), v:mulberry32(seed^0x2545F4), n:mulberry32(seed^0x85ebca6b), w:mulberry32(seed^0x1234567), l:mulberry32(seed^0x1F2E3D4B), t:mulberry32(seed^0x6D2B79F5)};
   const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
   const G=v=>{const g=ctx.createGain(); g.gain.value=v; return g;};
   const PAN=v=>{ if(ctx.createStereoPanner){const p=ctx.createStereoPanner(); p.pan.value=v; return p;} return G(1); };
@@ -29,7 +29,7 @@ function buildEngine(ctx, S, o){
   const links=[], droneLinks=[];
   const link=(from,to)=>{ const l={from,to,on:false}; links.push(l); return l; };
   const setLink=(l,on)=>{ if(l.on===on) return; l.on=on; if(on) l.from.connect(l.to); else { try{ l.from.disconnect(l.to); }catch(e){} } };
-  let t0=0;
+  let t0=0, started=false;
 
   /* sections */
   function secOf(t){
@@ -115,6 +115,9 @@ function buildEngine(ctx, S, o){
   const canonG=G(0); const lCanon=link(canonG,B.mel.it);
   const murG=G(0), fireG=G(0), windG=G(0), dripG=G(0);
   const lMur=link(murG,B.amb.in), lFire=link(fireG,B.amb.in), lWind=link(windG,B.amb.in); dripG.connect(B.amb.in);
+  /* sons de nature : chaque lit n'est construit que s'il est utilisé, et débranché quand il retombe à zéro */
+  const NATS=["pluie","mer","nuit","ruisseau"], natG={}, natL={}, natB={}, birdG=G(0), lBird=link(birdG,B.amb.in);
+  NATS.forEach(k=>{ natG[k]=G(0); natL[k]=link(natG[k],B.amb.in); });
 
   function setLevels(){
     const lv=(n,v)=>want(n)?v:0;
@@ -126,6 +129,11 @@ function buildEngine(ctx, S, o){
     B.amb.lvl.gain.value=lv("amb",1);
     B.evt.lvl.gain.value=S.evt?S.evt.lvl:0.7;
     volG.gain.value=S.vol===undefined?1:S.vol;
+    { const nt=S.nature||{}, wa=want("amb");
+      NATS.forEach(k=>{ if(wa&&(nt[k]||0)>0.001) ensureNature(k); });
+      natG.pluie.gain.value=1; natG.mer.gain.value=(nt.mer||0)*1.0; natG.nuit.gain.value=(nt.nuit||0)*2.4; natG.ruisseau.gain.value=(nt.ruisseau||0)*1.6;
+      if(natB.pluie){ const r=nt.pluie||0; natB.pluie.bg.gain.value=0.22*Math.pow(r,0.7); natB.pluie.ag.gain.value=0.28*r; natB.pluie.bg2.gain.value=0.5*r*r; }
+      birdG.gain.value=(nt.oiseaux||0)*0.9; }
     if(!curveOn()){ /* curseur : valeur fixe ; courbe : le planificateur automatise ces gains */
       const m=tensMul((tens()-0.5)*2), now=ctx.currentTime||0;
       [["perc",m.perc],["pad",m.pad],["drone",m.drone],["amb",m.amb]].forEach(([n,v])=>{ const g=B[n].tm.gain; if(g.cancelScheduledValues) g.cancelScheduledValues(now); g.value=v; });
@@ -148,10 +156,89 @@ function buildEngine(ctx, S, o){
     setLink(lHiss,S.fx.hiss>0.001);
     setLink(lRev,rev); setLink(lDly,dly); setLink(lDout,dly);
     setLink(lCanon,S.canon.lvl>0.001);
+    { const nt=S.nature||{}, wa=want("amb"); NATS.forEach(k=>setLink(natL[k],wa&&(nt[k]||0)>0.001)); setLink(lBird,wa&&(nt.oiseaux||0)>0.001); }
     setLink(lMur,S.amb.murmur>0.001); setLink(lFire,S.amb.feu>0.001); setLink(lWind,S.amb.vent>0.001);
     droneLinks.forEach(l=>setLink(l,S.drone.lvl>0.001));
   }
   function setReverb(){ conv.buffer=makeIR(S.fx.size,S.fx.dark); }
+
+  /* ---------- sons de nature ---------- */
+  function natSrc(buf,loopEnd){ const x=ctx.createBufferSource(); x.buffer=buf; x.loop=true; if(loopEnd) x.loopEnd=loopEnd; starts.push(x); if(started) x.start(ctx.currentTime); return x; }
+  /* gouttes : de petits claquements secs ("tick") ou des plocs qui chutent ("plop"), tirés une fois pour toutes */
+  function genDrops(len,rate,kind,sd){
+    const n=Math.floor(sr*len), b=ctx.createBuffer(1,n,sr), d=b.getChannelData(0), r=mulberry32((seed^sd)>>>0);
+    for(let t=0;t<len;t+=-Math.log(1-r()*0.999)/rate){
+      const i0=Math.floor(t*sr), a=0.25+r()*0.75;
+      if(kind==="tick"){ const dl=Math.floor(sr*(0.002+r()*0.003)); let lp=0; for(let i=0;i<dl&&i0+i<n;i++){ const x=r()*2-1; lp+=(x-lp)*0.6; d[i0+i]+=(x-lp)*a*(1-i/dl); } }
+      else{ const dl=Math.floor(sr*(0.02+r()*0.03)), f0=500+r()*700; for(let i=0;i<dl&&i0+i<n;i++){ const tt=i/sr; d[i0+i]+=Math.sin(2*Math.PI*f0*tt*(1-6*tt))*a*0.5*Math.exp(-i/dl*4); } }
+    }
+    return b;
+  }
+  /* vagues : une succession de houles (montée lente, crête mousseuse, retrait), un canal décalé pour la largeur */
+  function genSea(){
+    const len=30, fade=Math.floor(sr*0.2), n=Math.floor(sr*len)+fade, b=ctx.createBuffer(2,n,sr), r=mulberry32((seed^0x51A5EA)>>>0);
+    const ws=[]; let tot=0; while(tot<len-3){ const w=5+r()*4; ws.push(w); tot+=w; } const sc=len/ws.reduce((a,x)=>a+x,0); ws.forEach((w,i)=>ws[i]=w*sc);
+    const starts_=[]; let acc=0; ws.forEach(w=>{ starts_.push(acc); acc+=w; });
+    const env=t=>{ t=((t%len)+len)%len; let k=0; while(k+1<ws.length&&starts_[k+1]<=t) k++; const u=(t-starts_[k])/ws[k]; return u<0.55?Math.pow(u/0.55,1.6):Math.pow(1-(u-0.55)/0.45,1.4); };
+    for(let c=0;c<2;c++){
+      const d=b.getChannelData(c); let lp=0, lp2=0, mx=0;
+      for(let i=0;i<n;i++){
+        const e=env(i/sr+c*1.3), x=r()*2-1; lp+=(x-lp)*(0.012+0.2*e); lp2+=(x-lp2)*0.35;
+        d[i]=lp*(1.2+3.2*e)+(x-lp2)*e*e*e*0.2; if(Math.abs(d[i])>mx) mx=Math.abs(d[i]);
+      }
+      const g=0.8/(mx||1); for(let i=0;i<n;i++) d[i]*=g;
+      for(let i=0;i<fade;i++){ const w=i/fade; d[i]=d[i]*w+d[n-fade+i]*(1-w); } /* raccord de la boucle */
+    }
+    return {b,loopEnd:(n-fade)/sr};
+  }
+  /* nuit : grillons de hauteurs différentes, chacun une série d'impulsions très brèves */
+  function genNight(){
+    const len=22, n=Math.floor(sr*len), b=ctx.createBuffer(1,n,sr), d=b.getChannelData(0), r=mulberry32((seed^0x7A11E5)>>>0);
+    for(let k=0;k<6;k++){
+      const fc=3600+r()*1700, rate=28+r()*16, period=0.5+r()*0.6, amp=0.05+r()*0.05, np=3+Math.floor(r()*3);
+      for(let t=r()*period;t<len-0.5;t+=period*(0.85+0.3*r())){
+        for(let q=0;q<np;q++){ const i0=Math.floor((t+q/rate)*sr), dl=Math.floor(sr*0.011); for(let i=0;i<dl&&i0+i<n;i++) d[i0+i]+=Math.sin(2*Math.PI*fc*i/sr)*amp*Math.sin(Math.PI*i/dl); }
+      }
+    }
+    return b;
+  }
+  /* ruisseau : un fond d'eau qui ondule et des bulles qui montent */
+  function genBrook(){
+    const len=16, n=Math.floor(sr*len), b=ctx.createBuffer(1,n,sr), d=b.getChannelData(0), r=mulberry32((seed^0x8B00C1)>>>0);
+    let lp=0; for(let i=0;i<n;i++){ const t=i/sr, m=0.7+0.3*Math.sin(2*Math.PI*t/len*5)+0.15*Math.sin(2*Math.PI*t/len*13); lp+=((r()*2-1)-lp)*0.2; d[i]=lp*0.25*m; }
+    for(let t=0;t<len-0.1;t+=-Math.log(1-r()*0.999)/38){
+      const i0=Math.floor(t*sr), dl=Math.floor(sr*(0.015+r()*0.03)), f0=500+r()*1300, a=0.05+r()*0.14;
+      for(let i=0;i<dl&&i0+i<n;i++){ const tt=i/sr; d[i0+i]+=Math.sin(2*Math.PI*f0*tt*(1+14*tt))*a*Math.exp(-i/dl*3); }
+    }
+    return b;
+  }
+  function ensureNature(k){
+    if(natB[k]) return; natB[k]=true;
+    const out=natG[k], bq=(type,f,q)=>{ const x=ctx.createBiquadFilter(); x.type=type; x.frequency.value=f; if(q) x.Q.value=q; return x; };
+    if(k==="pluie"){
+      const bed=natSrc(wb), hp=bq("highpass",900), lp=bq("lowpass",9000), bg=G(0); bed.connect(hp); hp.connect(lp); lp.connect(bg); bg.connect(out);
+      const a=natSrc(genDrops(11.3,70,"tick",0x2F6E2B1)), ag=G(0), b2=natSrc(genDrops(13.7,9,"plop",0x4C3B1F7)), bg2=G(0); a.connect(ag); ag.connect(out); b2.connect(bg2); bg2.connect(out);
+      natB.pluie={bg,ag,bg2};
+    }
+    else if(k==="mer"){ const {b,loopEnd}=genSea(), x=natSrc(b,loopEnd); x.connect(out); }
+    else if(k==="nuit"){ const x=natSrc(genNight()); x.connect(out); }
+    else if(k==="ruisseau"){ const x=natSrc(genBrook()), f=bq("lowpass",5200,0.5); x.connect(f); f.connect(out); }
+  }
+  /* oiseaux : phrases brèves tirées au hasard (trois "espèces"), planifiées comme les autres événements */
+  function bird(t){
+    const sp=Math.floor(R.t()*3), pan=(R.t()*2-1)*0.8, base=2200+R.t()*2400, n=sp===0?3+Math.floor(R.t()*3):sp===1?6+Math.floor(R.t()*5):2+Math.floor(R.t()*2);
+    let tt=t;
+    for(let i=0;i<n;i++){
+      let d,f0,f1;
+      if(sp===0){ d=0.07+R.t()*0.05; f0=base*(0.9+R.t()*0.3); f1=f0*(R.t()<0.5?1.35:0.75); }
+      else if(sp===1){ d=0.035; f0=base*(i%2?1.12:1); f1=f0*0.97; }
+      else{ d=0.18+R.t()*0.1; f0=base*0.8; f1=f0*1.6; }
+      const x=ctx.createOscillator(); x.type="sine"; x.frequency.setValueAtTime(f0,tt); x.frequency.exponentialRampToValueAtTime(f1,tt+d);
+      const e=G(0); e.gain.setValueAtTime(0,tt); e.gain.linearRampToValueAtTime(0.5,tt+0.012); e.gain.exponentialRampToValueAtTime(0.0001,tt+d+0.04);
+      x.connect(e); route(e,pan,birdG); x.start(tt); x.stop(tt+d+0.1);
+      tt+=d+(sp===1?0.02:0.05+R.t()*0.06);
+    }
+  }
   setLevels();
 
   /* ---------- bourdon ---------- */
@@ -515,7 +602,7 @@ function buildEngine(ctx, S, o){
   }
 
   /* ---------- ordonnanceur ---------- */
-  const cur={mel:0,drone:0,clink:0,perc:0,k:0,pad:0,int:0,fire:0,wind:0,drip:0};
+  const cur={mel:0,drone:0,clink:0,perc:0,k:0,pad:0,int:0,fire:0,wind:0,drip:0,bird:0};
   let loopsL=[], pendK=[];
   const lastOff={v:null};
   function rec(tr,t,off,dur,vel){ if(o.record) events.push({tr,t,off,dur,vel}); }
@@ -645,6 +732,7 @@ function buildEngine(ctx, S, o){
       });
       while(cur.clink<until){ clink(cur.clink); cur.clink+=(18+R.a()*30)/(0.25+S.amb.clink*1.5); }
       cur.fire=until; /* les craquements viennent de la boucle précalculée */
+      while(cur.bird<until){ const t=cur.bird, ov=(S.nature||{}).oiseaux||0; if(ov>0.001) bird(t); cur.bird=t+(7+R.t()*14)/(0.25+ov*1.75); }
       while(cur.wind<until){
         const t=cur.wind;
         if(windBP){ windBP.frequency.setTargetAtTime(250+R.a()*700,t,2.5); windMod.gain.setTargetAtTime(0.2+R.a()*0.8,t,2.5); }
@@ -663,7 +751,7 @@ function buildEngine(ctx, S, o){
     master.gain.setValueAtTime(0,t); master.gain.linearRampToValueAtTime(1,t+fadeIn);
     if(fadeOutAt){ master.gain.setValueAtTime(1,t+fadeOutAt-7); master.gain.linearRampToValueAtTime(0,t+fadeOutAt-0.2); }
     cur.perc=t+bar*Math.ceil(4/bar); cur.k=0; cur.mel=t+bar*Math.ceil(7/bar); cur.pad=t; cur.int=t;
-    cur.drone=t+25+R.d()*20; cur.clink=t+10; cur.fire=t; cur.wind=t; cur.drip=t+4;
+    cur.drone=t+25+R.d()*20; cur.clink=t+10; cur.fire=t; cur.wind=t; cur.drip=t+4; cur.bird=t+3; started=true;
     bands.forEach(b=>b.cur=t);
     const nl=clamp(Math.round(S.loops.count),1,5), lens=[29,31,37,41,43,47,53,59].slice();
     loopsL=[];

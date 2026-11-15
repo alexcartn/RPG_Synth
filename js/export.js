@@ -45,8 +45,10 @@ function vlq(n){const b=[n&0x7f]; n>>=7; while(n>0){b.unshift((n&0x7f)|0x80); n>
 function midiFile(events,Sx){
   const PPQ=480, spq=60/Sx.tempo, base=36+Sx.root, trs=[[],[],[],[],[]];
   events.forEach(e=>{
-    const note=Math.max(0,Math.min(127,base+e.off)), t=Math.round(e.t/spq*PPQ), d=Math.max(30,Math.round(e.dur/spq*PPQ)), vel=Math.max(1,Math.min(127,Math.round(40+e.vel*200)));
-    trs[e.tr].push({t,on:true,note,vel},{t:t+d,on:false,note,vel:0});
+    const n0=base+e.off, rn=Math.round(n0), frac=n0-rn, note=Math.max(0,Math.min(127,rn)), t=Math.round(e.t/spq*PPQ), d=Math.max(30,Math.round(e.dur/spq*PPQ)), vel=Math.max(1,Math.min(127,Math.round(40+e.vel*200)));
+    /* quart de ton : note voisine + pitch bend de 50 cents (plage de 2 demi-tons), sauf sur les nappes qui sont polyphoniques */
+    const bend=(e.tr!==2&&Math.abs(frac)>0.01)?8192+Math.round(frac*4096):undefined;
+    trs[e.tr].push({t,on:true,note,vel,bend},{t:t+d,on:false,note,vel:0});
   });
   const m=METERS[Sx.meter], tempoUs=Math.round(60e6/Sx.tempo);
   const hdr=[0x4d,0x54,0x68,0x64,0,0,0,6,0,1,0,6,(PPQ>>8)&255,PPQ&255];
@@ -56,8 +58,13 @@ function midiFile(events,Sx){
   const tracks=[chunk(tempoTrack)];
   trs.forEach((evs,i)=>{
     evs.sort((a,b)=>a.t-b.t||(a.on?1:-1));
+    const usesBend=evs.some(x=>x.bend!==undefined);
     const nm=[...names[i]].map(c=>c.charCodeAt(0)), b=[0,0xff,0x03,nm.length,...nm];
-    let last=0; evs.forEach(e=>{ b.push(...vlq(e.t-last), (e.on?0x90:0x80)|i, e.note, e.vel); last=e.t; });
+    let last=0;
+    evs.forEach(e=>{
+      if(e.on&&usesBend){ const bv=e.bend===undefined?8192:e.bend; b.push(...vlq(e.t-last),0xE0|i,bv&127,(bv>>7)&127); last=e.t; }
+      b.push(...vlq(e.t-last),(e.on?0x90:0x80)|i,e.note,e.vel); last=e.t;
+    });
     b.push(0,0xff,0x2f,0); tracks.push(chunk(b));
   });
   return new Uint8Array([...hdr,...tracks.flat()]);
@@ -138,7 +145,7 @@ function buildExport(host){
       '<div class="ctl"><label for="fmt">Format audio</label><select id="fmt"><option value="wav">WAV 16 bits (sans perte)</option><option value="mp3-320">MP3 320 kb/s</option><option value="mp3-192">MP3 192 kb/s</option><option value="both">WAV et MP3 320 kb/s</option></select><p class="hint">Le MP3 est dix fois plus léger, pratique pour écouter ou envoyer. Pour retravailler dans un logiciel, ou pour une boucle sans couture, garde le WAV : le MP3 ajoute un léger silence en tête.</p></div>'+
       '<div class="ctl"><label class="chk"><span><input type="checkbox" id="xLoop">Boucle sans couture</span></label><p class="hint">Fondu enchaîné de la fin sur le début : le fichier boucle sans clic.</p></div>'+
       '<div class="ctl"><label class="chk"><span><input type="checkbox" id="xStems">Stems séparés</span></label><p class="hint">Bourdon, mélodie et canon, nappes, percussion, lieu, boucles et pendules si activés. Sans compresseur, à sommer dans ton logiciel. 3 minutes maximum.</p></div>'+
-      '<div class="ctl"><label class="chk"><span><input type="checkbox" id="xMidi">Fichier MIDI</span></label><p class="hint">Pistes mélodie, canon, nappes, boucles et pendules. Les tempéraments non égaux ne passent pas en MIDI.</p></div>'+
+      '<div class="ctl"><label class="chk"><span><input type="checkbox" id="xMidi">Fichier MIDI</span></label><p class="hint">Pistes mélodie, canon, nappes, boucles et pendules. Les tempéraments non égaux ne passent pas en MIDI. Les quarts de ton passent en pitch bend (plage de 2 demi-tons) sauf sur les nappes, où ils sont arrondis.</p></div>'+
     '</div>'+
     '<div class="row" style="margin-top:24px"><button class="btn main" id="exp" type="button">Rendre et exporter</button></div>'+
     '<p class="status" id="status" role="status" aria-live="polite"></p>'+

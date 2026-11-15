@@ -33,16 +33,21 @@ const SCALE_GROUPS = [
   ["Symétriques", [
     ["tons","Tons entiers",[0,2,4,6,8,10]],
     ["octa","Octatonique (ton, demi-ton)",[0,2,3,5,6,8,9,11]]]],
+  ["Quarts de ton (24 par octave)", [
+    ["rast","Maqam Rast (tierce et septième neutres)",[0,2,3.5,5,7,9,10.5]],
+    ["bayati","Maqam Bayati",[0,1.5,3,5,7,8,10]],
+    ["saba","Maqam Saba",[0,1.5,3,4,7,8,10]],
+    ["enharm","Enharmonique grec ancien",[0,0.5,1,5,7,7.5,8]]]],
   ["Personnel", [
     ["libre","Libre (dessinée sur le cercle)",null]]]
 ];
 const SC = {};
 SCALE_GROUPS.forEach(([,l])=>l.forEach(([k,n,iv])=>{SC[k]={n,iv};}));
 function ivOf(S,key){
-  if(key==="libre"){const a=[];S.custom.forEach((v,i)=>{if(v||i===0)a.push(i);});return a;}
+  if(key==="libre"){const a=[], q=S.custom.length>=24; S.custom.forEach((v,i)=>{if(v||i===0)a.push(q?i/2:i);});return a;}
   return (SC[key]||SC.mixolydien).iv;
 }
-function poolOf(iv,lo,hi){const a=[];for(let o=lo;o<=hi;o++){if(iv.indexOf(((o%12)+12)%12)>=0)a.push(o);}return a;}
+function poolOf(iv,lo,hi){const a=[];for(let o=lo;o<=hi;o+=0.5){if(iv.indexOf(((o%12)+12)%12)>=0)a.push(o);}return a;}
 function degOff(iv,k){const n=iv.length;return iv[((k%n)+n)%n]+12*Math.floor(k/n);}
 function stableOf(iv){
   const s=[0]; if(iv.indexOf(7)>=0)s.push(7);
@@ -59,7 +64,11 @@ const RAT = {
 };
 function mkFreq(S){
   const rootMidi=36+S.root, rootF=S.a4*Math.pow(2,(rootMidi-69)/12), r=RAT[S.temper]||RAT.egal;
-  return off=>{const oct=Math.floor(off/12), pc=((off%12)+12)%12; return rootF*Math.pow(2,oct)*r[pc];};
+  return off=>{
+    const oct=Math.floor(off/12), pc=off-12*oct, lo=Math.floor(pc), fr=pc-lo; let ratio=r[lo];
+    if(fr>1e-9){ const hi=lo===11?2:r[lo+1]; ratio*=Math.pow(hi/ratio,fr); }
+    return rootF*Math.pow(2,oct)*ratio;
+  };
 }
 
 /* mesures : motif sur grille de croches. S frappe forte, s frappe, T tap, t petit tap, h croche libre (shaker) */
@@ -90,6 +99,7 @@ const DEFAULT = {
   fx:{rev:0.4, size:2.6, dark:0.5, dly:0, dlyDiv:1.5, fb:0.4, sat:0.15, wow:0.12, veil:0.3, hiss:0},
   form:{shape:"constante", period:4, amount:0.5},
   evt:{lvl:0.7},
+  nature:{pluie:0, mer:0, nuit:0, ruisseau:0, oiseaux:0},
   curve:{mode:"off", dur:6, pts:Array.from({length:96},()=>0.5)}
 };
 const MEDIEVAL = [
@@ -130,7 +140,7 @@ const CALME = [
     mel:{lvl:0.2, inst:"verre", dens:0.1, reg:1, span:2, leap:0.05, orn:0, deja:0.5, loop:2}, canon:{lvl:0},
     pad:{lvl:0.3, timbre:"synthe", len:8, motion:0.2, voices:3}, amb:{murmur:0, clink:0, feu:0, vent:0.1, gouttes:0},
     fx:{rev:0.55, size:9, dark:0.8, dly:0, sat:0.03, wow:0.06, veil:0.8, hiss:0}, form:{shape:"arche", period:10, amount:0.3},
-    loops:{lvl:0.1, count:3, inst:"bol", speed:1.6}}, "sommeil, très lent et sombre"],
+    loops:{lvl:0.1, count:3, inst:"bol", speed:1.6}, nature:{pluie:0.2}}, "sommeil, très lent et sombre"],
   ["Meditatio", {seed:108, root:2, scales:["pentmin","pentmaj",""], sectionBars:24, tempo:50, temper:"juste", tension:0.35, vol:0.65,
     perc:{lvl:0}, drone:{lvl:0.55, timbre:"bol", bright:0.25, width:0.5, drift:0.5, glide:0.4},
     mel:{lvl:0.3, inst:"bol", dens:0.18, reg:1, span:1, leap:0.1, orn:0, deja:0.7, loop:3}, canon:{lvl:0.2, inst:"verre", delay:4, shift:"oct+"},
@@ -179,13 +189,46 @@ const ORIENT = [
     mel:{lvl:0.55, inst:"harpe", dens:0.28, reg:1, span:2, leap:0.3, orn:0.1, deja:0.6, loop:3}, canon:{lvl:0.25, inst:"kalimba", delay:3, shift:"q+"},
     pad:{lvl:0.28, timbre:"verre", len:4, motion:0.4, voices:3}, amb:{gouttes:0.45, vent:0.12},
     fx:{rev:0.6, size:4, dark:0.4, sat:0.05, wow:0.08, veil:0.3}, form:{shape:"constante"},
-    loops:{lvl:0.18, count:3, inst:"bol", speed:1.3}}, "jardin zen, gammes japonaises"]
+    loops:{lvl:0.18, count:3, inst:"bol", speed:1.3}}, "jardin zen, gammes japonaises"],
+  ["Bayati", {seed:2828, root:2, scales:["bayati","saba",""], sectionBars:12, tempo:68, temper:"egal",
+    perc:{lvl:0.3, shaker:0.4, ghost:0.2}, drone:{lvl:0.7, timbre:"anche", bright:0.45, width:0.5, drift:0.5, glide:0.4},
+    mel:{lvl:0.6, inst:"oud", dens:0.5, reg:1, span:2, leap:0.2, orn:0.45, deja:0.6, loop:3}, canon:{lvl:0.3, inst:"ney", delay:2, shift:"oct+"},
+    pad:{lvl:0.22, timbre:"cordes", len:4, motion:0.3, voices:3}, amb:{vent:0.05},
+    fx:{rev:0.5, size:3.5, dark:0.5, sat:0.12, wow:0.1, veil:0.3}, form:{shape:"arche", period:5, amount:0.4}}, "maqam Bayati, avec ses quarts de ton"],
+  ["Enharmonia", {seed:4242, root:4, scales:["enharm","",""], sectionBars:16, tempo:60, temper:"juste", vol:0.7,
+    perc:{lvl:0}, drone:{lvl:0.7, timbre:"orgue", bright:0.3, width:0.4, drift:0.4, glide:0.3},
+    mel:{lvl:0.5, inst:"harpe", dens:0.3, reg:1, span:2, leap:0.2, orn:0.1, deja:0.6, loop:3}, canon:{lvl:0.25, inst:"flute", delay:3, shift:"q+"},
+    pad:{lvl:0.3, timbre:"orgue", len:6, motion:0.3, voices:3}, amb:{},
+    fx:{rev:0.6, size:5, dark:0.5, sat:0.08, wow:0.12, veil:0.4}, form:{shape:"constante"}}, "genre enharmonique grec, quarts de ton"]
+];
+const NATURE = [
+  ["Pluvia", {seed:4711, root:2, scales:["eolien","",""], sectionBars:24, tempo:50, tension:0.35, vol:0.85,
+    perc:{lvl:0}, drone:{lvl:0.3, timbre:"bol", bright:0.2, width:0.4, drift:0.5, glide:0.3},
+    mel:{lvl:0.18, inst:"kalimba", dens:0.12, reg:1, span:2, leap:0.1, orn:0, deja:0.6, loop:3}, canon:{lvl:0},
+    pad:{lvl:0.22, timbre:"verre", len:8, motion:0.3, voices:3}, amb:{vent:0.1},
+    fx:{rev:0.55, size:4, dark:0.5, sat:0.04, wow:0.06, veil:0.45}, form:{shape:"constante"}, nature:{pluie:0.7}}, "pluie, avec un peu de musique"],
+  ["Mare", {seed:1313, root:7, scales:["pentmaj","",""], sectionBars:24, tempo:46, tension:0.3, vol:0.85,
+    perc:{lvl:0}, drone:{lvl:0.35, timbre:"pur", bright:0.2},
+    mel:{lvl:0.15, inst:"harpe", dens:0.1, reg:1, span:2, leap:0.1, orn:0, deja:0.5, loop:3}, canon:{lvl:0},
+    pad:{lvl:0.28, timbre:"synthe", len:8, motion:0.3, voices:3}, amb:{vent:0.15},
+    fx:{rev:0.5, size:5, dark:0.5, sat:0.03, wow:0.05, veil:0.5}, form:{shape:"arche", period:10, amount:0.3}, nature:{mer:0.75}}, "mer et vagues"],
+  ["Silva", {seed:909, root:4, scales:["dorien","",""], sectionBars:24, tempo:56, tension:0.4, vol:0.9,
+    perc:{lvl:0}, drone:{lvl:0.3, timbre:"orgue", bright:0.3},
+    mel:{lvl:0.25, inst:"ney", dens:0.15, reg:1, span:2, leap:0.2, orn:0.2, deja:0.5, loop:3}, canon:{lvl:0},
+    pad:{lvl:0.2, timbre:"choeur", len:6, motion:0.3, voices:3}, amb:{vent:0.2},
+    fx:{rev:0.5, size:3.5, dark:0.45, sat:0.04, wow:0.08, veil:0.35}, form:{shape:"constante"}, nature:{oiseaux:0.6, ruisseau:0.45}}, "forêt : oiseaux et ruisseau"],
+  ["Nox", {seed:303, root:9, scales:["eolien","",""], sectionBars:24, tempo:44, tension:0.3, vol:0.85,
+    perc:{lvl:0}, drone:{lvl:0.4, timbre:"bol", bright:0.2},
+    mel:{lvl:0.15, inst:"carillon", dens:0.1, reg:2, span:2, leap:0.2, orn:0, deja:0.4, loop:3}, canon:{lvl:0},
+    pad:{lvl:0.3, timbre:"choeur", len:8, motion:0.3, voices:3}, amb:{feu:0.25, vent:0.12},
+    fx:{rev:0.6, size:6, dark:0.6, sat:0.05, wow:0.1, veil:0.5}, form:{shape:"constante"}, nature:{nuit:0.6}}, "nuit, grillons et feu"]
 ];
 const UNIVERS = [
   {id:"medieval", name:"Médiéval", items:MEDIEVAL},
   {id:"calme", name:"Calme : travail, sommeil, méditation", items:CALME},
   {id:"espace", name:"Espace", items:ESPACE},
-  {id:"orient", name:"Orient et Égypte", items:ORIENT}
+  {id:"orient", name:"Orient, Égypte et quarts de ton", items:ORIENT},
+  {id:"nature", name:"Nature", items:NATURE}
 ];
 /* liste à plat : les six premiers gardent leurs numéros (la campagne les référence par position) */
 const PRESETS = UNIVERS.flatMap(u=>u.items.map(([n,s,g])=>[n,s,g,u.id]));

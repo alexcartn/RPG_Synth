@@ -10,11 +10,13 @@ Ouvrir `index.html` dans un navigateur récent (Chrome, Firefox, Safari). Les po
 
 ## Univers, timbres et extinction
 
-- Quinze préréglages en quatre univers, choisis par un menu dans la marge : Médiéval (Taberna, Chorea, Crypta, Scriptorium, Turris, Tripudium), Calme (Somnus pour dormir, Meditatio, Labor pour travailler), Espace (Sidera, Nebula, Abyssus), Orient et Égypte (Aegyptus, Eremus, Hortus). Chacun a une glose française. Ils sont réglés sur le papier et mesurés au niveau sonore, pas écoutés : les ajuster à l'oreille est normal.
+- Dix-neuf préréglages en cinq univers, choisis par un menu dans la marge : Médiéval (Taberna, Chorea, Crypta, Scriptorium, Turris, Tripudium), Calme (Somnus pour dormir, Meditatio, Labor pour travailler), Espace (Sidera, Nebula, Abyssus), Orient et quarts de ton (Aegyptus, Eremus, Hortus, Bayati, Enharmonia), Nature (Pluvia, Mare, Silva, Nox). Chacun a une glose française. Ils sont réglés sur le papier et mesurés au niveau sonore, pas écoutés : les ajuster à l'oreille est normal.
 - Timbres ajoutés : oud (corde pincée), ney (flûte soufflée), kalimba, bol chantant, cloches de verre, synthé doux pour les voix ; synthé doux et verre pour les nappes ; sinus pur et bol chantant pour le bourdon.
 - Extinction progressive : dans 15 minutes à 2 heures, le niveau tient puis descend en courbe douce sur les 20 % finaux (entre 1 et 5 minutes), et la lecture s'arrête au silence. Le compte à rebours démarre à la mise en lecture.
 - Volume général (chapitre Spatium) : pour que les ambiances calmes restent calmes. L'export est toujours normalisé en crête.
-- Limites connues : douze notes par octave seulement, donc pas de quarts de ton pour les maqams ; pas de sons de nature (pluie, mer) ni de bruit continu ; la percussion reste le bodhrán et le shaker.
+- Quarts de ton : quatre gammes à 24 notes par octave (Maqam Rast, Bayati, Saba, enharmonique grec ancien). Une note à un quart de ton est placée au milieu (en proportion) de ses deux voisines, dans le tempérament choisi. Le cercle des hauteurs a 24 positions (les petits points sont les quarts de ton), cliquables pour dessiner une gamme libre ; la gamme libre garde son ancien format à 12 cases tant qu'on n'utilise pas de quart de ton. Une note à un quart de ton s'écrit avec une flèche : Mi↓ est un Mi demi-bémol. En MIDI, elles passent en pitch bend de 50 cents (plage de 2 demi-tons) sur mélodie, canon, boucles et pendules, et sont arrondies sur les nappes, qui sont polyphoniques.
+- Natura : cinq sons de nature (pluie, vagues, nuit avec grillons, ruisseau, oiseaux), chapitre Locus. Les textures sont des boucles précalculées construites seulement quand on les active (environ 1 % d'un cœur chacune), les oiseaux sont des phrases tirées au hasard. Un univers Nature les met en avant : Pluvia, Mare, Silva, Nox. Les maqams ont leurs préréglages dans l'univers Orient : Bayati et Enharmonia.
+- Limites connues : les quarts de ton sont ceux de la théorie à 24 notes égales, pas les intonations exactes de chaque maqam ; pas de bruit continu rose ou brun ; la percussion reste le bodhrán et le shaker.
 
 ## Table de jeu
 

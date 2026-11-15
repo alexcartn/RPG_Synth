@@ -13,7 +13,7 @@ const html=fs.readFileSync(require('path').join(root,'index.html'),'utf8').repla
  console.log('pwa : fichiers du cache',list.length,'manquants',miss.length?miss:'aucun','icones manquantes',missI.length?missI:'aucune','hors cache',unlisted.length?unlisted:'aucun');
  if(miss.length||missI.length||unlisted.length){console.log('ECHEC PWA');process.exit(1)}}
 const errs=[];const vc=new VirtualConsole();vc.on('jsdomError',e=>{const m=String(e.detail||e.message||e);if(!/Not implemented: navigation/.test(m))errs.push(m)});vc.on('error',e=>errs.push(String(e)));
-class Param{constructor(){this.value=0}setValueAtTime(){return this}linearRampToValueAtTime(){return this}exponentialRampToValueAtTime(){return this}setTargetAtTime(){return this}cancelScheduledValues(){return this}}
+class Param{constructor(){this.value=0}setValueCurveAtTime(){return this}setValueAtTime(){return this}linearRampToValueAtTime(){return this}exponentialRampToValueAtTime(){return this}setTargetAtTime(){return this}cancelScheduledValues(){return this}}
 let nodes=0;
 class Node{constructor(){this.gain=new Param();this.frequency=new Param();this.detune=new Param();this.Q=new Param();this.pan=new Param();this.delayTime=new Param();this.threshold=new Param();this.ratio=new Param();this.attack=new Param();this.release=new Param();nodes++}connect(x){return x}disconnect(){}start(){}stop(){}getByteTimeDomainData(b){b.fill(128)}}
 class Ctx{constructor(){this.sampleRate=44100;this.currentTime=0;this.destination=new Node()}
@@ -40,6 +40,17 @@ setTimeout(async()=>{
  await new Promise(r=>setTimeout(r,2200));
  console.log('pendules visibles',!d.getElementById('pend').parentNode.hidden,'| qualité',d.getElementById('quality').value);
  d.getElementById('quality').value='eco'; d.getElementById('quality').dispatchEvent(new w.Event('change')); await new Promise(r=>setTimeout(r,300));
+ // minuteur d'extinction, univers, nouveaux timbres
+ d.getElementById('sleep').value='15'; d.getElementById('sleep').dispatchEvent(new w.Event('change'));
+ console.log('minuteur :',d.getElementById('sleepNote').textContent);
+ d.getElementById('sleep').value='0'; d.getElementById('sleep').dispatchEvent(new w.Event('change'));
+ const un=d.getElementById('univers'); console.log('univers',[...un.options].map(o=>o.value).join(','));
+ for(const id of ['calme','espace','orient']){ un.value=id; un.dispatchEvent(new w.Event('change')); d.querySelectorAll('#presets .lnk').forEach(b=>b.click()); await new Promise(r=>setTimeout(r,150)); }
+ console.log('glose :',d.getElementById('presetGloss').textContent);
+ for(const inst of ['luth','harpe','flute','carillon','orgue','oud','ney','kalimba','bol','verre','synthe']) w.eval(`(()=>{const e=buildEngine(new AudioContext(),merge(clone(DEFAULT),{mel:{inst:"${inst}"},canon:{lvl:.5,inst:"${inst}"},loops:{lvl:.5,inst:"${inst}"},pend:{lvl:.5,inst:"${inst}"}}),{});e.start(0,5,0);e.schedule(60);})()`);
+ for(const tm of ['anche','orgue','choeur','bol','pur']) w.eval(`(()=>{const e=buildEngine(new AudioContext(),merge(clone(DEFAULT),{drone:{timbre:"${tm}"}}),{});e.start(0,5,0);})()`);
+ for(const tm of ['choeur','cordes','orgue','synthe','verre']) w.eval(`(()=>{const e=buildEngine(new AudioContext(),merge(clone(DEFAULT),{pad:{lvl:.5,timbre:"${tm}"}}),{});e.start(0,5,0);e.schedule(60);})()`);
+ console.log('timbres : construits sans erreur');
  // sons à la demande, courbe de tension, campagne
  const evb=[...d.querySelectorAll('#evBtns button')]; console.log('pad : boutons',evb.length,'actifs',evb.filter(b=>!b.disabled).length);
  evb.forEach(b=>b.click()); await new Promise(r=>setTimeout(r,100));

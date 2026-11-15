@@ -8,6 +8,20 @@ Usage prévu : composer hors ligne. On règle, on écoute, puis on rend en WAV (
 
 Ouvrir `index.html` dans un navigateur récent (Chrome, Firefox, Safari). Les polices sont dans le dépôt (`fonts/`, licence SIL OFL), aucune requête externe sauf l'encodeur MP3 à la demande.
 
+## Univers, timbres et extinction
+
+- Quinze préréglages en quatre univers, choisis par un menu dans la marge : Médiéval (Taberna, Chorea, Crypta, Scriptorium, Turris, Tripudium), Calme (Somnus pour dormir, Meditatio, Labor pour travailler), Espace (Sidera, Nebula, Abyssus), Orient et Égypte (Aegyptus, Eremus, Hortus). Chacun a une glose française. Ils sont réglés sur le papier et mesurés au niveau sonore, pas écoutés : les ajuster à l'oreille est normal.
+- Timbres ajoutés : oud (corde pincée), ney (flûte soufflée), kalimba, bol chantant, cloches de verre, synthé doux pour les voix ; synthé doux et verre pour les nappes ; sinus pur et bol chantant pour le bourdon.
+- Extinction progressive : dans 15 minutes à 2 heures, le niveau tient puis descend en courbe douce sur les 20 % finaux (entre 1 et 5 minutes), et la lecture s'arrête au silence. Le compte à rebours démarre à la mise en lecture.
+- Volume général (chapitre Spatium) : pour que les ambiances calmes restent calmes. L'export est toujours normalisé en crête.
+- Limites connues : douze notes par octave seulement, donc pas de quarts de ton pour les maqams ; pas de sons de nature (pluie, mer) ni de bruit continu ; la percussion reste le bodhrán et le shaker.
+
+## Table de jeu
+
+- Eventus : huit sons à la demande (porte, cloche, tonnerre, cor, coups, verre, magie, loup), touches 1 à 8, tous synthétisés et accordés sur la gamme courante. Ils apparaissent sur la partition. Ils ne sont pas dans l'export.
+- Itinerarium : une campagne, c'est-à-dire une suite d'étapes (préréglage ou scène mémorisée, durée, fondu). Elle avance seule ou à la touche N / au bouton « Suivant », se répète si on veut, et se mémorise dans le navigateur.
+- Tensio : un curseur, ou une courbe de tension dessinée au doigt (répétée ou jouée une fois) qui module percussion, nappes, bourdon, ambiance et densité mélodique. La courbe est rendue dans l'export.
+
 ## Application installable (PWA)
 
 Bourdon s'installe comme une application (Chrome, Edge, Android : « Installer l'application » ; iPhone : Partager, puis « Sur l'écran d'accueil ») et fonctionne hors ligne : les polices sont hébergées dans `fonts/` et un service worker (`sw.js`) met toute l'application en cache.

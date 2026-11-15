@@ -36,7 +36,7 @@ h1::first-letter{font:700 1.3em/.7 "UnifrakturCook","IM Fell English",serif; col
 .cols{display:grid; grid-template-columns:minmax(0,1fr) 340px; gap:clamp(24px,5vw,72px); align-items:start}
 .marge{position:sticky; top:calc(var(--toc-h) + var(--sp-lg)); max-height:calc(100vh - var(--toc-h) - var(--sp-2xl)); overflow-y:auto; overscroll-behavior:contain; scrollbar-width:thin; scrollbar-color:var(--rule) transparent;
   display:flex; flex-direction:column; gap:var(--sp-lg); order:2; padding-bottom:var(--sp-md)}
-.marge .lecture{order:1} .marge .tempo{order:2} .marge .tension{order:3} .marge .presets{order:4} .marge .scenes{order:5} .marge .ringwrap{order:6} .marge .pendwrap{order:7} .marge .qualite{order:8}
+.marge .lecture{order:1} .marge .tempo{order:2} .marge .tension{order:3} .marge .sleepbox{order:3} .marge .presets{order:4} .marge .scenes{order:5} .marge .ringwrap{order:6} .marge .pendwrap{order:7} .marge .qualite{order:8}
 .text{order:1; min-width:0}
 @media (max-width:920px){
   .cols{grid-template-columns:1fr}
@@ -279,3 +279,7 @@ canvas#curveCv{display:block; width:100%; height:150px; background:var(--parch-2
   .step select:first-of-type{grid-column:2 / 4}
   .step .tools{grid-column:2 / 4; justify-content:flex-end}
 }
+
+.sleepbox select{margin-top:var(--sp-xs)}
+#presetGloss{margin-top:var(--sp-sm); font-style:italic; min-height:1.3em}
+.presets .ctl + .row{margin-top:var(--sp-sm)}

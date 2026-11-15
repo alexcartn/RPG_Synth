@@ -28,6 +28,7 @@ function startLive(){
   eng.schedule(ctx.currentTime+8);
   timer=setInterval(()=>eng.schedule(ctx.currentTime+8),400);
   setPlayUI(true); updateRingCap();
+  { const m=parseInt($("sleep").value,10)||0; if(m) sleepSet(m); }
   if(!raf) raf=requestAnimationFrame(frame);
 }
 /* chaque note planifiée alimente la partition, et allume le cercle quand elle sonne */
@@ -44,6 +45,7 @@ function stopLive(){
   olds.forEach(e=>e.stop(ctx.currentTime));
   eng.stop(ctx.currentTime);
   setTimeout(()=>{try{ctx.close();}catch(e){}},1600);
+  clearInterval(sleep.timer); sleep.endMs=0; sleepNote("");
   setPlayUI(false); updateRingCap(); vizClear(); vizDraw(null); $("pend").parentNode.hidden=true;
   if(camp.running) campStop();
 }
@@ -54,7 +56,7 @@ function crossfade(d){
   eng.start(t,d,0); eng.schedule(ctx.currentTime+8);
   old.fadeOut(t,d);
   clearInterval(timer); timer=setInterval(()=>eng.schedule(ctx.currentTime+8),400);
-  live.olds.push(old); live.eng=eng; live.lastKey=null;
+  live.olds.push(old); live.eng=eng; live.lastKey=null; sleepApply();
   setTimeout(()=>{ if(live) live.olds=live.olds.filter(x=>x!==old); },d*1000+500);
   updateRingCap();
 }
@@ -138,6 +140,7 @@ setInterval(()=>{ if(live){ const k=curScaleKey(); if(k!==live.lastKey){live.las
 
 /* ---------- construction des contrôles ---------- */
 const pct=v=>Math.round(v*100)+" %";
+const INST_OPTS=[["luth","Luth"],["harpe","Harpe"],["flute","Flûte"],["carillon","Carillon"],["orgue","Orgue positif"],["oud","Oud (corde pincée)"],["ney","Ney (flûte soufflée)"],["kalimba","Kalimba"],["bol","Bol chantant"],["verre","Cloches de verre"],["synthe","Synthé doux"]];
 const SCALE_OPTS=SCALE_GROUPS.map(([g,l])=>[g,l.map(([k,n])=>[k,n])]);
 const UI=[
  {num:"I", title:"Modus", fr:"Gamme et accord", sub:"Tonique, gamme principale, et jusqu'à deux colorations qui se succèdent par sections.", groups:[
@@ -162,7 +165,7 @@ const UI=[
  {num:"III", title:"Bordunus", fr:"Bourdon", sub:"Sous-grave, tonique, quinte, octaves. La quinte glisse vers un degré voisin de la gamme.", groups:[
   {items:[
    {k:"drone.lvl",type:"range",label:"Niveau",min:0,max:1,step:0.01,fmt:pct},
-   {k:"drone.timbre",type:"select",label:"Timbre",opts:[["anche","Anche (cornemuse)"],["orgue","Orgue de chambre"],["choeur","Chœur (voyelles)"]],restart:true},
+   {k:"drone.timbre",type:"select",label:"Timbre",opts:[["anche","Anche (cornemuse)"],["orgue","Orgue de chambre"],["choeur","Chœur (voyelles)"],["bol","Bol chantant"],["pur","Sinus pur"]],restart:true},
    {k:"drone.bright",type:"range",label:"Éclat",min:0,max:1,step:0.01,fmt:pct,restart:true},
    {k:"drone.glide",type:"range",label:"Quinte mobile",min:0,max:1,step:0.01,fmt:pct}]},
   {fin:"Réglages du bourdon", items:[
@@ -170,7 +173,7 @@ const UI=[
    {k:"drone.drift",type:"range",label:"Dérive",min:0,max:1,step:0.01,fmt:pct,restart:true}]}]},
  {num:"IV", title:"Voces", fr:"Voix", sub:"Mélodie, canon décalé et nappes d'accords construits sur la gamme de la section.", groups:[
   {h:"Cantus", hf:"mélodie", items:[
-   {k:"mel.inst",type:"select",label:"Instrument",opts:[["luth","Luth"],["harpe","Harpe"],["flute","Flûte"],["carillon","Carillon"],["orgue","Orgue positif"]]},
+   {k:"mel.inst",type:"select",label:"Instrument",opts:INST_OPTS},
    {k:"mel.lvl",type:"range",label:"Niveau",min:0,max:1,step:0.01,fmt:pct},
    {k:"mel.dens",type:"range",label:"Densité",min:0,max:1,step:0.01,fmt:pct},
    {k:"mel.reg",type:"select",label:"Registre",opts:[[0,"Grave"],[1,"Médium"],[2,"Aigu"]],num:true}]},
@@ -180,12 +183,12 @@ const UI=[
    {k:"mel.orn",type:"range",label:"Ornements (appoggiatures)",min:0,max:1,step:0.01,fmt:pct}]},
   {h:"Canon", hf:"voix décalée", items:[
    {k:"canon.lvl",type:"range",label:"Niveau (0 = absent)",min:0,max:1,step:0.01,fmt:pct},
-   {k:"canon.inst",type:"select",label:"Instrument",opts:[["luth","Luth"],["harpe","Harpe"],["flute","Flûte"],["carillon","Carillon"],["orgue","Orgue positif"]]},
+   {k:"canon.inst",type:"select",label:"Instrument",opts:INST_OPTS},
    {k:"canon.delay",type:"range",label:"Retard",min:1,max:8,step:1,fmt:v=>v+(v>1?" mesures":" mesure")},
    {k:"canon.shift",type:"select",label:"Transposition",opts:[["uni","Unisson"],["oct+","Octave au-dessus"],["oct-","Octave en dessous"],["q+","Quinte au-dessus"],["q-","Quinte en dessous"],["t+","Tierce au-dessus"]]}]},
   {h:"Concentus", hf:"nappes", items:[
    {k:"pad.lvl",type:"range",label:"Niveau",min:0,max:1,step:0.01,fmt:pct},
-   {k:"pad.timbre",type:"select",label:"Timbre",opts:[["choeur","Chœur"],["cordes","Cordes"],["orgue","Orgue"]]},
+   {k:"pad.timbre",type:"select",label:"Timbre",opts:[["choeur","Chœur"],["cordes","Cordes"],["orgue","Orgue"],["synthe","Synthé doux"],["verre","Verre"]]},
    {k:"pad.len",type:"range",label:"Durée d'un accord",min:1,max:8,step:1,fmt:v=>v+(v>1?" mesures":" mesure")},
    {k:"pad.motion",type:"range",label:"Mouvement harmonique",min:0,max:1,step:0.01,fmt:pct},
    {k:"pad.voices",type:"range",label:"Voix par accord",min:2,max:4,step:1,fmt:v=>v+" voix"}]},
@@ -205,6 +208,7 @@ const UI=[
    {k:"evt.lvl",type:"range",label:"Niveau des sons du pad (touches 1 à 8)",min:0,max:1,step:0.01,fmt:pct}]}]},
  {num:"VI", title:"Spatium et Patina", fr:"Espace et patine", sub:"Réverbération, écho et le grain d'une vieille bande.", groups:[
   {h:"Spatium", hf:"espace", items:[
+   {k:"vol",type:"range",label:"Volume général (l'export est toujours normalisé)",min:0,max:1,step:0.01,fmt:pct},
    {k:"fx.rev",type:"range",label:"Réverb",min:0,max:1,step:0.01,fmt:pct},
    {k:"fx.size",type:"range",label:"Taille de la salle",min:0.5,max:9,step:0.1,fmt:v=>v.toFixed(1)+" s",reverb:true},
    {k:"fx.dark",type:"range",label:"Ombre (réverb sourde)",min:0,max:1,step:0.01,fmt:pct,reverb:true},
@@ -227,12 +231,12 @@ const UI=[
  {num:"VIII", title:"Rotae et Pendula", fr:"Boucles et pendules", sub:"Deux machines à hasard réglé : des boucles de bande de longueurs premières entre elles, et des pendules qui se désynchronisent puis se retrouvent.", groups:[
   {h:"Rotae", hf:"boucles de bande", items:[
    {k:"loops.lvl",type:"range",label:"Niveau (0 = absentes)",min:0,max:1,step:0.01,fmt:pct},
-   {k:"loops.inst",type:"select",label:"Instrument",opts:[["carillon","Carillon"],["harpe","Harpe"],["luth","Luth"],["flute","Flûte"],["orgue","Orgue positif"]]},
+   {k:"loops.inst",type:"select",label:"Instrument",opts:INST_OPTS},
    {k:"loops.count",type:"range",label:"Nombre de boucles",min:1,max:5,step:1,fmt:v=>v+(v>1?" boucles":" boucle"),restart:true},
    {k:"loops.speed",type:"range",label:"Durée des boucles",min:0.6,max:2,step:0.05,fmt:v=>"× "+v.toFixed(2),restart:true}]},
   {h:"Pendula", hf:"pendules", items:[
    {k:"pend.lvl",type:"range",label:"Niveau (0 = absents)",min:0,max:1,step:0.01,fmt:pct},
-   {k:"pend.inst",type:"select",label:"Instrument",opts:[["carillon","Carillon"],["harpe","Harpe"],["luth","Luth"],["flute","Flûte"],["orgue","Orgue positif"]]},
+   {k:"pend.inst",type:"select",label:"Instrument",opts:INST_OPTS},
    {k:"pend.count",type:"range",label:"Nombre de pendules",min:3,max:10,step:1,fmt:v=>v+" pendules",restart:true},
    {k:"pend.period",type:"range",label:"Période de resynchronisation",min:8,max:48,step:2,fmt:v=>v+" mesures",restart:true}]}]}
 ];
@@ -325,14 +329,23 @@ function loadScene(state,btn,fade){
   if(btn) btn.setAttribute("aria-current","true");
   syncUI(); restartIfLive(fade||fadeSec());
 }
-function buildPresets(){
-  const row=$("presets");
-  PRESETS.forEach(([name,over])=>{
-    const b=document.createElement("button"); b.type="button"; b.className="lnk"; b.textContent=name;
-    b.onclick=()=>loadScene(over,b);
+function currentUnivers(){ try{ const v=localStorage.getItem("bourdon.univers"); if(UNIVERS.some(x=>x.id===v)) return v; }catch(e){} return "medieval"; }
+function drawPresetRow(){
+  const row=$("presets"), id=$("univers").value, u=UNIVERS.find(x=>x.id===id)||UNIVERS[0];
+  row.innerHTML=""; $("presetGloss").textContent="";
+  u.items.forEach(([name,over,gloss])=>{
+    const b=document.createElement("button"); b.type="button"; b.className="lnk"; b.textContent=name; b.title=gloss;
+    b.onclick=()=>{ loadScene(over,b); $("presetGloss").textContent=name+" : "+gloss+"."; };
     row.appendChild(b);
   });
-  drawScenes();
+  const first=row.firstElementChild; if(first&&id==="medieval") first.setAttribute("aria-current","true");
+}
+function buildPresets(){
+  const sel=$("univers");
+  UNIVERS.forEach(x=>{ const o=document.createElement("option"); o.value=x.id; o.textContent=x.name; sel.appendChild(o); });
+  sel.value=currentUnivers();
+  sel.onchange=()=>{ try{ localStorage.setItem("bourdon.univers",sel.value); }catch(e){} drawPresetRow(); };
+  drawPresetRow(); drawScenes();
 }
 const SCENE_KEY="bourdon.scenes";
 function getScenes(){ try{ const a=JSON.parse(localStorage.getItem(SCENE_KEY)||"[]"); return Array.isArray(a)?a:[]; }catch(e){ return []; } }
@@ -350,6 +363,26 @@ $("saveScene").onclick=()=>{
   a.push({n,name:"Scaena "+n+" · "+NOTES[S.root],state:clone(S)}); putScenes(a); drawScenes(); campRefresh();
 };
 $("clearScenes").onclick=()=>{ putScenes([]); drawScenes(); campRefresh(); };
+/* extinction progressive : le niveau tient puis descend en douceur, la lecture s'arrête au silence */
+const sleep={endMs:0,len:0,timer:0,shown:""};
+function sleepApply(){ if(!live||!sleep.endMs) return; live.eng.sleepFade(live.ctx.currentTime+(sleep.endMs-Date.now())/1000,sleep.len); }
+function sleepNote(txt){ if(txt!==sleep.shown){ sleep.shown=txt; $("sleepNote").textContent=txt; } }
+function sleepSet(min){
+  clearInterval(sleep.timer); sleep.endMs=0;
+  if(!min){ if(live) live.eng.sleepClear(); sleepNote(""); return; }
+  sleep.endMs=Date.now()+min*60000; sleep.len=Math.min(300,Math.max(60,min*60*0.2));
+  sleepApply(); sleep.timer=setInterval(sleepTick,1000); sleepTick();
+}
+function sleepTick(){
+  const r=sleep.endMs-Date.now();
+  if(r<=0){ clearInterval(sleep.timer); sleep.endMs=0; $("sleep").value="0"; sleepNote(""); if(live) stopLive(); return; }
+  const m=Math.ceil(r/60000);
+  sleepNote(m<=1?"Extinction dans moins d'une minute.":"Extinction dans "+m+" minutes, avec un fondu sur les "+Math.round(sleep.len/60)+" dernières.");
+}
+$("sleep").onchange=()=>{
+  const m=parseInt($("sleep").value,10)||0;
+  if(live||!m) sleepSet(m); else sleepNote("Le compte à rebours démarre à la mise en lecture.");
+};
 $("quality").value=getQuality();
 $("quality").onchange=()=>{ try{ localStorage.setItem("bourdon.quality",$("quality").value); }catch(e){} restartIfLive(1.5); };
 $("seed").onchange=()=>{ S.seed=Math.max(1,Math.min(999999,parseInt($("seed").value)||1)); $("seed").value=S.seed; restartIfLive(); };

@@ -58,12 +58,25 @@ function buildEngine(ctx, S, o){
   const master=G(0);
   out.connect(sat); veil.connect(master);
   const lWowIn=link(sat,wowD), lWowOut=link(wowD,veil), lWowBy=link(sat,veil);
-  if(o.noComp){ master.connect(ctx.destination); }
+  const volG=G(1); volG.connect(ctx.destination);
+  const sleepG=G(1); sleepG.connect(volG);
+  if(o.noComp){ master.connect(sleepG); }
   else{
     const comp=ctx.createDynamicsCompressor();
     comp.threshold.value=-20; comp.ratio.value=3; comp.attack.value=0.02; comp.release.value=0.4;
-    master.connect(comp); comp.connect(ctx.destination);
+    master.connect(comp); comp.connect(sleepG);
   }
+  /* extinction : tient le niveau jusqu'à tEnd-len puis descend en courbe douce jusqu'au silence en tEnd */
+  const sleepV=x=>Math.pow(0.5+0.5*Math.cos(Math.PI*Math.max(0,Math.min(1,x))),2);
+  function sleepFade(tEnd,len){
+    const g=sleepG.gain, now=ctx.currentTime, tS=tEnd-len, x0=Math.max(0,Math.min(1,(now-tS)/len));
+    g.cancelScheduledValues(now);
+    const from=Math.max(now,tS), span=tEnd-from; if(span<=0.05){ g.setValueAtTime(0,now); return; }
+    g.setValueAtTime(sleepV(x0),now);
+    const n=64, curve=new Float32Array(n); for(let i=0;i<n;i++) curve[i]=sleepV(x0+(1-x0)*i/(n-1));
+    if(g.setValueCurveAtTime) g.setValueCurveAtTime(curve,from,span); else g.linearRampToValueAtTime(0,tEnd);
+  }
+  function sleepClear(){ const g=sleepG.gain, now=ctx.currentTime; g.cancelScheduledValues(now); g.setTargetAtTime(1,now,0.3); }
   const hissSrc=loopSrc(wb), hissHP=ctx.createBiquadFilter(); hissHP.type="highpass"; hissHP.frequency.value=3500;
   const hissG=G(0); hissSrc.connect(hissHP); hissHP.connect(hissG); const lHiss=link(hissG,master);
 
@@ -112,6 +125,7 @@ function buildEngine(ctx, S, o){
     B.perc.lvl.gain.value=lv("perc",S.perc.lvl);
     B.amb.lvl.gain.value=lv("amb",1);
     B.evt.lvl.gain.value=S.evt?S.evt.lvl:0.7;
+    volG.gain.value=S.vol===undefined?1:S.vol;
     if(!curveOn()){ /* curseur : valeur fixe ; courbe : le planificateur automatise ces gains */
       const m=tensMul((tens()-0.5)*2), now=ctx.currentTime||0;
       [["perc",m.perc],["pad",m.pad],["drone",m.drone],["amb",m.amb]].forEach(([n,v])=>{ const g=B[n].tm.gain; if(g.cancelScheduledValues) g.cancelScheduledValues(now); g.value=v; });
@@ -152,7 +166,8 @@ function buildEngine(ctx, S, o){
       if(gain!==undefined){const gg=G(gain); os.connect(gg); gg.connect(dst);} else os.connect(dst);
       oscs.push(os); srcs.push(os); gls.push({p:os.frequency,m:mult}); return os;
     };
-    if(ty==="sine"){ mk("sine",1,0,f); }
+    if(ty==="sine"||ty==="pur"){ mk("sine",1,0,f); }
+    else if(ty==="bol"){ mk("sine",1,-w*0.25,f,0.9); mk("sine",1,w*0.25,f,0.9); mk("sine",2.003,0,f,0.28); mk("sine",2.71,w*0.1,f,0.12); }
     else if(ty==="anche"){ mk("sawtooth",1,-w,f); mk("sawtooth",1,w,f); }
     else if(ty==="orgue"){ [[1,1],[2,0.5],[3,0.25],[4,0.14]].forEach(([m,a])=>mk("sine",m,(m%2?-1:1)*w*0.4,f,a*0.8)); }
     else{
@@ -227,6 +242,56 @@ function buildEngine(ctx, S, o){
       });
       route(sum,pan,dst);
     },
+    bol(t,f,vel,len,dst,pan){
+      const sum=G(1);
+      [[1,1,7,-3],[1,0.8,7,3],[2.71,0.3,5,0],[5.15,0.1,3.4,0]].forEach(([m,a,d,det])=>{
+        if(f*m>12000) return; const x=ctx.createOscillator(); x.type="sine"; x.frequency.value=f*m; x.detune.value=det;
+        const e=G(0); e.gain.setValueAtTime(0,t); e.gain.linearRampToValueAtTime(vel*a*0.9,t+0.012); e.gain.exponentialRampToValueAtTime(0.0001,t+d); x.connect(e); e.connect(sum); x.start(t); x.stop(t+d+0.1);
+      });
+      route(sum,pan,dst);
+    },
+    verre(t,f,vel,len,dst,pan){
+      const sum=G(0.9), tr=ctx.createOscillator(), tg=G(0.1); tr.frequency.value=5.6; tr.connect(tg); tg.connect(sum.gain);
+      [[1,1,5],[2.76,0.26,3.2],[5.4,0.09,2]].forEach(([m,a,d])=>{
+        if(f*m>12000) return; const x=ctx.createOscillator(); x.type="sine"; x.frequency.value=f*m;
+        const e=G(0); e.gain.setValueAtTime(0,t); e.gain.linearRampToValueAtTime(vel*a*1.05,t+0.04); e.gain.exponentialRampToValueAtTime(0.0001,t+d); x.connect(e); e.connect(sum); x.start(t); x.stop(t+d+0.1);
+      });
+      tr.start(t); tr.stop(t+5.2); route(sum,pan,dst);
+    },
+    kalimba(t,f,vel,len,dst,pan){
+      const sum=G(1);
+      [[1,1,1.9],[2,0.18,0.9],[5.4,0.3,0.45]].forEach(([m,a,d])=>{
+        if(f*m>12000) return; const x=ctx.createOscillator(); x.type="sine"; x.frequency.value=f*m; const e=envD(t,vel*a*1.2,d); x.connect(e); e.connect(sum); x.start(t); x.stop(t+d+0.1);
+      });
+      route(sum,pan,dst);
+    },
+    oud(t,f,vel,len,dst,pan){
+      const dur=2.6, fl=ctx.createBiquadFilter(); fl.type="lowpass"; fl.Q.value=1.2;
+      fl.frequency.setValueAtTime(3400,t); fl.frequency.exponentialRampToValueAtTime(420,t+1);
+      const e=envD(t,vel*0.95,dur); fl.connect(e); route(e,pan,dst);
+      [-5,5].forEach(det=>{
+        const a=ctx.createOscillator(), b=ctx.createOscillator(), gb=G(0.45); a.type="triangle"; b.type="sawtooth"; a.frequency.value=f; b.frequency.value=f; a.detune.value=det; b.detune.value=det;
+        a.connect(fl); b.connect(gb); gb.connect(fl); [a,b].forEach(x=>{x.start(t); x.stop(t+dur+0.1);});
+      });
+      noiseHit(t,vel*0.18,2600,0.03,"bandpass",dst);
+    },
+    ney(t,f,vel,len,dst,pan){
+      const L=Math.max(0.3,len), o1=ctx.createOscillator(), o2=ctx.createOscillator(), mix=G(1);
+      o1.type="sine"; o2.type="triangle"; o1.frequency.setValueAtTime(f*0.96,t); o1.frequency.exponentialRampToValueAtTime(f,t+0.14); o2.frequency.setValueAtTime(f*0.96*2,t); o2.frequency.exponentialRampToValueAtTime(f*2,t+0.14);
+      const g2=G(0.12); o1.connect(mix); o2.connect(g2); g2.connect(mix);
+      const vib=ctx.createOscillator(); vib.frequency.value=4.7; const vg=G(0); vib.connect(vg); vg.connect(o1.detune); vg.connect(o2.detune);
+      vg.gain.setValueAtTime(0,t); vg.gain.linearRampToValueAtTime(14,t+L*0.8);
+      const br=ctx.createBufferSource(); br.buffer=wb; const bp=ctx.createBiquadFilter(); bp.type="bandpass"; bp.frequency.value=Math.min(9000,f*2.4); bp.Q.value=2;
+      const bg=G(vel*0.75); br.connect(bp); bp.connect(bg); bg.connect(mix);
+      const e=envA(t,0.12,vel,0.25,L); mix.connect(e); route(e,pan,dst);
+      br.start(t,R.v()*1.4); br.stop(t+L+0.4); [o1,o2,vib].forEach(x=>{x.start(t); x.stop(t+L+0.4);});
+    },
+    synthe(t,f,vel,len,dst,pan){
+      const L=Math.max(0.6,len), fl=ctx.createBiquadFilter(); fl.type="lowpass"; fl.Q.value=0.7;
+      fl.frequency.setValueAtTime(900,t); fl.frequency.linearRampToValueAtTime(1500,t+L*0.4); fl.frequency.linearRampToValueAtTime(700,t+L+0.8);
+      const e=envA(t,0.25,vel*0.7,0.8,L); fl.connect(e); route(e,pan,dst);
+      [-8,8].forEach(det=>{ const x=ctx.createOscillator(); x.type="sawtooth"; x.frequency.value=f; x.detune.value=det; x.connect(fl); x.start(t); x.stop(t+L+1); });
+    },
     orgue(t,f,vel,len,dst,pan){
       const L=Math.max(0.2,len), mix=G(1), os=[];
       [[1,1],[2,0.45],[4,0.25]].forEach(([m,a])=>{const x=ctx.createOscillator(); x.type="sine"; x.frequency.value=f*m; const g=G(a); x.connect(g); g.connect(mix); os.push(x);});
@@ -246,6 +311,15 @@ function buildEngine(ctx, S, o){
     const end=t+len+rel+0.1, os=[];
     const add=(type,fr,det,dst,gain)=>{const x=ctx.createOscillator(); x.type=type; x.frequency.value=fr; x.detune.value=det; if(gain!==undefined){const g=G(gain); x.connect(g); g.connect(dst);} else x.connect(dst); os.push(x); return x;};
     if(timbre==="orgue"){ [[1,1],[2,0.45],[3,0.22],[4,0.12]].forEach(([m,a2])=>add("sine",f*m,0,e,a2*0.9)); }
+    else if(timbre==="synthe"){
+      const fl=ctx.createBiquadFilter(); fl.type="lowpass"; fl.frequency.value=1100; fl.Q.value=0.5; fl.connect(e);
+      add("sawtooth",f,-12,fl,0.55); add("sawtooth",f,12,fl,0.55); add("sine",f*0.5,0,e,0.5);
+      const lf=ctx.createOscillator(); lf.frequency.value=0.05+R.v()*0.05; const lg=G(420); lf.connect(lg); lg.connect(fl.frequency); os.push(lf);
+    }
+    else if(timbre==="verre"){
+      [[1,1],[2.003,0.3],[3.01,0.12],[4.07,0.06]].forEach(([m,a2])=>{ add("sine",f*m,-4,e,a2*0.5); add("sine",f*m,4,e,a2*0.5); });
+      const tr=ctx.createOscillator(); tr.frequency.value=0.3+R.v()*0.3; const tg=G(0.25); tr.connect(tg); tg.connect(e.gain); os.push(tr);
+    }
     else if(timbre==="cordes"){
       const fl=ctx.createBiquadFilter(); fl.type="lowpass"; fl.frequency.value=1700; fl.Q.value=0.6; fl.connect(e);
       add("sawtooth",f,-9,fl); add("sawtooth",f,9,fl);
@@ -498,7 +572,7 @@ function buildEngine(ctx, S, o){
         const off=nt.off, tt=sw(cur.mel+nt.e*E), vel=nt.vel, len=E*nt.dE*0.92;
         if(want("mel")&&S.mel.lvl>0.001){
           const fn=INST[S.mel.inst]||INST.luth;
-          if(nt.grace&&pool.length>2&&(S.mel.inst==="luth"||S.mel.inst==="harpe"||S.mel.inst==="carillon")){
+          if(nt.grace&&pool.length>2&&(S.mel.inst==="luth"||S.mel.inst==="harpe"||S.mel.inst==="carillon"||S.mel.inst==="oud"||S.mel.inst==="kalimba")){
             const gi=clamp(pool.indexOf(off)+nt.gdir,0,pool.length-1); fn(tt-0.07,freq(pool[gi]),vel*0.55,0.08,B.mel.in,0);
           }
           fn(tt,freq(off),vel,len,B.mel.in,(R.v()*2-1)*0.35);
@@ -606,5 +680,5 @@ function buildEngine(ctx, S, o){
     starts.forEach(x=>{try{x.stop(now+d+0.2);}catch(e){}});
   }
   const pendX=t=>Array.from({length:pendN()},(_,i)=>Math.cos(2*Math.PI*(PEND_N0+i)*(t-t0)/(S.pend.period*bar)));
-  return {start,schedule,setLevels,setReverb,stop,fadeOut,pendX,fire,tensNow:()=>tensAt(ctx.currentTime),tensPos:()=>{ if(!curveOn()) return -1; const L=Math.max(30,S.curve.dur*60), x=(ctx.currentTime-t0)/L; return S.curve.mode==='loop'?((x%1)+1)%1:clamp(x,0,1); },events,out,master,secAt:t=>secOf(t),bar,E,t0f:()=>t0};
+  return {start,schedule,setLevels,setReverb,stop,fadeOut,sleepFade,sleepClear,pendX,fire,tensNow:()=>tensAt(ctx.currentTime),tensPos:()=>{ if(!curveOn()) return -1; const L=Math.max(30,S.curve.dur*60), x=(ctx.currentTime-t0)/L; return S.curve.mode==='loop'?((x%1)+1)%1:clamp(x,0,1); },events,out,master,secAt:t=>secOf(t),bar,E,t0f:()=>t0};
 }

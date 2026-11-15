@@ -54,6 +54,11 @@
       </div>
       <div class="tempo"><b id="tempoNum">120</b><span id="tempoCap">noires par minute</span></div>
       <div class="tension" id="tensionHost"></div>
+      <div class="presets sleepbox">
+        <div class="ctl"><label for="sleep">Extinction progressive</label>
+          <select id="sleep"><option value="0">Désactivée</option><option value="15">Dans 15 minutes</option><option value="30">Dans 30 minutes</option><option value="45">Dans 45 minutes</option><option value="60">Dans 1 heure</option><option value="90">Dans 1 h 30</option><option value="120">Dans 2 heures</option></select>
+          <p class="hint" id="sleepNote" aria-live="off"></p></div>
+      </div>
       <div class="ringwrap">
         <svg id="ring" viewBox="0 0 200 200" role="group" aria-label="Cercle des douze hauteurs"></svg>
         <p class="ringcap" id="ringcap"></p>
@@ -61,8 +66,9 @@
       </div>
       <div class="pendwrap" hidden><span class="ctl"><label>Pendula</label></span><canvas id="pend" width="680" height="112" aria-label="Pendules"></canvas></div>
       <div class="presets">
-        <span class="ctl"><label>Exempla</label></span>
+        <div class="ctl"><label for="univers">Exempla : univers</label><select id="univers"></select></div>
         <div class="row" id="presets"></div>
+        <p class="hint" id="presetGloss"></p>
       </div>
       <div class="presets qualite">
         <div class="ctl"><label for="quality">Qualité audio</label>

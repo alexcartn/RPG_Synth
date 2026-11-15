@@ -43,6 +43,7 @@ function crossfade(d){
 }
 function restartIfLive(d){ if(live) crossfade(d||1.5); }
 function setPlayUI(on){
+  if(window.keepAwake) window.keepAwake(on);
   ["play","play2"].forEach(id=>{const b=$(id); b.textContent=on?"Arrêter":"Jouer"; b.setAttribute("aria-pressed",on?"true":"false");});
 }
 $("play").onclick=$("play2").onclick=()=>{live?stopLive():startLive();};

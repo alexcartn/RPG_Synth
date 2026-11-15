@@ -144,3 +144,51 @@ input[type=checkbox]{accent-color:var(--rubric); width:16px; height:16px; margin
   .lecture .seal{display:none}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none !important}}
+
+/* ---------- application installable et téléphone ---------- */
+html{-webkit-text-size-adjust:100%; text-size-adjust:100%}
+button, select, input, summary, .note-g{-webkit-tap-highlight-color:transparent; touch-action:manipulation}
+.installrow{margin:0 0 var(--sp-md)}
+.installrow:has(button[hidden]){display:none}
+.seedrow .lnk{white-space:nowrap}
+
+#update{position:fixed; left:var(--sp-lg); right:var(--sp-lg); bottom:calc(var(--sp-lg) + env(safe-area-inset-bottom)); z-index:20; max-width:560px; margin:0 auto;
+  display:flex; flex-wrap:wrap; align-items:baseline; gap:var(--sp-sm) var(--sp-lg); padding:var(--sp-md) var(--sp-lg);
+  background:var(--parch-2); color:var(--ink); border:1px solid var(--ink); box-shadow:0 0 0 3px var(--parch-2), 0 0 0 4px var(--gold)}
+#update span{font:italic 400 1.05rem/1.3 var(--body); flex:1 1 14ch}
+#update .lnk{padding:var(--sp-xs) 0}
+
+@media (max-width:920px){
+  .folio{padding:calc(var(--sp-xl) + env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) calc(150px + env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))}
+  .head{margin-bottom:var(--sp-xl)}
+  h1{font-size:clamp(2.6rem,14vw,4rem)}
+  .dock{padding-bottom:calc(var(--sp-md) + env(safe-area-inset-bottom))}
+  /* la marge devient une pile compacte : lecture, tension, ambiances, puis cercle et oscilloscope */
+  .marge{gap:var(--sp-lg)}
+  .marge .lecture{order:1}
+  .marge .tempo{order:2}
+  .marge .tension{order:3}
+  .marge .presets{order:4}
+  .marge .scenes{order:5}
+  .marge .ringwrap{order:6}
+  .marge .scopewrap{order:7}
+  .ringwrap svg{max-width:240px}
+  .chap{padding:var(--sp-lg) 0 var(--sp-xl)}
+  .fields{gap:var(--sp-lg)}
+}
+@media (pointer:coarse){
+  /* des cibles tactiles confortables */
+  input[type=range]{height:40px}
+  input[type=range]::-webkit-slider-thumb{width:22px; height:22px; margin-top:-11px}
+  input[type=range]::-moz-range-thumb{width:20px; height:20px}
+  select, input[type=number], input[type=text], textarea{padding:var(--sp-sm) 0; font-size:max(1rem,16px)}
+  textarea{font-size:max(1rem,16px)}
+  .lnk, details.fin > summary{padding-top:var(--sp-sm); padding-bottom:var(--sp-sm)}
+  .btn{padding:14px 18px}
+  input[type=checkbox]{width:22px; height:22px}
+  .note-c{stroke-width:1.4}
+}
+@media (max-width:420px){
+  .chap > header{gap:var(--sp-md)}
+  .tempo b{font-size:2.4rem}
+}

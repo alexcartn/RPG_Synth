@@ -6,7 +6,17 @@ Usage prévu : composer hors ligne. On règle, on écoute, puis on rend en WAV (
 
 ## Lancer
 
-Ouvrir `index.html` dans un navigateur récent (Chrome, Firefox, Safari). Les polices viennent de Google Fonts, sans elles la page reste utilisable avec les polices de secours.
+Ouvrir `index.html` dans un navigateur récent (Chrome, Firefox, Safari). Les polices sont dans le dépôt (`fonts/`, licence SIL OFL), aucune requête externe sauf l'encodeur MP3 à la demande.
+
+## Application installable (PWA)
+
+Bourdon s'installe comme une application (Chrome, Edge, Android : « Installer l'application » ; iPhone : Partager, puis « Sur l'écran d'accueil ») et fonctionne hors ligne : les polices sont hébergées dans `fonts/` et un service worker (`sw.js`) met toute l'application en cache.
+
+- Mise à jour : à chaque déploiement, `sw.js` reçoit l'identifiant du commit (`__VERSION__`), ce qui crée un nouveau cache. La page détecte la nouvelle version et affiche « Une nouvelle version est disponible. Recharger / Plus tard ». Rien ne recharge tout seul, la lecture en cours n'est jamais coupée sans accord.
+- En local (`__VERSION__` non remplacé), le cache ne change pas : pour tester une mise à jour, change la valeur à la main.
+- Pendant la lecture, l'écran reste allumé (Wake Lock) : sur téléphone, un écran qui se verrouille coupe le son du navigateur.
+- Si tu ajoutes un fichier à l'application, ajoute-le à la liste `SHELL` de `sw.js` (le test vérifie que tout ce qui est listé existe et que les scripts et styles de `index.html` y sont).
+- Les icônes viennent de `icons/icon.svg` et `icons/maskable.svg`, rendues en PNG.
 
 ## Publier sur GitHub Pages
 

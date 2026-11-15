@@ -3,6 +3,15 @@ const root=require('path').join(__dirname,'..');
 // inline les scripts locaux : jsdom n'exécute pas les <script src> sans resources:'usable'
 const html=fs.readFileSync(require('path').join(root,'index.html'),'utf8').replace(/<link[^>]*>/g,'')
   .replace(/<script src="([^"]+)"><\/script>/g,(m,f)=>'<script>'+fs.readFileSync(require('path').join(root,f),'utf8')+'</script>');
+// PWA : tout ce que le service worker met en cache doit exister, et le manifeste doit être valide
+{const sw=fs.readFileSync(require('path').join(root,'sw.js'),'utf8'), list=JSON.parse(sw.match(/const SHELL = (\[[\s\S]*?\]);/)[1]);
+ const miss=list.filter(f=>f!=='./'&&!fs.existsSync(require('path').join(root,f)));
+ const mf=JSON.parse(fs.readFileSync(require('path').join(root,'manifest.webmanifest'),'utf8'));
+ const missI=mf.icons.filter(i=>!fs.existsSync(require('path').join(root,i.src)));
+ const idx=fs.readFileSync(require('path').join(root,'index.html'),'utf8');
+ const unlisted=[...idx.matchAll(/(?:src|href)="((?:js|css)\/[^"]+)"/g)].map(m=>m[1]).filter(f=>!list.includes(f));
+ console.log('pwa : fichiers du cache',list.length,'manquants',miss.length?miss:'aucun','icones manquantes',missI.length?missI:'aucune','hors cache',unlisted.length?unlisted:'aucun');
+ if(miss.length||missI.length||unlisted.length){console.log('ECHEC PWA');process.exit(1)}}
 const errs=[];const vc=new VirtualConsole();vc.on('jsdomError',e=>{const m=String(e.detail||e.message||e);if(!/Not implemented: navigation/.test(m))errs.push(m)});vc.on('error',e=>errs.push(String(e)));
 class Param{constructor(){this.value=0}setValueAtTime(){return this}linearRampToValueAtTime(){return this}exponentialRampToValueAtTime(){return this}setTargetAtTime(){return this}cancelScheduledValues(){return this}}
 let nodes=0;

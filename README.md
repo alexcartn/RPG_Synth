@@ -1,12 +1,16 @@
 # Bourdon
 
-Machine à ambiances modales pour dungeon synth et ambiances de taverne. Une seule page HTML, sans build ni dépendance : tout l'audio est synthétisé dans le navigateur (Web Audio), rien n'est joué à partir de samples. Une graine donne une pièce, la même graine redonne la même pièce.
+Machine à ambiances modales pour dungeon synth et ambiances de taverne. Une page statique, sans build ni dépendance : tout l'audio est synthétisé dans le navigateur (Web Audio), rien n'est joué à partir de samples. Une graine donne une pièce, la même graine redonne la même pièce.
 
 Usage prévu : composer hors ligne. On règle, on écoute, puis on rend en WAV (mix, boucle sans couture, stems) et en MIDI pour retravailler dans un logiciel de musique.
 
 ## Lancer
 
 Ouvrir `index.html` dans un navigateur récent (Chrome, Firefox, Safari). Les polices viennent de Google Fonts, sans elles la page reste utilisable avec les polices de secours.
+
+## Publier sur GitHub Pages
+
+Le workflow `.github/workflows/pages.yml` lance les tests puis déploie le site à chaque push sur `main`. Une seule fois : dans le dépôt, Settings, Pages, Source : GitHub Actions. Le site est ensuite servi sur `https://<utilisateur>.github.io/RPG_Synth/`.
 
 ## Ce que fait l'outil
 
@@ -21,18 +25,19 @@ Ouvrir `index.html` dans un navigateur récent (Chrome, Firefox, Safari). Les po
 
 ## Architecture
 
-Tout est dans `index.html`, en trois blocs dans l'ordre.
+Des scripts classiques chargés dans l'ordre par `index.html`, sans module ni build (ça marche aussi en `file://`), et `css/style.css`.
 
-1. Données musicales : `SCALE_GROUPS`, `RAT` (tempéraments), `METERS` (motifs de percussion sur grille de croches), `DEFAULT` et `PRESETS`.
-2. `buildEngine(ctx, S, opts)` : le moteur. Il fonctionne indifféremment sur un `AudioContext` (lecture en direct) et un `OfflineAudioContext` (export). Un ordonnanceur `schedule(until)` planifie à l'avance bourdon, mélodie, canon, nappes, percussion et lieu. Chaque famille a son propre générateur pseudo-aléatoire dérivé de la graine : désactiver une voix ne change pas les autres, ce qui rend les stems cohérents avec le mix.
-3. Interface : contrôles générés depuis la structure `UI`, cercle des hauteurs en SVG, export (`renderOffline`, `wavFromChannels`, `zipStore`, `midiFile`).
+1. `js/data.js` : données musicales (`SCALE_GROUPS`, `RAT` tempéraments, `METERS` motifs de percussion, `DEFAULT`, `PRESETS`) et état `S`.
+2. `js/engine.js` : `buildEngine(ctx, S, opts)`, le moteur. Il fonctionne indifféremment sur un `AudioContext` (lecture en direct) et un `OfflineAudioContext` (export). Un ordonnanceur `schedule(until)` planifie à l'avance bourdon, mélodie, canon, nappes, percussion et lieu. Chaque famille a son propre générateur pseudo-aléatoire dérivé de la graine : désactiver une voix ne change pas les autres, ce qui rend les stems cohérents avec le mix.
+3. `js/ui.js` : contrôles générés depuis la structure `UI`, cercle des hauteurs en SVG, lecture en direct.
+4. `js/export.js` : `renderOffline`, `wavFromChannels`, `zipStore`, `midiFile`, code de partage.
+5. `js/main.js` : démarrage.
 
 Points d'attention pour la suite :
 
 - Les paramètres marqués `restart: true` dans `UI` relancent la lecture (ils changent la structure du moteur). Les autres s'appliquent à chaud via `setLevels()` ou au prochain planning (anticipation de 8 s).
 - La réverb est une réponse impulsionnelle bruitée normalisée en énergie, régénérée au relâchement du curseur.
 - La boucle sans couture rend 8 s de plus, puis fond la queue sur le début en puissance égale.
-- Dans l'artifact claude.ai, le téléchargement direct est bloqué : l'export passe par la capacité `downloads` et livre un zip.
 
 ## Tests
 

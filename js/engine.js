@@ -17,6 +17,10 @@ function buildEngine(ctx, S, o){
   const want=n=>!o.solo||o.solo===n;
   const events=[];
   const starts=[];
+  /* aiguillages : un module à zéro est débranché de la sortie, donc plus calculé du tout */
+  const links=[], droneLinks=[];
+  const link=(from,to)=>{ const l={from,to,on:false}; links.push(l); return l; };
+  const setLink=(l,on)=>{ if(l.on===on) return; l.on=on; if(on) l.from.connect(l.to); else { try{ l.from.disconnect(l.to); }catch(e){} } };
   let t0=0;
 
   /* sections */
@@ -36,7 +40,7 @@ function buildEngine(ctx, S, o){
 
   /* chaîne maîtresse : sommation, saturation, ondulation, voile, comp */
   const out=G(1);
-  const sat=ctx.createWaveShaper(); sat.oversample="2x";
+  const sat=ctx.createWaveShaper(); sat.oversample=o.lite?"none":"2x";
   function satCurve(d){const n=1024,c=new Float32Array(n),k=1+d*6,nt=Math.tanh(0.25*k); for(let i=0;i<n;i++){const x=i/(n-1)*2-1; c[i]=0.25*Math.tanh(k*x)/nt;} return c;}
   const wowD=ctx.createDelay(0.05); wowD.delayTime.value=0.012;
   const wowL1=ctx.createOscillator(); wowL1.frequency.value=0.55; const wowG1=G(0); wowL1.connect(wowG1); wowG1.connect(wowD.delayTime);
@@ -44,7 +48,8 @@ function buildEngine(ctx, S, o){
   starts.push(wowL1,wowL2);
   const veil=ctx.createBiquadFilter(); veil.type="lowpass"; veil.Q.value=0.5;
   const master=G(0);
-  out.connect(sat); sat.connect(wowD); wowD.connect(veil); veil.connect(master);
+  out.connect(sat); veil.connect(master);
+  const lWowIn=link(sat,wowD), lWowOut=link(wowD,veil), lWowBy=link(sat,veil);
   if(o.noComp){ master.connect(ctx.destination); }
   else{
     const comp=ctx.createDynamicsCompressor();
@@ -52,11 +57,11 @@ function buildEngine(ctx, S, o){
     master.connect(comp); comp.connect(ctx.destination);
   }
   const hissSrc=loopSrc(wb), hissHP=ctx.createBiquadFilter(); hissHP.type="highpass"; hissHP.frequency.value=3500;
-  const hissG=G(0); hissSrc.connect(hissHP); hissHP.connect(hissG); hissG.connect(master);
+  const hissG=G(0); hissSrc.connect(hissHP); hissHP.connect(hissG); const lHiss=link(hissG,master);
 
   /* réverb */
   function makeIR(size,dark){
-    const len=Math.floor(sr*clamp(size,0.4,9)), ir=ctx.createBuffer(2,len,sr), rr=mulberry32((seed^0x9e3779b9)>>>0), dec=6.9/clamp(size,0.4,9);
+    const sz=clamp(size,0.4,o.lite?5:9), len=Math.floor(sr*sz), ir=ctx.createBuffer(2,len,sr), rr=mulberry32((seed^0x9e3779b9)>>>0), dec=6.9/sz;
     for(let c=0;c<2;c++){
       const d=ir.getChannelData(c); let lp=0, e=0;
       for(let i=0;i<len;i++){
@@ -69,14 +74,14 @@ function buildEngine(ctx, S, o){
   }
   const conv=ctx.createConvolver(); conv.buffer=makeIR(S.fx.size,S.fx.dark);
   const wet=G(1); conv.connect(wet); wet.connect(out);
-  const revIn=G(1); revIn.connect(conv);
+  const revIn=G(1); const lRev=link(revIn,conv);
 
   /* écho en ping-pong */
   const dIn=G(1), dl=ctx.createDelay(4), dr=ctx.createDelay(4), dfb=G(0.4), dtone=ctx.createBiquadFilter();
   dtone.type="lowpass"; dtone.frequency.value=3200;
-  dIn.connect(dl); dl.connect(dtone); dtone.connect(dr); dr.connect(dfb); dfb.connect(dl);
+  const lDly=link(dIn,dl); dl.connect(dtone); dtone.connect(dr); dr.connect(dfb); dfb.connect(dl);
   const dOut=G(0), pL=PAN(-0.7), pR=PAN(0.7);
-  dl.connect(pL); dr.connect(pR); pL.connect(dOut); pR.connect(dOut); dOut.connect(out);
+  dl.connect(pL); dr.connect(pR); pL.connect(dOut); pR.connect(dOut); const lDout=link(dOut,out);
 
   /* bus */
   function bus(rev,dly){
@@ -86,9 +91,9 @@ function buildEngine(ctx, S, o){
     return {in:lvl, lvl, it};
   }
   const B={drone:bus(0.45,0.1), mel:bus(0.9,1), pad:bus(0.8,0.6), perc:bus(0.2,0), amb:bus(0.3,0), loops:bus(0.9,0.8), pend:bus(0.9,0.7)};
-  const canonG=G(0); canonG.connect(B.mel.it);
+  const canonG=G(0); const lCanon=link(canonG,B.mel.it);
   const murG=G(0), fireG=G(0), windG=G(0), dripG=G(0);
-  [murG,fireG,windG,dripG].forEach(g=>g.connect(B.amb.in));
+  const lMur=link(murG,B.amb.in), lFire=link(fireG,B.amb.in), lWind=link(windG,B.amb.in); dripG.connect(B.amb.in);
 
   function setLevels(){
     const lv=(n,v)=>want(n)?v:0, k=(tens()-0.5)*2;
@@ -108,16 +113,26 @@ function buildEngine(ctx, S, o){
     wowG1.gain.value=S.fx.wow*0.003; wowG2.gain.value=S.fx.wow*0.0003;
     veil.frequency.value=18000*Math.pow(2500/18000,S.fx.veil);
     hissG.gain.value=S.fx.hiss*0.03;
+    applyLinks();
+  }
+  function applyLinks(){
+    const wow=S.fx.wow>0.001, rev=S.fx.rev>0.001, dly=S.fx.dly>0.001;
+    setLink(lWowIn,wow); setLink(lWowOut,wow); setLink(lWowBy,!wow);
+    setLink(lHiss,S.fx.hiss>0.001);
+    setLink(lRev,rev); setLink(lDly,dly); setLink(lDout,dly);
+    setLink(lCanon,S.canon.lvl>0.001);
+    setLink(lMur,S.amb.murmur>0.001); setLink(lFire,S.amb.feu>0.001); setLink(lWind,S.amb.vent>0.001);
+    droneLinks.forEach(l=>setLink(l,S.drone.lvl>0.001));
   }
   function setReverb(){ conv.buffer=makeIR(S.fx.size,S.fx.dark); }
   setLevels();
 
   /* ---------- bourdon ---------- */
-  const droneFilters=[]; let fifthGl=[]; const droneStarts=[];
+  const droneFilters=[]; let fifthGl=[];
   function droneVoice(off,lvl,cut,ty,isFifth){
     const bright=0.5+S.drone.bright*1.5, base=cut*bright, w=3+S.drone.width*14;
     const f=ctx.createBiquadFilter(); f.type="lowpass"; f.frequency.value=base; f.Q.value=0.7; droneFilters.push({f,base});
-    const g=G(lvl); f.connect(g); g.connect(B.drone.in);
+    const g=G(lvl); f.connect(g); droneLinks.push(link(g,B.drone.in));
     const fr0=freq(off), oscs=[], srcs=[], gls=[];
     const mk=(type,mult,det,dst,gain)=>{
       const os=ctx.createOscillator(); os.type=type; os.frequency.value=fr0*mult; os.detune.value=det;
@@ -151,8 +166,10 @@ function buildEngine(ctx, S, o){
     droneVoice(0,0.17,420,tone,false);
     droneVoice(7,0.13,460,tone,true);
     droneVoice(12,0.09,700,tone,false);
-    droneVoice(19,0.045,900,tone,false);
+    if(!o.lite) droneVoice(19,0.045,900,tone,false);
   }
+
+  applyLinks();
 
   /* ---------- instruments mélodiques ---------- */
   function route(node,pan,dst){const p=PAN(pan); node.connect(p); p.connect(dst);}
@@ -257,6 +274,17 @@ function buildEngine(ctx, S, o){
       const g=G(0); nsrc.connect(bp); bp.connect(g); g.connect(murG); bands.push({g,cur:0,lvl:lv});
     });
     const fsrc=loopSrc(nb), flp=ctx.createBiquadFilter(); flp.type="lowpass"; flp.frequency.value=230; const fg=G(0.5); fsrc.connect(flp); flp.connect(fg); fg.connect(fireG);
+    /* craquements : 12 s de claquements tirés une fois pour toutes, lus en boucle (un seul nœud au lieu de cinq par seconde) */
+    const cn=Math.floor(sr*12), cb=ctx.createBuffer(1,cn,sr), cd=cb.getChannelData(0), cr=mulberry32((seed^0x5F3759DF)>>>0);
+    for(let t=0.05; t<11.9; t+=-Math.log(1-cr()*0.999)*0.18+0.02){
+      const big=cr()<0.04, v=Math.pow(cr(),2)*0.9*(big?1.8:1), dl=Math.floor((big?0.07:0.01+cr()*0.03)*sr), i0=Math.floor(t*sr);
+      let lp=0;
+      for(let i=0;i<dl&&i0+i<cn;i++){
+        const x=cr()*2-1, e=1-i/dl; lp+=(x-lp)*(big?0.06:0.3);
+        cd[i0+i]+=(big?lp*2:(x-lp))*v*e*e; /* gros : sourd et grave, petits : clairs */
+      }
+    }
+    const csrc=loopSrc(cb); csrc.connect(fireG);
     const wsrc=loopSrc(nb); windBP=ctx.createBiquadFilter(); windBP.type="bandpass"; windBP.frequency.value=500; windBP.Q.value=0.8;
     wsrc.connect(windBP); windBP.connect(windG);
   }
@@ -331,7 +359,7 @@ function buildEngine(ctx, S, o){
     const tt=sw(t+S.canon.delay*bar);
     (INST[S.canon.inst]||INST.harpe)(tt,freq(off2),vel*0.9,len,canonG,(R.v()*2-1)*0.5);
     rec(1,tt,off2,len,vel*0.9);
-    if(o.onNote) o.onNote(tt,off2,"canon");
+    if(o.onNote) o.onNote(tt,off2,"canon",len,vel*0.9);
   }
   function schedule(until){
     /* intensité */
@@ -346,10 +374,10 @@ function buildEngine(ctx, S, o){
       const k=cur.k%barE, sym=PAT[k], odd=(cur.k%2)===1;
       const t=cur.perc+(odd?S.swing*E*0.5:0)+R.p()*0.006;
       if(want("perc")&&S.perc.lvl>0.001){
-        if(sym==="S") stomp(t,0.95); else if(sym==="s") stomp(t,0.6);
-        else if(sym==="T") tap(t,0.5+R.p()*0.15); else if(sym==="t") tap(t,0.4+R.p()*0.1);
+        if(sym==="S"){ stomp(t,0.95); if(o.onNote) o.onNote(t,0,"stomp",0,0.95); } else if(sym==="s"){ stomp(t,0.6); if(o.onNote) o.onNote(t,0,"stomp",0,0.6); }
+        else if(sym==="T"){ const v=0.5+R.p()*0.15; tap(t,v); if(o.onNote) o.onNote(t,0,"tap",0,v); } else if(sym==="t"){ const v=0.4+R.p()*0.1; tap(t,v); if(o.onNote) o.onNote(t,0,"tap",0,v); }
         else{
-          if(R.p()<S.perc.shaker) shaker(t,0.1+R.p()*0.08);
+          if(R.p()<S.perc.shaker){ const v=0.1+R.p()*0.08; shaker(t,v); if(o.onNote) o.onNote(t,0,"shk",0,v); }
           if(k===barE-3&&R.p()<S.perc.ghost) tap(t,0.2);
         }
       } else { R.p(); }
@@ -379,7 +407,7 @@ function buildEngine(ctx, S, o){
           if(S.canon.lvl>0.001) canonNote(cur.mel+nt.e*E,off,vel,len,iv);
         }
         rec(0,tt,off,len,vel);
-        if(o.onNote) o.onNote(tt,off,"mel");
+        if(o.onNote) o.onNote(tt,off,"mel",len,vel);
         lastOff.v=off;
       });
       t=cur.mel+ph.end*E;
@@ -390,10 +418,10 @@ function buildEngine(ctx, S, o){
     while(cur.pad<until){
       const t=cur.pad, sc=secOf(t), iv=ivOf(S,sc.key), n=iv.length;
       const d=recall(memP,nChord++,Math.max(1,Math.round(S.pad.loop)),S.pad.deja,R.s,()=>(R.s()<0.35+0.4*(1-S.pad.motion))?0:Math.floor(R.s()*n))%n;
-      const len=S.pad.len*bar, vc=clamp(Math.round(S.pad.voices),2,4);
+      const len=S.pad.len*bar, vc=clamp(Math.round(S.pad.voices),2,o.lite?3:4);
       if(want("pad")&&S.pad.lvl>0.001){
         const offs=[degOff(iv,d),degOff(iv,d+2),degOff(iv,d+4),degOff(iv,d+6)].slice(0,vc).map(x=>x+12);
-        offs.forEach(off=>{padVoice(t,len,freq(off),S.pad.timbre); rec(2,t,off,len,0.3);});
+        offs.forEach(off=>{padVoice(t,len,freq(off),S.pad.timbre); rec(2,t,off,len,0.3); if(o.onNote) o.onNote(t,off,"pad",len,0.3);});
       }
       cur.pad=t+len;
     }
@@ -415,7 +443,7 @@ function buildEngine(ctx, S, o){
           const tt=lp.next, iv=ivOf(S,secOf(tt).key), off=degOff(iv,lp.deg)+12*lp.oct, vel=lp.vel*(0.85+0.3*R.l());
           fn(tt,freq(off),vel,E*10,B.loops.in,lp.pan);
           rec(3,tt,off,E*10,vel);
-          if(o.onNote) o.onNote(tt,off,"loop");
+          if(o.onNote) o.onNote(tt,off,"loop",E*10,vel);
           lp.next+=lp.len;
         }
       });
@@ -432,7 +460,7 @@ function buildEngine(ctx, S, o){
           const iv=ivOf(S,secOf(tt).key), off=degOff(iv,i)+12, vel=0.17-0.07*i/N;
           fn(tt,freq(off),vel,E*6,B.pend.in,(i/Math.max(1,N-1)*2-1)*0.6);
           rec(4,tt,off,E*6,vel);
-          if(o.onNote) o.onNote(tt,off,"pend");
+          if(o.onNote) o.onNote(tt,off,"pend",E*6,vel);
         }
       }
     }
@@ -444,11 +472,7 @@ function buildEngine(ctx, S, o){
         }
       });
       while(cur.clink<until){ clink(cur.clink); cur.clink+=(18+R.a()*30)/(0.25+S.amb.clink*1.5); }
-      while(cur.fire<until){
-        const t=cur.fire, big=R.a()<0.04, v=Math.pow(R.a(),2)*0.9*(big?1.8:1), fq=1500+R.a()*3500, d=0.01+R.a()*0.03;
-        if(S.amb.feu>0.001){ if(big) noiseHit(t,v,900,0.07,"lowpass",fireG); else noiseHit(t,v,fq,d,"bandpass",fireG); }
-        cur.fire=t+(-Math.log(1-R.a()*0.999)*0.18+0.02);
-      }
+      cur.fire=until; /* les craquements viennent de la boucle précalculée */
       while(cur.wind<until){
         const t=cur.wind;
         if(windBP){ windBP.frequency.setTargetAtTime(250+R.a()*700,t,2.5); windMod.gain.setTargetAtTime(0.2+R.a()*0.8,t,2.5); }

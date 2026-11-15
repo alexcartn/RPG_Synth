@@ -38,6 +38,14 @@ Le workflow `.github/workflows/pages.yml` lance les tests puis déploie le site 
 - Évolution : l'intensité module percussion, nappes, éclat du bourdon et densité (constante, arche, vagues, escalier).
 - Export : WAV 16 bits ou MP3 (192 ou 320 kb/s) stéréo 44,1 kHz avec progression affichée, boucle sans couture, stems séparés (sans compresseur), MIDI (mélodie, canon, nappes, boucles, pendules), réglages en JSON, et code de partage des réglages. L'encodeur MP3 (lamejs) est chargé à la demande depuis cdnjs, avec vérification d'intégrité : il faut une connexion la première fois, le WAV n'en a pas besoin.
 
+## Partition et charge audio
+
+- Une partition défile sous le titre pendant la lecture : à gauche ce qui vient de sonner, à droite ce qui est déjà planifié (le moteur planifie 8 secondes d'avance). Mélodie en cinabre, canon en or, nappes en bandes grises, boucles et pendules en vert-de-gris, percussion en traits en bas, changements de gamme en lignes rouges avec le nom de la gamme. Les notes à venir sont creuses, elles se remplissent quand elles sonnent. Elle est dans `js/viz.js`.
+- Les modules à zéro sont débranchés du graphe audio (réverb, écho, souffle, wow, murmure, feu, vent, canon, bourdon) : le navigateur ne les calcule plus. Le feu est une boucle précalculée au lieu de cinq petits nœuds par seconde.
+- Le contexte audio utilise `latencyHint: "playback"` (moins de réveils du processeur) et l'oscilloscope a disparu (plus d'analyseur).
+- Qualité audio Haute ou Économe (marge, mémorisée dans le navigateur ; Économe par défaut sur téléphone et machines à 4 cœurs ou moins) : réverbération plafonnée à 5 s, un bourdon de moins, 3 voix de nappe au plus, saturation sans suréchantillonnage, 30 images par seconde. L'export est toujours en qualité haute.
+- Mesures (rendu de 20 s dans un Chromium sans GPU, en part d'un cœur) : réglages par défaut 26 % puis 21 %, tout activé 42 % puis 39 %. Sur un ordinateur courant, compte quelques pour cent d'un cœur.
+
 ## Vocabulaire
 
 Les titres sont en latin, avec le français en sous-titre, comme sur les instruments médiévaux de fantaisie : Modus (gamme et accord), Tempus (rythme), Bordunus (bourdon), Voces (voix : Cantus, Canon, Concentus, Memoria), Locus (lieu), Spatium et Patina, Mutatio (évolution), Rotae et Pendula, Transcriptio (export). Les contrôles restent en français pour ne pas ralentir l'usage. Une table des matières collée en haut permet de sauter d'un chapitre à l'autre. Sur téléphone, la tension est dans la barre du bas, à côté du bouton Incipe.

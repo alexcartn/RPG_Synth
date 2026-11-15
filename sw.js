@@ -7,7 +7,7 @@ const EXT = "bourdon-ext";
 const SHELL = [
   "./", "index.html", "manifest.webmanifest",
   "css/fonts.css", "css/style.css",
-  "js/data.js", "js/engine.js", "js/ui.js", "js/export.js", "js/main.js", "js/pwa.js",
+  "js/data.js", "js/engine.js", "js/viz.js", "js/ui.js", "js/export.js", "js/main.js", "js/pwa.js",
   "fonts/Alegreya.woff2", "fonts/Alegreya-italic.woff2", "fonts/IMFellEnglish-400.woff2", "fonts/IMFellEnglish-400i.woff2",
   "fonts/IMFellEnglishSC-400.woff2", "fonts/UnifrakturCook-700.woff2",
   "icons/icon-192.png", "icons/icon-512.png", "icons/maskable-512.png", "icons/apple-touch-icon.png"

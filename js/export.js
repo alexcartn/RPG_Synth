@@ -140,7 +140,7 @@ function buildExport(host){
       '<div class="ctl"><label class="chk"><span><input type="checkbox" id="xStems">Stems séparés</span></label><p class="hint">Bourdon, mélodie et canon, nappes, percussion, lieu, boucles et pendules si activés. Sans compresseur, à sommer dans ton logiciel. 3 minutes maximum.</p></div>'+
       '<div class="ctl"><label class="chk"><span><input type="checkbox" id="xMidi">Fichier MIDI</span></label><p class="hint">Pistes mélodie, canon, nappes, boucles et pendules. Les tempéraments non égaux ne passent pas en MIDI.</p></div>'+
     '</div>'+
-    '<div class="row" style="margin-top:24px"><button class="btn main" id="exp" type="button">Transcribere</button></div>'+
+    '<div class="row" style="margin-top:24px"><button class="btn main" id="exp" type="button">Rendre et exporter</button></div>'+
     '<p class="status" id="status" role="status" aria-live="polite"></p>'+
     '<details class="fin"><summary>Code de partage des réglages</summary>'+
       '<div class="fields"><div class="ctl"><label for="codeOut">Ton code</label><textarea id="codeOut" readonly></textarea><div class="row"><button class="lnk" id="copyCode" type="button">Copier le code</button></div></div>'+

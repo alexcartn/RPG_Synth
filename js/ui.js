@@ -3,55 +3,71 @@
    ÉTAT UI, LECTURE EN DIRECT
    ============================================================ */
 const $=id=>document.getElementById(id);
-let live=null, timer=null, scopeOn=false;
+let live=null, timer=null, raf=0, lastFrame=0;
 
 function getP(path){return path.split(".").reduce((a,k)=>a[k],S);}
 function setP(path,v){const ks=path.split("."); const last=ks.pop(); ks.reduce((a,k)=>a[k],S)[last]=v;}
 
+/* qualité audio : économe par défaut sur téléphone et machines modestes, au choix de la personne ensuite */
+function defaultQuality(){
+  try{ if(matchMedia("(pointer:coarse)").matches||(navigator.hardwareConcurrency||8)<=4||(navigator.deviceMemory||8)<=4) return "eco"; }catch(e){}
+  return "high";
+}
+function getQuality(){ try{ const q=localStorage.getItem("bourdon.quality"); if(q==="eco"||q==="high") return q; }catch(e){} return defaultQuality(); }
+const isEco=()=>getQuality()==="eco";
+function engineOpts(){ return {onNote:noteFlash, lite:isEco()}; }
+
 function startLive(){
   const AC=window.AudioContext||window.webkitAudioContext;
-  const ctx=new AC();
-  const eng=buildEngine(ctx,S,{onNote:noteFlash});
+  /* "playback" : tampons plus grands, moins de réveils du processeur, aucun besoin de latence ici */
+  let ctx; try{ ctx=new AC({latencyHint:"playback"}); }catch(e){ ctx=new AC(); }
+  const eng=buildEngine(ctx,S,engineOpts());
   live={ctx,eng,t0:ctx.currentTime+0.1,olds:[]};
+  vizClear();
   eng.start(live.t0,5,0);
   eng.schedule(ctx.currentTime+8);
   timer=setInterval(()=>eng.schedule(ctx.currentTime+8),400);
-  const an=ctx.createAnalyser(); an.fftSize=2048; eng.master.connect(an); live.an=an;
-  setPlayUI(true); scopeOn=true; drawScope(); updateRingCap();
+  setPlayUI(true); updateRingCap();
+  if(!raf) raf=requestAnimationFrame(frame);
 }
-function noteFlash(t,off,kind){ if(!live) return; const ms=Math.max(0,(t-live.ctx.currentTime)*1000); setTimeout(()=>flashNote(off,kind),ms); }
+/* chaque note planifiée alimente la partition, et allume le cercle quand elle sonne */
+function noteFlash(t,off,kind,dur,vel){
+  if(!live) return;
+  vizPush(t,off,kind,dur,vel);
+  if(!PITCHED[kind]||kind==="pad") return;
+  const ms=Math.max(0,(t-live.ctx.currentTime)*1000); setTimeout(()=>flashNote(off,kind),ms);
+}
 function stopLive(){
   if(!live) return;
   clearInterval(timer);
-  const {ctx,eng,olds}=live; live=null; scopeOn=false;
+  const {ctx,eng,olds}=live; live=null;
   olds.forEach(e=>e.stop(ctx.currentTime));
   eng.stop(ctx.currentTime);
   setTimeout(()=>{try{ctx.close();}catch(e){}},1600);
-  setPlayUI(false); updateRingCap();
+  setPlayUI(false); updateRingCap(); vizClear(); vizDraw(null); $("pend").parentNode.hidden=true;
 }
 /* fondu enchaîné : un nouveau moteur démarre pendant que l'ancien s'éteint, sans coupure */
 function crossfade(d){
   const {ctx,eng:old}=live, t=ctx.currentTime+0.05;
-  const eng=buildEngine(ctx,S,{onNote:noteFlash});
+  const eng=buildEngine(ctx,S,engineOpts());
   eng.start(t,d,0); eng.schedule(ctx.currentTime+8);
   old.fadeOut(t,d);
   clearInterval(timer); timer=setInterval(()=>eng.schedule(ctx.currentTime+8),400);
-  eng.master.connect(live.an);
   live.olds.push(old); live.eng=eng; live.lastKey=null;
   setTimeout(()=>{ if(live) live.olds=live.olds.filter(x=>x!==old); },d*1000+500);
   updateRingCap();
 }
 function restartIfLive(d){ if(live) crossfade(d||1.5); }
 function setPlayUI(on){
-  $("scope").parentNode.hidden=!on;
   if(window.keepAwake) window.keepAwake(on);
-  ["play","play2"].forEach(id=>{const b=$(id); b.textContent=on?"Siste":"Incipe"; b.setAttribute("aria-pressed",on?"true":"false");});
+  ["play","play2"].forEach(id=>{const b=$(id); b.textContent=on?"Arrêter":"Jouer"; b.setAttribute("aria-pressed",on?"true":"false");});
 }
 $("play").onclick=$("play2").onclick=()=>{live?stopLive():startLive();};
 
 function drawPend(){
-  const cv=$("pend"), on=live&&scopeOn&&S.pend.lvl>0.001;
-  cv.hidden=!on; if(!on) return;
+  const cv=$("pend"), wrap=cv.parentNode, on=live&&S.pend.lvl>0.001;
+  if(wrap.hidden===on) wrap.hidden=!on;
+  if(!on) return;
   const c=cv.getContext("2d"), W=cv.width, H=cv.height, N=Math.round(S.pend.count), xs=live.eng.pendX(live.ctx.currentTime);
   const cs=getComputedStyle(document.documentElement), ink=cs.getPropertyValue("--ink").trim()||"#3a2e22", rub=cs.getPropertyValue("--rubric").trim()||"#a3301c";
   c.clearRect(0,0,W,H);
@@ -60,16 +76,11 @@ function drawPend(){
   c.strokeStyle=ink; c.lineWidth=1.2; c.beginPath(); pts.forEach(([x,y],i)=>i?c.lineTo(x,y):c.moveTo(x,y)); c.stroke();
   c.fillStyle=rub; pts.forEach(([x,y])=>{c.beginPath(); c.arc(x,y,5,0,Math.PI*2); c.fill();});
 }
-function drawScope(){
-  drawPend();
-  if(!live||!scopeOn) { const cv=$("scope"); cv.getContext("2d").clearRect(0,0,cv.width,cv.height); return; }
-  const cv=$("scope"), c=cv.getContext("2d"), an=live.an, buf=new Uint8Array(an.fftSize);
-  an.getByteTimeDomainData(buf);
-  c.clearRect(0,0,cv.width,cv.height);
-  c.strokeStyle=getComputedStyle(document.documentElement).getPropertyValue("--ink").trim()||"#3a2e22"; c.lineWidth=1.4; c.beginPath();
-  for(let i=0;i<buf.length;i+=4){const x=i/buf.length*cv.width, y=buf[i]/255*cv.height; i?c.lineTo(x,y):c.moveTo(x,y);}
-  c.stroke();
-  requestAnimationFrame(drawScope);
+/* une image : 30 par seconde en mode économe, 60 sinon */
+function frame(ts){
+  raf=0; if(!live) return;
+  if(!isEco()||ts-lastFrame>=33){ lastFrame=ts; vizDraw(live.ctx.currentTime,live.eng); drawPend(); }
+  raf=requestAnimationFrame(frame);
 }
 
 /* ---------- cercle des hauteurs ---------- */
@@ -330,5 +341,7 @@ $("saveScene").onclick=()=>{
   a.push({n,name:"Scaena "+n+" · "+NOTES[S.root],state:clone(S)}); putScenes(a); drawScenes();
 };
 $("clearScenes").onclick=()=>{ putScenes([]); drawScenes(); };
+$("quality").value=getQuality();
+$("quality").onchange=()=>{ try{ localStorage.setItem("bourdon.quality",$("quality").value); }catch(e){} restartIfLive(1.5); };
 $("seed").onchange=()=>{ S.seed=Math.max(1,Math.min(999999,parseInt($("seed").value)||1)); $("seed").value=S.seed; restartIfLive(); };
 $("dice").onclick=()=>{ S.seed=1+Math.floor(Math.random()*999999); $("seed").value=S.seed; restartIfLive(); };

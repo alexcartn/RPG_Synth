@@ -25,6 +25,11 @@
     <p class="lede" lang="fr">Un bourdon, des voix, des gammes que l'on choisit ou que l'on dessine. Une graine donne une pièce, la même graine redonne la même pièce.</p>
   </header>
 
+  <figure class="score" id="score">
+    <canvas id="scoreCv" role="img" aria-label="Partition qui défile : notes déjà jouées à gauche, notes à venir à droite"></canvas>
+    <figcaption class="legend" aria-hidden="true"><span class="k mel">mélodie</span><span class="k canon">canon</span><span class="k pad">nappes</span><span class="k loop">boucles</span><span class="k pend">pendules</span><span class="k perc">percussion</span></figcaption>
+  </figure>
+
   <nav class="toc" id="toc" aria-label="Chapitres"></nav>
 
   <div class="cols">
@@ -32,12 +37,12 @@
 
     <aside class="marge" aria-label="Lecture et gamme">
       <div class="lecture">
-        <button class="seal" id="play" aria-pressed="false">Incipe</button>
+        <button class="seal" id="play" aria-pressed="false">Jouer</button>
         <div class="seedbox ctl">
           <label for="seed">Semen</label>
           <div class="seedrow">
             <input type="number" id="seed" min="1" max="999999" inputmode="numeric">
-            <button class="lnk" id="dice" type="button">Sors</button>
+            <button class="lnk" id="dice" type="button">Tirer au sort</button>
           </div>
         </div>
       </div>
@@ -48,13 +53,15 @@
         <p class="ringcap" id="ringcap"></p>
         <p class="ringhint">Touche une note du cercle pour bâtir ta propre gamme.</p>
       </div>
-      <div class="scopewrap" hidden>
-        <canvas id="scope" width="680" height="112" aria-label="Forme d'onde"></canvas>
-        <canvas id="pend" width="680" height="112" aria-label="Pendules" hidden></canvas>
-      </div>
+      <div class="pendwrap" hidden><span class="ctl"><label>Pendula</label></span><canvas id="pend" width="680" height="112" aria-label="Pendules"></canvas></div>
       <div class="presets">
         <span class="ctl"><label>Exempla</label></span>
         <div class="row" id="presets"></div>
+      </div>
+      <div class="presets qualite">
+        <div class="ctl"><label for="quality">Qualité audio</label>
+          <select id="quality"><option value="high">Haute</option><option value="eco">Économe</option></select>
+          <p class="hint" id="qualityHint">Économe : réverbération plus courte, bourdon allégé. Conseillé sur téléphone ou ordinateur modeste. L'export reste toujours en haute qualité.</p></div>
       </div>
       <div class="presets scenes">
         <span class="ctl"><label>Scaenae</label></span>
@@ -70,10 +77,11 @@
     </aside>
   </div>
 </div>
-<div class="dock"><button class="seal" id="play2" aria-pressed="false">Incipe</button><div class="dockT ctl"><div class="l"><label for="tension2">Tensio</label><output id="tension2o"></output></div><input type="range" id="tension2" min="0" max="1" step="0.01" value="0.5"></div></div>
+<div class="dock"><button class="seal" id="play2" aria-pressed="false">Jouer</button><div class="dockT ctl"><div class="l"><label for="tension2">Tensio</label><output id="tension2o"></output></div><input type="range" id="tension2" min="0" max="1" step="0.01" value="0.5"></div></div>
 
 <script src="js/data.js"></script>
 <script src="js/engine.js"></script>
+<script src="js/viz.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/export.js"></script>
 <script src="js/main.js"></script>

@@ -10,7 +10,7 @@ const SYN_DST=[["pitch","Hauteur"],["cutoff","Coupure du filtre"],["reso","Réso
 
 const SYN_DEFAULT={
   oscA:{wave:0.34, oct:0, semi:0, det:0, lvl:0.8, uni:3, spread:14, width:0.6},
-  oscB:{wave:0.5, oct:0, semi:0, det:6, lvl:0, uni:1},
+  oscB:{wave:0.5, oct:0, semi:0, det:6, lvl:0, uni:1, spread:10, width:0.6},
   sub:{lvl:0, shape:"sine"},
   noise:{lvl:0},
   fm:{amt:0, ratio:2},

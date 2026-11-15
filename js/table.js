@@ -22,7 +22,7 @@ function buildTable(){
   evtState();
   /* touches 1 à 8 : sons ; N : étape suivante de la campagne */
   document.addEventListener("keydown",e=>{
-    if(e.ctrlKey||e.metaKey||e.altKey) return;
+    if(e.ctrlKey||e.metaKey||e.altKey||document.body.classList.contains("atelier")) return;
     const t=e.target, tg=t&&t.tagName;
     if(tg==="SELECT"||tg==="TEXTAREA"||(tg==="INPUT"&&t.type!=="range"&&t.type!=="checkbox")) return;
     const n=parseInt(e.key,10);

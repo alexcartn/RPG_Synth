@@ -49,14 +49,14 @@ function getQuality(){ try{ const q=localStorage.getItem("bourdon.quality"); if(
 const isEco=()=>getQuality()==="eco";
 function engineOpts(){ return {onNote:noteFlash, lite:isEco()}; }
 
-function startLive(){
+function startLive(opt){
   const AC=window.AudioContext||window.webkitAudioContext;
   /* "playback" : tampons plus grands, moins de réveils du processeur, aucun besoin de latence ici */
   let ctx; try{ ctx=new AC({latencyHint:"playback"}); }catch(e){ ctx=new AC(); }
   const eng=buildEngine(ctx,S,engineOpts());
   live={ctx,eng,t0:ctx.currentTime+0.1,olds:[]};
   vizClear();
-  eng.start(live.t0,5,0);
+  eng.start(live.t0,(opt&&opt.fade)||5,0);
   eng.schedule(ctx.currentTime+lookahead());
   timer=setInterval(tickSchedule,150);
   setPlayUI(true); updateRingCap();
@@ -373,7 +373,7 @@ function buildChapters(){
 }
 function syncUI(){
   CTL.forEach(({it,el,upd,sync2})=>{ el.value=String(getP(it.k)); if(el.tagName==="SELECT"&&el.value!==String(getP(it.k))){ el.value=""; } upd(); if(sync2) sync2(); });
-  $("seed").value=S.seed; updateTempo(); updateRingCap(); if(typeof curveDraw==="function") curveDraw(); if(typeof jeuSync==="function") jeuSync();
+  $("seed").value=S.seed; updateTempo(); updateRingCap(); if(typeof curveDraw==="function") curveDraw(); if(typeof jeuSync==="function") jeuSync(); if(typeof atelierSync==="function") atelierSync();
 }
 function updateTempo(){ $("tempoNum").textContent=S.tempo; $("tempoCap").textContent="noires par minute · "+S.meter; }
 

@@ -133,13 +133,7 @@ function jeuFrame(){
   document.querySelectorAll("#knobs .knob").forEach(el=>{ const v=clamp01(el._spec.get()); if(Math.abs((JEU.seen[el._spec.id]??-1)-v)>0.003){ paintKnob(el,el._spec); dirty=true; } });
   if(dirty) xyDraw();
 }
-function setJeu(on){
-  JEU.on=on; document.body.classList.toggle("jeu",on); $("jeu").hidden=!on;
-  const rw=document.querySelector(".ringwrap"); if(rw){ (on?$("ringSlot"):document.querySelector(".marge")).appendChild(rw); }
-  $("jeuBtn").setAttribute("aria-pressed",on?"true":"false"); $("jeuBtn").textContent=on?"Retour aux réglages":"Mode Jeu";
-  try{ localStorage.setItem("bourdon.mode",on?"jeu":"reglage"); }catch(e){}
-  if(on){ window.scrollTo({top:0,behavior:"instant"}); jeuSync(); jeuState(); }
-}
+function setJeu(on){ setMode(on?"jeu":"reglage"); }
 function buildJeu(){
   const kn=$("knobs"); KNOBS.filter(k=>!k.noKnob).forEach(k=>kn.appendChild(makeKnob(k)));
   const opts=KNOBS.map(k=>'<option value="'+k.id+'">'+k.label+'</option>').join("");
@@ -155,6 +149,4 @@ function buildJeu(){
   $("jeuReroll").onclick=()=>{ if(live) live.eng.reroll(); };
   document.addEventListener("keydown",jeuKeys);
   jeuState();
-  let m=null; try{ m=localStorage.getItem("bourdon.mode"); }catch(e){}
-  if(m==="jeu") setJeu(true);
 }

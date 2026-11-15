@@ -8,10 +8,33 @@ Usage prévu : composer hors ligne. On règle, on écoute, puis on rend en WAV (
 
 Ouvrir `index.html` dans un navigateur récent (Chrome, Firefox, Safari). Les polices sont dans le dépôt (`fonts/`, licence SIL OFL), aucune requête externe sauf l'encodeur MP3 à la demande.
 
+## Atelier : le synthé perso
+
+Troisième mode (bouton « Atelier » à droite d'Eventus), indépendant de la génération : un synthétiseur qu'on programme et qu'on joue.
+
+- Voix : deux oscillateurs à table d'ondes (sinus, triangle, dent de scie, carré, impulsion, orgue, voyelle : la position entre deux formes est une interpolation de leurs harmoniques), chacun avec octave, intervalle, désaccord et unisson jusqu'à 7 voix avec écart et largeur stéréo ; un sous-oscillateur, du bruit, une modulation de fréquence (B module A).
+- Filtre passe-bas, passe-haut, passe-bande ou coupe-bande avec coupure, résonance, suivi du clavier et quantité d'enveloppe ; la courbe de réponse est dessinée en direct.
+- Trois enveloppes ADSR (volume, filtre, enveloppe 2) dessinées, deux LFO (sinus, triangle, dent de scie, carré), une matrice de modulation à quatre emplacements : source (LFO 1, LFO 2, enveloppe 2, vélocité) vers destination (hauteur, coupure, résonance, trémolo, panoramique, quantité de FM, désaccord de B) avec une quantité de -100 à +100 %.
+- Saturation, niveau, sensibilité à la vélocité. Bibliothèque de dix patches (Pad doux, Basse sub, Pincé synthé, Cloche FM, Orgue, Cuivre doux, Voyelle chantée, Souffle, Lead brillant, Nappe de verre), tirage au sort de patches (valeurs musicales), enregistrement sous un nom dans le navigateur, échange par texte (JSON).
+- Jeu : clavier à l'écran de trois octaves (multitouch, un doigt par note), et clavier d'ordinateur en disposition de piano (Z S X D C V G B H N J M pour la première octave, Q 2 W 3 E R 5 T 6 Y 7 U pour la suivante, repérées par position donc valables en AZERTY). Maintien pour prolonger les notes, « Tout couper ». Le clavier reste collé en bas de l'écran pour jouer en réglant.
+- La machine peut se mettre en sourdine (« La machine joue / en sourdine ») : l'atelier se joue alors seul. Au premier appui sur une touche, l'atelier démarre tout seul, machine en sourdine.
+- Le synthé est aussi un instrument comme les autres : « Synthé perso (Atelier) » dans les instruments de la mélodie, du canon, des boucles, des pendules et du jeu, et dans les timbres de nappes. Le patch est enregistré avec les scènes et les réglages.
+- Coût : une voix de l'atelier compte une trentaine de nœuds audio (unisson, filtre, enveloppes, LFO). Utilisé comme instrument de toutes les voix à la fois, le rendu coûte environ le double du préréglage par défaut (mesuré : 50 % d'un cœur contre 24 % dans un navigateur sans GPU). Le mode Économe limite l'unisson à 3 voix.
+- Mesuré dans un navigateur : chaque patch est juste, sans valeur aberrante, et s'éteint complètement après le relâchement (niveau 0,00004 deux secondes et demie après). Les niveaux des patches sont égalisés.
+
+## Timbres organiques
+
+- Flûte et ney : guide d'onde avec jet et non-linéarité cubique (colonne d'air de deux périodes, la flûte sonne sur son deuxième mode comme une vraie flûte). Validé par analyse spectrale de 150 à 1100 Hz : le fondamental est juste à 2 centièmes de ton près. Le ney a plus de souffle, une attaque plus lente et une petite glissade d'attaque.
+- Archet (violon, viole) : corde frottée avec loi de frottement de McIntyre et Schumacher, avec vibrato qui s'installe. Fondamental juste à 2 à 6 centièmes de ton près de 150 à 800 Hz (au-dessus, il bascule sur une synthèse classique).
+- Cuivre doux : filtre qui s'ouvre à l'attaque, vibrato retardé et souffle des lèvres.
+- Tambours : les frappes de bodhrán sont les modes d'une membrane circulaire (rapports de Bessel), amortis chacun à leur vitesse, avec une chute de hauteur à l'attaque.
+- Chœur : un troisième formant vers 2,6 kHz donne le brillant de la voix chantée.
+- Tout cela est actif avec « Cordes et timbres : modèle physique » (par défaut) ; « Synthèse classique » garde les anciens timbres. Les niveaux ont été alignés entre modèle physique et classique.
+
 ## Intelligence musicale, cordes physiques, acoustiques, adaptation
 
 - Logique modale (défaut, réglable dans Voces, groupe Musica ; « Hasard » garde l'ancienne version, utile pour comparer à l'oreille). Les accords suivent des cycles de quatre : tonique, un accord libre pondéré par le mode, un accord de préparation (sous-tonique, dominante ou sous-dominante), puis retour. Les voix des accords se déplacent le moins possible d'un accord à l'autre. La mélodie connaît l'accord du moment : ses notes sur les temps forts sont des notes de l'accord, elle a un motif par section (énoncé, repris plus haut ou plus bas, puis question en arche et réponse qui descend vers la tonique), des souffles entre les phrases, des nuances qui suivent l'arche de la phrase et un léger décalage humain du jeu. Mesuré sur 15 minutes de musique : notes sur l'accord aux temps forts 42 % puis 94 % (Taberna), mouvement moyen des voix d'accord 2,9 puis 0,8 demi-ton, frottements de seconde ou de septième avec l'accord 39 % puis 18 % (Crypta). Avec les phrases rejouées par le déjà-vu, elles sont recalées sur l'accord du moment.
-- Cordes par modèle physique : luth, harpe et oud sont une corde pincée de Karplus-Strong avec accord fin (écart mesuré de 2 centièmes de ton au plus, quarts de ton compris), point de pincement, amortissement qui dépend de la hauteur et de la force du jeu. Chaque note est calculée une fois et mise en cache (environ 0,6 ms par note). « Synthèse classique » garde les anciens timbres.
+- Cordes pincées par modèle physique : luth, harpe et oud sont une corde pincée de Karplus-Strong avec accord fin (écart mesuré de 2 centièmes de ton au plus, quarts de ton compris), point de pincement, amortissement qui dépend de la hauteur et de la force du jeu. Chaque note est calculée une fois et mise en cache (environ 0,6 ms par note). « Synthèse classique » garde les anciens timbres.
 - Acoustiques du lieu : chapelle de pierre, salle de bois, grotte, plaque métallique, générique. Chacune a son prédélai, ses premières réflexions, sa vitesse de décroissance et sa brillance. Quelques préréglages en choisissent une (Taberna : salle, Crypta : grotte, Scriptorium : chapelle).
 - Adaptation sans matériel (Mutatio, groupe Adaptatio) : « selon l'heure » fait suivre à l'énergie la courbe de la journée (creux vers 2 h, pic vers 14 h) et agit sur la tension (percussion, nappes, densité), l'éclat du bourdon et le voile ; « s'apaiser » fait baisser l'énergie sur la durée d'écoute choisie. Mesuré : 12 % de notes en moins à 3 h et 25 % de plus à 14 h qu'en l'absence d'adaptation. L'export capte l'heure du moment, donc il dépend de l'heure quand l'adaptation est active.
 - Garde-fou : avec « Hasard » et « Synthèse classique », les six anciens préréglages donnent exactement les mêmes notes qu'avant.

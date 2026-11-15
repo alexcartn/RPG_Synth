@@ -30,6 +30,12 @@
     <figcaption class="legend" aria-hidden="true"><span class="k mel">mélodie</span><span class="k canon">canon</span><span class="k pad">nappes</span><span class="k loop">boucles</span><span class="k pend">pendules</span><span class="k perc">percussion</span></figcaption>
   </figure>
 
+  <div class="evt" id="evt" role="group" aria-label="Sons à la demande">
+    <span class="evlab">Eventus</span>
+    <div class="evbtns" id="evBtns"></div>
+    <button class="lnk" id="nextStep" type="button" hidden>Étape suivante ›</button>
+  </div>
+
   <nav class="toc" id="toc" aria-label="Chapitres"></nav>
 
   <div class="cols">
@@ -77,12 +83,13 @@
     </aside>
   </div>
 </div>
-<div class="dock"><button class="seal" id="play2" aria-pressed="false">Jouer</button><div class="dockT ctl"><div class="l"><label for="tension2">Tensio</label><output id="tension2o"></output></div><input type="range" id="tension2" min="0" max="1" step="0.01" value="0.5"></div></div>
+<div class="dock"><button class="seal" id="play2" aria-pressed="false">Jouer</button><button class="lnk" id="nextStep2" type="button" hidden>Suivant ›</button><div class="dockT ctl"><div class="l"><label for="tension2">Tensio</label><output id="tension2o"></output></div><input type="range" id="tension2" min="0" max="1" step="0.01" value="0.5"></div></div>
 
 <script src="js/data.js"></script>
 <script src="js/engine.js"></script>
 <script src="js/viz.js"></script>
 <script src="js/ui.js"></script>
+<script src="js/table.js"></script>
 <script src="js/export.js"></script>
 <script src="js/main.js"></script>
 <script src="js/pwa.js"></script>

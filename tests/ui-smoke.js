@@ -40,6 +40,17 @@ setTimeout(async()=>{
  await new Promise(r=>setTimeout(r,2200));
  console.log('pendules visibles',!d.getElementById('pend').parentNode.hidden,'| qualité',d.getElementById('quality').value);
  d.getElementById('quality').value='eco'; d.getElementById('quality').dispatchEvent(new w.Event('change')); await new Promise(r=>setTimeout(r,300));
+ // sons à la demande, courbe de tension, campagne
+ const evb=[...d.querySelectorAll('#evBtns button')]; console.log('pad : boutons',evb.length,'actifs',evb.filter(b=>!b.disabled).length);
+ evb.forEach(b=>b.click()); await new Promise(r=>setTimeout(r,100));
+ [...d.querySelectorAll('.curvetools .lnk')][2].click(); await new Promise(r=>setTimeout(r,300));
+ console.log('courbe : mode',w.eval('S.curve.mode'),'| valeur actuelle',w.eval('live.eng.tensNow().toFixed(2)'));
+ d.getElementById('campGo').click(); await new Promise(r=>setTimeout(r,200));
+ console.log('campagne : étape',w.eval('camp.idx'),'| statut',d.getElementById('campStatus').textContent);
+ d.getElementById('campNext').click(); await new Promise(r=>setTimeout(r,200));
+ console.log('campagne : étape suivante',w.eval('camp.idx'));
+ d.getElementById('campGo').click();
+ console.log('campagne arrêtée',w.eval('camp.running'));
  d.getElementById('play').click();
  for(const [stems,midi,loop,fmt] of [[false,false,false,'wav'],[false,false,false,'mp3-192'],[true,true,true,'both']]){
   d.getElementById('fmt').value=fmt;

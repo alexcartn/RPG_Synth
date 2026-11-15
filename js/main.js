@@ -2,7 +2,7 @@
 /* ============================================================
    DÉMARRAGE
    ============================================================ */
-buildRing(); buildChapters(); buildPresets(); syncUI();
+buildRing(); buildChapters(); buildPresets(); buildTable(); syncUI();
 document.querySelector("#presets .lnk").setAttribute("aria-current","true");
 /* la partition suit la taille de son cadre et attend que les polices soient chargées */
 vizFit();

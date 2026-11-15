@@ -130,9 +130,9 @@ function codeOf(){ return btoa(unescape(encodeURIComponent(JSON.stringify(S))));
 function fromCode(c){ return JSON.parse(decodeURIComponent(escape(atob(c.trim())))); }
 
 function buildExport(host){
-  const sec=document.createElement("section"); sec.className="chap"; sec.id="ch-IX";
+  const sec=document.createElement("section"); sec.className="chap"; sec.id="ch-X";
   sec.innerHTML=
-    '<header><span class="num">IX</span><div><h2>Transcriptio</h2><p class="sub"><span class="fr">Export</span> Rendu hors ligne avec la graine et les réglages actuels, stéréo 44,1 kHz. Compte une à deux minutes pour trois minutes de musique, la progression est affichée.</p></div></header>'+
+    '<header><span class="num">X</span><div><h2>Transcriptio</h2><p class="sub"><span class="fr">Export</span> Rendu hors ligne avec la graine et les réglages actuels, stéréo 44,1 kHz. Compte une à deux minutes pour trois minutes de musique, la progression est affichée.</p></div></header>'+
     '<div class="fields">'+
       '<div class="ctl"><label for="dur">Durée</label><select id="dur"><option value="60">1 minute</option><option value="120">2 minutes</option><option value="180" selected>3 minutes</option><option value="300">5 minutes</option><option value="480">8 minutes</option></select></div>'+
       '<div class="ctl"><label for="fmt">Format audio</label><select id="fmt"><option value="wav">WAV 16 bits (sans perte)</option><option value="mp3-320">MP3 320 kb/s</option><option value="mp3-192">MP3 192 kb/s</option><option value="both">WAV et MP3 320 kb/s</option></select><p class="hint">Le MP3 est dix fois plus léger, pratique pour écouter ou envoyer. Pour retravailler dans un logiciel, ou pour une boucle sans couture, garde le WAV : le MP3 ajoute un léger silence en tête.</p></div>'+

@@ -31,9 +31,9 @@ function startLive(){
   if(!raf) raf=requestAnimationFrame(frame);
 }
 /* chaque note planifiée alimente la partition, et allume le cercle quand elle sonne */
-function noteFlash(t,off,kind,dur,vel){
+function noteFlash(t,off,kind,dur,vel,label){
   if(!live) return;
-  vizPush(t,off,kind,dur,vel);
+  vizPush(t,off,kind,dur,vel,label);
   if(!PITCHED[kind]||kind==="pad") return;
   const ms=Math.max(0,(t-live.ctx.currentTime)*1000); setTimeout(()=>flashNote(off,kind),ms);
 }
@@ -45,6 +45,7 @@ function stopLive(){
   eng.stop(ctx.currentTime);
   setTimeout(()=>{try{ctx.close();}catch(e){}},1600);
   setPlayUI(false); updateRingCap(); vizClear(); vizDraw(null); $("pend").parentNode.hidden=true;
+  if(camp.running) campStop();
 }
 /* fondu enchaîné : un nouveau moteur démarre pendant que l'ancien s'éteint, sans coupure */
 function crossfade(d){
@@ -60,6 +61,7 @@ function crossfade(d){
 function restartIfLive(d){ if(live) crossfade(d||1.5); }
 function setPlayUI(on){
   if(window.keepAwake) window.keepAwake(on);
+  evtState();
   ["play","play2"].forEach(id=>{const b=$(id); b.textContent=on?"Arrêter":"Jouer"; b.setAttribute("aria-pressed",on?"true":"false");});
 }
 $("play").onclick=$("play2").onclick=()=>{live?stopLive():startLive();};
@@ -79,7 +81,7 @@ function drawPend(){
 /* une image : 30 par seconde en mode économe, 60 sinon */
 function frame(ts){
   raf=0; if(!live) return;
-  if(!isEco()||ts-lastFrame>=33){ lastFrame=ts; vizDraw(live.ctx.currentTime,live.eng); drawPend(); }
+  if(!isEco()||ts-lastFrame>=33){ lastFrame=ts; vizDraw(live.ctx.currentTime,live.eng); drawPend(); tableFrame(); }
   raf=requestAnimationFrame(frame);
 }
 
@@ -198,7 +200,9 @@ const UI=[
    {k:"amb.clink",type:"range",label:"Tintements de verres",min:0,max:1,step:0.01,fmt:pct},
    {k:"amb.feu",type:"range",label:"Feu de cheminée",min:0,max:1,step:0.01,fmt:pct},
    {k:"amb.vent",type:"range",label:"Vent",min:0,max:1,step:0.01,fmt:pct},
-   {k:"amb.gouttes",type:"range",label:"Gouttes (crypte)",min:0,max:1,step:0.01,fmt:pct}]}]},
+   {k:"amb.gouttes",type:"range",label:"Gouttes (crypte)",min:0,max:1,step:0.01,fmt:pct}]},
+  {h:"Eventus", hf:"sons à la demande", items:[
+   {k:"evt.lvl",type:"range",label:"Niveau des sons du pad (touches 1 à 8)",min:0,max:1,step:0.01,fmt:pct}]}]},
  {num:"VI", title:"Spatium et Patina", fr:"Espace et patine", sub:"Réverbération, écho et le grain d'une vieille bande.", groups:[
   {h:"Spatium", hf:"espace", items:[
    {k:"fx.rev",type:"range",label:"Réverb",min:0,max:1,step:0.01,fmt:pct},
@@ -216,7 +220,10 @@ const UI=[
   {items:[
    {k:"form.shape",type:"select",label:"Forme",opts:[["constante","Constante"],["arche","Arche"],["vagues","Vagues"],["escalier","Escalier"]]},
    {k:"form.period",type:"range",label:"Période",min:1,max:10,step:0.5,fmt:v=>v+" min"},
-   {k:"form.amount",type:"range",label:"Amplitude",min:0,max:1,step:0.01,fmt:pct}]}]},
+   {k:"form.amount",type:"range",label:"Amplitude",min:0,max:1,step:0.01,fmt:pct}]},
+  {h:"Tensio", hf:"courbe de tension", items:[
+   {k:"curve.mode",type:"select",label:"Courbe",opts:[["off","Désactivée"],["loop","Répétée"],["once","Une fois, puis elle tient"]],restart:true},
+   {k:"curve.dur",type:"range",label:"Durée de la courbe",min:1,max:20,step:1,fmt:v=>v+(v>1?" minutes":" minute")}], node:()=>curveEditor()}]},
  {num:"VIII", title:"Rotae et Pendula", fr:"Boucles et pendules", sub:"Deux machines à hasard réglé : des boucles de bande de longueurs premières entre elles, et des pendules qui se désynchronisent puis se retrouvent.", groups:[
   {h:"Rotae", hf:"boucles de bande", items:[
    {k:"loops.lvl",type:"range",label:"Niveau (0 = absentes)",min:0,max:1,step:0.01,fmt:pct},
@@ -251,7 +258,7 @@ function mkCtl(it){
   const entry={it,el,out};
   const upd=()=>{ if(out) out.textContent=it.fmt(parseFloat(el.value)); };
   if(it.type==="range"){
-    el.addEventListener("input",()=>{ setP(it.k,parseFloat(el.value)); upd(); if(live&&!it.restart){live.eng.setLevels();} if(it.k==="tempo"||it.k==="meter") updateTempo(); });
+    el.addEventListener("input",()=>{ setP(it.k,parseFloat(el.value)); upd(); if(it.k==="tension") releaseCurve(); if(live&&!it.restart){live.eng.setLevels();} if(it.k==="tempo"||it.k==="meter") updateTempo(); });
     el.addEventListener("change",()=>{ if(it.reverb&&live) live.eng.setReverb(); if(it.restart) restartIfLive(); });
   }else{
     el.addEventListener("change",()=>{ const v=it.num?parseFloat(el.value):el.value; setP(it.k,v); if(live&&!it.restart) live.eng.setLevels(); if(it.restart) restartIfLive(); if(it.ring||it.k==="root") updateRingCap(); if(it.k==="tempo"||it.k==="meter") updateTempo(); });
@@ -296,25 +303,27 @@ function buildChapters(){
       if(gr.fin){ const d=document.createElement("details"); d.className="fin"; const s=document.createElement("summary"); s.textContent=gr.fin; d.appendChild(s); sec.appendChild(d); container=d; }
       else if(gr.h){ const g=document.createElement("div"); g.className="group"; const h=document.createElement("h3"); h.textContent=gr.h; if(gr.hf){ const f=document.createElement("span"); f.className="fr"; f.textContent=gr.hf; h.appendChild(f); } g.appendChild(h); sec.appendChild(g); container=g; }
       const f=document.createElement("div"); f.className="fields"; gr.items.forEach(it=>f.appendChild(mkCtl(it))); container.appendChild(f);
+      if(gr.node) container.appendChild(gr.node());
     });
     host.appendChild(sec);
   });
+  buildCampaign(host);
   buildExport(host);
   buildToc();
 }
 function syncUI(){
   CTL.forEach(({it,el,upd,sync2})=>{ el.value=String(getP(it.k)); if(el.tagName==="SELECT"&&el.value!==String(getP(it.k))){ el.value=""; } upd(); if(sync2) sync2(); });
-  $("seed").value=S.seed; updateTempo(); updateRingCap();
+  $("seed").value=S.seed; updateTempo(); updateRingCap(); if(typeof curveDraw==="function") curveDraw();
 }
 function updateTempo(){ $("tempoNum").textContent=S.tempo; $("tempoCap").textContent="noires par minute · "+S.meter; }
 
 /* préréglages et scènes : chaque changement se fait par fondu enchaîné quand la lecture tourne */
 const fadeSec=()=>parseFloat($("fade").value)||4;
-function loadScene(state,btn){
+function loadScene(state,btn,fade){
   S=merge(clone(DEFAULT),clone(state));
   document.querySelectorAll("#presets .lnk,#scenes .lnk").forEach(x=>x.removeAttribute("aria-current"));
   if(btn) btn.setAttribute("aria-current","true");
-  syncUI(); restartIfLive(fadeSec());
+  syncUI(); restartIfLive(fade||fadeSec());
 }
 function buildPresets(){
   const row=$("presets");
@@ -338,9 +347,9 @@ function drawScenes(){
 $("saveScene").onclick=()=>{
   const a=getScenes(); if(a.length>=8){ a.shift(); }
   const n=(a.reduce((m,x)=>Math.max(m,x.n||0),0))+1;
-  a.push({n,name:"Scaena "+n+" · "+NOTES[S.root],state:clone(S)}); putScenes(a); drawScenes();
+  a.push({n,name:"Scaena "+n+" · "+NOTES[S.root],state:clone(S)}); putScenes(a); drawScenes(); campRefresh();
 };
-$("clearScenes").onclick=()=>{ putScenes([]); drawScenes(); };
+$("clearScenes").onclick=()=>{ putScenes([]); drawScenes(); campRefresh(); };
 $("quality").value=getQuality();
 $("quality").onchange=()=>{ try{ localStorage.setItem("bourdon.quality",$("quality").value); }catch(e){} restartIfLive(1.5); };
 $("seed").onchange=()=>{ S.seed=Math.max(1,Math.min(999999,parseInt($("seed").value)||1)); $("seed").value=S.seed; restartIfLive(); };

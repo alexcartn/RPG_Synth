@@ -88,7 +88,9 @@ const DEFAULT = {
   pend:{lvl:0, count:6, period:24, inst:"carillon"},
   amb:{murmur:0.35, clink:0.5, feu:0.15, vent:0, gouttes:0},
   fx:{rev:0.4, size:2.6, dark:0.5, dly:0, dlyDiv:1.5, fb:0.4, sat:0.15, wow:0.12, veil:0.3, hiss:0},
-  form:{shape:"constante", period:4, amount:0.5}
+  form:{shape:"constante", period:4, amount:0.5},
+  evt:{lvl:0.7},
+  curve:{mode:"off", dur:6, pts:Array.from({length:96},()=>0.5)}
 };
 const PRESETS = [
   ["Taberna", {}],

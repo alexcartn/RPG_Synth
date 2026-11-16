@@ -1,33 +1,15 @@
 "use strict";
 /* ============================================================
-   TABLE DE JEU : sons à la demande, campagne de scènes, courbe de tension
+   TABLE DE JEU : campagne de scènes, courbe de tension
    ============================================================ */
 
-/* ---------- sons à la demande ---------- */
-const EVTS=[["porte","Porte"],["cloche","Cloche"],["tonnerre","Tonnerre"],["cor","Cor"],["coups","Coups"],["verre","Verre"],["magie","Magie"],["loup","Loup"]];
-function fireEvent(name){
-  if(!live) return;
-  live.eng.fire(name);
-  const b=document.querySelector('[data-evt="'+name+'"]');
-  if(b){ b.classList.add("hit"); setTimeout(()=>b.classList.remove("hit"),450); }
-}
-function evtState(){ document.querySelectorAll("#evBtns button").forEach(b=>{ b.disabled=!live; }); const n=$("evNote"); if(n) n.hidden=!!live; }
-
 function buildTable(){
-  const host=$("evBtns");
-  EVTS.forEach(([k,n],i)=>{
-    const b=document.createElement("button"); b.type="button"; b.className="evb"; b.dataset.evt=k;
-    b.innerHTML='<kbd>'+(i+1)+'</kbd>'+n; b.onclick=()=>fireEvent(k); host.appendChild(b);
-  });
-  evtState();
-  /* touches 1 à 8 : sons ; N : étape suivante de la campagne */
+  /* N : étape suivante de la campagne */
   document.addEventListener("keydown",e=>{
     if(e.ctrlKey||e.metaKey||e.altKey||document.body.classList.contains("atelier")) return;
     const t=e.target, tg=t&&t.tagName;
     if(tg==="SELECT"||tg==="TEXTAREA"||(tg==="INPUT"&&t.type!=="range"&&t.type!=="checkbox")) return;
-    const n=parseInt(e.key,10);
-    if(n>=1&&n<=EVTS.length){ fireEvent(EVTS[n-1][0]); e.preventDefault(); }
-    else if((e.key==="n"||e.key==="N")&&!(typeof JEU!=="undefined"&&JEU.on)){ campNext(); }
+    if((e.key==="n"||e.key==="N")&&!(typeof JEU!=="undefined"&&JEU.on)){ campNext(); }
   });
   $("nextStep").onclick=$("nextStep2").onclick=()=>campNext();
 }

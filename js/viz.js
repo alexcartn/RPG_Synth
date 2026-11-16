@@ -70,10 +70,6 @@ function vizDraw(now,eng){
   for(const e of VIZ.ev){
     if(e.t>now+VIZ_FUTURE) continue;
     const x=x0+(e.t-now)*pps, w=Math.max(5,e.dur*pps), age=now-e.t, played=age>=0, fade=played?Math.max(0.18,1-age/VIZ_PAST*0.85):1;
-    if(e.kind==="evt"){ /* son à la demande : filet doré avec son nom */
-      c.globalAlpha=fade*(played?0.9:0.6); c.strokeStyle=C.gold; c.lineWidth=1.5; c.beginPath(); c.moveTo(Math.round(x)+0.5,top-2); c.lineTo(Math.round(x)+0.5,H-bot+9); c.stroke();
-      c.fillStyle=C.gold; c.font='italic 12px "Alegreya", Georgia, serif'; c.fillText(e.label||"",x+4,top+12); c.font='italic 11px "Alegreya", Georgia, serif'; continue;
-    }
     if(e.kind==="stomp"||e.kind==="tap"||e.kind==="shk"){
       const hh=e.kind==="stomp"?12:e.kind==="tap"?7:3, y=H-bot+(e.kind==="shk"?16:20);
       c.globalAlpha=fade*(played?0.85:0.5); c.fillStyle=C.ink; c.fillRect(Math.round(x)-1,y-hh/2,2,hh); continue;

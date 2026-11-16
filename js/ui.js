@@ -95,7 +95,6 @@ function crossfade(d){
 function restartIfLive(d){ if(live) crossfade(d||0.6); }
 function setPlayUI(on){
   if(window.keepAwake) window.keepAwake(on);
-  evtState();
   ["play","play2","play3"].forEach(id=>{const b=$(id); b.textContent=on?"Arrêter":"Jouer"; b.setAttribute("aria-pressed",on?"true":"false");});
   if(typeof jeuState==="function") jeuState();
 }
@@ -178,7 +177,7 @@ function toggleNote(p){
   if(S.custom.length>=24) S.custom[p]=S.custom[p]?0:1; else S.custom[p/2]=S.custom[p/2]?0:1;
   syncUI(); if(live) replanSoon("all",true);
 }
-setInterval(()=>{ if(live){ const k=curScaleKey(); if(k!==live.lastKey){live.lastKey=k; updateRingCap();} } },500);
+setInterval(()=>{ if(typeof atScaleSync==="function") atScaleSync(); if(live){ const k=curScaleKey(); if(k!==live.lastKey){live.lastKey=k; updateRingCap();} } },500);
 
 /* ---------- construction des contrôles ---------- */
 const pct=v=>Math.round(v*100)+" %";
@@ -254,9 +253,7 @@ const UI=[
    {k:"nature.mer",type:"range",label:"Vagues (mer)",min:0,max:1,step:0.01,fmt:pct},
    {k:"nature.nuit",type:"range",label:"Nuit (grillons)",min:0,max:1,step:0.01,fmt:pct},
    {k:"nature.ruisseau",type:"range",label:"Ruisseau",min:0,max:1,step:0.01,fmt:pct},
-   {k:"nature.oiseaux",type:"range",label:"Oiseaux",min:0,max:1,step:0.01,fmt:pct}]},
-  {h:"Eventus", hf:"sons à la demande", items:[
-   {k:"evt.lvl",type:"range",label:"Niveau des sons du pad (touches 1 à 8)",min:0,max:1,step:0.01,fmt:pct}]}]},
+   {k:"nature.oiseaux",type:"range",label:"Oiseaux",min:0,max:1,step:0.01,fmt:pct}]}]},
  {num:"VI", title:"Spatium et Patina", fr:"Espace et patine", sub:"Réverbération, écho et le grain d'une vieille bande.", groups:[
   {h:"Spatium", hf:"espace", items:[
    {k:"vol",type:"range",label:"Volume général (l'export est toujours normalisé)",min:0,max:1,step:0.01,fmt:pct},

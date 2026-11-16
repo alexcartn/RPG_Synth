@@ -242,21 +242,10 @@ html{scroll-padding-top:calc(var(--toc-h) + var(--sp-md))}
 @media (max-width:920px){ .score canvas{height:128px} .legend{font-size:.82rem; gap:var(--sp-xs) var(--sp-md)} }
 
 /* ---------- table de jeu : sons, campagne, courbe ---------- */
-.evt{display:flex; flex-wrap:wrap; align-items:center; gap:var(--sp-sm) var(--sp-lg); margin:0 0 var(--sp-lg)}
-.evlab{font:400 .95rem/1 var(--caps); letter-spacing:.12em; color:var(--ink-2)}
-.evbtns{display:flex; flex-wrap:wrap; gap:var(--sp-sm); flex:1 1 auto}
-.evb{font:400 .98rem/1 var(--caps); letter-spacing:.05em; color:var(--ink); background:transparent; border:1px solid var(--ink); border-radius:0; padding:9px 14px 9px 10px; cursor:pointer;
-  display:inline-flex; align-items:baseline; gap:.55em; transition:background-color .15s var(--ease), color .15s var(--ease)}
-.evb kbd{font:400 .8rem/1 var(--body); color:var(--rubric); font-style:italic}
-.evb:hover:not(:disabled){background:var(--parch-3)}
-.evb:active:not(:disabled), .evb.hit{background:var(--ink); color:var(--parch)}
-.evb.hit kbd{color:var(--gold)}
-.evb:disabled{opacity:.4; cursor:default}
+.evt{display:flex; justify-content:flex-start; margin:0 0 var(--sp-lg)}
+.evt:has(> [hidden]){display:none}
 #nextStep{margin-left:auto}
 @media (max-width:920px){
-  .evbtns{display:grid; grid-template-columns:repeat(4,1fr); gap:var(--sp-xs)}
-  .evb{justify-content:center; padding:12px 4px; font-size:.88rem; letter-spacing:.03em}
-  .evb kbd{display:none}
   .dock #nextStep2{font-size:1rem; white-space:nowrap}
 }
 #nextStep2{display:none}
@@ -313,11 +302,9 @@ canvas#curveCv{display:block; width:100%; height:150px; background:var(--parch-2
 }
 
 #presetGloss:empty{display:none}
-.evnote{margin-left:.6em; font:italic 400 .92rem/1 var(--body); letter-spacing:0; text-transform:none; color:var(--ink-2)}
 .marge .ringcap{margin-top:var(--sp-xs)}
 @media (max-width:920px){
   .marge{gap:var(--sp-md)}
-  .evlab{flex:1 1 100%}
 }
 
 /* ---------- mode Jeu ---------- */
@@ -419,11 +406,11 @@ body.atelier .folio{padding-bottom:var(--sp-lg)}
 .at-slot:not(:first-of-type) .n{padding-top:6px}
 .at-slot{position:relative}
 /* en mode atelier : l'espace va aux réglages */
-body.atelier .head .lede, body.atelier .legend, body.atelier .evlab, body.atelier .evbtns{display:none}
+body.atelier .head .lede, body.atelier .legend{display:none}
 body.atelier .head{margin-bottom:var(--sp-sm)}
 body.atelier .score canvas{height:84px}
 body.atelier .score{margin-bottom:var(--sp-sm)}
-body.atelier .evt{justify-content:flex-end; margin-bottom:var(--sp-sm)}
+body.atelier .evt{margin-bottom:var(--sp-sm)}
 @media (max-width:700px){ body.atelier .score canvas{height:72px} }
 @media (max-width:700px){
   .at-kbbar{flex-wrap:nowrap; gap:var(--sp-sm); margin-bottom:var(--sp-xs)}
@@ -440,8 +427,6 @@ body.atelier .evt{justify-content:flex-end; margin-bottom:var(--sp-sm)}
 .modes .lnk:hover{color:var(--ink)}
 .modes .lnk[aria-pressed="true"]{color:var(--ink); border-bottom-color:var(--rubric)}
 #nextStep{margin-left:auto}
-.evt{justify-content:flex-start}
-body.atelier .evt{justify-content:flex-start}
 .at-bar{align-items:center; gap:var(--sp-sm) var(--sp-xl)}
 .atpatch{flex:1 1 18ch; max-width:30ch}
 .atsave{flex:1 1 100%; margin-top:0}
@@ -468,8 +453,13 @@ details.atsave{margin-top:0}
 .at-mod .fields > .ctl:only-child{grid-column:1 / -1}
 #atHint{margin:var(--sp-sm) 0 0; max-width:none}
 @media (max-width:640px){
-  body.jeu .evbtns{display:flex; flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none; gap:var(--sp-xs)}
-  body.jeu .evbtns::-webkit-scrollbar{display:none}
-  body.jeu .evb{flex:none; padding:10px 14px}
   body.jeu .jeu-top{padding-bottom:var(--sp-md)}
 }
+
+/* clavier de l'atelier dans la gamme : touches blanches seules, toniques marquées */
+.piano.scalemode .pk.w{border-right-width:0}
+.piano.scalemode .pk.w:last-child{border-right-width:1px}
+.piano.scalemode .pk.tonic{background:var(--parch-2); box-shadow:inset 0 -4px 0 var(--rubric)}
+.piano.scalemode .pk.tonic span{color:var(--rubric)}
+.piano.scalemode .pk.w.on{background:oklch(0.85 0.08 85)}
+@media (max-width:700px){ .piano.scalemode .pk.w span{display:block; font-size:.68rem} }

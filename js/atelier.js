@@ -3,7 +3,7 @@
    ATELIER : l'interface du synthétiseur perso (aperçus, boutons, matrice, clavier, patches)
    ============================================================ */
 let MODE="reglage";
-const AT={built:false, oct:0, hold:false, latch:[], notes:new Map(), drawQ:0, dirty:false, userKey:"bourdon.synpatches"};
+const AT={built:false, scale:true, keys:[], sig:"", oct:0, hold:false, latch:[], notes:new Map(), drawQ:0, dirty:false, userKey:"bourdon.synpatches"};
 
 const synGet=p=>p.split(".").reduce((a,k)=>a[k],S.syn);
 function synSet(p,v){ const ks=p.split("."), l=ks.pop(); ks.reduce((a,k)=>a[k],S.syn)[l]=v; }
@@ -102,41 +102,64 @@ const PIANO_KEYS=37, BLACK=[1,3,6,8,10];
 const NOTE_NAMES=["Do","Do#","Ré","Ré#","Mi","Fa","Fa#","Sol","Sol#","La","La#","Si"];
 const KEYMAP={KeyZ:0,KeyS:1,KeyX:2,KeyD:3,KeyC:4,KeyV:5,KeyG:6,KeyB:7,KeyH:8,KeyN:9,KeyJ:10,KeyM:11,Comma:12,KeyL:13,Period:14,Semicolon:15,Slash:16,
   KeyQ:12,Digit2:13,KeyW:14,Digit3:15,KeyE:16,KeyR:17,Digit5:18,KeyT:19,Digit6:20,KeyY:21,Digit7:22,KeyU:23,KeyI:24,Digit9:25,KeyO:26,Digit0:27,KeyP:28};
+const SC_BOT=["KeyZ","KeyX","KeyC","KeyV","KeyB","KeyN","KeyM","Comma","Period","Slash"], SC_TOP=["KeyQ","KeyW","KeyE","KeyR","KeyT","KeyY","KeyU","KeyI","KeyO","KeyP"], SC_KEYS=22;
 const pianoBase=()=>48+12*AT.oct;
+/* les touches : soit chromatiques (37), soit toutes dans la gamme du moment (22, une touche par degré) */
+function atKeyList(){
+  const ks=[];
+  if(AT.scale){
+    const iv=ivOf(S,curScaleKey()), n=iv.length, base=12+12*AT.oct;
+    for(let i=0;i<SC_KEYS;i++){ const off=base+degOff(iv,i), tonic=i%n===0; ks.push({off,black:false,tonic,label:tonic?noteName(iv[0]):""}); }
+  }else{
+    const base=pianoBase();
+    for(let i=0;i<PIANO_KEYS;i++){ const midi=base+i, pc=((midi%12)+12)%12; ks.push({off:midi-36-S.root,black:BLACK.indexOf(pc)>=0,tonic:false,label:pc===0?NOTE_NAMES[0]+(Math.floor(midi/12)-1):"",name:NOTE_NAMES[pc]+(Math.floor(midi/12)-1)}); }
+  }
+  return ks;
+}
+function atSig(){ const k=curScaleKey(); return AT.scale?k+"|"+S.root+"|"+ivOf(S,k).join(","):"chrom"; }
 function buildPiano(){
-  const host=$("piano"); host.innerHTML=""; const base=pianoBase(); let whites=0;
-  for(let i=0;i<PIANO_KEYS;i++){
-    const midi=base+i, pc=((midi%12)+12)%12, black=BLACK.indexOf(pc)>=0, k=document.createElement("div");
-    k.className="pk "+(black?"b":"w"); k.dataset.midi=midi; k.setAttribute("role","button"); k.setAttribute("aria-label",NOTE_NAMES[pc]+(Math.floor(midi/12)-1));
-    if(!black){ whites++; if(pc===0) k.innerHTML='<span>'+NOTE_NAMES[pc]+(Math.floor(midi/12)-1)+'</span>'; }
+  const host=$("piano"); host.innerHTML=""; AT.keys=atKeyList(); AT.sig=atSig(); let whites=0;
+  host.classList.toggle("scalemode",!!AT.scale);
+  AT.keys.forEach((K,i)=>{
+    const k=document.createElement("div");
+    k.className="pk "+(K.black?"b":"w")+(K.tonic?" tonic":""); k.dataset.i=i; k.setAttribute("role","button");
+    k.setAttribute("aria-label",K.name||(noteName(K.off-12*Math.floor(K.off/12))+(K.tonic?", tonique":"")));
+    if(!K.black){ whites++; if(K.label) k.innerHTML='<span>'+K.label+'</span>'; }
     else k.style.left=((whites)*(100/22))+"%";
     host.appendChild(k);
-  }
+  });
+  AT.notes.forEach(n=>{ const k=pkEl(n.i); if(k) k.classList.add("on"); });
 }
-function pkEl(midi){ return document.querySelector('#piano .pk[data-midi="'+midi+'"]'); }
-function atOn(id,midi){
-  if(AT.notes.has(id)) return;
+function pkEl(i){ return document.querySelector('#piano .pk[data-i="'+i+'"]'); }
+function atOn(id,i){
+  if(AT.notes.has(id)||!AT.keys[i]) return;
   if(!live){ atelierStartLive(); }
   if(!live) return;
-  const off=midi-36-S.root, h=live.eng.synOn(off,0.7);
-  AT.notes.set(id,{h,midi}); const k=pkEl(midi); if(k) k.classList.add("on");
+  const h=live.eng.synOn(AT.keys[i].off,0.7);
+  AT.notes.set(id,{h,i}); const k=pkEl(i); if(k) k.classList.add("on");
 }
 function atOff(id){
   const n=AT.notes.get(id); if(!n) return; AT.notes.delete(id);
-  const k=pkEl(n.midi); if(k) k.classList.remove("on");
+  const k=pkEl(n.i); if(k) k.classList.remove("on");
   if(AT.hold) AT.latch.push(n); else n.h.release();
 }
 function atReleaseAll(){
-  AT.notes.forEach((n,id)=>{ n.h.release(); const k=pkEl(n.midi); if(k) k.classList.remove("on"); }); AT.notes.clear();
+  AT.notes.forEach(n=>n.h.release()); AT.notes.clear();
   AT.latch.forEach(n=>n.h.release()); AT.latch=[]; document.querySelectorAll("#piano .pk.on").forEach(k=>k.classList.remove("on"));
 }
+/* la gamme du thème change au fil des sections : le clavier la suit */
+function atScaleSync(){ if(AT.built&&MODE==="atelier"&&AT.sig!==atSig()){ buildPiano(); atState(); } }
+function atScaleUI(){ const b=$("atScale"); if(b) b.setAttribute("aria-pressed",AT.scale?"true":"false"); }
 function atelierStartLive(){ if(live) return; S.mach=false; atMachUI(); startLive({fade:0.25}); }
 function atKeys(e,down){
   if(MODE!=="atelier"||e.ctrlKey||e.metaKey||e.altKey) return;
   const t=e.target, tg=t&&t.tagName; if(tg==="SELECT"||tg==="TEXTAREA"||(tg==="INPUT"&&t.type!=="range"&&t.type!=="checkbox")) return;
-  const idx=KEYMAP[e.code]; if(idx===undefined) return;
+  let idx;
+  if(AT.scale){ const n=ivOf(S,curScaleKey()).length, b=SC_BOT.indexOf(e.code), u=SC_TOP.indexOf(e.code); idx=b>=0?b:u>=0?n+u:undefined; }
+  else idx=KEYMAP[e.code];
+  if(idx===undefined||idx>=AT.keys.length) return;
   e.preventDefault(); if(down&&e.repeat) return;
-  const id="k"+e.code; if(down) atOn(id,pianoBase()+idx); else atOff(id);
+  const id="k"+e.code; if(down) atOn(id,idx); else atOff(id);
 }
 
 /* ---------- machine ---------- */
@@ -145,7 +168,14 @@ function setMach(on){
   S.mach=on; atMachUI();
   if(live){ live.eng.setLevels(); live.eng.replan("all"); }
 }
-function atState(){ const h=$("atHint"); if(h) h.textContent=live?"Joue au clavier de l'ordinateur (Z, S, X, D, C… et Q, 2, W, 3, E…) ou touche le clavier ci-dessous.":"Touche une note ou une touche du clavier : l'atelier démarre, machine en sourdine."; atMachUI(); }
+function atState(){
+  const h=$("atHint"); if(h){
+    const go=live?"":"Touche une note ou une touche : l'atelier démarre, machine en sourdine. ";
+    if(AT.scale){ const k=curScaleKey(); h.textContent=go+"Toutes les touches sont dans la gamme du thème ("+NOTES[S.root]+" "+(SC[k]||SC.mixolydien).n.toLowerCase()+"), le clavier la suit quand elle change. Ordinateur : Z X C V B N M , . / puis Q W E R T Y U I O P, les marques sont les toniques."; }
+    else h.textContent=go+"Clavier chromatique. Ordinateur : Z, S, X, D, C… et Q, 2, W, 3, E…";
+  }
+  atMachUI(); atScaleUI();
+}
 
 /* ---------- construction ---------- */
 function buildAtelier(){
@@ -198,7 +228,7 @@ function buildAtelier(){
   c3.appendChild(mx);
   grid.appendChild(c1); grid.appendChild(c2); grid.appendChild(c3); sec.appendChild(grid);
   /* clavier */
-  const kb=atEl("div","at-kb"); kb.innerHTML='<div class="row at-kbbar"><span class="ctl"><label for="atOct">Octave du clavier</label></span><select id="atOct"></select><button class="btn" id="atHold" type="button" aria-pressed="false">Maintien</button><button class="btn" id="atPanic" type="button">Tout couper</button></div><div class="piano" id="piano" aria-label="Clavier"></div>';
+  const kb=atEl("div","at-kb"); kb.innerHTML='<div class="row at-kbbar"><span class="ctl"><label for="atOct">Octave du clavier</label></span><select id="atOct"></select><button class="btn" id="atScale" type="button" aria-pressed="true" title="Toutes les touches dans la gamme du thème en cours">Dans la gamme</button><button class="btn" id="atHold" type="button" aria-pressed="false">Maintien</button><button class="btn" id="atPanic" type="button">Tout couper</button></div><div class="piano" id="piano" aria-label="Clavier"></div>';
   sec.appendChild(kb);
   /* échanger un patch */
   const ex=atEl("details","fin"); ex.innerHTML='<summary>Échanger un patch (texte)</summary><div class="fields"><div class="ctl"><label for="synOut">Ton patch</label><textarea id="synOut" readonly></textarea><div class="row"><button class="lnk" id="synCopy" type="button">Copier</button></div></div><div class="ctl"><label for="synIn">Coller un patch</label><textarea id="synIn" placeholder="Colle ici un patch reçu"></textarea><div class="row"><button class="lnk" id="synLoadTxt" type="button">Charger ce patch</button></div></div></div>';
@@ -207,12 +237,14 @@ function buildAtelier(){
   /* branchements */
   const oc=$("atOct"); [[-1,"Grave (Do2)"],[0,"Médium (Do3)"],[1,"Aigu (Do4)"],[2,"Très aigu (Do5)"]].forEach(([v,l])=>{ const o=document.createElement("option"); o.value=v; o.textContent=l; oc.appendChild(o); }); oc.value=AT.oct; oc.setAttribute("aria-label","Octave du clavier");
   oc.onchange=()=>{ atReleaseAll(); AT.oct=parseInt(oc.value,10); buildPiano(); };
+  try{ AT.scale=localStorage.getItem("bourdon.atscale")!=="0"; }catch(e){}
   buildPiano();
   const pk=$("piano"); const target=e=>e.target.closest&&e.target.closest(".pk");
-  pk.addEventListener("pointerdown",e=>{ const k=target(e); if(!k) return; e.preventDefault(); try{ k.setPointerCapture(e.pointerId); }catch(x){} atOn("p"+e.pointerId,parseInt(k.dataset.midi,10)); });
+  pk.addEventListener("pointerdown",e=>{ const k=target(e); if(!k) return; e.preventDefault(); try{ k.setPointerCapture(e.pointerId); }catch(x){} atOn("p"+e.pointerId,parseInt(k.dataset.i,10)); });
   const up=e=>atOff("p"+e.pointerId); pk.addEventListener("pointerup",up); pk.addEventListener("pointercancel",up); pk.addEventListener("lostpointercapture",up);
   document.addEventListener("keydown",e=>atKeys(e,true)); document.addEventListener("keyup",e=>atKeys(e,false));
-  $("atHold").onclick=()=>{ AT.hold=!AT.hold; $("atHold").setAttribute("aria-pressed",AT.hold?"true":"false"); if(!AT.hold){ AT.latch.forEach(n=>n.h.release()); AT.latch=[]; document.querySelectorAll("#piano .pk.on").forEach(k=>{ if(![...AT.notes.values()].some(n=>n.midi==k.dataset.midi)) k.classList.remove("on"); }); } };
+  $("atHold").onclick=()=>{ AT.hold=!AT.hold; $("atHold").setAttribute("aria-pressed",AT.hold?"true":"false"); if(!AT.hold){ AT.latch.forEach(n=>n.h.release()); AT.latch=[]; document.querySelectorAll("#piano .pk.on").forEach(k=>{ if(![...AT.notes.values()].some(n=>n.i==k.dataset.i)) k.classList.remove("on"); }); } };
+  $("atScale").onclick=()=>{ atReleaseAll(); AT.scale=!AT.scale; try{ localStorage.setItem("bourdon.atscale",AT.scale?"1":"0"); }catch(e){} buildPiano(); atState(); };
   $("atPanic").onclick=atReleaseAll;
   $("atMach").onclick=()=>setMach(S.mach===false);
   fillPatchSelect("f0");
@@ -230,7 +262,7 @@ function buildAtelier(){
 function atelierSync(){
   if(!AT.built) return;
   document.querySelectorAll("#atelier .knob").forEach(el=>paintKnob(el,el._spec));
-  atMachUI(); atDraw();
+  buildPiano(); atMachUI(); atDraw();
 }
 
 /* ---------- modes : réglages, jeu, atelier ---------- */

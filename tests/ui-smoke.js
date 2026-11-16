@@ -90,9 +90,7 @@ setTimeout(async()=>{
  d.getElementById('atMach').click(); console.log('atelier : machine en sourdine',w.eval('S.mach===false')); d.getElementById('atMach').click();
  w.eval('live.eng.synOn(0,0.7).release()');
  d.getElementById('reglBtn').click();
- // sons à la demande, courbe de tension, campagne
- const evb=[...d.querySelectorAll('#evBtns button')]; console.log('pad : boutons',evb.length,'actifs',evb.filter(b=>!b.disabled).length);
- evb.forEach(b=>b.click()); await new Promise(r=>setTimeout(r,100));
+ // courbe de tension, campagne
  [...d.querySelectorAll('.curvetools .lnk')][2].click(); await new Promise(r=>setTimeout(r,300));
  console.log('courbe : mode',w.eval('S.curve.mode'),'| valeur actuelle',w.eval('live.eng.tensNow().toFixed(2)'));
  d.getElementById('campGo').click(); await new Promise(r=>setTimeout(r,200));

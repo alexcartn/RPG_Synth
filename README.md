@@ -17,6 +17,7 @@ Troisième mode (interrupteur « Réglages · Jeu · Atelier » sous la partitio
 - Trois enveloppes ADSR (volume, filtre, enveloppe 2) dessinées, deux LFO (sinus, triangle, dent de scie, carré), une matrice de modulation à quatre emplacements : source (LFO 1, LFO 2, enveloppe 2, vélocité) vers destination (hauteur, coupure, résonance, trémolo, panoramique, quantité de FM, désaccord de B) avec une quantité de -100 à +100 %.
 - Saturation, niveau, sensibilité à la vélocité. Bibliothèque de dix patches (Pad doux, Basse sub, Pincé synthé, Cloche FM, Orgue, Cuivre doux, Voyelle chantée, Souffle, Lead brillant, Nappe de verre), tirage au sort de patches (valeurs musicales), enregistrement sous un nom dans le navigateur, échange par texte (JSON).
 - Jeu : clavier à l'écran de trois octaves (multitouch, un doigt par note), et clavier d'ordinateur en disposition de piano (Z S X D C V G B H N J M pour la première octave, Q 2 W 3 E R 5 T 6 Y 7 U pour la suivante, repérées par position donc valables en AZERTY). Maintien pour prolonger les notes, « Tout couper ». Le clavier reste collé en bas de l'écran pour jouer en réglant.
+- Clavier « dans la gamme » (activé par défaut, bouton « Dans la gamme ») : chaque touche est un degré de la gamme du thème qui joue, la tonique est marquée, et le clavier suit la gamme quand une section change. L'ordinateur joue Z X C V B N M , . / puis Q W E R T Y U I O P. Idéal pour improviser sur le thème sans fausse note, quarts de ton compris. Désactivé, on retrouve le clavier chromatique.
 - La machine peut se mettre en sourdine (« La machine joue / en sourdine ») : l'atelier se joue alors seul. Au premier appui sur une touche, l'atelier démarre tout seul, machine en sourdine.
 - Le synthé est aussi un instrument comme les autres : « Synthé perso (Atelier) » dans les instruments de la mélodie, du canon, des boucles, des pendules et du jeu, et dans les timbres de nappes. Le patch est enregistré avec les scènes et les réglages.
 - Coût : une voix de l'atelier compte une trentaine de nœuds audio (unisson, filtre, enveloppes, LFO). Utilisé comme instrument de toutes les voix à la fois, le rendu coûte environ le double du préréglage par défaut (mesuré : 50 % d'un cœur contre 24 % dans un navigateur sans GPU). Le mode Économe limite l'unisson à 3 voix.
@@ -59,7 +60,6 @@ Troisième mode (interrupteur « Réglages · Jeu · Atelier » sous la partitio
 
 ## Table de jeu
 
-- Eventus : huit sons à la demande (porte, cloche, tonnerre, cor, coups, verre, magie, loup), touches 1 à 8, tous synthétisés et accordés sur la gamme courante. Ils apparaissent sur la partition. Ils ne sont pas dans l'export.
 - Itinerarium : une campagne, c'est-à-dire une suite d'étapes (préréglage ou scène mémorisée, durée, fondu). Elle avance seule ou à la touche N / au bouton « Suivant », se répète si on veut, et se mémorise dans le navigateur.
 - Tensio : un curseur, ou une courbe de tension dessinée au doigt (répétée ou jouée une fois) qui module percussion, nappes, bourdon, ambiance et densité mélodique. La courbe est rendue dans l'export.
 

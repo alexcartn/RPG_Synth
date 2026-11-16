@@ -98,7 +98,6 @@ const DEFAULT = {
   amb:{murmur:0.35, clink:0.5, feu:0.15, vent:0, gouttes:0},
   fx:{rev:0.4, size:2.6, dark:0.5, room:"gen", dly:0, dlyDiv:1.5, fb:0.4, sat:0.15, wow:0.12, veil:0.3, hiss:0},
   form:{shape:"constante", period:4, amount:0.5},
-  evt:{lvl:0.7},
   mach:true,
   syn:clone(SYN_DEFAULT),
   mus:{logic:"modal", model:"physique"},

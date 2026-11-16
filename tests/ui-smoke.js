@@ -19,7 +19,7 @@ class Node{constructor(){this.gain=new Param();this.frequency=new Param();this.d
 class Ctx{constructor(){this.sampleRate=44100;this.currentTime=0;this.destination=new Node()}
  createGain(){return new Node()}createDynamicsCompressor(){return new Node()}createAnalyser(){const n=new Node();n.fftSize=2048;n.frequencyBinCount=1024;n.getFloatTimeDomainData=a=>a.fill(0);n.getFloatFrequencyData=a=>a.fill(-100);return n}createWaveShaper(){return new Node()}createDelay(){return new Node()}
  createBuffer(c,l,sr){const d=[...Array(c)].map(()=>new Float32Array(l));return{numberOfChannels:c,length:l,sampleRate:sr,getChannelData:i=>d[i]}}
- createConvolver(){return new Node()}createOscillator(){return new Node()}createConstantSource(){return new Node()}createPeriodicWave(){return {}}createBiquadFilter(){return new Node()}createBufferSource(){return new Node()}createStereoPanner(){return new Node()}createAnalyser(){return new Node()}close(){}}
+ createConvolver(){return new Node()}createOscillator(){return new Node()}createConstantSource(){return new Node()}createPeriodicWave(){return {}}createBiquadFilter(){return new Node()}createBufferSource(){return new Node()}createStereoPanner(){return new Node()}createAnalyser(){const n=new Node();n.fftSize=2048;n.frequencyBinCount=1024;n.getFloatTimeDomainData=a=>a.fill(0);n.getFloatFrequencyData=a=>a.fill(-100);return n}close(){}}
 class Off extends Ctx{constructor(c,l,sr){super();this.sampleRate=sr;this._c=c;this._l=l}startRendering(){const b=this.createBuffer(this._c,this._l,this.sampleRate);b.getChannelData(0)[100]=.3;b.getChannelData(1)[100]=.3;return Promise.resolve(b)}}
 const dom=new JSDOM(html,{runScripts:'dangerously',virtualConsole:vc,pretendToBeVisual:true,url:'http://localhost/',beforeParse(w){w.TextEncoder=TextEncoder;w.AudioContext=Ctx;w.lamejs={Mp3Encoder:class{encodeBuffer(){return new Int8Array(8)}flush(){return new Int8Array(2)}}};w.OfflineAudioContext=Off;w.HTMLCanvasElement.prototype.getContext=()=>new Proxy({},{get:(t,k)=>k==='measureText'?()=>({width:0}):()=>{},set:()=>true});}});
 const w=dom.window,d=w.document;
@@ -96,7 +96,7 @@ setTimeout(async()=>{
  console.log('météo :',JSON.stringify(w.eval('wxMap({weather_code:63,rain:1.6,cloud_cover:95,wind_speed_10m:32,is_day:0,temperature_2m:9})')),'|',w.eval('wxText(wxMap({weather_code:95,rain:0,cloud_cover:100,wind_speed_10m:10,is_day:1,temperature_2m:20}))'));
  // DAW : mode, mixeur, enregistrement, piano roll
  d.getElementById('dawBtn').click(); await new Promise(r=>setTimeout(r,100));
- console.log('daw : mode',w.eval('MODE'),'| lignes',d.querySelectorAll('#dawMix .dw-row').length,'| touches',d.querySelectorAll('#piano .pk').length);
+ console.log('daw : mode',w.eval('MODE'),'| lignes',d.querySelectorAll('#dawHeads .dw-h').length,'| touches',d.querySelectorAll('#piano .pk').length);
  w.eval('S.daw.tracks[0].notes.push({s:0,off:12,d:1,v:0.7},{s:2,off:14,d:2,v:0.7})'); w.eval('live.eng.dawReplan(S.daw.tracks[0].id)');
  w.eval('S.daw.mix.mute.perc=true; live.eng.setLevels(); S.daw.tracks[1].solo=true; live.eng.setLevels(); S.daw.tracks[1].solo=false; S.daw.mix.mute.perc=false; live.eng.setLevels()');
  w.eval('DW.rec=true; dawSnap(S.daw.tracks[0])'); w.eval('atOn("t1",3)'); await new Promise(r=>setTimeout(r,300)); w.eval('atOff("t1")');

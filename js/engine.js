@@ -179,6 +179,13 @@ function buildEngine(ctx, S, o){
   /* oscilloscope et spectre : le synthé seul (clavier et pistes) ou tout le mélange */
   const anaAll=ctx.createAnalyser(), anaSyn=ctx.createAnalyser(); anaAll.fftSize=anaSyn.fftSize=2048; anaAll.smoothingTimeConstant=anaSyn.smoothingTimeConstant=0.82;
   master.connect(anaAll); B.play.it.connect(anaSyn); B.daw.it.connect(anaSyn);
+  /* vumètres : une voix de la machine ("drone", "mel"…) ou une piste ("t1"…), analyseur créé à la première demande */
+  const MTR={};
+  function meter(key){
+    let m=MTR[key];
+    if(!m){ const st=key[0]==="t"?DT[parseInt(key.slice(1),10)]:null, src=st?st.pan:(B[key]&&B[key].it); if(!src) return 0; const an=ctx.createAnalyser(); an.fftSize=256; src.connect(an); m=MTR[key]={an,buf:new Float32Array(256)}; }
+    m.an.getFloatTimeDomainData(m.buf); let pk=0; for(let i=0;i<m.buf.length;i++){ const a=Math.abs(m.buf[i]); if(a>pk) pk=a; } return pk;
+  }
   const newGen=name=>{ const v=V[name], g=G(1); g.connect(v.dst); v.node=g; };
   [["mel",B.mel.in],["canon",canonG],["pad",B.pad.in],["loops",B.loops.in],["pend",B.pend.in]].forEach(([n,d])=>{ V[n]={dst:d,node:null}; newGen(n); });
   const murG=G(0), fireG=G(0), windG=G(0), dripG=G(0);
@@ -1046,5 +1053,5 @@ function buildEngine(ctx, S, o){
     starts.forEach(x=>{try{x.stop(now+d+0.2);}catch(e){}});
   }
   const pendX=t=>Array.from({length:pendN()},(_,i)=>Math.cos(2*Math.PI*(PEND_N0+i)*(t-t0)/(S.pend.period*bar)));
-  return {start,schedule,setLevels,setReverb,stop,fadeOut,sleepFade,sleepClear,replan,freeze,reroll,play,synOn,dawOn,dawNote,rackSync,analyser:k=>k==="all"?anaAll:anaSyn,dawReplan,dawPos,pendX,tensNow:()=>tensAt(ctx.currentTime),adaptNow:()=>adaptE(ctx.currentTime),tensPos:()=>{ if(!curveOn()) return -1; const L=Math.max(30,S.curve.dur*60), x=(ctx.currentTime-t0)/L; return S.curve.mode==='loop'?((x%1)+1)%1:clamp(x,0,1); },events,out,master,secAt:t=>secOf(t),bar,E,t0f:()=>t0};
+  return {start,schedule,setLevels,setReverb,stop,fadeOut,sleepFade,sleepClear,replan,freeze,reroll,play,synOn,dawOn,dawNote,rackSync,meter,analyser:k=>k==="all"?anaAll:anaSyn,dawReplan,dawPos,pendX,tensNow:()=>tensAt(ctx.currentTime),adaptNow:()=>adaptE(ctx.currentTime),tensPos:()=>{ if(!curveOn()) return -1; const L=Math.max(30,S.curve.dur*60), x=(ctx.currentTime-t0)/L; return S.curve.mode==='loop'?((x%1)+1)%1:clamp(x,0,1); },events,out,master,secAt:t=>secOf(t),bar,E,t0f:()=>t0};
 }

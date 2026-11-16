@@ -3,7 +3,7 @@
    DAW : mixeur (machine et pistes), enregistrement au clavier, piano roll
    La machine continue de générer ; les pistes sont des clips en boucle posés par-dessus.
    ============================================================ */
-const DW={view:"roll", seqOct:0, seqStep:1, seqDens:0.4, recDirty:false, rec:false, held:new Map(), undo:[], drag:null, snap:true, raf:0, scrolled:false, built:false, hov:null};
+const DW={tab:"clip", machFold:false, lv:{}, view:"roll", seqOct:0, seqStep:1, seqDens:0.4, recDirty:false, rec:false, held:new Map(), undo:[], drag:null, snap:true, raf:0, scrolled:false, built:false, hov:null};
 const DCOL=["#a3301c","#2f6f5b","#b0801f","#4a5a8a","#7a4a7a","#4a7a8a","#8a6a3a","#5a5a5a"];
 const MACH=[["drone","Bourdon","drone.lvl"],["mel","Mélodie et canon","mel.lvl"],["pad","Nappes","pad.lvl"],["perc","Percussion","perc.lvl"],["loops","Boucles","loops.lvl"],["pend","Pendules","pend.lvl"],["amb","Lieu",null]];
 const GRIDS=[[2,"Noire"],[1,"Croche"],[0.5,"Double-croche"],[0.25,"Libre"]];
@@ -36,45 +36,137 @@ function dawRecOff(id){
   tr.notes.push({s,off:h.off,d,v:0.7}); DW.recDirty=true; dawMixDraw();
 }
 
-/* ---------- mixeur ---------- */
+/* ---------- lignes de temps (arrangement) et mixeur ---------- */
 function dawParam(k,v){ const prev=getP(k); setP(k,v); refreshKeys([k]); paramChanged(k,prev,v,false,false); }
 function dawLevels(){ if(live) live.eng.setLevels(); }
-function dawBtn(txt,label,on,fn,cls){ const b=dawEl("button","dw-b"+(cls?" "+cls:""),txt); b.type="button"; b.title=label; b.setAttribute("aria-label",label); b.setAttribute("aria-pressed",on?"true":"false"); b.onclick=fn; return b; }
-function dawRange(v,min,max,step,label,fn){ const r=dawEl("input"); r.type="range"; r.min=min; r.max=max; r.step=step; r.value=v; r.setAttribute("aria-label",label); r.oninput=()=>fn(parseFloat(r.value)); return r; }
-function dawSel(opts,val,label,fn){ const s=dawEl("select"); s.setAttribute("aria-label",label); opts.forEach(([v,n])=>{ const o=dawEl("option"); o.value=v; o.textContent=n; s.appendChild(o); }); s.value=String(val); s.onchange=()=>fn(s.value); return s; }
-function dawMixDraw(){
-  const host=$("dawMix"); if(!host) return; host.innerHTML="";
-  const D=S.daw;
-  host.appendChild(dawEl("div","dw-head","<span></span><span>Voix</span><span>Instrument</span><span>Niveau</span><span>Pan</span><span>M</span><span>S</span><span>Boucle</span><span></span>"));
-  host.appendChild(dawEl("div","dw-sec","La machine"));
-  MACH.forEach(([id,name,k])=>{
-    const r=dawEl("div","dw-row mach"); r.appendChild(dawEl("span","dot")); r.firstChild.style.background="var(--rule)";
-    r.appendChild(dawEl("span","nm",name)); r.appendChild(dawEl("span","gen","générative"));
-    r.appendChild(k?dawRange(getP(k),0,1,0.01,"Niveau : "+name,v=>dawParam(k,v)):dawEl("span")); r.appendChild(dawEl("span"));
-    r.appendChild(dawBtn("M","Couper : "+name,!!D.mix.mute[id],()=>{ D.mix.mute[id]=!D.mix.mute[id]; dawLevels(); dawMixDraw(); },"m"));
-    r.appendChild(dawBtn("S","Solo : "+name,!!D.mix.solo[id],()=>{ D.mix.solo[id]=!D.mix.solo[id]; dawLevels(); dawMixDraw(); },"s"));
-    r.appendChild(dawEl("span")); r.appendChild(dawEl("span")); host.appendChild(r);
-  });
-  const hs=dawEl("div","dw-sec"); hs.appendChild(document.createTextNode("Tes pistes")); hs.appendChild(Object.assign(dawEl("button","lnk","Ajouter une piste"),{type:"button",onclick:dawAddTrack,disabled:D.tracks.length>=8})); host.appendChild(hs);
-  D.tracks.forEach((tr,i)=>{
-    const r=dawEl("div","dw-row trk"+(i===D.sel?" sel":"")); r.onclick=e=>{ if(i!==D.sel&&!/^(INPUT|SELECT|BUTTON)$/.test(e.target.tagName)){ D.sel=i; DW.scrolled=false; dawMixDraw(); dawRollHead(); } };
-    const dot=dawEl("span","dot"); dot.style.background=tcol(i); r.appendChild(dot);
-    const nm=dawEl("input","nm"); nm.type="text"; nm.value=tr.name; nm.maxLength=24; nm.setAttribute("aria-label","Nom de la piste"); nm.onfocus=()=>{ if(D.sel!==i){ D.sel=i; dawMixDraw(); dawRollHead(); } }; nm.oninput=()=>{ tr.name=nm.value; dawRollHead(true); }; r.appendChild(nm);
-    r.appendChild(dawSel(INST_OPTS,tr.inst,"Instrument de la piste "+(i+1),v=>{ tr.inst=v; dawReplan(tr); }));
-    r.appendChild(dawRange(tr.vol,0,1,0.01,"Niveau de "+tr.name,v=>{ tr.vol=v; dawLevels(); }));
-    r.appendChild(dawRange(tr.pan,-1,1,0.05,"Pan de "+tr.name,v=>{ tr.pan=v; dawLevels(); }));
-    r.appendChild(dawBtn("M","Couper : "+tr.name,tr.mute,()=>{ tr.mute=!tr.mute; dawLevels(); dawMixDraw(); },"m"));
-    r.appendChild(dawBtn("S","Solo : "+tr.name,tr.solo,()=>{ tr.solo=!tr.solo; dawLevels(); dawMixDraw(); },"s"));
-    r.appendChild(dawSel([[1,"1 mesure"],[2,"2 mesures"],[4,"4 mesures"],[8,"8 mesures"]],tr.bars,"Longueur de la boucle de "+tr.name,v=>{ dawSnap(tr); tr.bars=parseInt(v,10); dawReplan(tr); dawRollDraw(); }));
-    const del=dawBtn("×","Supprimer la piste "+tr.name,false,()=>{ if(D.tracks.length<2) return; D.tracks.splice(i,1); D.sel=Math.min(D.sel,D.tracks.length-1); dawLevels(); if(live) live.eng.dawReplan(); dawMixDraw(); dawRollHead(); },"x"); del.disabled=D.tracks.length<2; r.appendChild(del);
-    host.appendChild(r);
-  });
+function dawBtn(txt,label,on,fn,cls){ const b=dawEl("button","dw-b"+(cls?" "+cls:""),txt); b.type="button"; b.title=label; b.setAttribute("aria-label",label); b.setAttribute("aria-pressed",on?"true":"false"); b.onclick=e=>{ e.stopPropagation(); fn(); }; return b; }
+function dawRange(v,min,max,step,label,fn){ const r=dawEl("input"); r.type="range"; r.min=min; r.max=max; r.step=step; r.value=v; r.setAttribute("aria-label",label); r.oninput=()=>fn(parseFloat(r.value)); r.onclick=e=>e.stopPropagation(); return r; }
+function dawSel(opts,val,label,fn){ const s=dawEl("select"); s.setAttribute("aria-label",label); opts.forEach(([v,n])=>{ const o=dawEl("option"); o.value=v; o.textContent=n; s.appendChild(o); }); s.value=String(val); s.onchange=()=>fn(s.value); s.onclick=e=>e.stopPropagation(); return s; }
+const LH={ruler:24, sec:22, mach:22, trk:56}, HEADW=236;
+function dawRows(){
+  const rows=[]; let y=LH.ruler;
+  rows.push({type:"sec",key:"mach",y,h:LH.sec}); y+=LH.sec;
+  if(!DW.machFold) MACH.forEach(m=>{ rows.push({type:"mach",m,y,h:LH.mach}); y+=LH.mach; });
+  rows.push({type:"sec",key:"trk",y,h:LH.sec}); y+=LH.sec;
+  S.daw.tracks.forEach((tr,i)=>{ rows.push({type:"trk",tr,i,y,h:LH.trk}); y+=LH.trk; });
+  return {rows,H:y};
 }
+const dawWindowBars=()=>Math.max(4,Math.min(8,Math.max(...S.daw.tracks.map(t=>t.bars))));
+function dawSelect(i,open){ const D=S.daw; if(i!==D.sel){ D.sel=i; DW.scrolled=false; } if(open) dawTab("clip"); dawMixDraw(); dawRollHead(); }
+/* colonne de gauche : l'en-tête de chaque ligne, aligné sur le canvas */
+function dawLanesDraw(){
+  const host=$("dawHeads"); if(!host) return; host.innerHTML=""; const D=S.daw, {rows,H}=dawRows(); host.style.height=H+"px";
+  host.appendChild(Object.assign(dawEl("div","dw-hrule"),{}));
+  host.firstChild.style.height=LH.ruler+"px"; host.firstChild.innerHTML='<span>Mesure</span>';
+  rows.forEach(r=>{
+    const d=dawEl("div","dw-h "+r.type); d.style.height=r.h+"px";
+    if(r.type==="sec"){
+      if(r.key==="mach"){ const b=dawEl("button","dw-fold"); b.type="button"; b.setAttribute("aria-expanded",DW.machFold?"false":"true"); b.innerHTML=(DW.machFold?"▸ ":"▾ ")+"La machine<em>générative</em>"; b.onclick=()=>{ DW.machFold=!DW.machFold; dawMixDraw(); }; d.appendChild(b); }
+      else{ d.appendChild(dawEl("span","",'Tes pistes<em>clips en boucle</em>')); const b=dawEl("button","lnk","+ piste"); b.type="button"; b.disabled=D.tracks.length>=8; b.onclick=dawAddTrack; d.appendChild(b); }
+    }else if(r.type==="mach"){
+      const [id,name]=r.m; d.appendChild(dawEl("span","nm",name));
+      const mt=dawEl("span","dw-mt"); mt.innerHTML='<i></i>'; mt.dataset.k=id; d.appendChild(mt);
+      d.appendChild(dawBtn("M","Couper : "+name,!!D.mix.mute[id],()=>{ D.mix.mute[id]=!D.mix.mute[id]; dawLevels(); dawMixDraw(); },"m"));
+      d.appendChild(dawBtn("S","Solo : "+name,!!D.mix.solo[id],()=>{ D.mix.solo[id]=!D.mix.solo[id]; dawLevels(); dawMixDraw(); },"s"));
+    }else{
+      const tr=r.tr, i=r.i; d.classList.toggle("sel",i===D.sel); d.style.setProperty("--tc",tcol(i)); d.onclick=()=>dawSelect(i,false); d.ondblclick=()=>dawSelect(i,true);
+      const l1=dawEl("div","l1"), l2=dawEl("div","l2");
+      const nm=dawEl("input","nm"); nm.type="text"; nm.value=tr.name; nm.maxLength=24; nm.setAttribute("aria-label","Nom de la piste"); nm.onfocus=()=>{ if(D.sel!==i) dawSelect(i,false); }; nm.oninput=()=>{ tr.name=nm.value; dawRollHead(true); }; nm.onclick=e=>e.stopPropagation();
+      l1.appendChild(nm);
+      l1.appendChild(dawBtn("M","Couper : "+tr.name,tr.mute,()=>{ tr.mute=!tr.mute; dawLevels(); dawMixDraw(); },"m"));
+      l1.appendChild(dawBtn("S","Solo : "+tr.name,tr.solo,()=>{ tr.solo=!tr.solo; dawLevels(); dawMixDraw(); },"s"));
+      const del=dawBtn("×","Supprimer la piste "+tr.name,false,()=>{ if(D.tracks.length<2) return; D.tracks.splice(i,1); D.sel=Math.min(D.sel,D.tracks.length-1); dawLevels(); if(live) live.eng.dawReplan(); dawMixDraw(); dawRollHead(); },"x"); del.disabled=D.tracks.length<2; l1.appendChild(del);
+      l2.appendChild(dawSel(INST_OPTS,tr.inst,"Instrument de "+tr.name,v=>{ tr.inst=v; dawReplan(tr); dawLevels(); dawChainDraw(); }));
+      const mt=dawEl("span","dw-mt"); mt.innerHTML='<i></i>'; mt.dataset.k="t"+tr.id; l2.appendChild(mt);
+      d.appendChild(l1); d.appendChild(l2);
+    }
+    host.appendChild(d);
+  });
+  const cv=$("dawTime"); if(cv) cv.style.height=H+"px";
+}
+/* le canvas de la ligne de temps : règle, clips en boucle avec leurs notes, tête de lecture */
+function dawTimeDraw(){
+  if(!DW.built||MODE!=="daw") return; const cv=$("dawTime"); if(!cv) return;
+  const {rows,H}=dawRows(); cv.style.height=H+"px"; const g=fit(cv); if(!g) return; const {c,W}=g;
+  const bars=dawWindowBars(), barE=dawBarE(), total=bars*barE, xs=s=>s/total*W, D=S.daw;
+  c.fillStyle="rgba(60,40,20,0.05)"; c.fillRect(0,0,W,LH.ruler);
+  rows.forEach(r=>{
+    if(r.type==="sec"){ c.fillStyle="rgba(60,40,20,0.07)"; c.fillRect(0,r.y,W,r.h); }
+    else if(r.type==="mach"){
+      const lv=live?Math.min(1,Math.pow(live.eng.meter(r.m[0]),0.5)*1.5):0; DW.lv[r.m[0]]=lv;
+      c.save(); c.beginPath(); c.rect(0,r.y,W,r.h); c.clip(); c.strokeStyle="rgba(120,100,70,0.2)"; c.lineWidth=1;
+      for(let x=-r.h;x<W;x+=9){ c.beginPath(); c.moveTo(x,r.y+r.h); c.lineTo(x+r.h,r.y); c.stroke(); }
+      if(lv>0.02){ c.fillStyle="rgba(163,48,28,"+(0.04+lv*0.16).toFixed(3)+")"; c.fillRect(0,r.y,W,r.h); } c.restore();
+    }else{
+      if(r.i===D.sel){ c.fillStyle="rgba(163,48,28,0.06)"; c.fillRect(0,r.y,W,r.h); }
+      const tr=r.tr, L=dawL(tr), reps=Math.max(1,Math.round(total/L)), col=tcol(r.i), lo0=tr.notes.length?Math.min(...tr.notes.map(n=>n.off)):0, hi0=tr.notes.length?Math.max(...tr.notes.map(n=>n.off)):12, lo=Math.min(lo0,hi0-11), hi=Math.max(hi0,lo+11);
+      for(let k=0;k<reps;k++){
+        const x0=xs(k*L)+1, x1=xs((k+1)*L)-1, w=x1-x0, top=r.y+4, hh=r.h-8, first=k===0;
+        c.globalAlpha=first?1:0.5; c.fillStyle=col+(first?"2e":"1c"); c.fillRect(x0,top,w,hh); c.strokeStyle=col; c.lineWidth=r.i===D.sel?2:1; c.strokeRect(x0+0.5,top+0.5,w-1,hh-1);
+        c.fillStyle=col; c.fillRect(x0,top,w,11); c.fillStyle="#f6efde"; c.font='italic 10px "Alegreya", Georgia, serif'; if(first) c.fillText(tr.name+" · "+tr.bars+" mes.",x0+4,top+9);
+        if(!tr.notes.length){ c.fillStyle=col; c.globalAlpha=first?0.6:0.3; c.font='italic 11px "Alegreya", Georgia, serif'; if(first) c.fillText("vide : double-clique pour écrire",x0+8,top+hh/2+9); }
+        tr.notes.forEach(n=>{ const nx=x0+n.s/L*w, nw=Math.max(2,n.d/L*w-1), ny=top+13+(1-(n.off-lo)/(hi-lo))*(hh-18); c.fillStyle=col; c.globalAlpha=first?0.95:0.5; c.fillRect(nx,ny,nw,3); });
+        c.globalAlpha=1;
+      }
+    }
+  });
+  for(let s=0;s<=total;s++){
+    const x=Math.round(xs(s))+0.5, bar=s%barE===0, beat=s%2===0; if(!bar&&!beat&&W/total<9) continue;
+    c.strokeStyle=bar?g.ink:(beat?"rgba(120,100,70,0.28)":"rgba(120,100,70,0.12)"); c.lineWidth=bar?1.1:1; c.beginPath(); c.moveTo(x,bar?0:LH.ruler); c.lineTo(x,H); c.stroke();
+    if(bar&&s<total){ c.fillStyle=g.ink2; c.font='italic 11px "Alegreya", Georgia, serif'; c.fillText(String(s/barE+1),x+4,LH.ruler-8); }
+  }
+  c.strokeStyle=g.rule; c.beginPath(); c.moveTo(0,LH.ruler-0.5); c.lineTo(W,LH.ruler-0.5); c.stroke();
+  if(live){ const p=(((live.ctx.currentTime-live.eng.t0f())/dawE())%total+total)%total, x=xs(p); c.strokeStyle=g.rub; c.lineWidth=1.8; c.beginPath(); c.moveTo(x,0); c.lineTo(x,H); c.stroke(); c.fillStyle=g.rub; c.beginPath(); c.moveTo(x-5,0); c.lineTo(x+5,0); c.lineTo(x,7); c.closePath(); c.fill(); }
+}
+function dawTimeEvents(){
+  const cv=$("dawTime"), rowAt=e=>{ const r=cv.getBoundingClientRect(), y=e.clientY-r.top; return dawRows().rows.find(q=>y>=q.y&&y<q.y+q.h); };
+  cv.addEventListener("click",e=>{ const r=rowAt(e); if(r&&r.type==="trk") dawSelect(r.i,false); });
+  cv.addEventListener("dblclick",e=>{ const r=rowAt(e); if(r&&r.type==="trk") dawSelect(r.i,true); });
+}
+/* le mixeur : un faders vertical par voix et par piste, avec vumètre */
+function dawMixerDraw(){
+  const host=$("dawMixer"); if(!host) return; host.innerHTML=""; const D=S.daw;
+  const strip=(name,color,val,set,mute,solo,key,hasFader)=>{
+    const s=dawEl("div","dw-strip"); s.style.setProperty("--tc",color);
+    s.appendChild(dawEl("span","nm",name));
+    const m=dawEl("div","dw-fader"); const meter=dawEl("span","dw-vu"); meter.innerHTML="<i></i>"; meter.dataset.k=key; m.appendChild(meter);
+    if(hasFader){ const r=dawRange(val,0,1,0.01,"Niveau : "+name,set); r.className="vert"; m.appendChild(r); } else m.appendChild(dawEl("span","dw-nofd","—"));
+    s.appendChild(m);
+    const bt=dawEl("div","dw-sm"); bt.appendChild(dawBtn("M","Couper : "+name,mute.get(),()=>{ mute.set(); dawLevels(); dawMixDraw(); },"m")); bt.appendChild(dawBtn("S","Solo : "+name,solo.get(),()=>{ solo.set(); dawLevels(); dawMixDraw(); },"s")); s.appendChild(bt);
+    return s;
+  };
+  MACH.forEach(([id,name,k])=>host.appendChild(strip(name,"var(--ink-2)",k?getP(k):0,v=>dawParam(k,v),{get:()=>!!D.mix.mute[id],set:()=>{ D.mix.mute[id]=!D.mix.mute[id]; }},{get:()=>!!D.mix.solo[id],set:()=>{ D.mix.solo[id]=!D.mix.solo[id]; }},id,!!k)));
+  host.appendChild(dawEl("span","dw-sep"));
+  D.tracks.forEach((tr,i)=>{ const s=strip(tr.name,tcol(i),tr.vol,v=>{ tr.vol=v; dawLevels(); },{get:()=>tr.mute,set:()=>{ tr.mute=!tr.mute; }},{get:()=>tr.solo,set:()=>{ tr.solo=!tr.solo; }},"t"+tr.id,true); s.classList.toggle("sel",i===D.sel); s.firstChild.onclick=()=>dawSelect(i,false); const pan=dawRange(tr.pan,-1,1,0.05,"Pan de "+tr.name,v=>{ tr.pan=v; dawLevels(); }); pan.className="pan"; s.insertBefore(pan,s.lastChild); host.appendChild(s); });
+}
+function dawMetersTick(){
+  if(!live) return;
+  document.querySelectorAll("#dawMixer .dw-vu").forEach(m=>{ const pk=live.eng.meter(m.dataset.k), v=Math.min(1,Math.pow(pk,0.5)*1.25); m.firstChild.style.transform="scaleY("+v.toFixed(3)+")"; });
+  document.querySelectorAll("#dawHeads .dw-mt").forEach(m=>{ const pk=live.eng.meter(m.dataset.k), v=Math.min(1,Math.pow(pk,0.5)*1.25); m.firstChild.style.transform="scaleX("+v.toFixed(3)+")"; });
+}
+/* chaîne de la piste choisie : instrument, arpégiateur, niveau (comme les « devices » d'Ableton) */
+function dawChainDraw(){
+  const host=$("dawChainTrk"); if(!host) return; const keep=$("daw"), arp0=$("dawArp"); if(arp0&&arp0.parentNode===host) keep.appendChild(arp0); host.innerHTML=""; const tr=curTrack(), D=S.daw, i=D.sel;
+  const dev=(title,note)=>{ const d=dawEl("div","dw-dev"); d.innerHTML='<h4>'+title+(note?'<em>'+note+'</em>':'')+'</h4>'; return d; };
+  const d1=dev("Instrument","de la piste "+(i+1)); d1.style.setProperty("--tc",tcol(i)); d1.appendChild(dawSel(INST_OPTS,tr.inst,"Instrument",v=>{ tr.inst=v; dawReplan(tr); dawLevels(); dawMixDraw(); }));
+  if(tr.inst==="atelier"){ const b=dawEl("button","lnk","Régler le synthé dans l'atelier ›"); b.type="button"; b.onclick=()=>setMode("atelier"); d1.appendChild(b); }
+  host.appendChild(d1); host.appendChild(dawEl("span","dw-arrow","→"));
+  const arp=$("dawArp"); host.appendChild(arp); host.appendChild(dawEl("span","dw-arrow","→"));
+  const d3=dev("Piste","niveau et position"); const f=dawEl("div","dw-f g2");
+  f.appendChild(dawEl("label","","Niveau")); f.appendChild(dawRange(tr.vol,0,1,0.01,"Niveau de "+tr.name,v=>{ tr.vol=v; dawLevels(); dawMixDraw(); }));
+  f.appendChild(dawEl("label","","Pan")); f.appendChild(dawRange(tr.pan,-1,1,0.05,"Pan de "+tr.name,v=>{ tr.pan=v; dawLevels(); dawMixDraw(); }));
+  d3.appendChild(f); host.appendChild(d3);
+}
+function dawMixDraw(){ dawLanesDraw(); dawMixerDraw(); dawChainDraw(); }
 function dawAddTrack(){
   const D=S.daw; if(D.tracks.length>=8) return;
   const id=Math.max(0,...D.tracks.map(t=>t.id))+1, insts=["luth","harpe","flute","carillon","oud","kalimba","atelier","orgue"];
   D.tracks.push({id,name:"Piste "+(D.tracks.length+1),inst:insts[D.tracks.length%insts.length],vol:0.8,pan:0,mute:false,solo:false,bars:2,notes:[]});
   D.sel=D.tracks.length-1; DW.scrolled=false; dawLevels(); dawMixDraw(); dawRollHead();
+}
+function dawTab(t){
+  DW.tab=t; ["clip","trk","mixer"].forEach(k=>{ const b=$("dawT_"+k), p=$("dawP_"+k); if(b) b.setAttribute("aria-pressed",k===t?"true":"false"); if(p) p.hidden=k!==t; });
+  DW.scrolled=false; dawRollDraw();
 }
 
 /* ---------- piano roll ---------- */
@@ -85,7 +177,7 @@ function dawGeom(){
 }
 function dawRollHead(light){
   const tr=curTrack(), t=$("dawRollTitle"); if(t) t.textContent=tr.name;
-  const rb=$("dawRec"); if(rb) rb.textContent="Enregistrer sur « "+tr.name+" »";
+  const rb=$("dawRec"); if(rb) rb.textContent="Enregistrer sur « "+tr.name+" »"; const bs=$("dawBars"); if(bs) bs.value=String(tr.bars);
   if(!light) dawRollDraw();
 }
 function dawRollDraw(){
@@ -171,24 +263,34 @@ function dawRecUI(){ const b=$("dawRec"); if(b) b.setAttribute("aria-pressed",DW
 function buildDaw(){
   if(!S.daw) return;
   const host=document.querySelector(".folio"), sec=dawEl("section","daw"); sec.id="daw"; sec.hidden=true; sec.setAttribute("aria-label","Mode DAW");
+  /* transport */
   const bar=dawEl("div","dw-bar");
   bar.innerHTML='<button class="seal sm" id="play4" aria-pressed="false">Jouer</button>'+
     '<button class="btn rec" id="dawRec" type="button" aria-pressed="false">Enregistrer</button>'+
     '<button class="btn" id="dawMach" type="button" aria-pressed="true">La machine joue</button>'+
+    '<span class="dw-info" id="dawInfo"></span>'+
     '<div class="ctl"><label for="dawGrid">Grille</label><select id="dawGrid"></select></div>'+
-    '<button class="btn" id="dawSnapB" type="button" aria-pressed="true" title="Les notes posées à la souris tombent dans la gamme du thème">Aimanter à la gamme</button>'+
+    '<button class="btn" id="dawSnapB" type="button" aria-pressed="true" title="Les notes posées à la souris tombent dans la gamme du thème">Dans la gamme</button>'+
     '<button class="btn" id="dawUndo" type="button" disabled>Annuler</button>';
   sec.appendChild(bar);
-  const arp=dawEl("div","dw-arp"); arp.id="dawArp";
-  arp.innerHTML='<button class="btn" id="arpOn" type="button" aria-pressed="false">Arpégiateur</button><label>Ordre <select id="arpMode"></select></label><label>Vitesse <select id="arpRate"></select></label><label>Octaves <select id="arpOct"></select></label><label class="arpg">Durée des notes <input type="range" id="arpGate" min="0.15" max="1" step="0.05"></label><span class="hint" id="arpHint"></span>';
-  sec.appendChild(arp);
-  sec.appendChild(dawEl("p","hint dw-hint","Chaque piste est un clip qui boucle sur la machine, qui continue de jouer en dessous. Clique dans le piano roll pour poser une note (tire pour l'allonger, Maj ou clic droit pour l'effacer), ou arme l'enregistrement et joue au clavier : la prise est calée sur la grille. Barre d'espace : jouer ou arrêter."));
-  const grid=dawEl("div","dw-grid"), mix=dawEl("div","dw-mix"); mix.id="dawMix";
-  const roll=dawEl("div","dw-roll"); roll.innerHTML='<div class="dw-tabs"><button class="lnk" id="dawTabRoll" type="button" aria-pressed="true">Piano roll</button><button class="lnk" id="dawTabSeq" type="button" aria-pressed="false">Séquenceur</button></div><div class="dw-rh"><h3 id="dawRollTitle"></h3><span class="dw-tools"><button class="lnk" id="dawDouble" type="button">Doubler la boucle</button><button class="lnk" id="dawClear" type="button">Vider le clip</button></span></div><div class="dw-wrap" id="dawWrap"><canvas id="dawRoll" role="img" aria-label="Piano roll de la piste choisie"></canvas></div><div class="dw-seq" id="dawSeqBox" hidden><div class="dw-sbar"><label>Pas <select id="dawSStep"></select></label><label>Octave <select id="dawSOct"></select></label><label>Densité <select id="dawSDens"></select></label><button class="btn" id="dawSRand" type="button">Au hasard</button><button class="btn" id="dawSShift" type="button">Décaler d\'un pas</button></div><canvas id="dawSeq" role="img" aria-label="Séquenceur à pas de la piste choisie"></canvas></div>';
-  grid.appendChild(mix); grid.appendChild(roll); sec.appendChild(grid);
+  /* arrangement : en-têtes à gauche, ligne de temps à droite */
+  const arr=dawEl("div","dw-arr"); arr.innerHTML='<div class="dw-heads" id="dawHeads"></div><div class="dw-time"><canvas id="dawTime" role="img" aria-label="Ligne de temps : les clips de chaque piste en boucle et l\'activité de la machine"></canvas></div>';
+  sec.appendChild(arr);
+  /* détail : clip, chaîne de la piste, mixeur */
+  const det=dawEl("div","dw-detail");
+  det.innerHTML='<div class="dw-dtabs"><button class="lnk" id="dawT_clip" type="button" aria-pressed="true">Clip</button><button class="lnk" id="dawT_trk" type="button" aria-pressed="false">Piste</button><button class="lnk" id="dawT_mixer" type="button" aria-pressed="false">Mixeur</button><span class="dw-tip">Double-clic sur un clip pour l\'écrire. Barre d\'espace : jouer ou arrêter.</span></div>'+
+    '<div class="dw-pane" id="dawP_clip"><div class="dw-roll"><div class="dw-tabs"><button class="lnk" id="dawTabRoll" type="button" aria-pressed="true">Piano roll</button><button class="lnk" id="dawTabSeq" type="button" aria-pressed="false">Séquenceur</button><span class="dw-tools"><label class="at-sel">Boucle <select id="dawBars"></select></label><button class="lnk" id="dawDouble" type="button">Doubler</button><button class="lnk" id="dawClear" type="button">Vider</button></span></div><div class="dw-rh"><h3 id="dawRollTitle"></h3></div><div class="dw-wrap" id="dawWrap"><canvas id="dawRoll" role="img" aria-label="Piano roll de la piste choisie"></canvas></div><div class="dw-seq" id="dawSeqBox" hidden><div class="dw-sbar"><label>Pas <select id="dawSStep"></select></label><label>Octave <select id="dawSOct"></select></label><label>Densité <select id="dawSDens"></select></label><button class="btn" id="dawSRand" type="button">Au hasard</button><button class="btn" id="dawSShift" type="button">Décaler d\'un pas</button></div><canvas id="dawSeq" role="img" aria-label="Séquenceur à pas de la piste choisie"></canvas></div></div></div>'+
+    '<div class="dw-pane" id="dawP_trk" hidden><div class="dw-chain" id="dawChainTrk"></div></div>'+
+    '<div class="dw-pane" id="dawP_mixer" hidden><div class="dw-mixer" id="dawMixer"></div></div>';
+  sec.appendChild(det);
+  const arpBox=dawEl("div","dw-dev"); arpBox.id="dawArp";
+  arpBox.innerHTML='<h4>Arpégiateur<em>sur le clavier</em></h4><div class="dw-f"><button class="btn" id="arpOn" type="button" aria-pressed="false">Activé</button><label>Ordre <select id="arpMode"></select></label><label>Vitesse <select id="arpRate"></select></label><label>Octaves <select id="arpOct"></select></label><label>Durée <input type="range" id="arpGate" min="0.15" max="1" step="0.05"></label></div><span class="hint" id="arpHint"></span>';
+  sec.appendChild(arpBox);
   sec.appendChild(dawEl("div","dw-kb")).id="dawKb";
   host.insertBefore(sec,document.querySelector(".cols"));
   const gs=$("dawGrid"); GRIDS.forEach(([v,n])=>{ const o=dawEl("option"); o.value=v; o.textContent=n; gs.appendChild(o); }); gs.value=String(S.daw.grid); gs.onchange=()=>{ S.daw.grid=parseFloat(gs.value); };
+  const bs=$("dawBars"); [1,2,4,8].forEach(v=>{ const o=dawEl("option"); o.value=v; o.textContent=v+(v>1?" mesures":" mesure"); bs.appendChild(o); });
+  bs.onchange=()=>{ const tr=curTrack(); dawSnap(tr); tr.bars=parseInt(bs.value,10); dawReplan(tr); dawMixDraw(); dawRollDraw(); };
   $("play4").onclick=()=>{ live?stopLive():startLive(); };
   $("dawRec").onclick=()=>{ DW.rec=!DW.rec; DW.held.clear(); dawRecUI(); if(DW.rec){ dawSnap(curTrack()); if(!live) startLive({fade:0.25}); } else dawRecStop(); };
   $("dawMach").onclick=()=>{ setMach(S.mach===false); };
@@ -196,21 +298,22 @@ function buildDaw(){
   $("dawUndo").onclick=dawUndo;
   $("dawClear").onclick=()=>{ const tr=curTrack(); if(!tr.notes.length) return; dawSnap(tr); tr.notes=[]; dawReplan(tr); dawRollDraw(); };
   $("dawDouble").onclick=()=>{ const tr=curTrack(); if(tr.bars>=8) return; dawSnap(tr); const L=dawL(tr); tr.notes=tr.notes.concat(tr.notes.map(n=>({...n,s:n.s+L}))); tr.bars*=2; dawReplan(tr); dawMixDraw(); dawRollDraw(); };
-  dawRollEvents(); arpInit(); seqInit();
+  ["clip","trk","mixer"].forEach(k=>{ $("dawT_"+k).onclick=()=>dawTab(k); });
+  dawRollEvents(); dawTimeEvents(); arpInit(); seqInit();
   document.addEventListener("keydown",e=>{
     if(MODE!=="daw") return;
     const tg=e.target&&e.target.tagName, typing=tg==="SELECT"||tg==="TEXTAREA"||(tg==="INPUT"&&e.target.type!=="range"&&e.target.type!=="checkbox");
     if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="z"&&!typing){ e.preventDefault(); dawUndo(); return; }
     if(e.code==="Space"&&!typing&&tg!=="BUTTON"){ e.preventDefault(); live?stopLive():startLive(); }
   });
-  if(window.ResizeObserver) new ResizeObserver(()=>dawRollDraw()).observe(sec);
+  if(window.ResizeObserver) new ResizeObserver(()=>{ dawRollDraw(); dawTimeDraw(); }).observe(sec);
   DW.built=true; dawMixDraw(); dawRollHead(); dawMachUI();
 }
-/* entrée et sortie du mode : le clavier de l'atelier se déplace sous le piano roll */
+/* entrée et sortie du mode : le clavier de l'atelier se déplace sous le détail */
 function dawEnter(){
   const kb=$("atKb"), slot=$("dawKb"); if(kb&&slot){ if(!AT.kbHome){ AT.kbHome=kb.parentNode; AT.kbNext=kb.nextSibling; } slot.appendChild(kb); }
-  DW.scrolled=false; dawMixDraw(); dawRollHead(); dawMachUI(); dawRecUI(); arpUI(); buildPiano();
-  if(!DW.raf){ const f=()=>{ if(MODE!=="daw"){ DW.raf=0; return; } dawRollDraw(); DW.raf=requestAnimationFrame(f); }; DW.raf=requestAnimationFrame(f); }
+  DW.scrolled=false; dawMixDraw(); dawRollHead(); dawMachUI(); dawRecUI(); arpUI(); buildPiano(); dawTab(DW.tab||"clip");
+  if(!DW.raf){ let n=0; const f=()=>{ if(MODE!=="daw"){ DW.raf=0; return; } dawTimeDraw(); if(DW.tab==="clip") dawRollDraw(); if(++n%3===0) dawMetersTick(); const inf=$("dawInfo"); if(inf){ const k=curScaleKey(), t=S.tempo+" ♩/min · "+NOTES[S.root]+" "+(SC[k]||SC.mixolydien).n.toLowerCase(); if(inf.textContent!==t) inf.textContent=t; } DW.raf=requestAnimationFrame(f); }; DW.raf=requestAnimationFrame(f); }
 }
 function dawRecStop(){ if(DW.recDirty){ DW.recDirty=false; dawReplan(curTrack()); } }
 function dawLeave(){

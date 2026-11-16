@@ -572,3 +572,4 @@ canvas#atWA, canvas#atWB{cursor:ew-resize; touch-action:none}
 .at-slots .at-slot:nth-of-type(n+3) .ctl .l{justify-content:flex-end}
 .at-slots .at-slot .ctl .l output{font-variant-numeric:tabular-nums}
 .at-mod .fields select{width:100%}
+.ctl .l output{white-space:nowrap; flex:none}

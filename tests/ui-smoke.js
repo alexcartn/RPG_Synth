@@ -132,6 +132,17 @@ setTimeout(async()=>{
  console.log('harmonie idiomatique :',w.eval('(()=>{ const out=[]; for(const k of ["dorien","mixolydien","phrygien"]){ const Sx=clone(S); Sx.scales=[k,"",""]; Sx.mus.harm="idiome"; Sx.mel.lvl=0; const e=buildEngine(new AudioContext(),Sx,{record:true}); e.start(0,0,0); e.schedule(120); const ch=e.events.filter(x=>x.tr===2); const sets=[...new Set(ch.map(x=>x.t))].slice(0,5).map(t=>[...new Set(ch.filter(x=>x.t===t).map(x=>((x.off%12)+12)%12))].sort((a,b)=>a-b).join(".")); out.push(k+": "+sets.join(" - ")); } return out.join(" | "); })()'));
  // table des affects : lecture et recherche par émotion
  console.log('affects :',w.eval('(()=>{ const a=affSuggest(["mystérieux"]).map(r=>SC[r.key].n.replace(/ \\(.*/,"")+" en "+NOTES[r.root]).join(", "); const b=affSuggest(["fataliste","tragique"]).slice(0,3).map(r=>SC[r.key].n.replace(/ \\(.*/,"")).join(", "); affApply("phrygien",4); return "mystérieux : "+a+" | fataliste et tragique : "+b+" | lecture : "+document.getElementById("affNow").textContent.slice(0,90); })()'));
+
+ /* première page : un univers et ce qu'on cherche (les affects ne sont plus dans Composer) */
+ { const R=w.eval(`(()=>{ const o={};
+   o.chips=document.querySelectorAll('#seekBox .aff-chip').length; o.uni=document.querySelectorAll('#seekUni .lnk').length; o.dup=document.querySelectorAll('#affChips').length; o.inComposer=document.querySelectorAll('#chapters .aff-chips, #chapters .aff-res, #chapters .aff-chip').length;
+   seekUniverse("medieval"); AFF.sel.clear(); seekToggle("serein"); o.serein=S.tension; seekToggle("serein"); seekToggle("tragique"); seekToggle("inquiétant"); o.sombre=S.tension; o.scale=S.scales[0];
+   o.props=AFF.props.length; o.distinct=new Set(AFF.props.map(x=>x.preset[0])).size; o.maqamEnMedieval=AFF.props.some(x=>AFF_MAQAM.indexOf(x.key)>=0);
+   AFF.sel.clear(); seekUniverse("espace"); o.espace=S.scales[0]===UNIVERS.find(u=>u.id==="espace").items[0][1].scales[0]; o.cur=document.querySelector('#seekUni .lnk[aria-current]').dataset.id;
+   seekUniverse("medieval"); return o; })()`);
+   console.log('première page :',JSON.stringify(R));
+   const bad=[]; if(R.chips!==14) bad.push('14 émotions'); if(R.uni!==5) bad.push('5 univers'); if(R.dup!==1||R.inComposer) bad.push('affects en double ou restés dans Composer'); if(!(R.serein<0.3&&R.sombre>0.65)) bad.push('tension suit les affects'); if(R.props<3||R.distinct<3) bad.push('propositions variées'); if(R.maqamEnMedieval) bad.push('quarts de ton hors Orient'); if(!R.espace||R.cur!=='espace') bad.push('univers sans affect');
+   if(bad.length){ console.log('ECHEC première page :',bad.join(', ')); process.exit(1); } }
  // capture de la lecture, chance, dérives
  w.eval('S.chance={skip:0.3,ratchet:0.4,mutate:0.5,octave:0.3,rest:0.5}; S.drift[0].d=1; S.drift[0].v=1; live.eng.replan("all"); live.eng.schedule(live.ctx.currentTime+60)');
  w.eval('capStart()'); w.eval('CAP.node&&CAP.node.onaudioprocess&&CAP.node.onaudioprocess({inputBuffer:{getChannelData:()=>new Float32Array(4096)}})'); console.log('capture : en cours',w.eval('CAP.on'),'| octets',w.eval('CAP.chunks.length')); w.eval('if(!URL.createObjectURL){ URL.createObjectURL=()=>"blob:x"; URL.revokeObjectURL=()=>{}; }'); w.eval('capStop()'); console.log('capture : arrêtée',w.eval('!CAP.on'),'| graine différente à chaque lecture',w.eval('(()=>{ const a=newSeed(), b=newSeed(); return a!==b; })()'));

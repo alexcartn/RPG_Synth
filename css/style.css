@@ -859,3 +859,30 @@ body.armed .knob[data-dst]{cursor:copy}
 .fg-lsync{display:flex; align-items:center; gap:var(--sp-sm); margin-top:var(--sp-xs)}
 .fg-lsync .btn{padding:6px 10px; font-size:.82rem}
 #atLfo.drawable{cursor:crosshair; touch-action:none}
+
+/* ---------- première page : un univers, ce qu'on cherche ---------- */
+.seek{display:flex; flex-direction:column; gap:var(--sp-xs); max-width:1000px}
+.seek-row{display:flex; align-items:baseline; gap:var(--sp-md)}
+.seek-l{flex:none; width:6.6em; font:400 .8rem/1 var(--caps); letter-spacing:.1em; color:var(--ink-2)}
+.seek-uni{display:flex; flex-wrap:wrap; gap:var(--sp-xs) var(--sp-lg)}
+.seek .lnk{color:var(--ink)} .seek .lnk:hover, .seek .lnk[aria-current="true"]{color:var(--rubric)}
+.seek-uni .lnk{font-size:1.2rem}
+.seek-row .aff-chips{flex:1 1 0; min-width:0; gap:var(--sp-xs) var(--sp-sm)}
+.seek .aff-chip{font-size:.95rem; padding:5px 10px}
+.seek .aff-res{grid-template-columns:repeat(auto-fit,minmax(168px,1fr)); gap:0 var(--sp-md); margin-left:calc(6.6em + var(--sp-md))}
+.seek .aff-res .hint{grid-column:1/-1; margin:0}
+.seek .aff-opt{padding:5px 0 4px}
+.seek .aff-opt .n{font-size:1.08rem}
+.seek .aff-opt .t{font-size:.82rem}
+.aff-opt .b{font:italic 400 .82rem/1.2 var(--body); color:var(--ink-2)}
+.aff-opt[aria-current="true"]{border-top-color:var(--rubric)}
+.aff-opt[aria-current="true"] .n{color:var(--rubric)}
+.seek .aff-now{margin:var(--sp-xs) 0 0 calc(6.6em + var(--sp-md)); font-size:.9rem; line-height:1.4}
+.seek .aff-now strong{font-size:1.05rem}
+.seek .aff-now em{display:inline; margin-left:.5em; font-size:.88rem}
+.seek details.fin{margin:0 0 0 calc(6.6em + var(--sp-md))}
+.seek details.fin summary{font-size:.95rem}
+.seek-named{display:flex; flex-direction:column; gap:var(--sp-sm); padding-top:var(--sp-sm)}
+.seek-named .row{display:flex; flex-wrap:wrap; gap:var(--sp-xs) var(--sp-xl)}
+.seek-named .lnk{font-size:1.15rem}
+@media (max-width:640px){ .seek-row{flex-direction:column; align-items:flex-start; gap:var(--sp-xs)} .seek .aff-res,.seek .aff-now,.seek details.fin{margin-left:0} }

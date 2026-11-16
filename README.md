@@ -10,7 +10,7 @@ Ouvrir `index.html` dans un navigateur récent (Chrome, Firefox, Safari). Les po
 
 ## La page d'accueil
 
-On arrive sur Conduire : une ambiance à choisir (univers puis préréglage), le bouton Jouer, huit boutons (volume, tension, densité, bourdon, nappes, brume, nuage, chaleur), un pad XY et le cercle des hauteurs. Les réglages fins sont dans Composer, en neuf chapitres repliés. L'en-tête est réduit au titre, la légende de la partition n'apparaît qu'en lecture, l'extinction a rejoint « Séance » dans la marge.
+On arrive sur Conduire : un univers (Médiéval, Calme, Espace, Orient, Nature) et ce qu'on cherche (quatorze émotions), le bouton Jouer, huit boutons (volume, tension, densité, bourdon, nappes, brume, nuage, chaleur), un pad XY et le cercle des hauteurs. Les réglages fins sont dans Composer, en neuf chapitres repliés. L'en-tête est réduit au titre, la légende de la partition n'apparaît qu'en lecture, l'extinction a rejoint « Séance » dans la marge.
 
 ## Réverbération vivante, nuage de grains, liens
 
@@ -111,7 +111,7 @@ Quatrième mode (« Composer · Conduire · Forger · Arranger »), pensé pour 
 
 - Table de correspondance (Modus) : chaque gamme (vingt-sept) et chaque tonalité, majeure ou mineure, porte des affects pondérés parmi quatorze : mystérieux, fataliste, héroïque, mélancolique, joyeux, féerique, inquiétant, majestueux, nostalgique, serein, tragique, étrange, sauvage, sacré. Les caractères des tonalités s'inspirent librement du caractère traditionnel des tons de l'époque baroque, sans en faire une règle.
 - Lecture : sous les menus, la gamme et la tonalité choisies sont décrites en une phrase et résumées par leurs trois affects dominants (65 % gamme, 35 % tonalité). La même phrase s'affiche sous le cercle des hauteurs.
-- Recherche : on choisit une ou plusieurs émotions, la table propose les six gammes qui les dégagent le mieux, chacune dans sa meilleure tonalité, avec une jauge ; un clic l'applique. « La table des affects en entier » liste tout.
+- Recherche, sur la première page (Conduire), plus dans Composer : on choisit un univers, puis une ou plusieurs émotions. L'univers donne la base (instrumentation, espace, rythme : un de ses préréglages) ; les émotions choisissent la gamme et la tonalité, et règlent la tension de départ (le serein tire vers 0,2, l'inquiétant vers 0,8, la moyenne des émotions choisies). Cinq propositions s'affichent, chacune une gamme dans sa meilleure tonalité sur le préréglage de l'univers qui lui ressemble le plus, avec une jauge ; la première s'applique tout de suite (fondu si la lecture tourne), les autres sont à un clic. Les gammes à quarts de ton ne sont proposées que dans l'univers Orient. Sans émotion, choisir un univers applique son premier préréglage. Les ambiances nommées de l'univers restent dans un volet replié, et « La table des affects en entier » liste tout.
 
 ## Hasard vivant : chance, dérives, machine de Turing, capture
 

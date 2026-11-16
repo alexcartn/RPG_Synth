@@ -605,8 +605,6 @@ function setMode(m){
   JEU.on=jeu; document.body.classList.toggle("jeu",jeu); document.body.classList.toggle("atelier",at); document.body.classList.toggle("daw",dw);
   $("jeu").hidden=!jeu; if($("atelier")) $("atelier").hidden=!at; if($("daw")) $("daw").hidden=!dw;
   const rw=document.querySelector(".ringwrap"); if(rw) (jeu?$("ringSlot"):document.querySelector(".marge")).appendChild(rw);
-  /* le choix de l'ambiance suit le mode : en tête du panneau en Conduire, dans la marge en Composer */
-  const pb=$("presetBox"), ps=$("presetSlot"); if(pb&&ps) (jeu?ps:document.querySelector(".marge")).appendChild(pb);
   $("reglBtn").setAttribute("aria-pressed",(!jeu&&!at&&!dw)?"true":"false"); $("dawBtn").setAttribute("aria-pressed",dw?"true":"false");
   $("jeuBtn").setAttribute("aria-pressed",jeu?"true":"false");
   $("atelierBtn").setAttribute("aria-pressed",at?"true":"false");

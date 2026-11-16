@@ -121,7 +121,7 @@ function jeuKeys(e){
 /* ---------- panneau ---------- */
 function jeuState(){
   const h=$("jeuHint"); if(!h) return;
-  h.textContent=live?"Touches Z, A et Q : trois rangées de la gamme, du grave à l'aigu. Ou touche le cercle. Le canon reprend ce que tu joues.":"Choisis une ambiance, lance la lecture, puis tourne les boutons. Tous les réglages sont dans Composer.";
+  h.textContent=live?"Touches Z, A et Q : trois rangées de la gamme, du grave à l'aigu. Ou touche le cercle. Le canon reprend ce que tu joues.":"Choisis un univers et ce que tu cherches, lance la lecture, puis tourne les boutons. Tous les réglages sont dans Composer.";
   { const g=$("jeuGel"); if(g){ g.disabled=!live; if(!live){ JEU.gel=false; g.setAttribute("aria-pressed","false"); } } }
   const f=$("jeuFreeze"), rr=$("jeuReroll"); if(f) f.disabled=!live; if(rr) rr.disabled=!live; ["jeuSus","jeuRev","jeuDan"].forEach(id=>{ const b=$(id); if(b) b.disabled=!live; });
   if(!live){ JEU.frozen=false; if(f) f.setAttribute("aria-pressed","false"); }

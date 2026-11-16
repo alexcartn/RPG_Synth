@@ -277,9 +277,9 @@ const UI=[
    {k:"curve.mode",type:"select",label:"Courbe",opts:[["off","Désactivée"],["loop","Répétée"],["once","Une fois, puis elle tient"]]},
    {k:"curve.dur",type:"range",label:"Durée de la courbe",min:1,max:20,step:1,fmt:v=>v+(v>1?" minutes":" minute")}], node:()=>curveEditor()},
   {h:"Adaptatio", hf:"selon l'heure ou la durée d'écoute", items:[
-   {k:"adapt.mode",type:"select",label:"Adaptation",opts:[["off","Aucune"],["heure","Selon l'heure de la journée"],["apaiser","S'apaiser avec la durée d'écoute"]]},
+   {k:"adapt.mode",type:"select",label:"Adaptation",opts:[["off","Aucune"],["heure","Selon l'heure de la journée"],["meteo","Selon l'heure et la météo du lieu"],["apaiser","S'apaiser avec la durée d'écoute"]]},
    {k:"adapt.amount",type:"range",label:"Force de l'adaptation",min:0,max:1,step:0.01,fmt:pct},
-   {k:"adapt.span",type:"range",label:"Durée de l'apaisement",min:10,max:120,step:5,fmt:v=>v+" minutes"}], node:()=>adaptNote()}]},
+   {k:"adapt.span",type:"range",label:"Durée de l'apaisement",min:10,max:120,step:5,fmt:v=>v+" minutes"}], node:()=>{ const w=document.createElement("div"); w.appendChild(adaptNote()); w.appendChild(wxPanel()); return w; }}]},
  {num:"VIII", title:"Rotae et Pendula", fr:"Boucles et pendules", sub:"Deux machines à hasard réglé : des boucles de bande de longueurs premières entre elles, et des pendules qui se désynchronisent puis se retrouvent.", groups:[
   {h:"Rotae", hf:"boucles de bande", items:[
    {k:"loops.lvl",type:"range",label:"Niveau (0 = absentes)",min:0,max:1,step:0.01,fmt:pct},

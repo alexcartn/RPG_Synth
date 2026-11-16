@@ -90,6 +90,8 @@ setTimeout(async()=>{
  d.getElementById('atMach').click(); console.log('atelier : machine en sourdine',w.eval('S.mach===false')); d.getElementById('atMach').click();
  w.eval('live.eng.synOn(0,0.7).release()');
  d.getElementById('reglBtn').click();
+ // météo : mappage et effet sur l'énergie
+ console.log('météo :',JSON.stringify(w.eval('wxMap({weather_code:63,rain:1.6,cloud_cover:95,wind_speed_10m:32,is_day:0,temperature_2m:9})')),'|',w.eval('wxText(wxMap({weather_code:95,rain:0,cloud_cover:100,wind_speed_10m:10,is_day:1,temperature_2m:20}))'));
  // DAW : mode, mixeur, enregistrement, piano roll
  d.getElementById('dawBtn').click(); await new Promise(r=>setTimeout(r,100));
  console.log('daw : mode',w.eval('MODE'),'| lignes',d.querySelectorAll('#dawMix .dw-row').length,'| touches',d.querySelectorAll('#piano .pk').length);

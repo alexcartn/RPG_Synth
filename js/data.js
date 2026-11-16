@@ -98,6 +98,7 @@ const DEFAULT = {
   amb:{murmur:0.35, clink:0.5, feu:0.15, vent:0, gouttes:0},
   fx:{rev:0.4, size:2.6, dark:0.5, room:"gen", dly:0, dlyDiv:1.5, fb:0.4, sat:0.15, wow:0.12, veil:0.3, hiss:0},
   form:{shape:"constante", period:4, amount:0.5},
+  wx:{place:null, d:null, t:0},
   mach:true,
   daw:{sel:0, grid:1, rec:-1, mix:{mute:{}, solo:{}}, tracks:[
     {id:1,name:"Piste 1",inst:"atelier",vol:0.8,pan:0,mute:false,solo:false,bars:2,notes:[]},

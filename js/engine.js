@@ -18,9 +18,21 @@ function buildEngine(ctx, S, o){
   /* adaptation : l'énergie suit l'heure de la journée, ou s'apaise avec la durée d'écoute */
   const clock0=o.clock!==undefined?o.clock:Date.now();
   const adaptOn=()=>!!(S.adapt&&S.adapt.mode&&S.adapt.mode!=="off"&&S.adapt.amount>0.01);
+  /* météo : se superpose à l'heure (pluie, nuit claire, oiseaux, vent, énergie) quand l'adaptation est « heure et météo » */
+  const wxOn=()=>!!(S.adapt&&S.adapt.mode==="meteo"&&S.wx&&S.wx.d&&S.adapt.amount>0.01);
+  const wxE=w=>clamp(0.6-0.25*w.clouds-0.2*w.rain-0.15*w.fog-0.15*w.snow+0.3*w.storm-(w.night?0.12:0),0.05,0.95);
+  function natv(){
+    const nt=S.nature||{}; if(!wxOn()) return nt;
+    const w=S.wx.d, k=S.adapt.amount, o=Object.assign({},nt), clear=w.clouds<0.6&&w.rain<0.1;
+    o.pluie=Math.max(nt.pluie||0,w.rain*0.85*k);
+    if(w.night&&clear) o.nuit=Math.max(nt.nuit||0,0.5*k);
+    if(!w.night&&clear&&!w.snow) o.oiseaux=Math.max(nt.oiseaux||0,0.3*k);
+    return o;
+  }
+  const ventv=()=>Math.max(S.amb.vent,wxOn()?S.wx.d.wind*0.8*S.adapt.amount:0);
   function adaptE(t){
     if(!adaptOn()) return 0.5;
-    if(S.adapt.mode==="heure"){ const d=new Date(clock0+(t-t0)*1000), h=d.getHours()+d.getMinutes()/60; return 0.1+0.8*Math.pow(0.5+0.5*Math.cos(2*Math.PI*(h-14)/24),1.4); }
+    if(S.adapt.mode==="heure"||S.adapt.mode==="meteo"){ const d=new Date(clock0+(t-t0)*1000), h=d.getHours()+d.getMinutes()/60, he=0.1+0.8*Math.pow(0.5+0.5*Math.cos(2*Math.PI*(h-14)/24),1.4); return (S.adapt.mode==="meteo"&&S.wx&&S.wx.d)?clamp(0.5*he+0.5*wxE(S.wx.d),0,1):he; }
     const x=clamp((t-t0)/(Math.max(5,S.adapt.span)*60),0,1); return 0.65-0.55*x*x*(3-2*x);
   }
   const curveOn=()=>!!(S.curve&&S.curve.mode&&S.curve.mode!=="off"&&S.curve.pts&&S.curve.pts.length>1);
@@ -161,7 +173,7 @@ function buildEngine(ctx, S, o){
     B.amb.lvl.gain.value=lv("amb",1);
     B.play.lvl.gain.value=S.play?S.play.lvl:0.8;
     volG.gain.value=S.vol===undefined?1:S.vol;
-    { const nt=S.nature||{}, wa=want("amb");
+    { const nt=natv(), wa=want("amb");
       NATS.forEach(k=>{ if(wa&&mach()&&(nt[k]||0)>0.001) ensureNature(k); });
       natG.pluie.gain.value=1; natG.mer.gain.value=(nt.mer||0)*1.0; natG.nuit.gain.value=(nt.nuit||0)*2.4; natG.ruisseau.gain.value=(nt.ruisseau||0)*1.6;
       if(natB.pluie){ const r=nt.pluie||0; natB.pluie.bg.gain.value=0.22*Math.pow(r,0.7); natB.pluie.ag.gain.value=0.28*r; natB.pluie.bg2.gain.value=0.5*r*r; }
@@ -172,7 +184,7 @@ function buildEngine(ctx, S, o){
     }
     B.loops.lvl.gain.value=lv("loops",S.loops.lvl);
     B.pend.lvl.gain.value=lv("pend",S.pend.lvl);
-    murG.gain.value=S.amb.murmur; fireG.gain.value=S.amb.feu*1.2; windG.gain.value=S.amb.vent*0.9; dripG.gain.value=S.amb.gouttes*0.8;
+    murG.gain.value=S.amb.murmur; fireG.gain.value=S.amb.feu*1.2; windG.gain.value=ventv()*0.9; dripG.gain.value=S.amb.gouttes*0.8;
     wet.gain.value=S.fx.rev*2;
     dOut.gain.value=S.fx.dly; dfb.gain.value=Math.min(0.9,S.fx.fb);
     dl.delayTime.value=E*S.fx.dlyDiv; dr.delayTime.value=E*S.fx.dlyDiv*1.0;
@@ -189,8 +201,8 @@ function buildEngine(ctx, S, o){
     setLink(lHiss,S.fx.hiss>0.001);
     setLink(lRev,rev); setLink(lDly,dly); setLink(lDout,dly);
     setLink(lCanon,S.canon.lvl>0.001);
-    { const nt=S.nature||{}, wa=want("amb")&&mach(); NATS.forEach(k=>setLink(natL[k],wa&&(nt[k]||0)>0.001)); setLink(lBird,wa&&(nt.oiseaux||0)>0.001); }
-    setLink(lMur,mach()&&S.amb.murmur>0.001); setLink(lFire,mach()&&S.amb.feu>0.001); setLink(lWind,mach()&&S.amb.vent>0.001);
+    { const nt=natv(), wa=want("amb")&&mach(); NATS.forEach(k=>setLink(natL[k],wa&&(nt[k]||0)>0.001)); setLink(lBird,wa&&(nt.oiseaux||0)>0.001); }
+    setLink(lMur,mach()&&S.amb.murmur>0.001); setLink(lFire,mach()&&S.amb.feu>0.001); setLink(lWind,mach()&&ventv()>0.001);
     droneLinks.forEach(l=>setLink(l,mach()&&S.drone.lvl>0.001));
   }
   function setReverb(){ conv.buffer=makeIR(S.fx.size,S.fx.dark); }
@@ -923,7 +935,7 @@ function buildEngine(ctx, S, o){
       });
       while(cur.clink<until){ clink(cur.clink); cur.clink+=(18+R.a()*30)/(0.25+S.amb.clink*1.5); }
       cur.fire=until; /* les craquements viennent de la boucle précalculée */
-      while(cur.bird<until){ const t=cur.bird, ov=(S.nature||{}).oiseaux||0; if(ov>0.001) bird(t); cur.bird=t+(7+R.t()*14)/(0.25+ov*1.75); }
+      while(cur.bird<until){ const t=cur.bird, ov=natv().oiseaux||0; if(ov>0.001) bird(t); cur.bird=t+(7+R.t()*14)/(0.25+ov*1.75); }
       while(cur.wind<until){
         const t=cur.wind;
         if(windBP){ windBP.frequency.setTargetAtTime(250+R.a()*700,t,2.5); windMod.gain.setTargetAtTime(0.2+R.a()*0.8,t,2.5); }

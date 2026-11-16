@@ -85,6 +85,7 @@ function adaptUpdate(){
   const now=Date.now(); if(now-adaptT<1000) return; adaptT=now;
   let txt="";
   if(S.adapt.mode==="heure"){ const d=new Date(), h=d.getHours(), e=live?live.eng.adaptNow():null, part=h<6?"nuit":h<10?"matin":h<14?"midi":h<18?"après-midi":h<22?"soirée":"nuit"; txt="Il est "+d.getHours()+" h "+String(d.getMinutes()).padStart(2,"0")+" ("+part+")"+(e!==null?" : énergie "+Math.round(e*100)+" %, ":", ")+"la musique devient plus calme et plus sombre le soir et la nuit, plus claire et plus dense en journée."; }
+  else if(S.adapt.mode==="meteo"){ const e=live?live.eng.adaptNow():null; txt="Heure et météo"+(S.wx&&S.wx.place?" de "+S.wx.place.name:"")+(S.wx&&S.wx.d?" : "+wxText(S.wx.d):" : choisis un lieu ci-dessous")+(e!==null?", énergie "+Math.round(e*100)+" %.":"."); }
   else if(S.adapt.mode==="apaiser"){ const e=live?live.eng.adaptNow():null; txt="La musique s'apaise peu à peu sur "+S.adapt.span+" minutes"+(e!==null?" : énergie "+Math.round(e*100)+" %.":"."); }
   else txt="Désactivée : la musique ne dépend ni de l'heure ni de la durée d'écoute.";
   if(txt!==adaptShown){ adaptShown=txt; el.textContent=txt; }

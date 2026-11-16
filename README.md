@@ -8,6 +8,20 @@ Usage prévu : composer hors ligne. On règle, on écoute, puis on rend en WAV (
 
 Ouvrir `index.html` dans un navigateur récent (Chrome, Firefox, Safari). Les polices sont dans le dépôt (`fonts/`, licence SIL OFL), aucune requête externe sauf l'encodeur MP3 à la demande.
 
+## La page d'accueil
+
+On arrive sur Conduire : une ambiance à choisir (univers puis préréglage), le bouton Jouer, huit boutons (volume, tension, densité, bourdon, nappes, brume, nuage, chaleur), un pad XY et le cercle des hauteurs. Les réglages fins sont dans Composer, en neuf chapitres repliés. L'en-tête est réduit au titre, la légende de la partition n'apparaît qu'en lecture, l'extinction a rejoint « Séance » dans la marge.
+
+## Réverbération vivante, nuage de grains, liens
+
+Ces trois ajouts tournent dans un AudioWorklet (`js/fx.js`), en direct comme à l'export. Si le navigateur n'en a pas, la réverbération à convolution reste seule et le nuage est absent.
+
+- Réverbération vivante (Spatium, « Type de réverbération », par défaut) : un réseau de huit lignes à retard bouclées, amorties, dont les longueurs bougent lentement. « Mouvement » règle cette modulation, « Scintillement » renvoie la queue une octave plus haut. « Lieu » garde l'ancienne réverbération à convolution, avec ses premières réflexions. Mesuré : durée de décroissance conforme au réglage (7,9 s pour 9 s demandées), niveau aligné sur la convolution (0,4 dB d'écart sur un rendu de 30 s), stable même à scintillement maximal, environ 1 % d'un cœur.
+- Nuage de grains (Spatium et Patina, groupe Grain ; bouton Nuage en Conduire) : la mélodie, les nappes ou les boucles s'écrivent dans une bande de 8 secondes, relue par petits grains tirés dans le passé récent, parfois à l'octave ou à la quinte. « Geler le nuage » (Conduire) arrête l'écriture : les grains font tourner ce que la bande contient. Le gel ne fait pas partie de l'export.
+- Liens (Mutatio) : chaque note de la mélodie ouvre le filtre des nappes, qui se referme ensuite ; à zéro, le filtre est neutre. Les notes jouées à la main l'ouvrent aussi.
+- Dérives liées (Mutatio, Deriva) : chaque dérive peut promener une seconde cible (« et aussi »), dans le même sens ou à l'envers, par exemple l'éclat du bourdon qui monte quand le voile se lève. Nouvelle cible : le nuage de grains.
+- Pas écouté par moi : tout cela est vérifié par mesure (niveaux, stabilité, absence de valeurs aberrantes), les dosages par défaut et ceux des préréglages Meditatio, Sidera et Nebula restent à ajuster à l'oreille.
+
 ## Forger : le synthé perso
 
 Troisième mode, Forger (interrupteur « Composer · Conduire · Forger · Arranger » sous la partition, le mode courant est souligné), indépendant de la génération : un synthétiseur qu'on programme et qu'on joue.
@@ -48,7 +62,7 @@ Troisième mode, Forger (interrupteur « Composer · Conduire · Forger · Arran
 
 ## Conduire et réponse immédiate
 
-- Mode Conduire (interrupteur « Composer · Conduire · Forger · Arranger » sous la partition) : un panneau sans défilement avec huit boutons rotatifs (volume, tension, densité, bourdon, nappes, canon, brume, chaleur), un pad XY dont on choisit les deux axes, et le cercle des hauteurs qui devient un clavier. On glisse un bouton vers le haut ou le bas (Maj pour affiner), on utilise la molette ou les flèches. Le choix du mode est mémorisé.
+- Mode Conduire (interrupteur « Conduire · Composer · Forger · Arranger » sous la partition) : un panneau avec huit boutons rotatifs (volume, tension, densité, bourdon, nappes, brume, nuage, chaleur ; canon et écho restent disponibles sur le pad), un pad XY dont on choisit les deux axes, et le cercle des hauteurs qui devient un clavier. On glisse un bouton vers le haut ou le bas (Maj pour affiner), on utilise la molette ou les flèches. Le choix du mode est mémorisé.
 - Jouer par-dessus la machine : le cercle joue les notes de la gamme courante (les autres sont ignorées, pour que ça sonne toujours juste). Au clavier, trois rangées de la gamme, du grave à l'aigu : Z X C V B N M , . / puis A S D F G H J K L ; puis Q W E R T Y U I O P, repérées par position physique de la touche donc valables en AZERTY. Instrument, registre et niveau de ton jeu se règlent sous le cercle ; si le canon est actif, il reprend ce que tu joues.
 - Figer : la dernière phrase et le dernier accord tournent en boucle jusqu'à ce qu'on relâche. Autre phrase : la mémoire est oubliée et la machine repart sur du neuf.
 - Réponse immédiate : la planification en direct est de 4 secondes (10 si la page est en arrière-plan) au lieu de 8, et `replan()` coupe d'un coup les notes déjà planifiées d'une voix pour en planifier de nouvelles avec les réglages actuels. Mesuré : un changement de réglage de la mélodie s'entendait après environ 9 secondes, maintenant après 0,3 seconde. Instrument, densité, registre, gamme, nappes, boucles, pendules, déjà-vu, durée de section et courbe de tension ne redémarrent plus le moteur. Tonalité, tempérament, diapason, tempo, mesure, graine et timbre du bourdon passent toujours par un fondu enchaîné, raccourci à 0,6 seconde.
@@ -155,10 +169,11 @@ Les titres sont en latin, avec le français en sous-titre, comme sur les instrum
 Des scripts classiques chargés dans l'ordre par `index.html`, sans module ni build (ça marche aussi en `file://`), et `css/style.css`.
 
 1. `js/data.js` : données musicales (`SCALE_GROUPS`, `RAT` tempéraments, `METERS` motifs de percussion, `DEFAULT`, `PRESETS`) et état `S`.
-2. `js/engine.js` : `buildEngine(ctx, S, opts)`, le moteur. Il fonctionne indifféremment sur un `AudioContext` (lecture en direct) et un `OfflineAudioContext` (export). Un ordonnanceur `schedule(until)` planifie à l'avance bourdon, mélodie, canon, nappes, percussion, lieu, boucles et pendules. Chaque famille a son propre générateur pseudo-aléatoire dérivé de la graine : désactiver une voix ne change pas les autres, ce qui rend les stems cohérents avec le mix.
-3. `js/ui.js` : contrôles générés depuis la structure `UI`, cercle des hauteurs en SVG, lecture en direct.
-4. `js/export.js` : `renderOffline`, `wavFromChannels`, `zipStore`, `midiFile`, code de partage.
-5. `js/main.js` : démarrage.
+2. `js/fx.js` : les processeurs AudioWorklet (réverbération vivante, nuage de grains) et `fxLoad(ctx)` qui les charge par URL de blob, ou `data:` en `file://`.
+3. `js/engine.js` : `buildEngine(ctx, S, opts)`, le moteur. Il fonctionne indifféremment sur un `AudioContext` (lecture en direct) et un `OfflineAudioContext` (export). Un ordonnanceur `schedule(until)` planifie à l'avance bourdon, mélodie, canon, nappes, percussion, lieu, boucles et pendules. Chaque famille a son propre générateur pseudo-aléatoire dérivé de la graine : désactiver une voix ne change pas les autres, ce qui rend les stems cohérents avec le mix.
+4. `js/ui.js` : contrôles générés depuis la structure `UI`, cercle des hauteurs en SVG, lecture en direct.
+5. `js/export.js` : `renderOffline`, `wavFromChannels`, `zipStore`, `midiFile`, code de partage.
+6. `js/main.js` : démarrage.
 
 Points d'attention pour la suite :
 

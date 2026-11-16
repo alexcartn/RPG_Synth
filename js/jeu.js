@@ -11,8 +11,9 @@ const KNOBS=[
   {id:"dens",label:"Densité",get:()=>S.mel.dens,set:v=>{S.mel.dens=v;},keys:["mel.dens"],replan:"mel"},
   {id:"bourdon",label:"Bourdon",get:()=>S.drone.lvl,set:v=>{S.drone.lvl=v;},keys:["drone.lvl"]},
   {id:"nappes",label:"Nappes",get:()=>S.pad.lvl,set:v=>{S.pad.lvl=v;},keys:["pad.lvl"],zero:"pad"},
-  {id:"canon",label:"Canon",get:()=>S.canon.lvl,set:v=>{S.canon.lvl=v;},keys:["canon.lvl"],zero:"mel"},
   {id:"brume",label:"Brume",get:()=>S.fx.rev,set:v=>{S.fx.rev=v;},keys:["fx.rev"]},
+  {id:"nuage",label:"Nuage",get:()=>(S.grain&&S.grain.mix)||0,set:v=>{S.grain.mix=v;},keys:["grain.mix"]},
+  {id:"canon",label:"Canon",get:()=>S.canon.lvl,set:v=>{S.canon.lvl=v;},keys:["canon.lvl"],zero:"mel",noKnob:true},
   {id:"chaleur",label:"Chaleur",get:()=>Math.min(1,S.fx.sat/0.6),set:v=>{S.fx.sat=v*0.6; S.fx.wow=0.04+v*0.36;},keys:["fx.sat","fx.wow"]},
   {id:"echo",label:"Écho",get:()=>S.fx.dly,set:v=>{S.fx.dly=v;},keys:["fx.dly"],noKnob:true}
 ];
@@ -116,11 +117,12 @@ function jeuKeys(e){
 /* ---------- panneau ---------- */
 function jeuState(){
   const h=$("jeuHint"); if(!h) return;
-  h.textContent=live?"Touches Z, A et Q : trois rangées de la gamme, du grave à l'aigu. Ou touche le cercle. Le canon reprend ce que tu joues.":"Lance la lecture pour jouer par-dessus la machine.";
+  h.textContent=live?"Touches Z, A et Q : trois rangées de la gamme, du grave à l'aigu. Ou touche le cercle. Le canon reprend ce que tu joues.":"Choisis une ambiance, lance la lecture, puis tourne les boutons. Tous les réglages sont dans Composer.";
+  { const g=$("jeuGel"); if(g){ g.disabled=!live; if(!live){ JEU.gel=false; g.setAttribute("aria-pressed","false"); } } }
   const f=$("jeuFreeze"), rr=$("jeuReroll"); if(f) f.disabled=!live; if(rr) rr.disabled=!live; ["jeuSus","jeuRev","jeuDan"].forEach(id=>{ const b=$(id); if(b) b.disabled=!live; });
   if(!live){ JEU.frozen=false; if(f) f.setAttribute("aria-pressed","false"); }
 }
-function jeuReset(){ JEU.frozen=false; const f=$("jeuFreeze"); if(f) f.setAttribute("aria-pressed","false"); }
+function jeuReset(){ JEU.frozen=false; const f=$("jeuFreeze"); if(f) f.setAttribute("aria-pressed","false"); JEU.gel=false; const g=$("jeuGel"); if(g) g.setAttribute("aria-pressed","false"); }
 function jeuSync(){
   if(!JEU.on) return;
   document.querySelectorAll("#knobs .knob").forEach(el=>paintKnob(el,el._spec));
@@ -147,6 +149,14 @@ function buildJeu(){
   $("jeuBtn").onclick=()=>setMode("jeu");
   $("jeuFreeze").onclick=()=>{ if(!live) return; JEU.frozen=live.eng.freeze(!JEU.frozen); $("jeuFreeze").setAttribute("aria-pressed",JEU.frozen?"true":"false"); syncUI(); };
   $("jeuReroll").onclick=()=>{ if(live) live.eng.reroll(); };
+  /* geler le nuage : s'il était absent, on le fait entrer pour que le gel s'entende */
+  $("jeuGel").onclick=()=>{
+    if(!live) return;
+    if(!live.eng.fxOn()){ $("jeuHint").textContent="Le nuage de grains n'est pas disponible dans ce navigateur."; return; }
+    const on=!JEU.gel;
+    if(on&&S.grain.mix<0.05){ applyKnob(KNOB.nuage,0.5,true); jeuSync(); }
+    JEU.gel=live.eng.grainFreeze(on); $("jeuGel").setAttribute("aria-pressed",JEU.gel?"true":"false");
+  };
   $("jeuSus").onclick=()=>{ if(live) live.eng.gesture("suspense"); }; $("jeuRev").onclick=()=>{ if(live) live.eng.gesture("revelation"); }; $("jeuDan").onclick=()=>{ if(live) live.eng.gesture("danger"); };
   document.addEventListener("keydown",jeuKeys);
   jeuState();

@@ -56,6 +56,8 @@ function startLive(opt){
   let ctx; try{ ctx=new AC({latencyHint:"playback"}); }catch(e){ ctx=new AC(); }
   const eng=buildEngine(ctx,S,engineOpts());
   live={ctx,eng,t0:ctx.currentTime+0.1,olds:[]};
+  /* réverbération vivante et grain : branchés dès que le worklet est chargé (quelques millisecondes) */
+  if(typeof fxLoad==="function") fxLoad(ctx).then(ok=>{ if(ok&&live&&live.ctx===ctx) live.eng.fxAttach(); });
   vizClear();
   eng.start(live.t0,(opt&&opt.fade)||5,0);
   eng.schedule(ctx.currentTime+lookahead());
@@ -96,6 +98,7 @@ function crossfade(d){
 function restartIfLive(d){ if(live) crossfade(d||0.6); }
 function setPlayUI(on){
   if(window.keepAwake) window.keepAwake(on);
+  document.body.classList.toggle("playing",!!on);
   ["play","play2","play3","play4"].forEach(id=>{const b=$(id); if(!b) return; b.textContent=on?"Arrêter":"Jouer"; b.setAttribute("aria-pressed",on?"true":"false");});
   if(typeof jeuState==="function") jeuState(); if(typeof capUI==="function") capUI();
 }
@@ -183,7 +186,9 @@ setInterval(()=>{ if(typeof atScaleSync==="function") atScaleSync(); if(live){ c
 /* ---------- construction des contrôles ---------- */
 const pct=v=>Math.round(v*100)+" %";
 const INST_OPTS=[["luth","Luth"],["harpe","Harpe"],["flute","Flûte"],["carillon","Carillon"],["orgue","Orgue positif"],["oud","Oud (corde pincée)"],["ney","Ney (flûte soufflée)"],["kalimba","Kalimba"],["bol","Bol chantant"],["verre","Cloches de verre"],["synthe","Synthé doux"],["archet","Archet (violon, viole)"],["cuivre","Cuivre doux"],["atelier","Synthé perso (Atelier)"]];
-const DRIFT_OPTS=[["none","Rien"],["filtre","Éclat du bourdon"],["reverb","Réverbération"],["densite","Densité de la mélodie"],["pan","Place de la mélodie (pan)"],["tension","Tension"],["voile","Voile (aigus)"]];
+const DRIFT_OPTS=[["none","Rien"],["filtre","Éclat du bourdon"],["reverb","Réverbération"],["densite","Densité de la mélodie"],["pan","Place de la mélodie (pan)"],["tension","Tension"],["voile","Voile (aigus)"],["grain","Nuage de grains"]];
+/* seconde cible d'une dérive : la même liste, dans le même sens puis à l'envers */
+const DRIFT2_OPTS=DRIFT_OPTS.concat(DRIFT_OPTS.slice(1).map(([k,l])=>["-"+k,l+", à l'envers"]));
 const SCALE_OPTS=SCALE_GROUPS.map(([g,l])=>[g,l.map(([k,n])=>[k,n])]);
 const UI=[
  {num:"I", title:"Modus", fr:"Gamme et accord", sub:"Tonique, gamme principale, et jusqu'à deux colorations qui se succèdent par sections.", groups:[
@@ -193,7 +198,7 @@ const UI=[
    {k:"scales.1",type:"select",label:"Puis (facultatif)",groups:SCALE_OPTS,blank:"Aucune",ring:true},
    {k:"scales.2",type:"select",label:"Puis encore (facultatif)",groups:SCALE_OPTS,blank:"Aucune",ring:true},
    {k:"sectionBars",type:"range",label:"Durée d'une section",min:4,max:64,step:4,fmt:v=>v+" mesures"}]},
-  {h:"Affectus", hf:"ce que dégagent les gammes et les tonalités", items:[], node:()=>affPanel()},
+  {fin:"Affectus : ce que dégagent les gammes, chercher une ambiance par émotion", items:[], node:()=>affPanel()},
   {fin:"Temperatio : accord et tempérament", items:[
    {k:"temper",type:"select",label:"Tempérament",opts:[["egal","Égal"],["juste","Juste (intonation pure)"],["pyth","Pythagoricien"],["meso","Mésotonique (quart de comma)"]],restart:true},
    {k:"a4",type:"range",label:"Diapason (La)",min:410,max:450,step:1,fmt:v=>v+" Hz",restart:true}]}]},
@@ -284,9 +289,19 @@ const UI=[
    {k:"fx.size",type:"range",label:"Taille de la salle",min:0.5,max:9,step:0.1,fmt:v=>v.toFixed(1)+" s",reverb:true},
    {k:"fx.dark",type:"range",label:"Ombre (réverb sourde)",min:0,max:1,step:0.01,fmt:pct,reverb:true},
    {k:"fx.room",type:"select",label:"Acoustique du lieu",opts:[["gen","Générique"],["chapelle","Chapelle de pierre"],["salle","Salle de bois"],["grotte","Grotte"],["plaque","Plaque métallique"]],reverb:true},
+   {k:"fx.algo",type:"select",label:"Type de réverbération",opts:[["vivante","Vivante : la queue bouge et peut scintiller"],["lieu","Lieu : acoustique figée, avec ses premières réflexions"]]},
+   {k:"fx.mod",type:"range",label:"Mouvement de la queue (réverb vivante)",min:0,max:1,step:0.01,fmt:pct},
+   {k:"fx.shim",type:"range",label:"Scintillement : la queue remonte d'une octave",min:0,max:1,step:0.01,fmt:pct},
    {k:"fx.dly",type:"range",label:"Écho",min:0,max:1,step:0.01,fmt:pct},
    {k:"fx.dlyDiv",type:"select",label:"Valeur de l'écho",opts:[[1.5,"Croche pointée"],[2,"Noire"],[3,"Noire pointée"]],num:true},
    {k:"fx.fb",type:"range",label:"Répétitions de l'écho",min:0,max:0.9,step:0.01,fmt:pct}]},
+  {h:"Grain", hf:"nuage de grains et gel", items:[
+   {k:"grain.mix",type:"range",label:"Nuage (0 = absent)",min:0,max:1,step:0.01,fmt:pct},
+   {k:"grain.src",type:"select",label:"Ce qui est mis en grains",opts:[["mel","Mélodie et canon"],["pad","Nappes"],["cycles","Boucles et pendules"],["tout","Tout cela"]]},
+   {k:"grain.dens",type:"range",label:"Densité des grains",min:0,max:1,step:0.01,fmt:pct},
+   {k:"grain.size",type:"range",label:"Taille des grains",min:0,max:1,step:0.01,fmt:v=>Math.round(40+560*v*v)+" ms"},
+   {k:"grain.spread",type:"range",label:"Mémoire : jusqu'où les grains remontent dans le passé",min:0,max:1,step:0.01,fmt:v=>(0.03+6.2*v*v).toFixed(1)+" s"},
+   {k:"grain.pitch",type:"range",label:"Grains à l'octave ou à la quinte",min:0,max:1,step:0.01,fmt:pct}]},
   {h:"Patina", hf:"patine de bande", items:[
    {k:"fx.sat",type:"range",label:"Saturation",min:0,max:1,step:0.01,fmt:pct},
    {k:"fx.wow",type:"range",label:"Ondulation (wow et flutter)",min:0,max:1,step:0.01,fmt:pct},
@@ -304,17 +319,23 @@ const UI=[
    {k:"adapt.mode",type:"select",label:"Adaptation",opts:[["off","Aucune"],["heure","Selon l'heure de la journée"],["meteo","Selon l'heure et la météo du lieu"],["apaiser","S'apaiser avec la durée d'écoute"]]},
    {k:"adapt.amount",type:"range",label:"Force de l'adaptation",min:0,max:1,step:0.01,fmt:pct},
    {k:"adapt.span",type:"range",label:"Durée de l'apaisement",min:10,max:120,step:5,fmt:v=>v+" minutes"}], node:()=>{ const w=document.createElement("div"); w.appendChild(adaptNote()); w.appendChild(wxPanel()); return w; }},
+  {h:"Liens", hf:"les voix agissent les unes sur les autres", items:[
+   {k:"link.melPad",type:"range",label:"La mélodie ouvre le filtre des nappes",min:0,max:1,step:0.01,fmt:v=>v<0.01?"aucun":pct(v)}]},
   {h:"Deriva", hf:"marches aléatoires, sans graine", items:[
    {k:"drift.0.t",type:"select",label:"Dérive 1 : ce qu'elle promène",opts:DRIFT_OPTS},
+   {k:"drift.0.t2",type:"select",label:"Dérive 1 : et aussi",opts:DRIFT2_OPTS},
    {k:"drift.0.d",type:"range",label:"Dérive 1 : profondeur",min:0,max:1,step:0.01,fmt:pct},
    {k:"drift.0.v",type:"range",label:"Dérive 1 : vitesse",min:0,max:1,step:0.01,fmt:pct},
    {k:"drift.1.t",type:"select",label:"Dérive 2 : ce qu'elle promène",opts:DRIFT_OPTS},
+   {k:"drift.1.t2",type:"select",label:"Dérive 2 : et aussi",opts:DRIFT2_OPTS},
    {k:"drift.1.d",type:"range",label:"Dérive 2 : profondeur",min:0,max:1,step:0.01,fmt:pct},
    {k:"drift.1.v",type:"range",label:"Dérive 2 : vitesse",min:0,max:1,step:0.01,fmt:pct},
    {k:"drift.2.t",type:"select",label:"Dérive 3 : ce qu'elle promène",opts:DRIFT_OPTS},
+   {k:"drift.2.t2",type:"select",label:"Dérive 3 : et aussi",opts:DRIFT2_OPTS},
    {k:"drift.2.d",type:"range",label:"Dérive 3 : profondeur",min:0,max:1,step:0.01,fmt:pct},
    {k:"drift.2.v",type:"range",label:"Dérive 3 : vitesse",min:0,max:1,step:0.01,fmt:pct},
    {k:"drift.3.t",type:"select",label:"Dérive 4 : ce qu'elle promène",opts:DRIFT_OPTS},
+   {k:"drift.3.t2",type:"select",label:"Dérive 4 : et aussi",opts:DRIFT2_OPTS},
    {k:"drift.3.d",type:"range",label:"Dérive 4 : profondeur",min:0,max:1,step:0.01,fmt:pct},
    {k:"drift.3.v",type:"range",label:"Dérive 4 : vitesse",min:0,max:1,step:0.01,fmt:pct}]}]},
  {num:"VIII", title:"Rotae et Pendula", fr:"Boucles et pendules", sub:"Deux machines à hasard réglé : des boucles de bande de longueurs premières entre elles, et des pendules qui se désynchronisent puis se retrouvent.", groups:[
@@ -371,7 +392,7 @@ function wireDockTension(){
 /* chapitres repliables : on les ouvre ou on les ferme, le choix est mémorisé */
 const FOLD_KEY="bourdon.chapitres";
 function foldChapters(){
-  const host=$("chapters"); let open=["ch-I"]; try{ const j=JSON.parse(localStorage.getItem(FOLD_KEY)); if(Array.isArray(j)) open=j; }catch(e){}
+  const host=$("chapters"); let open=[]; try{ const j=JSON.parse(localStorage.getItem(FOLD_KEY)); if(Array.isArray(j)) open=j; }catch(e){}
   const save=()=>{ try{ localStorage.setItem(FOLD_KEY,JSON.stringify([...host.querySelectorAll(".chap[open]")].map(d=>d.id))); }catch(e){} };
   [...host.querySelectorAll(":scope > section.chap")].forEach(sec=>{
     const d=document.createElement("details"); d.className="chap"; d.id=sec.id; d.open=open.indexOf(sec.id)>=0;

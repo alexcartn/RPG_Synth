@@ -75,6 +75,7 @@ function midiFile(events,Sx){
 async function renderOffline(Sx,dur,o,onProg){
   const sr=44100, tail=o.loop?8:0, total=dur+tail;
   const ctx=new OfflineAudioContext(2,Math.ceil(sr*total),sr);
+  if(typeof fxLoad==="function") await fxLoad(ctx);
   const eng=buildEngine(ctx,Sx,{solo:o.solo,noComp:o.noComp,record:o.record});
   eng.start(0,o.loop?0.05:5,o.loop?0:total);
   eng.schedule(total);

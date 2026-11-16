@@ -96,7 +96,7 @@ const DEFAULT = {
   loops:{lvl:0, count:3, inst:"carillon", speed:1},
   pend:{lvl:0, count:6, period:24, inst:"carillon"},
   amb:{murmur:0.35, clink:0.5, feu:0.15, vent:0, gouttes:0},
-  fx:{rev:0.4, size:2.6, dark:0.5, room:"gen", dly:0, dlyDiv:1.5, fb:0.4, sat:0.15, wow:0.12, veil:0.3, hiss:0},
+  fx:{rev:0.4, size:2.6, dark:0.5, room:"gen", algo:"vivante", mod:0.5, shim:0, dly:0, dlyDiv:1.5, fb:0.4, sat:0.15, wow:0.12, veil:0.3, hiss:0},
   form:{shape:"constante", period:4, amount:0.5},
   wx:{place:null, d:null, t:0},
   mach:true,
@@ -109,7 +109,9 @@ const DEFAULT = {
   car:{grav:0.5, aud:0.5, orn:0.5, sil:0.5, rep:0.5},
   chance:{skip:0.08, ratchet:0.07, mutate:0.12, octave:0.05, rest:0.08},
   turing:{lock:0.85, len:2, rate:1},
-  drift:[{t:"filtre",d:0.3,v:0.3},{t:"densite",d:0.25,v:0.25},{t:"reverb",d:0.25,v:0.2},{t:"pan",d:0.3,v:0.3}],
+  drift:[{t:"filtre",t2:"-voile",d:0.3,v:0.3},{t:"densite",t2:"none",d:0.25,v:0.25},{t:"reverb",t2:"grain",d:0.25,v:0.2},{t:"pan",t2:"none",d:0.3,v:0.3}],
+  grain:{mix:0, dens:0.45, size:0.5, spread:0.4, pitch:0.3, src:"mel"},
+  link:{melPad:0.4},
   adapt:{mode:"off", amount:0.6, span:45},
   play:{lvl:0.8, inst:"", oct:24},
   nature:{pluie:0, mer:0, nuit:0, ruisseau:0, oiseaux:0},
@@ -158,7 +160,7 @@ const CALME = [
     perc:{lvl:0}, drone:{lvl:0.55, timbre:"bol", bright:0.25, width:0.5, drift:0.5, glide:0.4},
     mel:{lvl:0.3, inst:"bol", dens:0.18, reg:1, span:1, leap:0.1, orn:0, deja:0.7, loop:3}, canon:{lvl:0.2, inst:"verre", delay:4, shift:"oct+"},
     pad:{lvl:0.28, timbre:"verre", len:6, motion:0.3, voices:3}, amb:{murmur:0, clink:0, feu:0, vent:0.08, gouttes:0},
-    fx:{rev:0.5, size:7, dark:0.55, sat:0.05, wow:0.08, veil:0.55, hiss:0}, form:{shape:"vagues", period:8, amount:0.4},
+    fx:{rev:0.5, size:7, dark:0.55, mod:0.6, sat:0.05, wow:0.08, veil:0.55, hiss:0}, grain:{mix:0.25, dens:0.3, size:0.7, spread:0.6, pitch:0.15}, link:{melPad:0.55}, form:{shape:"vagues", period:8, amount:0.4},
     loops:{lvl:0.25, count:4, inst:"bol", speed:1.3}}, "méditation, bols et nappes de verre"],
   ["Labor", {car:{grav:0.55, aud:0.4, orn:0.3, sil:0.5, rep:0.7}, mus:{form:"ostinato"}, seed:2020, root:9, scales:["dorien","",""], sectionBars:32, tempo:68, tension:0.35,
     perc:{lvl:0}, drone:{lvl:0.55, timbre:"orgue", bright:0.3, width:0.3, drift:0.3, glide:0.2},
@@ -171,13 +173,13 @@ const ESPACE = [
     perc:{lvl:0}, drone:{lvl:0.5, timbre:"bol", bright:0.5, width:0.7, drift:0.8, glide:0.6},
     mel:{lvl:0.3, inst:"verre", dens:0.14, reg:2, span:2, leap:0.3, orn:0, deja:0.4, loop:3}, canon:{lvl:0.25, inst:"verre", delay:3, shift:"q+"},
     pad:{lvl:0.38, timbre:"verre", len:8, motion:0.6, voices:4}, amb:{vent:0.1},
-    fx:{rev:0.6, size:9, dark:0.4, room:"plaque", dly:0.25, dlyDiv:3, fb:0.6, sat:0.04, wow:0.05, veil:0.3, hiss:0.05}, form:{shape:"arche", period:10, amount:0.5},
+    fx:{rev:0.6, size:9, dark:0.4, room:"plaque", mod:0.7, shim:0.4, dly:0.25, dlyDiv:3, fb:0.6, sat:0.04, wow:0.05, veil:0.3, hiss:0.05}, form:{shape:"arche", period:10, amount:0.5},
     loops:{lvl:0.35, count:5, inst:"verre", speed:1.4}, pend:{lvl:0.25, count:8, period:36, inst:"verre"}}, "étoiles, cloches de verre et échos"],
   ["Nebula", {car:{grav:0.55, aud:0.3, orn:0.4, sil:0.7, rep:0.5}, seed:5150, root:3, scales:["tons","octa",""], sectionBars:16, tempo:50, tension:0.45, vol:0.7,
     perc:{lvl:0}, drone:{lvl:0.6, timbre:"choeur", bright:0.35, width:0.8, drift:0.9, glide:0.8},
     mel:{lvl:0.25, inst:"synthe", dens:0.2, reg:1, span:3, leap:0.35, orn:0, deja:0.3, loop:4}, canon:{lvl:0},
     pad:{lvl:0.4, timbre:"synthe", len:6, motion:0.85, voices:4}, amb:{vent:0.25},
-    fx:{rev:0.6, size:8, dark:0.6, dly:0.3, dlyDiv:2, fb:0.5, sat:0.15, wow:0.2, veil:0.5, hiss:0.1}, form:{shape:"vagues", period:6, amount:0.6},
+    fx:{rev:0.6, size:8, dark:0.6, mod:0.8, shim:0.2, dly:0.3, dlyDiv:2, fb:0.5, sat:0.15, wow:0.2, veil:0.5, hiss:0.1}, grain:{mix:0.45, dens:0.55, size:0.6, spread:0.7, pitch:0.4, src:"tout"}, form:{shape:"vagues", period:6, amount:0.6},
     loops:{lvl:0.2, count:3, inst:"synthe", speed:1.2}}, "nébuleuse, nappes de synthé qui dérivent"],
   ["Abyssus", {car:{grav:0.85, aud:0.2, orn:0.15, sil:0.85, rep:0.7}, mus:{form:"passacaille"}, seed:666, root:7, scales:["locrien","phrygien",""], sectionBars:24, tempo:40, tension:0.55, vol:0.7,
     perc:{lvl:0}, drone:{lvl:0.7, timbre:"pur", bright:0.1, width:0.5, drift:0.7, glide:0.5},
@@ -250,7 +252,7 @@ function merge(a,b){for(const k in b){ if(b[k]&&typeof b[k]==="object"&&!Array.i
 let S = clone(DEFAULT);
 
 /* d'anciennes scènes n'ont que quatre emplacements de modulation : on complète jusqu'à huit */
-function normS(){ if(S.syn&&S.syn.mod){ const dm=SYN_DEFAULT.mod; while(S.syn.mod.length<8) S.syn.mod.push({...dm[S.syn.mod.length]}); } return S; }
+function normS(){ if(Array.isArray(S.drift)) S.drift.forEach(w=>{ if(w&&w.t2===undefined) w.t2="none"; }); if(S.syn&&S.syn.mod){ const dm=SYN_DEFAULT.mod; while(S.syn.mod.length<8) S.syn.mod.push({...dm[S.syn.mod.length]}); } return S; }
 
 /* chaque lecture, chaque rendu : une pièce nouvelle (la graine reste interne, pour garder les stems alignés) */
 const newSeed=()=>1+Math.floor(Math.random()*4294967000);

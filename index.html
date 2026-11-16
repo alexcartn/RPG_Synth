@@ -19,7 +19,6 @@
 <body>
 <div class="folio">
   <header class="head">
-    <p class="kicker">machina modalis</p>
     <h1>Bourdon</h1>
     <p class="installrow"><button class="lnk" id="install" type="button" hidden>Installer l'application</button></p>
     <p class="lede" lang="fr">La musique de ta table de jeu de rôle : un bourdon, des voix, des gammes que l'on choisit ou que l'on dessine. Une taverne, une crypte, un combat, joués par la machine ou par toi.</p>
@@ -31,22 +30,25 @@
   </figure>
 
   <nav class="modes" id="modes" aria-label="Mode de travail">
-    <button class="lnk" id="reglBtn" type="button" aria-pressed="true">Composer</button>
-    <button class="lnk" id="jeuBtn" type="button" aria-pressed="false">Conduire</button>
-    <button class="lnk" id="atelierBtn" type="button" aria-pressed="false">Forger</button>
-    <button class="lnk" id="dawBtn" type="button" aria-pressed="false">Arranger</button>
+    <button class="lnk" id="jeuBtn" type="button" aria-pressed="true" title="Choisir une ambiance, lancer la lecture et la piloter en direct">Conduire</button>
+    <button class="lnk" id="reglBtn" type="button" aria-pressed="false" title="Tous les réglages de la pièce, chapitre par chapitre">Composer</button>
+    <button class="lnk" id="atelierBtn" type="button" aria-pressed="false" title="Construire son propre synthé et le jouer au clavier">Forger</button>
+    <button class="lnk" id="dawBtn" type="button" aria-pressed="false" title="Des pistes qui bouclent par-dessus la machine, avec un mixeur">Arranger</button>
   </nav>
-  <p class="modehint" id="modeHint"></p>
 
   <nav class="toc" id="toc" aria-label="Chapitres"></nav>
 
   <section class="jeu" id="jeu" hidden aria-label="Conduire la machine">
     <div class="jeu-top">
       <button class="seal" id="play3" aria-pressed="false">Jouer</button>
+      <div class="jeu-amb" id="presetSlot"></div>
+    </div>
+    <div class="jeu-bar">
       <div class="jeu-actions">
         <button class="btn" id="jeuFreeze" type="button" aria-pressed="false" disabled>Figer</button>
         <button class="btn" id="jeuReroll" type="button" disabled>Autre phrase</button>
         <span class="jeu-gest" role="group" aria-label="Gestes musicaux"><button class="btn" id="jeuSus" type="button" disabled title="La mélodie se tait, une nappe monte sur la dominante">Suspense</button><button class="btn" id="jeuRev" type="button" disabled title="L'accord s'ouvre, une montée claire">Révélation</button><button class="btn" id="jeuDan" type="button" disabled title="Motif de triton, percussion et bourdon qui montent">Danger</button></span>
+        <button class="btn" id="jeuGel" type="button" aria-pressed="false" disabled title="Le nuage de grains garde ce qu'il vient d'entendre et le fait tourner">Geler le nuage</button>
       </div>
       <p class="hint" id="jeuHint"></p>
     </div>
@@ -73,24 +75,24 @@
       </div>
       <div class="tempo"><b id="tempoNum">120</b><span id="tempoCap">noires par minute</span></div>
       <div class="tension" id="tensionHost"></div>
-      <div class="presets sleepbox">
-        <div class="ctl"><label for="sleep">Extinction</label>
-          <select id="sleep"><option value="0">Désactivée</option><option value="15">Dans 15 minutes</option><option value="30">Dans 30 minutes</option><option value="45">Dans 45 minutes</option><option value="60">Dans 1 heure</option><option value="90">Dans 1 h 30</option><option value="120">Dans 2 heures</option></select>
-          <p class="hint" id="sleepNote" aria-live="off"></p></div>
-      </div>
       <div class="ringwrap">
         <svg id="ring" viewBox="0 0 200 200" role="group" aria-label="Cercle des douze hauteurs"></svg>
         <p class="ringcap" id="ringcap"></p>
         <p class="ringhint">Touche une note du cercle pour bâtir ta propre gamme. Les petits points sont les quarts de ton.</p>
       </div>
       <div class="pendwrap" hidden><span class="ctl"><label>Pendula</label></span><canvas id="pend" width="680" height="112" aria-label="Pendules"></canvas></div>
-      <div class="presets">
-        <div class="ctl"><label for="univers">Exempla : univers</label><select id="univers"></select></div>
+      <div class="presets" id="presetBox">
+        <div class="ctl"><label for="univers">Ambiance</label><select id="univers"></select></div>
         <div class="row" id="presets"></div>
         <p class="hint" id="presetGloss"></p>
       </div>
       <details class="fin seance">
-      <summary>Scènes et qualité audio</summary>
+      <summary>Séance : extinction, scènes, qualité audio</summary>
+      <div class="presets sleepbox">
+        <div class="ctl"><label for="sleep">Extinction</label>
+          <select id="sleep"><option value="0">Désactivée</option><option value="15">Dans 15 minutes</option><option value="30">Dans 30 minutes</option><option value="45">Dans 45 minutes</option><option value="60">Dans 1 heure</option><option value="90">Dans 1 h 30</option><option value="120">Dans 2 heures</option></select>
+          <p class="hint" id="sleepNote" aria-live="off"></p></div>
+      </div>
       <div class="presets scenes">
         <span class="ctl"><label>Scaenae</label></span>
         <div class="row" id="scenes"></div>
@@ -113,6 +115,7 @@
 </div>
 <div class="dock"><button class="seal" id="play2" aria-pressed="false">Jouer</button><div class="dockT ctl"><div class="l"><label for="tension2">Tensio</label><output id="tension2o"></output></div><input type="range" id="tension2" min="0" max="1" step="0.01" value="0.5"></div></div>
 
+<script src="js/fx.js"></script>
 <script src="js/synth.js"></script>
 <script src="js/phys.js"></script>
 <script src="js/data.js"></script>

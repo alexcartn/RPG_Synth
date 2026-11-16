@@ -382,11 +382,13 @@ function setMode(m){
   JEU.on=jeu; document.body.classList.toggle("jeu",jeu); document.body.classList.toggle("atelier",at); document.body.classList.toggle("daw",dw);
   $("jeu").hidden=!jeu; if($("atelier")) $("atelier").hidden=!at; if($("daw")) $("daw").hidden=!dw;
   const rw=document.querySelector(".ringwrap"); if(rw) (jeu?$("ringSlot"):document.querySelector(".marge")).appendChild(rw);
+  /* le choix de l'ambiance suit le mode : en tête du panneau en Conduire, dans la marge en Composer */
+  const pb=$("presetBox"), ps=$("presetSlot"); if(pb&&ps) (jeu?ps:document.querySelector(".marge")).appendChild(pb);
   $("reglBtn").setAttribute("aria-pressed",(!jeu&&!at&&!dw)?"true":"false"); $("dawBtn").setAttribute("aria-pressed",dw?"true":"false");
   $("jeuBtn").setAttribute("aria-pressed",jeu?"true":"false");
   $("atelierBtn").setAttribute("aria-pressed",at?"true":"false");
   const mh=$("modeHint"); if(mh) mh.textContent=jeu?"Conduire : la machine joue, tu la pilotes en direct avec des boutons, un pad, le cercle des hauteurs et des gestes musicaux.":dw?"Arranger : des pistes qui bouclent par-dessus la machine, écrites au piano roll ou enregistrées au clavier, avec un mixeur pour tout équilibrer.":at?"Forger : tu construis ton synthé et tu le joues au clavier, dans la gamme du thème, avec ou sans la machine.":"Composer : tout ce qui fait la pièce, chapitre par chapitre. Ouvre un chapitre pour le régler.";
-  try{ localStorage.setItem("bourdon.mode",m); }catch(e){}
+  try{ localStorage.setItem("bourdon.mode2",m); }catch(e){}
   if((old==="atelier"&&!at)||(old==="daw"&&!dw)) atReleaseAll();
   if(old==="daw"&&!dw) dawLeave();
   if(jeu){ jeuSync(); jeuState(); }
@@ -395,6 +397,7 @@ function setMode(m){
   if(old!==m) window.scrollTo({top:0,behavior:"instant"});
 }
 function restoreMode(){
-  let m="reglage"; try{ m=localStorage.getItem("bourdon.mode")||"reglage"; }catch(e){}
-  if(m==="jeu"||m==="atelier"||m==="daw") setMode(m);
+  /* première visite : on arrive sur Conduire (une ambiance, Jouer, quelques boutons) */
+  let m="jeu"; try{ m=localStorage.getItem("bourdon.mode2")||"jeu"; }catch(e){}
+  if(m==="jeu"||m==="atelier"||m==="daw"||m==="reglage") MODE=m;
 }

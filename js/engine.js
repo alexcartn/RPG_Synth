@@ -59,10 +59,22 @@ function buildEngine(ctx, S, o){
   let t0=0, started=false;
 
   /* sections */
+  /* couleur de mode : la tension et la météo font glisser la gamme du plus clair (lydien) au plus sombre (locrien), section par section */
+  const LADDER=["lydien","ionien","mixolydien","dorien","eolien","phrygien","locrien"], COL={};
+  function wxDark(w){ return w.storm?0.95:w.snow?0.4:w.fog?0.6:w.rain>0.5?0.72:w.rain>0.1?0.6:w.night?(w.clouds<0.6?0.45:0.55):w.clouds>0.7?0.5:0.15; }
+  function colorKey(i){
+    const c=S.mus&&S.mus.color; if(!c||c==="off") return null;
+    if(COL[i]!==undefined) return COL[i];
+    const parts=[], ts=t0+i*S.sectionBars*bar;
+    if(c==="tension"||c==="les deux") parts.push(tensAt(ts));
+    if((c==="meteo"||c==="les deux")&&S.wx&&S.wx.d) parts.push(wxDark(S.wx.d));
+    if(!parts.length) return null;
+    const v=parts.reduce((a,b)=>a+b,0)/parts.length; return COL[i]=LADDER[clamp(Math.round(v*6),0,6)];
+  }
   function secOf(t){
     const l=S.scales.filter(Boolean); if(!l.length) l.push("mixolydien");
     const i=Math.max(0,Math.floor((t-t0)/(S.sectionBars*bar)+1e-6));
-    return {i, key:l[i%l.length]};
+    return {i, key:colorKey(i)||l[i%l.length]};
   }
   function sw(t){ const k=Math.round((t-t0)/E); return (k%2===1)? t+S.swing*E*0.5 : t; }
 
@@ -141,10 +153,10 @@ function buildEngine(ctx, S, o){
 
   /* bus */
   function bus(rev,dly){
-    const lvl=G(1), tm=G(1), it=G(1); lvl.connect(tm); tm.connect(it); it.connect(out);
+    const lvl=G(1), tm=G(1), gs=G(1), it=G(1); lvl.connect(tm); tm.connect(gs); gs.connect(it); it.connect(out);
     const rs=G(rev); it.connect(rs); rs.connect(revIn);
     if(dly){const ds=G(dly); it.connect(ds); ds.connect(dIn);}
-    return {in:lvl, lvl, tm, it};
+    return {in:lvl, lvl, tm, gs, it};
   }
   const B={drone:bus(0.45,0.1), mel:bus(0.9,1), pad:bus(0.8,0.6), perc:bus(0.2,0), amb:bus(0.3,0), loops:bus(0.9,0.8), pend:bus(0.9,0.7), play:bus(0.85,0.9), daw:bus(0.7,0.6)};
   const canonG=G(0); const lCanon=link(canonG,B.mel.it);
@@ -719,10 +731,18 @@ function buildEngine(ctx, S, o){
   }
   /* ---------- harmonie modale : une succession d'accords liée à la mélodie ---------- */
   const modal=()=>!(S.mus&&S.mus.logic==="hasard");
+  /* caractère de la mélodie : cinq curseurs qui orientent le tirage (0,5 = comme avant) */
+  const car=()=>S.car||{grav:0.5,aud:0.5,orn:0.5,sil:0.5,rep:0.5};
+  const leapE=()=>clamp(S.mel.leap+(car().aud-0.5)*1.2,0,1), ornE=()=>clamp(S.mel.orn+(car().orn-0.5)*0.9,0,1), dejaE=()=>clamp(S.mel.deja+(car().rep-0.5)*0.9,0,1);
+  const silE=()=>0.25+1.5*car().sil, gravE=()=>car().grav;
+  const formE=()=>(S.mus&&S.mus.form)||"libre";
+  const FS={ref:[],theme:[],ost:null,ostN:0};
+  const tonicIx=(pool,i)=>{ let best=i,bd=1e9; pool.forEach((p,j)=>{ if(((p%12)+12)%12===0){ const d=Math.abs(j-i); if(d<bd){bd=d;best=j;} } }); return best; };
   const chordTl=[]; let chordEnd=-1, cpos=0, lastDeg=0, holdDeg=null, prevVoicing=null;
   /* progression en cycles de quatre accords : retour à la tonique, un accord libre, un accord de préparation (sous-tonique, dominante ou sous-dominante), puis la tonique */
   function nextDegree(n){
     if(holdDeg!==null) return holdDeg%n;
+    { const F=formE(); if(F==="passacaille"){ const g=[0,n-1,Math.round(n*5/7)%n,Math.round(n*4/7)%n]; lastDeg=g[cpos++%4]; return lastDeg; } if(F==="ostinato"){ const p=cpos++%4; lastDeg=p===3?Math.round(n*4/7)%n:0; return lastDeg; } }
     const pos=cpos++%4, s4=Math.round(n*3/7)%n, s5=Math.round(n*4/7)%n, sub=n-1, vi=Math.round(n*5/7)%n, mot=clamp(S.pad.motion,0,1);
     const pick=(cands)=>{ const tot=cands.reduce((a,c)=>a+c[1],0); let r=R.s()*tot; for(const [d,w] of cands){ r-=w; if(r<=0) return d; } return cands[0][0]; };
     let d;
@@ -777,6 +797,23 @@ function buildEngine(ctx, S, o){
     }
     return i;
   }
+  /* formes de la pièce : le plan que suivent les phrases */
+  function varyPhrase(ph,cyc,pool){
+    const kind=cyc%4, ix0=pool.indexOf(nearest(pool,ph.notes[0].off)), idxOf=o2=>Math.max(0,pool.indexOf(nearest(pool,o2)));
+    let notes=ph.notes.map(n=>({...n})), end=ph.end;
+    if(kind===1) notes.forEach(n=>{ if(R.m()<0.6) n.grace=true; });
+    else if(kind===2) notes.forEach(n=>{ n.off=pool[clamp(ix0-(idxOf(n.off)-ix0),0,pool.length-1)]; });
+    else if(kind===3){ notes.forEach(n=>{ n.e*=2; n.dE*=2; }); end*=2; }
+    else notes.forEach(n=>{ n.off=pool[clamp(idxOf(n.off)+2,0,pool.length-1)]; });
+    return {notes,end,gr:ph.gr,pool};
+  }
+  function formPhrase(F,gen,pool){
+    const k=nPhrase++; if(frozen&&lastPh) return lastPh;
+    if(F==="ostinato"){ if(!FS.ost||FS.ostN>=8){ FS.ost=gen(); FS.ostN=0; } FS.ostN++; return FS.ost; }
+    if(F==="rondeau"){ const A=[0,1,4,5,8,9], ai=A.indexOf(k%12); if(ai>=0){ const j=ai%2; if(!FS.ref[j]) FS.ref[j]=gen(); return FS.ref[j]; } return gen(); }
+    if(F==="variations"){ const j=k%4, cyc=Math.floor(k/4); if(!FS.theme[j]) FS.theme[j]=gen(); return cyc===0?FS.theme[j]:varyPhrase(FS.theme[j],cyc,pool); }
+    return gen();
+  }
   function genPhraseModal(pool,stab,dens,startT,secI){
     const mt=motifFor(secI), type=nPh++%4, ch0=chordAt(startT);
     let i0;
@@ -789,10 +826,11 @@ function buildEngine(ctx, S, o){
     const extra=1+Math.floor(R.m()*(1+3*dens)), durs=dens>0.6?[1,1,2,2,3]:[1,2,2,3,4];
     for(let k=0;k<extra;k++){
       let st;
-      if(R.m()<S.mel.leap*0.4) st=(type===2?1:-1)*(3+Math.floor(R.m()*2));
+      if(R.m()<leapE()*0.4) st=(type===2?1:-1)*(3+Math.floor(R.m()*2));
       else if(type===2) st=k<extra/2?(R.m()<0.75?1:2):(R.m()<0.7?-1:1);
       else if(type===3) st=R.m()<0.8?-1:(R.m()<0.5?-2:1);
       else st=[-2,-1,-1,1,1,2][Math.floor(R.m()*6)];
+      { const pg=Math.max(0,gravE()-0.35)*0.9, ti=tonicIx(pool,idx); if(ti!==idx&&R.m()<pg) st=Math.sign(ti-idx); }
       idx=clamp(idx+st,0,pool.length-1); seq.push(idx); dEs.push(durs[Math.floor(R.m()*durs.length)]);
     }
     /* notes : temps forts sur les notes de l'accord, fin de phrase sur le repos voulu, silences et nuances de phrase */
@@ -801,13 +839,13 @@ function buildEngine(ctx, S, o){
       const tn=startT+e*E, ch=chordAt(tn), strong=Math.round((tn-t0)/E)%2===0;
       let ix=seq[k];
       if(k===n-1){
-        if(type===3){ const tpc=stab.indexOf(0)>=0?[0]:[stab[0]]; ix=snapTo(pool,ix,tpc,5); }
+        if(type===3||R.m()<Math.max(0,gravE()-0.5)*1.2){ const tpc=stab.indexOf(0)>=0?[0]:[stab[0]]; ix=snapTo(pool,ix,tpc,5); }
         else ix=snapTo(pool,ix,type===2?chordPcs(ch).slice(1,3):chordPcs(ch),4);
       } else if(strong) ix=snapTo(pool,ix,chordPcs(ch),2);
       const arch=0.5+0.5*Math.sin(Math.PI*(k+0.5)/n), vel=(0.14+0.1*arch)*(strong?1.1:0.92)*(type===2?0.95:1)+(R.m()-0.5)*0.03;
-      const grace=R.m()<S.mel.orn, gdir=R.m()<0.5?-1:1, jit=(R.h()-0.5)*(strong?0.008:0.024);
-      notes.push({e,off:pool[ix],dE:dEs[k],vel,grace,gdir,jit}); e+=dEs[k];
-      if(k<n-2&&R.m()<0.3*(1-dens)) e+=1+Math.floor(R.m()*2); /* un souffle entre deux notes */
+      const grace=R.m()<ornE(), gdir=R.m()<0.5?-1:1, jit=(R.h()-0.5)*(strong?0.008:0.024), trill=ornE()>0.55&&R.m()<(ornE()-0.55)*0.8;
+      notes.push({e,off:pool[ix],dE:dEs[k],vel,grace,gdir,jit,trill}); e+=dEs[k];
+      if(k<n-2&&R.m()<0.3*(1-dens)*silE()) e+=1+Math.floor(R.m()*2); /* un souffle entre deux notes */
     }
     return {notes,end:e,gr:R.m(),pool};
   }
@@ -818,7 +856,7 @@ function buildEngine(ctx, S, o){
     let e=0;
     for(let i=0;i<n;i++){
       let st;
-      if(R.m()<S.mel.leap*0.5) st=(R.m()<0.5?-1:1)*(3+Math.floor(R.m()*3));
+      if(R.m()<leapE()*0.5) st=(R.m()<0.5?-1:1)*(3+Math.floor(R.m()*3));
       else st=[-2,-1,-1,1,1,2][Math.floor(R.m()*6)];
       idx=clamp(idx+st,0,pool.length-1);
       if(i===n-1){
@@ -827,7 +865,7 @@ function buildEngine(ctx, S, o){
           if(idx-k>=0&&stab.indexOf(((pool[idx-k]%12)+12)%12)>=0){idx-=k;break;}
         }
       }
-      const dE=durs[Math.floor(R.m()*6)], vel=0.16+R.m()*0.1, grace=R.m()<S.mel.orn, gdir=R.m()<0.5?-1:1;
+      const dE=durs[Math.floor(R.m()*6)], vel=0.16+R.m()*0.1, grace=R.m()<ornE(), gdir=R.m()<0.5?-1:1;
       notes.push({e,off:pool[idx],dE,vel,grace,gdir}); e+=dE;
     }
     return {notes,end:e,gr:R.m(),pool};
@@ -838,8 +876,23 @@ function buildEngine(ctx, S, o){
   let loopsL=[], pendK=[], lastPh=null, lastD=null, frozen=null;
   const lastOff={v:null};
   function rec(tr,t,off,dur,vel){ if(o.record) events.push({tr,t,off,dur,vel}); }
+  const ctr={pm:null,pc:null,li:null};
   function canonNote(t,off,vel,len,iv){
     const n=iv.length, wide=poolOf(iv,-24,72), k=wide.indexOf(off); if(k<0) return;
+    if(S.canon.shift==="contre"){
+      /* contrepoint : une voix sous la mélodie, en tierces et sixtes, de préférence en mouvement contraire et sans quintes ni octaves parallèles */
+      const third=Math.max(1,Math.round(2*n/7)), sixth=Math.max(2,Math.round(5*n/7)), fifth=Math.max(2,Math.round(4*n/7)), cands=[third,sixth,third+n,fifth,n].map(d=>k-d).filter(i=>i>=0);
+      if(!cands.length) return;
+      const dm=ctr.pm===null?0:Math.sign(off-ctr.pm); let best=cands[0], bs=-1e9;
+      cands.forEach(i=>{ const dc=ctr.pc===null?0:Math.sign(wide[i]-ctr.pc), gap=k-i; let sc=0;
+        if(dm!==0&&dc!==0) sc+=dc===-dm?3:-1; else if(dm!==0) sc+=1;
+        if(gap===third||gap===sixth) sc+=2; if(ctr.li===gap&&(gap===fifth||gap===n)) sc-=4; sc+=R.v()*0.5; if(sc>bs){ bs=sc; best=i; } });
+      const off2=wide[best]; ctr.pm=off; ctr.pc=off2; ctr.li=k-best;
+      const tt=sw(t)+0.012;
+      instOf(S.canon.inst,"harpe")(tt,freq(off2),vel*0.85,len,V.canon.node,(R.v()*2-1)*0.5);
+      rec(1,tt,off2,len,vel*0.85); if(o.onNote) o.onNote(tt,off2,"canon",len,vel*0.85);
+      return;
+    }
     const shifts={"uni":0,"oct+":n,"oct-":-n,"q+":Math.round(n*4/7),"q-":-Math.round(n*4/7),"t+":Math.round(n*2/7)};
     const k2=clamp(k+(shifts[S.canon.shift]||0),0,wide.length-1), off2=wide[k2];
     const tt=sw(t+S.canon.delay*bar);
@@ -882,11 +935,11 @@ function buildEngine(ctx, S, o){
       if(!M){ cur.mel=t0+bar*Math.ceil((until-t0)/bar); break; }
       const sc=secOf(cur.mel), iv=ivOf(S,sc.key), stab=stableOf(iv), I=inten(cur.mel);
       const evo=S.form.shape==="constante"?0:(I-0.5)*S.form.amount;
-      const dens=clamp(S.mel.dens+evo+(tensAt(cur.mel)-0.5)*0.6,0,1);
+      const dens=clamp(S.mel.dens+evo+(tensAt(cur.mel)-0.5)*0.6+(formE()==='passacaille'?0.07*(Math.floor(cpos/4)%6):0),0,1);
       const lo=12+12*S.mel.reg, hi=lo+12*S.mel.span, pool=poolOf(iv,lo,hi);
       if(!pool.length){cur.mel+=bar; continue;}
       const gen=modal()?(()=>genPhraseModal(pool,stab,dens,cur.mel,sc.i)):(()=>genPhrase(pool,stab,dens));
-      let ph=recall(memM,nPhrase++,Math.max(1,Math.round(S.mel.loop)),S.mel.deja,R.m,gen);
+      let ph=formE()==='libre'?recall(memM,nPhrase++,Math.max(1,Math.round(S.mel.loop)),dejaE(),R.m,gen):formPhrase(formE(),gen,pool);
       lastPh=ph;
       if(ph.pool!==pool){ /* rejouée : recaler sur la gamme de la section */
         ph={notes:ph.notes.map(n=>({...n,off:nearest(pool,n.off)})),end:ph.end,gr:ph.gr};
@@ -900,8 +953,8 @@ function buildEngine(ctx, S, o){
         const off=nt.off, tt=sw(cur.mel+nt.e*E)+(nt.jit||0), vel=nt.vel, len=E*nt.dE*0.92;
         if(want("mel")&&S.mel.lvl>0.001){
           const fn=instOf(S.mel.inst,"luth");
-          if(nt.grace&&pool.length>2&&(S.mel.inst==="luth"||S.mel.inst==="harpe"||S.mel.inst==="carillon"||S.mel.inst==="oud"||S.mel.inst==="kalimba")){
-            const gi=clamp(pool.indexOf(off)+nt.gdir,0,pool.length-1); fn(tt-0.07,freq(pool[gi]),vel*0.55,0.08,V.mel.node,0);
+          if((nt.grace||nt.trill)&&pool.length>2&&(S.mel.inst==="luth"||S.mel.inst==="harpe"||S.mel.inst==="carillon"||S.mel.inst==="oud"||S.mel.inst==="kalimba")){
+            const gi=clamp(pool.indexOf(off)+nt.gdir,0,pool.length-1); if(nt.trill){ fn(tt-0.16,freq(pool[gi]),vel*0.42,0.07,V.mel.node,0); fn(tt-0.08,freq(off),vel*0.5,0.07,V.mel.node,0); } fn(tt-0.07+(nt.trill?0.0:0),freq(pool[gi]),vel*0.55,0.08,V.mel.node,0);
           }
           fn(tt,freq(off),vel,len,V.mel.node,(R.v()*2-1)*0.35);
           if(S.canon.lvl>0.001) canonNote(cur.mel+nt.e*E,off,vel,len,iv);
@@ -912,7 +965,7 @@ function buildEngine(ctx, S, o){
       });
       t=cur.mel+ph.end*E;
       const bars=Math.ceil((t-t0)/bar-1e-6);
-      cur.mel=t0+bar*(bars+Math.round(ph.gr*2*(1.6-1.5*dens)));
+      cur.mel=t0+bar*(bars+Math.round(ph.gr*2*(1.6-1.5*dens)*silE()));
     }
     /* nappes */
     ensureChords(until);
@@ -1014,6 +1067,7 @@ function buildEngine(ctx, S, o){
       if(typeof setTimeout==="function") setTimeout(()=>{ try{ old.disconnect(); }catch(e){} },1500);
       newGen(name);
     };
+    if(all){ for(const k in COL) delete COL[k]; FS.ref.length=0; FS.theme.length=0; FS.ost=null; FS.ostN=0; ctr.pm=ctr.pc=ctr.li=null; }
     if(all||what==="mel"){ kill("mel"); kill("canon"); cur.mel=t0+Math.ceil((now+0.04-t0)/E)*E; }
     if(all||what==="pad"){ kill("pad",0.15); while(chordTl.length&&chordTl[chordTl.length-1].t>=now) chordTl.pop(); chordEnd=now+0.04; }
     if(all||what==="loops"){ kill("loops",0.05); initLoops(now); }
@@ -1021,6 +1075,29 @@ function buildEngine(ctx, S, o){
     if(all||what==="pend"){
       kill("pend",0.05); const T=Math.max(1,S.pend.period*bar);
       pendK=Array.from({length:pendN()},(_,i)=>Math.max(0,Math.ceil(((now-t0)/T)*(PEND_N0+i)-0.25)));
+    }
+  }
+
+  /* gestes musicaux : suspense, révélation, danger, posés sur la prochaine noire */
+  function gesture(name){
+    if(!started) return;
+    const now=ctx.currentTime, tq=t0+Math.ceil((now+0.15-t0)/(2*E))*(2*E), iv=ivOf(S,secOf(tq).key), n=iv.length;
+    const ramp=(g,v,t,tc)=>{ g.cancelScheduledValues(Math.max(now,t-0.001)); g.setTargetAtTime(v,t,tc); };
+    const back=(names,t)=>names.forEach(k=>ramp(B[k].gs.gain,1,t,0.7));
+    const fn=instOf(S.mel.inst,"luth"), note=(t,off,v,len)=>{ fn(t,freq(off),v,len,B.play.in,0); if(o.onNote) o.onNote(t,off,"play",len,v); };
+    if(name==="suspense"){
+      const len=3*bar, dom=Math.round(n*4/7)%n; ramp(B.mel.gs.gain,0,now,0.2); ramp(B.perc.gs.gain,0.15,now,0.4); ramp(B.pad.gs.gain,1.5,tq,1.2); ramp(B.drone.gs.gain,1.4,tq,1.2);
+      [degOff(iv,dom),degOff(iv,dom+2),degOff(iv,dom+4)].forEach(x=>padVoice(tq,len,freq(x+12),S.pad.timbre));
+      back(["mel","perc","pad","drone"],tq+len);
+    }else if(name==="revelation"){
+      const len=3*bar; ramp(B.pad.gs.gain,1.35,tq,0.6); ramp(B.mel.gs.gain,1.15,tq,0.6);
+      [0,4,7,11,16].forEach(x=>padVoice(tq,len,freq(x+12),S.pad.timbre));
+      for(let i=0;i<6;i++) note(tq+i*E*0.5,degOff(iv,i)+12,0.2-0.01*i,E*3);
+      note(tq+3*E,degOff(iv,7)+12,0.22,E*8); back(["pad","mel"],tq+len);
+    }else if(name==="danger"){
+      const len=4*bar; ramp(B.perc.gs.gain,1.9,tq,0.3); ramp(B.drone.gs.gain,1.5,tq,0.4); ramp(B.mel.gs.gain,0.4,tq,0.3);
+      for(let k=0;k<8;k++){ const t=tq+k*E; note(t,k%2?-6:-12,0.3-0.015*k,E*1.6); if(k%2===0) note(t+E*0.5,-12+(k%4===0?0:1),0.16,E); }
+      back(["perc","drone","mel"],tq+len);
     }
   }
   /* figer : la dernière phrase et le dernier accord tournent en boucle jusqu'à ce qu'on relâche */
@@ -1053,5 +1130,5 @@ function buildEngine(ctx, S, o){
     starts.forEach(x=>{try{x.stop(now+d+0.2);}catch(e){}});
   }
   const pendX=t=>Array.from({length:pendN()},(_,i)=>Math.cos(2*Math.PI*(PEND_N0+i)*(t-t0)/(S.pend.period*bar)));
-  return {start,schedule,setLevels,setReverb,stop,fadeOut,sleepFade,sleepClear,replan,freeze,reroll,play,synOn,dawOn,dawNote,rackSync,meter,analyser:k=>k==="all"?anaAll:anaSyn,dawReplan,dawPos,pendX,tensNow:()=>tensAt(ctx.currentTime),adaptNow:()=>adaptE(ctx.currentTime),tensPos:()=>{ if(!curveOn()) return -1; const L=Math.max(30,S.curve.dur*60), x=(ctx.currentTime-t0)/L; return S.curve.mode==='loop'?((x%1)+1)%1:clamp(x,0,1); },events,out,master,secAt:t=>secOf(t),bar,E,t0f:()=>t0};
+  return {start,schedule,setLevels,setReverb,stop,fadeOut,sleepFade,sleepClear,replan,freeze,reroll,gesture,play,synOn,dawOn,dawNote,rackSync,meter,analyser:k=>k==="all"?anaAll:anaSyn,dawReplan,dawPos,pendX,tensNow:()=>tensAt(ctx.currentTime),adaptNow:()=>adaptE(ctx.currentTime),tensPos:()=>{ if(!curveOn()) return -1; const L=Math.max(30,S.curve.dur*60), x=(ctx.currentTime-t0)/L; return S.curve.mode==='loop'?((x%1)+1)%1:clamp(x,0,1); },events,out,master,secAt:t=>secOf(t),bar,E,t0f:()=>t0};
 }

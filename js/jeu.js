@@ -117,7 +117,7 @@ function jeuKeys(e){
 function jeuState(){
   const h=$("jeuHint"); if(!h) return;
   h.textContent=live?"Touches Z, A et Q : trois rangées de la gamme, du grave à l'aigu. Ou touche le cercle. Le canon reprend ce que tu joues.":"Lance la lecture pour jouer par-dessus la machine.";
-  const f=$("jeuFreeze"), rr=$("jeuReroll"); if(f) f.disabled=!live; if(rr) rr.disabled=!live;
+  const f=$("jeuFreeze"), rr=$("jeuReroll"); if(f) f.disabled=!live; if(rr) rr.disabled=!live; ["jeuSus","jeuRev","jeuDan"].forEach(id=>{ const b=$(id); if(b) b.disabled=!live; });
   if(!live){ JEU.frozen=false; if(f) f.setAttribute("aria-pressed","false"); }
 }
 function jeuReset(){ JEU.frozen=false; const f=$("jeuFreeze"); if(f) f.setAttribute("aria-pressed","false"); }
@@ -147,6 +147,7 @@ function buildJeu(){
   $("jeuBtn").onclick=()=>setMode("jeu");
   $("jeuFreeze").onclick=()=>{ if(!live) return; JEU.frozen=live.eng.freeze(!JEU.frozen); $("jeuFreeze").setAttribute("aria-pressed",JEU.frozen?"true":"false"); syncUI(); };
   $("jeuReroll").onclick=()=>{ if(live) live.eng.reroll(); };
+  $("jeuSus").onclick=()=>{ if(live) live.eng.gesture("suspense"); }; $("jeuRev").onclick=()=>{ if(live) live.eng.gesture("revelation"); }; $("jeuDan").onclick=()=>{ if(live) live.eng.gesture("danger"); };
   document.addEventListener("keydown",jeuKeys);
   jeuState();
 }

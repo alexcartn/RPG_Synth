@@ -76,6 +76,14 @@ Quatrième mode (« Réglages · Jeu · Atelier · DAW »), pensé pour l'ordina
 - Les pistes sont enregistrées avec les scènes, rendues dans l'export audio, présentes dans le MIDI (une piste par piste) et ont leur stem « pistes ».
 - Limites : les notes du piano roll sont placées au demi-ton (une note enregistrée à un quart de ton est conservée et jouée, mais se déplace au demi-ton) ; les modifications s'entendent à la prochaine boucle ; pas de capture automatique de la machine en clip pour l'instant.
 
+## Composition : caractère, formes, contrepoint, couleur de mode, gestes
+
+- Ingenium (Voces) : cinq curseurs qui orientent le tirage de la mélodie. Gravité (retour vers la tonique et cadences), audace (taille des sauts), ornements (appoggiatures et, au-delà de 55 %, trilles), silences (souffles entre les notes et les phrases), répétition (retour des phrases déjà jouées). 50 % redonne l'ancien comportement. Chaque préréglage a son caractère : la crypte est lente et grave, la taverne dansante.
+- Forme de la pièce (Voces, Musica) : libre (phrases et déjà-vu, comme avant), passacaille (une basse descendante qui revient, tonique, sensible, sus-dominante, dominante, avec des variations dont la densité grandit à chaque tour), ostinato (un court motif répété, renouvelé toutes les huit reprises, sur une pédale de tonique), rondeau (refrain de deux phrases, couplets nouveaux, refrain, couplet, refrain), thème et variations (quatre phrases de thème, puis reprises ornées, renversées, ralenties ou transposées). Les préréglages en choisissent une.
+- Contrepoint (Voces, Canon, Transposition) : une voix sous la mélodie en tierces et sixtes, de préférence en mouvement contraire, sans quintes ni octaves parallèles, jouée en même temps que la mélodie.
+- Couleur du mode (Voces, Musica) : suit la tension (du lydien, clair, au locrien, sombre), la météo du lieu (ciel dégagé clair, pluie et brouillard plus sombres, orage phrygien) ou les deux. Le mode est décidé au début de chaque section et remplace les gammes choisies tant que l'option n'est pas sur « Fixe ».
+- Gestes musicaux (mode Jeu) : suspense (la mélodie se tait, une nappe tenue sur la dominante monte, le bourdon s'ouvre), révélation (l'accord s'ouvre vers le majeur, une montée claire), danger (motif de triton grave, percussion et bourdon qui montent). Ils partent sur la noire suivante et retombent d'eux-mêmes.
+
 ## Table de jeu
 
 - Tensio : un curseur, ou une courbe de tension dessinée au doigt (répétée ou jouée une fois) qui module percussion, nappes, bourdon, ambiance et densité mélodique. La courbe est rendue dans l'export.

@@ -17,7 +17,7 @@ document.addEventListener("visibilitychange",tickSchedule);
 const GAIN_ONLY={"mel.lvl":"mel","canon.lvl":"mel","pad.lvl":"pad","loops.lvl":"loops","pend.lvl":"pend"};
 function replanTarget(k,prev,now){
   if(k in GAIN_ONLY) return ((prev>0.001)!==(now>0.001))?GAIN_ONLY[k]:null; /* seulement quand une voix s'allume ou s'éteint */
-  if(k.startsWith("mel.")||k.startsWith("canon.")) return "mel";
+  if(k.startsWith("mel.")||k.startsWith("canon.")||k.startsWith("car.")) return "mel";
   if(k.startsWith("pad.")) return "pad";
   if(k.startsWith("loops.")) return "loops";
   if(k.startsWith("pend.")) return "pend";
@@ -214,7 +214,15 @@ const UI=[
  {num:"IV", title:"Voces", fr:"Voix", sub:"Mélodie, canon décalé et nappes d'accords construits sur la gamme de la section.", groups:[
   {h:"Musica", hf:"logique musicale et timbres", items:[
    {k:"mus.logic",type:"select",label:"Logique musicale",opts:[["modal","Modale : la mélodie suit les accords"],["hasard","Hasard (ancienne version)"]]},
+   {k:"mus.form",type:"select",label:"Forme de la pièce",opts:[["libre","Libre : phrases et déjà-vu"],["passacaille","Passacaille : une basse qui revient, des variations dessus"],["ostinato","Ostinato : un motif qui tourne"],["rondeau","Rondeau : refrain et couplets"],["variations","Thème et variations"]]},
+   {k:"mus.color",type:"select",label:"Couleur du mode",opts:[["off","Fixe : les gammes choisies"],["tension","Suit la tension (du lydien au locrien)"],["meteo","Suit la météo du lieu"],["les deux","Tension et météo"]]},
    {k:"mus.model",type:"select",label:"Cordes et timbres",opts:[["physique","Cordes pincées par modèle physique"],["classique","Synthèse classique"]]}]},
+  {h:"Ingenium", hf:"caractère de la mélodie", items:[
+   {k:"car.grav",type:"range",label:"Gravité : retour vers la tonique",min:0,max:1,step:0.01,fmt:pct},
+   {k:"car.aud",type:"range",label:"Audace : taille des sauts",min:0,max:1,step:0.01,fmt:pct},
+   {k:"car.orn",type:"range",label:"Ornements : appoggiatures et trilles",min:0,max:1,step:0.01,fmt:pct},
+   {k:"car.sil",type:"range",label:"Silences : souffles entre les notes et les phrases",min:0,max:1,step:0.01,fmt:pct},
+   {k:"car.rep",type:"range",label:"Répétition : retour des phrases déjà jouées",min:0,max:1,step:0.01,fmt:pct}]},
   {h:"Cantus", hf:"mélodie", items:[
    {k:"mel.inst",type:"select",label:"Instrument",opts:INST_OPTS},
    {k:"mel.lvl",type:"range",label:"Niveau",min:0,max:1,step:0.01,fmt:pct},
@@ -228,7 +236,7 @@ const UI=[
    {k:"canon.lvl",type:"range",label:"Niveau (0 = absent)",min:0,max:1,step:0.01,fmt:pct},
    {k:"canon.inst",type:"select",label:"Instrument",opts:INST_OPTS},
    {k:"canon.delay",type:"range",label:"Retard",min:1,max:8,step:1,fmt:v=>v+(v>1?" mesures":" mesure")},
-   {k:"canon.shift",type:"select",label:"Transposition",opts:[["uni","Unisson"],["oct+","Octave au-dessus"],["oct-","Octave en dessous"],["q+","Quinte au-dessus"],["q-","Quinte en dessous"],["t+","Tierce au-dessus"]]}]},
+   {k:"canon.shift",type:"select",label:"Transposition",opts:[["uni","Unisson"],["oct+","Octave au-dessus"],["oct-","Octave en dessous"],["q+","Quinte au-dessus"],["q-","Quinte en dessous"],["t+","Tierce au-dessus"],["contre","Contrepoint : tierces et sixtes en mouvement contraire"]]}]},
   {h:"Concentus", hf:"nappes", items:[
    {k:"pad.lvl",type:"range",label:"Niveau",min:0,max:1,step:0.01,fmt:pct},
    {k:"pad.timbre",type:"select",label:"Timbre",opts:[["choeur","Chœur"],["cordes","Cordes"],["orgue","Orgue"],["synthe","Synthé doux"],["verre","Verre"],["atelier","Synthé perso (Atelier)"]]},

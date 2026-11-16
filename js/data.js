@@ -99,6 +99,10 @@ const DEFAULT = {
   fx:{rev:0.4, size:2.6, dark:0.5, room:"gen", dly:0, dlyDiv:1.5, fb:0.4, sat:0.15, wow:0.12, veil:0.3, hiss:0},
   form:{shape:"constante", period:4, amount:0.5},
   mach:true,
+  daw:{sel:0, grid:1, rec:-1, mix:{mute:{}, solo:{}}, tracks:[
+    {id:1,name:"Piste 1",inst:"atelier",vol:0.8,pan:0,mute:false,solo:false,bars:2,notes:[]},
+    {id:2,name:"Piste 2",inst:"luth",vol:0.8,pan:-0.2,mute:false,solo:false,bars:2,notes:[]},
+    {id:3,name:"Piste 3",inst:"flute",vol:0.8,pan:0.2,mute:false,solo:false,bars:4,notes:[]}]},
   syn:clone(SYN_DEFAULT),
   mus:{logic:"modal", model:"physique"},
   adapt:{mode:"off", amount:0.6, span:45},

@@ -134,10 +134,10 @@ function buildEngine(ctx, S, o){
     if(dly){const ds=G(dly); it.connect(ds); ds.connect(dIn);}
     return {in:lvl, lvl, tm, it};
   }
-  const B={drone:bus(0.45,0.1), mel:bus(0.9,1), pad:bus(0.8,0.6), perc:bus(0.2,0), amb:bus(0.3,0), loops:bus(0.9,0.8), pend:bus(0.9,0.7), play:bus(0.85,0.9)};
+  const B={drone:bus(0.45,0.1), mel:bus(0.9,1), pad:bus(0.8,0.6), perc:bus(0.2,0), amb:bus(0.3,0), loops:bus(0.9,0.8), pend:bus(0.9,0.7), play:bus(0.85,0.9), daw:bus(0.7,0.6)};
   const canonG=G(0); const lCanon=link(canonG,B.mel.it);
   /* chaque voix planifiée passe par un gain "de génération" : replan() le coupe et en crée un neuf, ce qui rend les réglages immédiats */
-  const V={};
+  const V={}, DT={};
   const newGen=name=>{ const v=V[name], g=G(1); g.connect(v.dst); v.node=g; };
   [["mel",B.mel.in],["canon",canonG],["pad",B.pad.in],["loops",B.loops.in],["pend",B.pend.in]].forEach(([n,d])=>{ V[n]={dst:d,node:null}; newGen(n); });
   const murG=G(0), fireG=G(0), windG=G(0), dripG=G(0);
@@ -146,8 +146,13 @@ function buildEngine(ctx, S, o){
   const NATS=["pluie","mer","nuit","ruisseau"], natG={}, natL={}, natB={}, birdG=G(0), lBird=link(birdG,B.amb.in);
   NATS.forEach(k=>{ natG[k]=G(0); natL[k]=link(natG[k],B.amb.in); });
 
+  /* mixeur : une seule notion de solo pour les voix de la machine et les pistes */
+  const DAW=()=>S.daw||{tracks:[],mix:{mute:{},solo:{}}};
+  const anySolo=()=>{ const D=DAW(); return Object.keys(D.mix.solo).some(k=>D.mix.solo[k])||D.tracks.some(t=>t.solo); };
+  const mixOn=n=>{ const D=DAW(); if(D.mix.mute[n]) return false; return !anySolo()||!!D.mix.solo[n]; };
+  const trkOn=t=>!t.mute&&(!anySolo()||!!t.solo);
   function setLevels(){
-    const lv=(n,v)=>(want(n)&&mach())?v:0;
+    const lv=(n,v)=>(want(n)&&mach()&&mixOn(n))?v:0;
     B.drone.lvl.gain.value=lv("drone",S.drone.lvl);
     B.mel.lvl.gain.value=lv("mel",S.mel.lvl);
     canonG.gain.value=lv("mel",S.canon.lvl);
@@ -172,6 +177,7 @@ function buildEngine(ctx, S, o){
     dOut.gain.value=S.fx.dly; dfb.gain.value=Math.min(0.9,S.fx.fb);
     dl.delayTime.value=E*S.fx.dlyDiv; dr.delayTime.value=E*S.fx.dlyDiv*1.0;
     sat.curve=satCurve(S.fx.sat);
+    dawSync();
     wowG1.gain.value=S.fx.wow*0.003; wowG2.gain.value=S.fx.wow*0.0003;
     veil.frequency.value=18000*Math.pow(2500/18000,S.fx.veil);
     hissG.gain.value=S.fx.hiss*0.03;
@@ -495,6 +501,53 @@ function buildEngine(ctx, S, o){
     return {release:tt=>v.release(tt===undefined?ctx.currentTime:tt)};
   }
 
+  /* ---------- pistes de l'utilisateur (DAW) : des clips en boucle, joués par n'importe quel instrument ---------- */
+  function dawT(tr){
+    let st=DT[tr.id]; if(st) return st;
+    st={vol:G(1),pan:PAN(0),gen:null,k:0,from:-1e9}; st.vol.connect(st.pan); st.pan.connect(B.daw.in);
+    st.gen=G(1); st.gen.connect(st.vol); DT[tr.id]=st; return st;
+  }
+  function dawSync(){
+    DAW().tracks.forEach(tr=>{ const st=dawT(tr); st.vol.gain.value=trkOn(tr)?tr.vol:0; if(st.pan.pan) st.pan.pan.value=tr.pan||0; });
+    B.daw.lvl.gain.value=want("daw")?1:0;
+  }
+  function dawSchedule(until){
+    DAW().tracks.forEach(tr=>{
+      const st=dawT(tr), L=Math.max(1,tr.bars)*barE, fn=instOf(tr.inst,"luth"), idx=DAW().tracks.indexOf(tr);
+      while(t0+st.k*L*E<until){
+        const base=t0+st.k*L*E;
+        tr.notes.forEach(n=>{
+          const tt=sw(base+n.s*E); if(tt<st.from) return;
+          const len=Math.max(0.05,n.d*E);
+          fn(tt,freq(n.off),n.v,len,st.gen,0); rec(5+idx,tt,n.off,len,n.v);
+          if(o.onNote) o.onNote(tt,n.off,"play",len,n.v);
+        });
+        st.k++;
+      }
+    });
+  }
+  /* après une modification : on coupe ce qui était planifié et on replanifie depuis maintenant */
+  function dawReplan(){
+    if(!started) return;
+    const now=ctx.currentTime;
+    DAW().tracks.forEach(tr=>{
+      const st=dawT(tr), L=Math.max(1,tr.bars)*barE, old=st.gen;
+      old.gain.cancelScheduledValues(now); old.gain.setTargetAtTime(0,now,0.02);
+      if(typeof setTimeout==="function") setTimeout(()=>{ try{ old.disconnect(); }catch(e){} },1500);
+      st.gen=G(1); st.gen.connect(st.vol);
+      st.k=Math.max(0,Math.floor((now-t0)/(L*E))); st.from=now+0.03;
+    });
+    dawSchedule(now+4);
+  }
+  /* note jouée à la main avec l'instrument d'une piste (tenue pour le synthé perso) */
+  function dawOn(tr,off,vel){
+    const t=ctx.currentTime+0.004, st=dawT(tr), f=freq(off), v=vel||0.7;
+    if(o.onNote) o.onNote(t,off,"play",0.6,v);
+    if(tr.inst==="atelier"){ const h=synthVoice(ctx,S.syn,{t,f,vel:v,dur:null,dst:st.vol,pan:0,lite:o.lite,noise:wb}); return {release:tt=>h.release(tt===undefined?ctx.currentTime:tt)}; }
+    instOf(tr.inst,"luth")(t,f,v*0.4,E*3,st.vol,0); return {release:()=>{}};
+  }
+  const dawPos=tr=>{ const L=Math.max(1,tr.bars)*barE, x=(ctx.currentTime-t0)/E; return ((x%L)+L)%L; };
+
   /* ---------- nappes ---------- */
   function padVoice(t,len,f,timbre){
     if(timbre==="atelier"){ synthVoice(ctx,S.syn,{t,f,vel:0.55,dur:len,dst:V.pad.node,pan:0,lite:o.lite,noise:wb}); return; }
@@ -745,6 +798,7 @@ function buildEngine(ctx, S, o){
   }
   function schedule(until){
     const M=mach();
+    dawSchedule(until);
     /* intensité */
     while(cur.int<until){
       const t=cur.int, I=inten(t), A=S.form.shape==="constante"?0:S.form.amount, m=1-A+A*I, ie=S.form.shape==="constante"?0.5:I;
@@ -912,6 +966,7 @@ function buildEngine(ctx, S, o){
     if(all||what==="mel"){ kill("mel"); kill("canon"); cur.mel=t0+Math.ceil((now+0.04-t0)/E)*E; }
     if(all||what==="pad"){ kill("pad",0.15); while(chordTl.length&&chordTl[chordTl.length-1].t>=now) chordTl.pop(); chordEnd=now+0.04; }
     if(all||what==="loops"){ kill("loops",0.05); initLoops(now); }
+    if(all) dawReplan();
     if(all||what==="pend"){
       kill("pend",0.05); const T=Math.max(1,S.pend.period*bar);
       pendK=Array.from({length:pendN()},(_,i)=>Math.max(0,Math.ceil(((now-t0)/T)*(PEND_N0+i)-0.25)));
@@ -947,5 +1002,5 @@ function buildEngine(ctx, S, o){
     starts.forEach(x=>{try{x.stop(now+d+0.2);}catch(e){}});
   }
   const pendX=t=>Array.from({length:pendN()},(_,i)=>Math.cos(2*Math.PI*(PEND_N0+i)*(t-t0)/(S.pend.period*bar)));
-  return {start,schedule,setLevels,setReverb,stop,fadeOut,sleepFade,sleepClear,replan,freeze,reroll,play,synOn,pendX,tensNow:()=>tensAt(ctx.currentTime),adaptNow:()=>adaptE(ctx.currentTime),tensPos:()=>{ if(!curveOn()) return -1; const L=Math.max(30,S.curve.dur*60), x=(ctx.currentTime-t0)/L; return S.curve.mode==='loop'?((x%1)+1)%1:clamp(x,0,1); },events,out,master,secAt:t=>secOf(t),bar,E,t0f:()=>t0};
+  return {start,schedule,setLevels,setReverb,stop,fadeOut,sleepFade,sleepClear,replan,freeze,reroll,play,synOn,dawOn,dawReplan,dawPos,pendX,tensNow:()=>tensAt(ctx.currentTime),adaptNow:()=>adaptE(ctx.currentTime),tensPos:()=>{ if(!curveOn()) return -1; const L=Math.max(30,S.curve.dur*60), x=(ctx.currentTime-t0)/L; return S.curve.mode==='loop'?((x%1)+1)%1:clamp(x,0,1); },events,out,master,secAt:t=>secOf(t),bar,E,t0f:()=>t0};
 }

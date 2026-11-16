@@ -43,18 +43,20 @@ function zipStore(files){
 
 function vlq(n){const b=[n&0x7f]; n>>=7; while(n>0){b.unshift((n&0x7f)|0x80); n>>=7;} return b;}
 function midiFile(events,Sx){
-  const PPQ=480, spq=60/Sx.tempo, base=36+Sx.root, trs=[[],[],[],[],[]];
+  const PPQ=480, spq=60/Sx.tempo, base=36+Sx.root, trs=Array.from({length:5+(Sx.daw?Math.min(8,Sx.daw.tracks.length):0)},()=>[]);
   events.forEach(e=>{
     const n0=base+e.off, rn=Math.round(n0), frac=n0-rn, note=Math.max(0,Math.min(127,rn)), t=Math.round(e.t/spq*PPQ), d=Math.max(30,Math.round(e.dur/spq*PPQ)), vel=Math.max(1,Math.min(127,Math.round(40+e.vel*200)));
     /* quart de ton : note voisine + pitch bend de 50 cents (plage de 2 demi-tons), sauf sur les nappes qui sont polyphoniques */
     const bend=(e.tr!==2&&Math.abs(frac)>0.01)?8192+Math.round(frac*4096):undefined;
+    if(!trs[e.tr]) return;
     trs[e.tr].push({t,on:true,note,vel,bend},{t:t+d,on:false,note,vel:0});
   });
   const m=METERS[Sx.meter], tempoUs=Math.round(60e6/Sx.tempo);
   const hdr=[0x4d,0x54,0x68,0x64,0,0,0,6,0,1,0,6,(PPQ>>8)&255,PPQ&255];
   const chunk=(bytes)=>[0x4d,0x54,0x72,0x6b,(bytes.length>>>24)&255,(bytes.length>>>16)&255,(bytes.length>>>8)&255,bytes.length&255,...bytes];
   const tempoTrack=[0,0xff,0x51,3,(tempoUs>>16)&255,(tempoUs>>8)&255,tempoUs&255, 0,0xff,0x58,4,m.n,m.d,24,8, 0,0xff,0x2f,0];
-  const names=["Melodie","Canon","Nappes","Boucles","Pendules"];
+  const names=["Melodie","Canon","Nappes","Boucles","Pendules"].concat((Sx.daw?Sx.daw.tracks:[]).map((t,i)=>(t.name||"Piste "+(i+1)).normalize("NFD").replace(/[^\x20-\x7e]/g,"")));
+  const chOf=i=>i>=9?i+1:i;
   const tracks=[chunk(tempoTrack)];
   trs.forEach((evs,i)=>{
     evs.sort((a,b)=>a.t-b.t||(a.on?1:-1));
@@ -62,8 +64,8 @@ function midiFile(events,Sx){
     const nm=[...names[i]].map(c=>c.charCodeAt(0)), b=[0,0xff,0x03,nm.length,...nm];
     let last=0;
     evs.forEach(e=>{
-      if(e.on&&usesBend){ const bv=e.bend===undefined?8192:e.bend; b.push(...vlq(e.t-last),0xE0|i,bv&127,(bv>>7)&127); last=e.t; }
-      b.push(...vlq(e.t-last),(e.on?0x90:0x80)|i,e.note,e.vel); last=e.t;
+      if(e.on&&usesBend){ const bv=e.bend===undefined?8192:e.bend; b.push(...vlq(e.t-last),0xE0|chOf(i),bv&127,(bv>>7)&127); last=e.t; }
+      b.push(...vlq(e.t-last),(e.on?0x90:0x80)|chOf(i),e.note,e.vel); last=e.t;
     });
     b.push(0,0xff,0x2f,0); tracks.push(chunk(b));
   });
@@ -181,6 +183,7 @@ async function doExport(){
       const groups=[["drone","bourdon"],["mel","melodie_canon"],["pad","nappes"],["perc","percussion"],["amb","lieu"]];
       if(Sx.loops.lvl>0.001) groups.push(["loops","boucles"]);
       if(Sx.pend.lvl>0.001) groups.push(["pend","pendules"]);
+      if(Sx.daw&&Sx.daw.tracks.some(t=>t.notes.length)) groups.push(["daw","pistes"]);
       const res=[]; let mp=0;
       for(let i=0;i<groups.length;i++){
         const r=await renderOffline(Sx,dur,{loop:false,solo:groups[i][0],noComp:true},prog("Stem "+(i+1)+" sur "+groups.length+" ("+groups[i][1]+")")); res.push(r); mp=Math.max(mp,peakOf(r.L,r.R));

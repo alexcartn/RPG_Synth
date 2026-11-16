@@ -14,7 +14,8 @@ const SHELL = [
 ];
 
 self.addEventListener("install", e => {
-  /* pas de skipWaiting automatique : la nouvelle version attend que la personne choisisse de recharger */
+  /* le réseau passe d'abord (voir fetch) : la nouvelle version prend la main tout de suite, sans casser la lecture en cours */
+  self.skipWaiting();
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)));
 });
 
@@ -33,10 +34,17 @@ self.addEventListener("fetch", e => {
   const url = new URL(req.url);
   if (url.origin === self.location.origin) {
     e.respondWith((async () => {
-      const hit = await caches.match(req, { ignoreSearch: true });
-      if (hit) return hit;
-      try { return await fetch(req); }
-      catch (err) { if (req.mode === "navigate") return (await caches.match("index.html")) || Response.error(); throw err; }
+      /* réseau d'abord : la dernière version s'affiche toujours ; le cache ne sert que hors ligne */
+      try {
+        const res = await fetch(req, { cache: "no-cache" });
+        if (res.ok) { const c = await caches.open(CACHE); c.put(req, res.clone()); }
+        return res;
+      } catch (err) {
+        const hit = await caches.match(req, { ignoreSearch: true });
+        if (hit) return hit;
+        if (req.mode === "navigate") return (await caches.match("index.html")) || Response.error();
+        throw err;
+      }
     })());
   } else if (url.hostname === "cdnjs.cloudflare.com") {
     /* encodeur MP3 : mis en cache à la première utilisation pour la suite hors ligne */

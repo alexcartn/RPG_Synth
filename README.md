@@ -50,7 +50,7 @@ Troisième mode (interrupteur « Réglages · Jeu · Atelier » sous la partitio
 
 ## Univers, timbres et extinction
 
-- Dix-neuf préréglages en cinq univers, choisis par un menu dans la marge : Médiéval (Taberna, Chorea, Crypta, Scriptorium, Turris, Tripudium), Calme (Somnus pour dormir, Meditatio, Labor pour travailler), Espace (Sidera, Nebula, Abyssus), Orient et quarts de ton (Aegyptus, Eremus, Hortus, Bayati, Enharmonia), Nature (Pluvia, Mare, Silva, Nox). Chacun a une glose française. Ils sont réglés sur le papier et mesurés au niveau sonore, pas écoutés : les ajuster à l'oreille est normal.
+- Vingt préréglages en cinq univers, choisis par un menu dans la marge : Médiéval (Taberna, Chorea, Crypta, Scriptorium, Turris, Tripudium), Calme (Somnus pour dormir, Meditatio, Labor pour travailler), Espace (Sidera, Nebula, Abyssus), Orient et quarts de ton (Aegyptus, Eremus, Hortus, Bayati, Enharmonia), Nature (Pluvia, Mare, Silva, Nox, Siren). Chacun a une glose française. Ils sont réglés sur le papier et mesurés au niveau sonore, pas écoutés : les ajuster à l'oreille est normal.
 - Timbres ajoutés : oud (corde pincée), ney (flûte soufflée), kalimba, bol chantant, cloches de verre, synthé doux pour les voix ; synthé doux et verre pour les nappes ; sinus pur et bol chantant pour le bourdon.
 - Extinction progressive : dans 15 minutes à 2 heures, le niveau tient puis descend en courbe douce sur les 20 % finaux (entre 1 et 5 minutes), et la lecture s'arrête au silence. Le compte à rebours démarre à la mise en lecture.
 - Volume général (chapitre Spatium) : pour que les ambiances calmes restent calmes. L'export est toujours normalisé en crête.

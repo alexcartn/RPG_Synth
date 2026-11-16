@@ -225,7 +225,13 @@ const NATURE = [
     perc:{lvl:0}, drone:{lvl:0.4, timbre:"bol", bright:0.2},
     mel:{lvl:0.15, inst:"carillon", dens:0.1, reg:2, span:2, leap:0.2, orn:0, deja:0.4, loop:3}, canon:{lvl:0},
     pad:{lvl:0.3, timbre:"choeur", len:8, motion:0.3, voices:3}, amb:{feu:0.25, vent:0.12},
-    fx:{rev:0.6, size:6, dark:0.6, sat:0.05, wow:0.1, veil:0.5}, form:{shape:"constante"}, nature:{nuit:0.6}}, "nuit, grillons et feu"]
+    fx:{rev:0.6, size:6, dark:0.6, sat:0.05, wow:0.1, veil:0.5}, form:{shape:"constante"}, nature:{nuit:0.6}}, "nuit, grillons et feu"],
+  ["Siren", {seed:666, root:2, scales:["enharm","saba","bayati"], sectionBars:16, tempo:46, temper:"juste", tension:0.6, vol:0.8,
+    perc:{lvl:0}, drone:{lvl:0.6, timbre:"choeur", bright:0.3, width:0.85, drift:0.9, glide:0.8},
+    mel:{lvl:0.45, inst:"ney", dens:0.16, reg:2, span:3, leap:0.35, orn:0.3, deja:0.3, loop:3}, canon:{lvl:0.35, inst:"verre", delay:3, shift:"q+"},
+    pad:{lvl:0.5, timbre:"choeur", len:8, motion:0.8, voices:4}, amb:{vent:0.2},
+    fx:{rev:0.7, size:9, dark:0.55, room:"grotte", dly:0.3, dlyDiv:3, fb:0.55, sat:0.1, wow:0.2, veil:0.6, hiss:0.08}, form:{shape:"vagues", period:6, amount:0.7},
+    loops:{lvl:0.2, count:4, inst:"verre", speed:1.2}, nature:{mer:0.45}}, "sirènes, chant à quarts de ton sur la mer"]
 ];
 const UNIVERS = [
   {id:"medieval", name:"Médiéval", items:MEDIEVAL},

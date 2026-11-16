@@ -34,7 +34,7 @@ h1::first-letter{font:700 1.3em/.7 "UnifrakturCook","IM Fell English",serif; col
 .lede{font:italic 400 1.2rem/1.45 var(--body); color:var(--ink-2); margin:0; max-width:46ch}
 
 .cols{display:grid; grid-template-columns:minmax(0,1fr) 340px; gap:clamp(24px,5vw,72px); align-items:start}
-.marge{position:sticky; top:calc(var(--toc-h) + var(--sp-lg)); max-height:calc(100vh - var(--toc-h) - var(--sp-2xl)); overflow-y:auto; overscroll-behavior:contain; scrollbar-width:thin; scrollbar-color:var(--rule) transparent;
+.marge{position:sticky; top:calc(var(--score-h,0px) + var(--toc-h) + var(--sp-lg)); max-height:calc(100vh - var(--score-h,0px) - var(--toc-h) - var(--sp-2xl)); overflow-y:auto; overscroll-behavior:contain; scrollbar-width:thin; scrollbar-color:var(--rule) transparent;
   display:flex; flex-direction:column; gap:var(--sp-lg); order:2; padding-bottom:var(--sp-md)}
 .marge .lecture{order:1} .marge .tempo{order:2} .marge .tension{order:3} .marge .sleepbox{order:4} .marge > .presets{order:5} .marge .ringwrap{order:6} .marge .pendwrap{order:7} .marge .seance{order:8}
 .text{order:1; min-width:0}
@@ -192,20 +192,20 @@ button, select, input, summary, .note-g{-webkit-tap-highlight-color:transparent;
 
 /* ---------- latin et table des matières ---------- */
 [hidden]{display:none !important}
-html{scroll-padding-top:calc(var(--toc-h) + var(--sp-md))}
+html{scroll-padding-top:calc(var(--score-h,0px) + var(--toc-h) + var(--sp-md))}
 @media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
 .fr{font:italic 400 1rem/1.4 var(--body); color:var(--ink); letter-spacing:0}
 .chap .sub .fr{color:var(--ink-2); font-style:normal; font-variant:small-caps; letter-spacing:.04em; margin-right:.25em}
 .group > h3 .fr{margin-left:var(--sp-sm); font-size:.95rem; color:var(--ink-2); text-transform:none}
 .group > h3{color:var(--ink-2)}
-.toc{position:sticky; top:0; z-index:6; height:var(--toc-h); display:flex; align-items:center; gap:var(--sp-xl); overflow-x:auto; scrollbar-width:none; margin:0 0 var(--sp-xl);
+.toc{position:sticky; top:var(--score-h,0px); z-index:6; height:var(--toc-h); display:flex; align-items:center; gap:var(--sp-xl); overflow-x:auto; scrollbar-width:none; margin:0 0 var(--sp-xl);
   background:oklch(0.925 0.03 88); border-bottom:1px solid var(--rule); white-space:nowrap}
 .toc::-webkit-scrollbar{display:none}
 .toc a{flex:none; font:400 .95rem/1 var(--caps); letter-spacing:.07em; color:var(--ink-2); text-decoration:none; padding:var(--sp-sm) 0; border-bottom:1px solid transparent}
 .toc a .n{color:var(--rubric); margin-right:.5em; font-size:.85em}
 .toc a:hover{color:var(--ink)}
 .toc a[aria-current="true"]{color:var(--ink); border-bottom-color:var(--rubric)}
-.chap{scroll-margin-top:calc(var(--toc-h) + var(--sp-md))}
+.chap{scroll-margin-top:calc(var(--score-h,0px) + var(--toc-h) + var(--sp-md))}
 
 /* les curseurs ou menus orphelins prennent toute la largeur au lieu de laisser un trou */
 .fields > .ctl:last-child:nth-child(odd){grid-column:1/-1}
@@ -573,3 +573,59 @@ canvas#atWA, canvas#atWB{cursor:ew-resize; touch-action:none}
 .at-slots .at-slot .ctl .l output{font-variant-numeric:tabular-nums}
 .at-mod .fields select{width:100%}
 .ctl .l output{white-space:nowrap; flex:none}
+
+/* ---------- la partition reste en bandeau fixe en haut, quel que soit le mode ---------- */
+.score{position:sticky; top:0; z-index:9; margin:0 0 var(--sp-md); padding-top:var(--sp-xs); background:var(--parch); box-shadow:0 1px 0 var(--rule)}
+.score canvas, body.jeu .score canvas, body.atelier .score canvas, body.daw .score canvas{height:84px}
+.score .legend{margin-top:2px; padding:2px 0 3px; gap:0 var(--sp-lg); font-size:.7rem; letter-spacing:.06em}
+@media (max-width:700px){ .score canvas, body.jeu .score canvas, body.atelier .score canvas, body.daw .score canvas{height:72px} }
+body.jeu .score, body.atelier .score, body.daw .score{margin-bottom:var(--sp-sm)}
+body.jeu .legend, body.atelier .legend, body.daw .legend{display:flex}
+
+/* ---------- curseurs : toute la largeur de la colonne, pour plus de débattement ---------- */
+.fields > .ctl:has(input[type=range]){grid-column:1 / -1}
+
+/* ---------- atelier compact : une face avant de douze colonnes, comme un instrument ---------- */
+body.atelier .folio, body.daw .folio{max-width:1560px}
+.at-grid{grid-template-columns:repeat(12,minmax(0,1fr)); gap:var(--sp-lg) var(--sp-xl); padding-top:var(--sp-md)}
+.at-grid > .g3{grid-column:span 3} .at-grid > .g4{grid-column:span 4} .at-grid > .g6{grid-column:span 6} .at-grid > .g12{grid-column:1 / -1}
+.at-grid .at-mod{padding-top:var(--sp-sm); gap:var(--sp-sm)}
+.at-grid .at-mod h3{font-size:.86rem}
+.at-grid .at-mod h3 .fr{font-size:.86rem}
+.at-grid canvas.at-cv, .at-grid #atScope{height:auto}
+.at-knobs{gap:var(--sp-sm) 2px}
+.atelier .knob{position:relative; gap:0}
+.atelier .knob svg{max-width:46px}
+.atelier .knob .kl{font-size:.66rem; line-height:1.1; letter-spacing:.04em; padding-top:2px; transition:opacity .1s}
+.atelier .knob .kv{position:absolute; left:-4px; right:-4px; bottom:0; font-size:.82rem; line-height:1.1; background:var(--parch); opacity:0; pointer-events:none; text-align:center; transition:opacity .1s}
+.atelier .knob:hover .kv, .atelier .knob:focus-visible .kv{opacity:1}
+.atelier .knob:hover .kl, .atelier .knob:focus-visible .kl{opacity:0}
+@media (hover:none){ .atelier .knob .kv{position:static; opacity:1; background:none} .atelier .knob:hover .kl{opacity:1} }
+.atelier .at-mod .fields{gap:var(--sp-xs) var(--sp-md)}
+.atelier .at-mod .ctl label{font-size:.68rem; letter-spacing:.07em}
+.atelier .at-mod .ctl select{font-size:.88rem; padding:2px 0}
+.atelier input[type=range]{height:26px}
+.at-scopebox .at-scbar{display:flex; align-items:baseline; justify-content:space-between; gap:var(--sp-sm); margin:0}
+.at-scopebox .at-tabs{gap:var(--sp-lg)}
+.at-scopebox .at-tabs .lnk{font-size:.95rem; padding:2px 0}
+.at-scopebox .at-sel select{font-size:.85rem}
+#atScope{height:96px}
+.at-dr{gap:var(--sp-xs) var(--sp-md); font-size:.9rem}
+.at-mod .hint{margin:0; font-size:.82rem; line-height:1.3; max-width:none}
+.at-rack{display:flex; flex-wrap:wrap; gap:var(--sp-sm) var(--sp-lg)}
+.at-rg h4{margin:0 0 2px; font-size:.95rem}
+.at-rg .at-knobs, .at-rg:nth-child(3) .at-knobs, .at-rg:nth-child(5) .at-knobs{grid-template-columns:none; display:flex; gap:2px}
+.at-rg .knob{width:52px}
+.at-slots{grid-template-columns:repeat(2,minmax(0,1fr)); gap:0 var(--sp-xl)}
+.at-slot{padding:1px 0}
+.at-slots .at-slot .fields{gap:var(--sp-xs) var(--sp-sm)}
+#atHint{margin:var(--sp-xs) 0 0; font-size:.84rem; line-height:1.35; max-width:none; color:var(--ink-2)}
+.at-bar{padding:var(--sp-sm) 0 var(--sp-sm)}
+.at-title .nm{font-size:1.4rem}
+@media (max-width:1300px){ .at-grid > .g3{grid-column:span 4} .at-grid > .g6{grid-column:span 8} }
+@media (max-width:1000px){ .at-grid > .g3{grid-column:span 6} .at-grid > .g6, .at-grid > .g12{grid-column:1 / -1} .at-slots{grid-template-columns:1fr} }
+@media (max-width:640px){ .at-grid > .g3{grid-column:1 / -1} }
+
+body.atelier .piano, body.daw .piano{height:84px}
+body.atelier .at-kb, body.daw .at-kb{margin-top:var(--sp-lg); padding:var(--sp-sm) 0 calc(var(--sp-sm) + env(safe-area-inset-bottom))}
+body.atelier .at-kbbar, body.daw .at-kbbar{margin-bottom:var(--sp-xs)}

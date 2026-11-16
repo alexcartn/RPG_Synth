@@ -273,68 +273,65 @@ function buildAtelier(){
     '<details class="fin atsave"><summary>Enregistrer ou supprimer</summary><div class="row"><div class="ctl atname"><label for="synName">Nom</label><input type="text" id="synName" maxlength="40" placeholder="Mon patch"></div><button class="lnk" id="synSaveBtn" type="button">Enregistrer sous ce nom</button><button class="lnk" id="synDelBtn" type="button">Supprimer le patch choisi</button></div></details>';
   sec.appendChild(bar);
   sec.appendChild(atEl("p","hint","",)).id="atHint";
-  /* speculum : oscilloscope et spectre du son */
-  const sp=atEl("section","at-scope");
-  sp.innerHTML='<div class="at-scbar"><h3>Speculum<span class="fr">oscilloscope</span></h3><div class="at-tabs"><button class="lnk" id="atScOsc" type="button" aria-pressed="true">Oscilloscope</button><button class="lnk" id="atScSpec" type="button" aria-pressed="false">Spectre</button></div>'+
-    '<label class="at-sel">Source <select id="atScSrc"><option value="syn">Synthé seul</option><option value="all">Tout le mélange</option></select></label>'+
-    '<label class="at-sel" id="atScSpan">Fenêtre <select id="atScSpanSel"><option value="512">Courte</option><option value="1024" selected>Moyenne</option><option value="2048">Large</option></select></label><span class="at-read" id="atScopeRead" aria-live="off"></span></div>';
-  sp.appendChild(atCanvas("atScope",150)); sec.appendChild(sp);
-  const grid=atEl("div","at-grid"), c1=atEl("div","at-col"), c2=atEl("div","at-col"), c3=atEl("div","at-col");
-  /* oscillateurs */
-  [["oscA","Sonus A","oscillateur A","atWA"],["oscB","Sonus B","oscillateur B","atWB"]].forEach(([k,t,fr,cvid])=>{
-    const m=atMod(t,fr); m.appendChild(atCanvas(cvid,118));
-    m.appendChild(atKnobs([synKnob(k+".wave","Table",0,1,{fmt:v=>SYN_WAVES[Math.min(SYN_WAVES.length-1,Math.round(v*(SYN_WAVES.length-1)))]}),synKnob(k+".lvl","Niveau",0,1,{fmt:fmtP}),synKnob(k+".det","Désaccord",-50,50,{fmt:fmtC,step:1}),synKnob(k+".spread","Écart",0,40,{fmt:v=>Math.round(v)+" ¢",step:1})]));
-    m.appendChild(atFields([{k:"syn."+k+".oct",type:"select",label:"Octave",opts:octOpts,num:true},{k:"syn."+k+".semi",type:"select",label:"Intervalle",opts:semiOpts,num:true},{k:"syn."+k+".uni",type:"select",label:"Unisson",opts:uniOpts,num:true}]));
-    c1.appendChild(m);
+  /* face avant : douze colonnes, tout le synthé en un coup d'œil */
+  const grid=atEl("div","at-grid");
+  const put=(span,m)=>{ m.classList.add("g"+span); grid.appendChild(m); return m; };
+  const K=(path,label,min,max,o)=>synKnob(path,label,min,max,o);
+  const sel3=[{k:"syn.%.oct",type:"select",label:"Octave",opts:octOpts,num:true},{k:"syn.%.semi",type:"select",label:"Intervalle",opts:semiOpts,num:true},{k:"syn.%.uni",type:"select",label:"Unisson",opts:uniOpts,num:true}];
+  /* rang 1 : oscillateurs, filtre, speculum */
+  [["oscA","Sonus A","atWA"],["oscB","Sonus B","atWB"]].forEach(([k,t,cvid])=>{
+    const m=atMod(t); m.appendChild(atCanvas(cvid,72));
+    m.appendChild(atKnobs([K(k+".wave","Table",0,1,{fmt:v=>SYN_WAVES[Math.min(SYN_WAVES.length-1,Math.round(v*(SYN_WAVES.length-1)))]}),K(k+".lvl","Niveau",0,1,{fmt:fmtP}),K(k+".det","Désaccord",-50,50,{fmt:fmtC,step:1}),K(k+".spread","Écart",0,40,{fmt:v=>Math.round(v)+" ¢",step:1})]));
+    m.appendChild(atFields(sel3.map(x=>({...x,k:x.k.replace("%",k)}))));
+    put(3,m);
   });
-  const mt=atMod("Tabula","dessine ta table d'ondes");
-  mt.appendChild(atCanvas("atDrawCv",96));
-  mt.appendChild(atEl("div","at-dr",'<button class="lnk" id="atDrSin" type="button">Sinus</button><button class="lnk" id="atDrSaw" type="button">Dent de scie</button><button class="lnk" id="atDrSq" type="button">Carré</button><button class="lnk" id="atDrSmooth" type="button">Lisser</button><button class="lnk" id="atDrRnd" type="button">Au hasard</button>'));
-  mt.appendChild(atEl("p","hint","Tire à la souris sur la courbe. La table « Dessinée » est la dernière : mets le bouton Table d'un oscillateur tout à droite."));
-  c1.appendChild(mt);
-  const m3=atMod("Additamenta","sous-oscillateur, bruit, FM");
-  m3.appendChild(atKnobs([synKnob("sub.lvl","Sous-osc.",0,1,{fmt:fmtP}),synKnob("noise.lvl","Bruit",0,1,{fmt:fmtP}),synKnob("fm.amt","FM",0,1.5,{fmt:v=>v.toFixed(2)}),synKnob("fm.ratio","Rapport FM",0.5,8,{step:0.5,fmt:v=>"× "+v.toFixed(1)})]));
-  m3.appendChild(atFields([{k:"syn.sub.shape",type:"select",label:"Forme du sous-oscillateur",opts:[["sine","Sinus"],["square","Carré"]]}]));
-  c1.appendChild(m3);
-  /* filtre et enveloppes */
-  const mf=atMod("Filtrum","filtre"); mf.appendChild(atCanvas("atFil",110));
-  mf.appendChild(atKnobs([synKnob("fil.cut","Coupure",40,16000,{log:true,fmt:fmtHz}),synKnob("fil.res","Résonance",0.1,14,{log:true,fmt:v=>v.toFixed(1)}),synKnob("fil.key","Clavier",0,1,{fmt:fmtP}),synKnob("fil.env","Enveloppe",-4800,4800,{fmt:fmtC,step:50})]));
-  mf.appendChild(atFields([{k:"syn.fil.type",type:"select",label:"Type de filtre",opts:[["lowpass","Passe-bas 12 dB"],["lowpass24","Passe-bas 24 dB"],["highpass","Passe-haut 12 dB"],["highpass24","Passe-haut 24 dB"],["bandpass","Passe-bande"],["notch","Coupe-bande"]]}]));
-  c2.appendChild(mf);
-  [["envA","volume","atEA"],["envF","filtre","atEF"],["env2","modulation","atE2"]].forEach(([k,t,id])=>{
-    const m=atMod("Involucrum",(t==="modulation"?"enveloppe 2, pour la modulation":"enveloppe du "+t)); m.appendChild(atCanvas(id,60));
-    m.appendChild(atKnobs([synKnob(k+".a","Attaque",0.002,6,{log:true,fmt:fmtS}),synKnob(k+".d","Déclin",0.01,6,{log:true,fmt:fmtS}),synKnob(k+".s","Maintien",0,1,{fmt:fmtP}),synKnob(k+".r","Relâche",0.01,8,{log:true,fmt:fmtS})]));
-    c2.appendChild(m);
+  const mf=atMod("Filtrum"); mf.appendChild(atCanvas("atFil",72));
+  mf.appendChild(atKnobs([K("fil.cut","Coupure",40,16000,{log:true,fmt:fmtHz}),K("fil.res","Résonance",0.1,14,{log:true,fmt:v=>v.toFixed(1)}),K("fil.key","Clavier",0,1,{fmt:fmtP}),K("fil.env","Envel.",-4800,4800,{fmt:fmtC,step:50})]));
+  mf.appendChild(atFields([{k:"syn.fil.type",type:"select",label:"Type",opts:[["lowpass","Passe-bas 12 dB"],["lowpass24","Passe-bas 24 dB"],["highpass","Passe-haut 12 dB"],["highpass24","Passe-haut 24 dB"],["bandpass","Passe-bande"],["notch","Coupe-bande"]]}]));
+  put(3,mf);
+  const sp=atMod("Speculum"); sp.classList.add("at-scopebox");
+  sp.appendChild(atEl("div","at-scbar",'<div class="at-tabs"><button class="lnk" id="atScOsc" type="button" aria-pressed="true">Oscillo</button><button class="lnk" id="atScSpec" type="button" aria-pressed="false">Spectre</button></div><span class="at-read" id="atScopeRead" aria-live="off"></span>'));
+  sp.appendChild(atCanvas("atScope",96));
+  sp.appendChild(atEl("div","at-scbar",'<label class="at-sel">Source <select id="atScSrc"><option value="syn">Synthé</option><option value="all">Mélange</option></select></label><label class="at-sel" id="atScSpan">Fenêtre <select id="atScSpanSel"><option value="512">Courte</option><option value="1024" selected>Moyenne</option><option value="2048">Large</option></select></label>'));
+  put(3,sp);
+  /* rang 2 : trois enveloppes et les LFO */
+  [["envA","Involucrum","volume","atEA"],["envF","Involucrum","filtre","atEF"],["env2","Involucrum","modulation","atE2"]].forEach(([k,t,fr,id])=>{
+    const m=atMod(t,fr); m.appendChild(atCanvas(id,52));
+    m.appendChild(atKnobs([K(k+".a","Attaque",0.002,6,{log:true,fmt:fmtS}),K(k+".d","Déclin",0.01,6,{log:true,fmt:fmtS}),K(k+".s","Maintien",0,1,{fmt:fmtP}),K(k+".r","Relâche",0.01,8,{log:true,fmt:fmtS})]));
+    put(3,m);
   });
-  /* LFO, voix, saturation */
   const ml=atMod("Oscillatio","trois LFO");
-  ml.appendChild(atKnobs([synKnob("lfo1.rate","LFO 1",0.03,25,{log:true,fmt:v=>v.toFixed(2)+" Hz"}),synKnob("lfo2.rate","LFO 2",0.03,25,{log:true,fmt:v=>v.toFixed(2)+" Hz"}),synKnob("lfo3.rate","LFO 3",0.03,25,{log:true,fmt:v=>v.toFixed(2)+" Hz"})]));
-  ml.appendChild(atFields([{k:"syn.lfo1.shape",type:"select",label:"Forme du LFO 1",opts:shapeOpts},{k:"syn.lfo2.shape",type:"select",label:"Forme du LFO 2",opts:shapeOpts},{k:"syn.lfo3.shape",type:"select",label:"Forme du LFO 3",opts:shapeOpts}]));
-  c3.appendChild(ml);
-  const mv=atMod("Vox","polyphonie et glissando");
-  mv.appendChild(atKnobs([synKnob("mono.glide","Glissando",0.01,1.5,{log:true,fmt:fmtS}),synKnob("fx.drive","Saturation",0,1,{fmt:fmtP}),synKnob("fx.level","Niveau",0.05,4,{log:true,fmt:v=>"× "+v.toFixed(2)}),synKnob("vel.amt","Vélocité",0,1,{fmt:fmtP})]));
-  mv.appendChild(atFields([{k:"syn.mono.on",type:"select",label:"Jeu",opts:[[0,"Polyphonique"],[1,"Monophonique, avec glissando"]],num:true}]));
-  c3.appendChild(mv);
-  grid.appendChild(c1); grid.appendChild(c2); grid.appendChild(c3); sec.appendChild(grid);
-  /* matrice de modulation : huit emplacements sur deux colonnes */
-  const mm=atMod("Modulatio","matrice : une source module un paramètre"); mm.classList.add("at-wide");
-  const slots=atEl("div","at-slots");
+  ml.appendChild(atKnobs([K("lfo1.rate","LFO 1",0.03,25,{log:true,fmt:v=>v.toFixed(2)+" Hz"}),K("lfo2.rate","LFO 2",0.03,25,{log:true,fmt:v=>v.toFixed(2)+" Hz"}),K("lfo3.rate","LFO 3",0.03,25,{log:true,fmt:v=>v.toFixed(2)+" Hz"})]));
+  ml.appendChild(atFields([{k:"syn.lfo1.shape",type:"select",label:"Forme 1",opts:shapeOpts},{k:"syn.lfo2.shape",type:"select",label:"Forme 2",opts:shapeOpts},{k:"syn.lfo3.shape",type:"select",label:"Forme 3",opts:shapeOpts}]));
+  put(3,ml);
+  /* rang 3 : voix, table dessinée, rack */
+  const m3=atMod("Additamenta","sous-osc., bruit, FM, voix");
+  m3.appendChild(atKnobs([K("sub.lvl","Sous-osc.",0,1,{fmt:fmtP}),K("noise.lvl","Bruit",0,1,{fmt:fmtP}),K("fm.amt","FM",0,1.5,{fmt:v=>v.toFixed(2)}),K("fm.ratio","Rapport",0.5,8,{step:0.5,fmt:v=>"× "+v.toFixed(1)}),K("mono.glide","Glisse",0.01,1.5,{log:true,fmt:fmtS}),K("fx.drive","Saturat.",0,1,{fmt:fmtP}),K("fx.level","Niveau",0.05,4,{log:true,fmt:v=>"× "+v.toFixed(2)}),K("vel.amt","Vélocité",0,1,{fmt:fmtP})]));
+  m3.appendChild(atFields([{k:"syn.sub.shape",type:"select",label:"Sous-osc.",opts:[["sine","Sinus"],["square","Carré"]]},{k:"syn.mono.on",type:"select",label:"Jeu",opts:[[0,"Polyphonique"],[1,"Mono, glissando"]],num:true}]));
+  put(3,m3);
+  const mt=atMod("Tabula","dessine une table");
+  mt.appendChild(atCanvas("atDrawCv",64));
+  mt.appendChild(atEl("div","at-dr",'<button class="lnk" id="atDrSin" type="button">Sinus</button><button class="lnk" id="atDrSaw" type="button">Dent</button><button class="lnk" id="atDrSq" type="button">Carré</button><button class="lnk" id="atDrSmooth" type="button">Lisser</button><button class="lnk" id="atDrRnd" type="button">Hasard</button>'));
+  mt.appendChild(atEl("p","hint","Tire sur la courbe, puis mets la Table d'un oscillateur tout à droite (« Dessinée »)."));
+  put(3,mt);
+  const mr=atMod("Armarium","rack d'effets"); const rk=atEl("div","at-rack");
+  const grp=(t,knobs)=>{ const g=atEl("div","at-rg"); g.appendChild(atEl("h4","",t)); g.appendChild(atKnobs(knobs)); rk.appendChild(g); };
+  const dB=v=>(v>0?"+":"")+v.toFixed(1)+" dB";
+  grp("Chorus",[K("rack.chorus.mix","Mélange",0,1,{fmt:fmtP}),K("rack.chorus.rate","Vitesse",0.1,6,{log:true,fmt:v=>v.toFixed(1)+" Hz"}),K("rack.chorus.depth","Profond.",0,1,{fmt:fmtP})]);
+  grp("Écho",[K("rack.delay.mix","Mélange",0,1,{fmt:fmtP}),K("rack.delay.time","Temps",0.05,1.2,{log:true,fmt:v=>Math.round(v*1000)+" ms"}),K("rack.delay.fb","Répét.",0,0.9,{fmt:fmtP})]);
+  grp("Salle",[K("rack.rev.mix","Réverb",0,1,{fmt:fmtP})]);
+  grp("Égaliseur",[K("rack.eq.lo","Graves",-12,12,{fmt:dB,step:0.5}),K("rack.eq.mid","Médiums",-12,12,{fmt:dB,step:0.5}),K("rack.eq.hi","Aigus",-12,12,{fmt:dB,step:0.5})]);
+  grp("Compres.",[K("rack.comp.amt","Force",0,1,{fmt:fmtP})]);
+  mr.appendChild(rk); put(6,mr);
+  /* rang 4 : matrice de modulation */
+  const mm=atMod("Modulatio","huit sources vers huit paramètres"); const slots=atEl("div","at-slots");
   for(let i=0;i<8;i++){
     const row=atEl("div","at-slot"); row.appendChild(atEl("span","n",String(i+1)));
-    const f=atFields([{k:"syn.mod."+i+".src",type:"select",label:"Source",opts:SYN_SRC},{k:"syn.mod."+i+".dst",type:"select",label:"Destination",opts:SYN_DST},{k:"syn.mod."+i+".amt",type:"range",label:"Quantité",min:-1,max:1,step:0.01,fmt:v=>(v>0?"+":"")+Math.round(v*100)+" %"}]);
-    row.appendChild(f); slots.appendChild(row);
+    row.appendChild(atFields([{k:"syn.mod."+i+".src",type:"select",label:"Source",opts:SYN_SRC},{k:"syn.mod."+i+".dst",type:"select",label:"Destination",opts:SYN_DST},{k:"syn.mod."+i+".amt",type:"range",label:"Quantité",min:-1,max:1,step:0.01,fmt:v=>(v>0?"+":"")+Math.round(v*100)+" %"}]));
+    slots.appendChild(row);
   }
-  mm.appendChild(slots); sec.appendChild(mm);
-  /* armarium : le rack d'effets */
-  const mr=atMod("Armarium","rack d'effets du synthé : clavier de l'atelier et pistes du DAW"); mr.classList.add("at-wide");
-  const rk=atEl("div","at-rack");
-  const grp=(t,knobs)=>{ const g=atEl("div","at-rg"); g.appendChild(atEl("h4","",t)); g.appendChild(atKnobs(knobs)); rk.appendChild(g); };
-  grp("Chorus",[synKnob("rack.chorus.mix","Mélange",0,1,{fmt:fmtP}),synKnob("rack.chorus.rate","Vitesse",0.1,6,{log:true,fmt:v=>v.toFixed(1)+" Hz"}),synKnob("rack.chorus.depth","Profondeur",0,1,{fmt:fmtP})]);
-  grp("Écho",[synKnob("rack.delay.mix","Mélange",0,1,{fmt:fmtP}),synKnob("rack.delay.time","Temps",0.05,1.2,{log:true,fmt:v=>Math.round(v*1000)+" ms"}),synKnob("rack.delay.fb","Répétitions",0,0.9,{fmt:fmtP})]);
-  grp("Salle",[synKnob("rack.rev.mix","Réverb",0,1,{fmt:fmtP})]);
-  grp("Égaliseur",[synKnob("rack.eq.lo","Graves",-12,12,{fmt:v=>(v>0?"+":"")+v.toFixed(1)+" dB",step:0.5}),synKnob("rack.eq.mid","Médiums",-12,12,{fmt:v=>(v>0?"+":"")+v.toFixed(1)+" dB",step:0.5}),synKnob("rack.eq.hi","Aigus",-12,12,{fmt:v=>(v>0?"+":"")+v.toFixed(1)+" dB",step:0.5})]);
-  grp("Compresseur",[synKnob("rack.comp.amt","Force",0,1,{fmt:fmtP})]);
-  mr.appendChild(rk); sec.appendChild(mr);
+  mm.appendChild(slots); put(12,mm);
+  sec.appendChild(grid);
   /* clavier */
   const kb=atEl("div","at-kb"); kb.id="atKb"; kb.innerHTML='<div class="row at-kbbar"><span class="ctl"><label for="atOct">Octave du clavier</label></span><select id="atOct"></select><button class="btn" id="atScale" type="button" aria-pressed="true" title="Toutes les touches dans la gamme du thème en cours">Dans la gamme</button><button class="btn" id="atHold" type="button" aria-pressed="false">Maintien</button><button class="btn" id="atPanic" type="button">Tout couper</button></div><div class="piano" id="piano" aria-label="Clavier"></div>';
   sec.appendChild(kb);

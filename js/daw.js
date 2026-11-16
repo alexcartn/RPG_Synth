@@ -45,8 +45,6 @@ function dawSel(opts,val,label,fn){ const s=dawEl("select"); s.setAttribute("ari
 const LH={ruler:24, sec:22, mach:22, trk:56}, HEADW=236;
 function dawRows(){
   const rows=[]; let y=LH.ruler;
-  rows.push({type:"sec",key:"mach",y,h:LH.sec}); y+=LH.sec;
-  if(!DW.machFold) MACH.forEach(m=>{ rows.push({type:"mach",m,y,h:LH.mach}); y+=LH.mach; });
   rows.push({type:"sec",key:"trk",y,h:LH.sec}); y+=LH.sec;
   S.daw.tracks.forEach((tr,i)=>{ rows.push({type:"trk",tr,i,y,h:LH.trk}); y+=LH.trk; });
   return {rows,H:y};
@@ -261,7 +259,7 @@ function dawRollEvents(){
 }
 
 /* ---------- construction ---------- */
-function dawMachUI(){ const b=$("dawMach"); if(!b) return; b.setAttribute("aria-pressed",S.mach!==false?"true":"false"); b.textContent=S.mach!==false?"La machine joue":"La machine est en sourdine"; }
+function dawMachUI(){ const b=$("dawMach"); if(!b) return; b.setAttribute("aria-pressed",S.mach!==false?"true":"false"); b.textContent=S.mach!==false?"Couper la machine":"Rallumer la machine"; }
 function dawRecUI(){ const b=$("dawRec"); if(b) b.setAttribute("aria-pressed",DW.rec?"true":"false"); }
 function buildDaw(){
   if(!S.daw) return;
@@ -270,10 +268,10 @@ function buildDaw(){
   const bar=dawEl("div","dw-bar");
   bar.innerHTML='<button class="seal sm" id="play4" aria-pressed="false">Jouer</button>'+
     '<button class="btn rec" id="dawRec" type="button" aria-pressed="false">Enregistrer</button>'+
-    '<button class="btn" id="dawMach" type="button" aria-pressed="true">La machine joue</button>'+
+    '<button class="btn" id="dawMach" type="button" aria-pressed="true">Couper la machine</button>'+
     '<span class="dw-info" id="dawInfo"></span>'+
     '<div class="ctl"><label for="dawGrid">Grille</label><select id="dawGrid"></select></div>'+
-    '<button class="btn" id="dawSnapB" type="button" aria-pressed="true" title="Les notes posées à la souris tombent dans la gamme du thème">Dans la gamme</button>'+
+    '<button class="btn" id="dawSnapB" type="button" aria-pressed="true" title="Les notes posées à la souris tombent dans la gamme du thème">Aimanter à la gamme</button>'+
     '<button class="btn" id="dawUndo" type="button" disabled>Annuler</button>';
   sec.appendChild(bar);
   /* arrangement : en-têtes à gauche, ligne de temps à droite */

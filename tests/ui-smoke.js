@@ -24,6 +24,7 @@ class Off extends Ctx{constructor(c,l,sr){super();this.sampleRate=sr;this._c=c;t
 const dom=new JSDOM(html,{runScripts:'dangerously',virtualConsole:vc,pretendToBeVisual:true,url:'http://localhost/',beforeParse(w){w.TextEncoder=TextEncoder;w.AudioContext=Ctx;w.lamejs={Mp3Encoder:class{encodeBuffer(){return new Int8Array(8)}flush(){return new Int8Array(2)}}};w.OfflineAudioContext=Off;w.HTMLCanvasElement.prototype.getContext=()=>new Proxy({},{get:(t,k)=>k==='measureText'?()=>({width:0}):()=>{},set:()=>true});}});
 const w=dom.window,d=w.document;
 setTimeout(async()=>{
+ {const longL=[...d.querySelectorAll('.ctl > .l > label')].filter(l=>l.textContent.length>46).map(l=>l.textContent); if(longL.length){ console.log('ECHEC libellés trop longs (mettre l\'explication dans une aide)',longL); process.exit(1); } console.log('libellés : tous courts,',d.querySelectorAll('.ctl .help').length,'aides repliables');}
  console.log('chapitres',d.querySelectorAll('.chap').length,'controles',d.querySelectorAll('.ctl input,.ctl select').length,'ring',d.querySelectorAll('.note-g').length);
  d.getElementById('play').click(); await new Promise(r=>setTimeout(r,600));
  console.log('play pressed',d.getElementById('play').getAttribute('aria-pressed'),'noeuds',nodes);

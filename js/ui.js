@@ -358,7 +358,14 @@ function mkCtl(it){
   const wrap=document.createElement("div"); wrap.className="ctl";
   const id="c_"+it.k.replace(/\./g,"_");
   const row=document.createElement("div"); row.className="l";
-  const lab=document.createElement("label"); lab.htmlFor=id; lab.textContent=it.label; row.appendChild(lab);
+  /* un libellé long se coupe : le nom reste court, l'explication passe dans une aide qu'on déplie avec « ? » */
+  let name=it.label, help=it.hint||"";
+  if(!help&&name.length>40){ const m=name.match(/^(.{4,44}?) : (.+)$/)||name.match(/^(.{4,44}?) \((.+)\)$/); if(m){ name=m[1]; help=m[2].charAt(0).toUpperCase()+m[2].slice(1)+"."; } }
+  const lab=document.createElement("label"); lab.htmlFor=id; lab.textContent=name; row.appendChild(lab);
+  let hp=null;
+  if(help){ hp=document.createElement("p"); hp.className="hint"; hp.id=id+"_h"; hp.hidden=true; hp.textContent=help;
+    const hb=document.createElement("button"); hb.type="button"; hb.className="help"; hb.textContent="?"; hb.title="Explication"; hb.setAttribute("aria-label","Explication : "+name); hb.setAttribute("aria-expanded","false"); hb.setAttribute("aria-controls",hp.id);
+    hb.onclick=()=>{ hp.hidden=!hp.hidden; hb.setAttribute("aria-expanded",hp.hidden?"false":"true"); }; lab.after(hb); }
   let el,out=null;
   if(it.type==="range"){
     el=document.createElement("input"); el.type="range"; el.min=it.min; el.max=it.max; el.step=it.step;
@@ -370,7 +377,7 @@ function mkCtl(it){
     if(it.groups){it.groups.forEach(([g,l])=>{const og=document.createElement("optgroup"); og.label=g; addOpts(og,l); el.appendChild(og);});}
     else addOpts(el,it.opts);
   }
-  el.id=id; wrap.appendChild(row); wrap.appendChild(el);
+  el.id=id; wrap.appendChild(row); wrap.appendChild(el); if(hp) wrap.appendChild(hp);
   const entry={it,el,out};
   const upd=()=>{ if(out) out.textContent=it.fmt(parseFloat(el.value)); };
   if(it.type==="range"){

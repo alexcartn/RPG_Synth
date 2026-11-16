@@ -247,7 +247,7 @@ function atKeys(e,down){
 }
 
 /* ---------- machine ---------- */
-function atMachUI(){ if(typeof dawMachUI==="function") dawMachUI(); const b=$("atMach"); if(!b) return; b.setAttribute("aria-pressed",S.mach!==false?"true":"false"); b.textContent=S.mach!==false?"La machine joue":"La machine est en sourdine"; }
+function atMachUI(){ if(typeof dawMachUI==="function") dawMachUI(); const b=$("atMach"); if(!b) return; b.setAttribute("aria-pressed",S.mach!==false?"true":"false"); b.textContent=S.mach!==false?"Couper la machine":"Rallumer la machine"; }
 function setMach(on){
   S.mach=on; atMachUI();
   if(live){ live.eng.setLevels(); live.eng.replan("all"); }
@@ -267,7 +267,7 @@ function buildAtelier(){
   /* barre du haut */
   const bar=atEl("div","at-bar");
   bar.innerHTML='<div class="at-title"><span class="kicker">atelier</span><span class="nm" id="synPatchName">Pad doux</span></div>'+
-    '<button class="btn" id="atMach" type="button" aria-pressed="true">La machine joue</button>'+
+    '<button class="btn" id="atMach" type="button" aria-pressed="true">Couper la machine</button>'+
     '<div class="ctl atpatch"><label for="synPatch">Patch</label><select id="synPatch"></select></div>'+
     '<button class="lnk" id="synRandom" type="button">Au sort</button>'+
     '<details class="fin atsave"><summary>Enregistrer ou supprimer</summary><div class="row"><div class="ctl atname"><label for="synName">Nom</label><input type="text" id="synName" maxlength="40" placeholder="Mon patch"></div><button class="lnk" id="synSaveBtn" type="button">Enregistrer sous ce nom</button><button class="lnk" id="synDelBtn" type="button">Supprimer le patch choisi</button></div></details>';
@@ -279,42 +279,42 @@ function buildAtelier(){
   const K=(path,label,min,max,o)=>synKnob(path,label,min,max,o);
   const sel3=[{k:"syn.%.oct",type:"select",label:"Octave",opts:octOpts,num:true},{k:"syn.%.semi",type:"select",label:"Intervalle",opts:semiOpts,num:true},{k:"syn.%.uni",type:"select",label:"Unisson",opts:uniOpts,num:true}];
   /* rang 1 : oscillateurs, filtre, speculum */
-  [["oscA","Sonus A","atWA"],["oscB","Sonus B","atWB"]].forEach(([k,t,cvid])=>{
+  [["oscA","Oscillateur A","atWA"],["oscB","Oscillateur B","atWB"]].forEach(([k,t,cvid])=>{
     const m=atMod(t); m.appendChild(atCanvas(cvid,72));
     m.appendChild(atKnobs([K(k+".wave","Table",0,1,{fmt:v=>SYN_WAVES[Math.min(SYN_WAVES.length-1,Math.round(v*(SYN_WAVES.length-1)))]}),K(k+".lvl","Niveau",0,1,{fmt:fmtP}),K(k+".det","Désaccord",-50,50,{fmt:fmtC,step:1}),K(k+".spread","Écart",0,40,{fmt:v=>Math.round(v)+" ¢",step:1})]));
     m.appendChild(atFields(sel3.map(x=>({...x,k:x.k.replace("%",k)}))));
     put(3,m);
   });
-  const mf=atMod("Filtrum"); mf.appendChild(atCanvas("atFil",72));
+  const mf=atMod("Filtre"); mf.appendChild(atCanvas("atFil",72));
   mf.appendChild(atKnobs([K("fil.cut","Coupure",40,16000,{log:true,fmt:fmtHz}),K("fil.res","Résonance",0.1,14,{log:true,fmt:v=>v.toFixed(1)}),K("fil.key","Clavier",0,1,{fmt:fmtP}),K("fil.env","Envel.",-4800,4800,{fmt:fmtC,step:50})]));
   mf.appendChild(atFields([{k:"syn.fil.type",type:"select",label:"Type",opts:[["lowpass","Passe-bas 12 dB"],["lowpass24","Passe-bas 24 dB"],["highpass","Passe-haut 12 dB"],["highpass24","Passe-haut 24 dB"],["bandpass","Passe-bande"],["notch","Coupe-bande"]]}]));
   put(3,mf);
-  const sp=atMod("Speculum"); sp.classList.add("at-scopebox");
+  const sp=atMod("Oscilloscope"); sp.classList.add("at-scopebox");
   sp.appendChild(atEl("div","at-scbar",'<div class="at-tabs"><button class="lnk" id="atScOsc" type="button" aria-pressed="true">Oscillo</button><button class="lnk" id="atScSpec" type="button" aria-pressed="false">Spectre</button></div><span class="at-read" id="atScopeRead" aria-live="off"></span>'));
   sp.appendChild(atCanvas("atScope",96));
   sp.appendChild(atEl("div","at-scbar",'<label class="at-sel">Source <select id="atScSrc"><option value="syn">Synthé</option><option value="all">Mélange</option></select></label><label class="at-sel" id="atScSpan">Fenêtre <select id="atScSpanSel"><option value="512">Courte</option><option value="1024" selected>Moyenne</option><option value="2048">Large</option></select></label>'));
   put(3,sp);
   /* rang 2 : trois enveloppes et les LFO */
-  [["envA","Involucrum","volume","atEA"],["envF","Involucrum","filtre","atEF"],["env2","Involucrum","modulation","atE2"]].forEach(([k,t,fr,id])=>{
+  [["envA","Enveloppe","volume","atEA"],["envF","Enveloppe","filtre","atEF"],["env2","Enveloppe","modulation","atE2"]].forEach(([k,t,fr,id])=>{
     const m=atMod(t,fr); m.appendChild(atCanvas(id,52));
     m.appendChild(atKnobs([K(k+".a","Attaque",0.002,6,{log:true,fmt:fmtS}),K(k+".d","Déclin",0.01,6,{log:true,fmt:fmtS}),K(k+".s","Maintien",0,1,{fmt:fmtP}),K(k+".r","Relâche",0.01,8,{log:true,fmt:fmtS})]));
     put(3,m);
   });
-  const ml=atMod("Oscillatio","trois LFO");
+  const ml=atMod("Modulation lente","trois LFO");
   ml.appendChild(atKnobs([K("lfo1.rate","LFO 1",0.03,25,{log:true,fmt:v=>v.toFixed(2)+" Hz"}),K("lfo2.rate","LFO 2",0.03,25,{log:true,fmt:v=>v.toFixed(2)+" Hz"}),K("lfo3.rate","LFO 3",0.03,25,{log:true,fmt:v=>v.toFixed(2)+" Hz"})]));
   ml.appendChild(atFields([{k:"syn.lfo1.shape",type:"select",label:"Forme 1",opts:shapeOpts},{k:"syn.lfo2.shape",type:"select",label:"Forme 2",opts:shapeOpts},{k:"syn.lfo3.shape",type:"select",label:"Forme 3",opts:shapeOpts}]));
   put(3,ml);
   /* rang 3 : voix, table dessinée, rack */
-  const m3=atMod("Additamenta","sous-osc., bruit, FM, voix");
+  const m3=atMod("Compléments","sous-osc., bruit, FM, voix");
   m3.appendChild(atKnobs([K("sub.lvl","Sous-osc.",0,1,{fmt:fmtP}),K("noise.lvl","Bruit",0,1,{fmt:fmtP}),K("fm.amt","FM",0,1.5,{fmt:v=>v.toFixed(2)}),K("fm.ratio","Rapport",0.5,8,{step:0.5,fmt:v=>"× "+v.toFixed(1)}),K("mono.glide","Glisse",0.01,1.5,{log:true,fmt:fmtS}),K("fx.drive","Saturat.",0,1,{fmt:fmtP}),K("fx.level","Niveau",0.05,4,{log:true,fmt:v=>"× "+v.toFixed(2)}),K("vel.amt","Vélocité",0,1,{fmt:fmtP})]));
   m3.appendChild(atFields([{k:"syn.sub.shape",type:"select",label:"Sous-osc.",opts:[["sine","Sinus"],["square","Carré"]]},{k:"syn.mono.on",type:"select",label:"Jeu",opts:[[0,"Polyphonique"],[1,"Mono, glissando"]],num:true}]));
   put(3,m3);
-  const mt=atMod("Tabula","dessine une table");
+  const mt=atMod("Table dessinée","dessine une table");
   mt.appendChild(atCanvas("atDrawCv",64));
   mt.appendChild(atEl("div","at-dr",'<button class="lnk" id="atDrSin" type="button">Sinus</button><button class="lnk" id="atDrSaw" type="button">Dent</button><button class="lnk" id="atDrSq" type="button">Carré</button><button class="lnk" id="atDrSmooth" type="button">Lisser</button><button class="lnk" id="atDrRnd" type="button">Hasard</button>'));
   mt.appendChild(atEl("p","hint","Tire sur la courbe, puis mets la Table d'un oscillateur tout à droite (« Dessinée »)."));
   put(3,mt);
-  const mr=atMod("Armarium","rack d'effets"); const rk=atEl("div","at-rack");
+  const mr=atMod("Effets","rack d'effets"); const rk=atEl("div","at-rack");
   const grp=(t,knobs)=>{ const g=atEl("div","at-rg"); g.appendChild(atEl("h4","",t)); g.appendChild(atKnobs(knobs)); rk.appendChild(g); };
   const dB=v=>(v>0?"+":"")+v.toFixed(1)+" dB";
   grp("Chorus",[K("rack.chorus.mix","Mélange",0,1,{fmt:fmtP}),K("rack.chorus.rate","Vitesse",0.1,6,{log:true,fmt:v=>v.toFixed(1)+" Hz"}),K("rack.chorus.depth","Profond.",0,1,{fmt:fmtP})]);
@@ -324,7 +324,7 @@ function buildAtelier(){
   grp("Compres.",[K("rack.comp.amt","Force",0,1,{fmt:fmtP})]);
   mr.appendChild(rk); put(6,mr);
   /* rang 4 : matrice de modulation */
-  const mm=atMod("Modulatio","huit sources vers huit paramètres"); const slots=atEl("div","at-slots");
+  const mm=atMod("Matrice de modulation","huit sources vers huit paramètres"); const slots=atEl("div","at-slots");
   for(let i=0;i<8;i++){
     const row=atEl("div","at-slot"); row.appendChild(atEl("span","n",String(i+1)));
     row.appendChild(atFields([{k:"syn.mod."+i+".src",type:"select",label:"Source",opts:SYN_SRC},{k:"syn.mod."+i+".dst",type:"select",label:"Destination",opts:SYN_DST},{k:"syn.mod."+i+".amt",type:"range",label:"Quantité",min:-1,max:1,step:0.01,fmt:v=>(v>0?"+":"")+Math.round(v*100)+" %"}]));

@@ -158,16 +158,16 @@ function buildExport(host){
   $("exp").onclick=doExport;
   sec.querySelector("details").addEventListener("toggle",()=>{ $("codeOut").value=codeOf(); });
   $("copyCode").onclick=async()=>{ $("codeOut").value=codeOf(); try{ await navigator.clipboard.writeText($("codeOut").value); status("Code copié.","ok"); }catch(e){ $("codeOut").select(); status("Copie automatique refusée : sélectionne le code et copie-le à la main."); } };
-  $("loadCode").onclick=()=>{ try{ S=merge(clone(DEFAULT),fromCode($("codeIn").value)); normS(); syncUI(); restartIfLive(); status("Réglages chargés.","ok"); }catch(e){ status("Code illisible.","err"); } };
+  $("loadCode").onclick=()=>{ try{ S=merge(clone(DEFAULT),fromCode($("codeIn").value)); normS(); S.seed=newSeed(); syncUI(); restartIfLive(); status("Réglages chargés.","ok"); }catch(e){ status("Code illisible.","err"); } };
 }
 
 async function doExport(){
   const btn=$("exp"), label=btn.textContent; btn.disabled=true; btn.textContent="Rendu en cours...";
   try{
-    const Sx=clone(S), dur=parseInt($("dur").value), loop=$("xLoop").checked, stems=$("xStems").checked, midi=$("xMidi").checked, fmt=$("fmt").value;
+    const Sx=clone(S); Sx.seed=newSeed(); const dur=parseInt($("dur").value), loop=$("xLoop").checked, stems=$("xStems").checked, midi=$("xMidi").checked, fmt=$("fmt").value;
     const wantWav=fmt==="wav"||fmt==="both", kbps=fmt==="mp3-192"?192:320, wantMp3=fmt!=="wav";
     if(stems&&dur>180){ status("Stems : 3 minutes maximum. Choisis une durée plus courte.","err"); return; }
-    const root=NOTES[Sx.root].replace("#","d"), mode=(Sx.scales[0]||"mode"), base="bourdon_"+root+"_"+mode+"_"+Sx.tempo+"bpm_graine"+Sx.seed+"_"+(dur/60)+"min";
+    const root=NOTES[Sx.root].replace("#","d"), mode=(Sx.scales[0]||"mode"), base="bourdon_"+root+"_"+mode+"_"+Sx.tempo+"bpm_"+(dur/60)+"min_"+Date.now().toString(36).slice(-4);
     const files=[], t0=Date.now();
     const prog=lab=>p=>status(lab+" : "+Math.round(p*100)+" %, "+Math.round((Date.now()-t0)/1000)+" s écoulées...");
     /* un fichier audio : WAV, MP3, ou les deux */

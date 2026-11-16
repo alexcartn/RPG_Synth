@@ -1,6 +1,6 @@
 # Bourdon
 
-Machine à ambiances modales pour dungeon synth et ambiances de taverne. Une page statique, sans build ni dépendance : tout l'audio est synthétisé dans le navigateur (Web Audio), rien n'est joué à partir de samples. Une graine donne une pièce, la même graine redonne la même pièce.
+Machine à ambiances modales pour dungeon synth et ambiances de taverne. Une page statique, sans build ni dépendance : tout l'audio est synthétisé dans le navigateur (Web Audio), rien n'est joué à partir de samples. Chaque lecture tire une pièce nouvelle : le hasard est voulu, et un bouton de capture garde les prises qui plaisent.
 
 Usage prévu : composer hors ligne. On règle, on écoute, puis on rend en WAV (mix, boucle sans couture, stems) et en MIDI pour retravailler dans un logiciel de musique.
 
@@ -76,6 +76,14 @@ Quatrième mode (« Réglages · Jeu · Atelier · DAW »), pensé pour l'ordina
 - Les pistes sont enregistrées avec les scènes, rendues dans l'export audio, présentes dans le MIDI (une piste par piste) et ont leur stem « pistes ».
 - Limites : les notes du piano roll sont placées au demi-ton (une note enregistrée à un quart de ton est conservée et jouée, mais se déplace au demi-ton) ; les modifications s'entendent à la prochaine boucle ; pas de capture automatique de la machine en clip pour l'instant.
 
+## Hasard vivant : chance, dérives, machine de Turing, capture
+
+- Plus de graine à choisir : chaque lecture et chaque export tirent une pièce nouvelle. Une graine interne reste, tirée au hasard à chaque export et partagée par toutes ses passes (mix, stems), pour que les fichiers restent alignés entre eux. Les scènes et préréglages gardent des réglages, pas une pièce.
+- Capturer la lecture (colonne de droite) : enregistre ce qu'on entend (WAV) et les notes jouées (MIDI), le tout dans un .zip, pour garder une prise qui plaît.
+- Fortuna (Voces) : chance sur chaque événement. Notes manquantes, roulements (une note répétée deux ou trois fois), mutations (une note change d'un ou deux degrés), sauts d'octave imprévus, silences imprévus entre les phrases. Les mutations touchent aussi la progression des nappes, et les notes manquantes les boucles. Par défaut un peu de chaque (de 5 à 12 %) ; à zéro, la musique reste dans sa grammaire.
+- Deriva (Mutatio) : quatre marches aléatoires lentes, chacune promenant au choix l'éclat du bourdon, la réverbération, la densité de la mélodie, sa place dans le stéréo, la tension ou le voile. Profondeur et vitesse réglables.
+- Machine de Turing (Voces, Musica, « Forme de la pièce ») : la mélodie est un registre de pas de 1, 2 ou 4 mesures, en croches ou en noires. Le verrou règle la résistance de chaque pas à la mutation : à 100 % le registre boucle à l'identique, à 0 % tout est tiré de nouveau à chaque tour. Les temps forts se calent sur l'accord du moment.
+
 ## Composition : caractère, formes, contrepoint, couleur de mode, gestes
 
 - Ingenium (Voces) : cinq curseurs qui orientent le tirage de la mélodie. Gravité (retour vers la tonique et cadences), audace (taille des sauts), ornements (appoggiatures et, au-delà de 55 %, trilles), silences (souffles entre les notes et les phrases), répétition (retour des phrases déjà jouées). 50 % redonne l'ancien comportement. Chaque préréglage a son caractère : la crypte est lente et grave, la taverne dansante.
@@ -144,7 +152,7 @@ Points d'attention pour la suite :
 
 - Les paramètres marqués `restart: true` dans `UI` relancent la lecture (ils changent la structure du moteur). Les autres s'appliquent à chaud via `setLevels()` ou au prochain planning (anticipation de 8 s).
 - La réverb est une réponse impulsionnelle bruitée normalisée en énergie, régénérée au relâchement du curseur.
-- Le déjà-vu mémorise des phrases dans `recall()` ; à 0 il ne consomme aucun tirage, donc une graine existante donne exactement la même pièce qu'avant.
+- Le déjà-vu mémorise des phrases dans `recall()` ; à 0 il ne consomme aucun tirage, donc la graine, désormais interne, donne la même suite de tirages à tous les rendus d'un même export (ce qui garde les stems alignés).
 - Le fondu enchaîné (`crossfade` dans `ui.js`) crée un nouveau moteur sur le même `AudioContext` et appelle `fadeOut()` sur l'ancien, qui libère ses oscillateurs à la fin.
 - La boucle sans couture rend 8 s de plus, puis fond la queue sur le début en puissance égale.
 

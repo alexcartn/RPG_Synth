@@ -107,6 +107,9 @@ const DEFAULT = {
   syn:clone(SYN_DEFAULT),
   mus:{logic:"modal", model:"physique", form:"libre", color:"off"},
   car:{grav:0.5, aud:0.5, orn:0.5, sil:0.5, rep:0.5},
+  chance:{skip:0.08, ratchet:0.07, mutate:0.12, octave:0.05, rest:0.08},
+  turing:{lock:0.85, len:2, rate:1},
+  drift:[{t:"filtre",d:0.3,v:0.3},{t:"densite",d:0.25,v:0.25},{t:"reverb",d:0.25,v:0.2},{t:"pan",d:0.3,v:0.3}],
   adapt:{mode:"off", amount:0.6, span:45},
   play:{lvl:0.8, inst:"", oct:24},
   nature:{pluie:0, mer:0, nuit:0, ruisseau:0, oiseaux:0},
@@ -248,3 +251,6 @@ let S = clone(DEFAULT);
 
 /* d'anciennes scènes n'ont que quatre emplacements de modulation : on complète jusqu'à huit */
 function normS(){ if(S.syn&&S.syn.mod){ const dm=SYN_DEFAULT.mod; while(S.syn.mod.length<8) S.syn.mod.push({...dm[S.syn.mod.length]}); } return S; }
+
+/* chaque lecture, chaque rendu : une pièce nouvelle (la graine reste interne, pour garder les stems alignés) */
+const newSeed=()=>1+Math.floor(Math.random()*4294967000);

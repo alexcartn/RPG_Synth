@@ -66,12 +66,9 @@
     <aside class="marge" aria-label="Lecture et gamme">
       <div class="lecture">
         <button class="seal" id="play" aria-pressed="false">Jouer</button>
-        <div class="seedbox ctl">
-          <label for="seed">Semen</label>
-          <div class="seedrow">
-            <input type="number" id="seed" min="1" max="999999" inputmode="numeric">
-            <button class="lnk" id="dice" type="button">Tirer au sort</button>
-          </div>
+        <div class="capbox">
+          <button class="btn" id="capBtn" type="button" aria-pressed="false" disabled>Capturer la lecture</button>
+          <p class="hint" id="capNote" aria-live="polite"></p>
         </div>
       </div>
       <div class="tempo"><b id="tempoNum">120</b><span id="tempoCap">noires par minute</span></div>
@@ -128,6 +125,7 @@
 <script src="js/daw.js"></script>
 <script src="js/meteo.js"></script>
 <script src="js/export.js"></script>
+<script src="js/capture.js"></script>
 <script src="js/main.js"></script>
 <script src="js/pwa.js"></script>
 </body>

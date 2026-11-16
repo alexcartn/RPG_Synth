@@ -8,6 +8,8 @@ function buildEngine(ctx, S, o){
   const R={m:mulberry32(seed), d:mulberry32(seed^0xA1B2C3), p:mulberry32(seed^0x51ED27), a:mulberry32(seed^0x7F4A7C),
            s:mulberry32(seed^0x3C6EF3), v:mulberry32(seed^0x2545F4), n:mulberry32(seed^0x85ebca6b), w:mulberry32(seed^0x1234567), l:mulberry32(seed^0x1F2E3D4B), t:mulberry32(seed^0x6D2B79F5), h:mulberry32(seed^0x3B9ACA07), c:mulberry32(seed^0xC4A1CE), k:mulberry32(seed^0x9A7C3), x:mulberry32(seed^0xD71F7), u:mulberry32(seed^0x7B0DE5)};
   const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+  /* notes du synthé perso : le moteur à tables (worklet) quand il est chargé, sinon les nœuds natifs ; on retient les destinations pour les éteindre */
+  const synOwn=new Set(), synN=q=>{ synOwn.add(q.dst); q.seed=seed; return synthNote(ctx,S.syn,q); };
   const G=v=>{const g=ctx.createGain(); g.gain.value=v; return g;};
   const PAN=v=>{ if(ctx.createStereoPanner){const p=ctx.createStereoPanner(); p.pan.value=v; return p;} return G(1); };
   const freq=mkFreq(S);
@@ -294,7 +296,7 @@ function buildEngine(ctx, S, o){
     dOut.gain.value=S.fx.dly; dfb.gain.value=Math.min(0.9,S.fx.fb);
     dl.delayTime.value=E*S.fx.dlyDiv; dr.delayTime.value=E*S.fx.dlyDiv*1.0;
     sat.curve=satCurve(S.fx.sat);
-    dawSync(); rackSync();
+    dawSync(); rackSync(); if(typeof synPush==="function") synPush(ctx,S.syn);
     wowG1.gain.value=S.fx.wow*0.003; wowG2.gain.value=S.fx.wow*0.0003;
     veil.frequency.value=18000*Math.pow(2500/18000,S.fx.veil);
     hissG.gain.value=S.fx.hiss*0.03;
@@ -611,10 +613,10 @@ function buildEngine(ctx, S, o){
   const instOf=(name,fb)=>(physOn()&&PHYS[name])||INST[name]||INST[fb||"luth"];
 
   /* ---------- synthé perso : l'Atelier comme instrument ---------- */
-  INST.atelier=(t,f,vel,len,dst,pan)=>{ synthVoice(ctx,S.syn,{t,f,vel,dur:Math.max(0.06,len),dst,pan,lite:o.lite,noise:wb}); };
+  INST.atelier=(t,f,vel,len,dst,pan)=>{ synN({t,f,vel,dur:Math.max(0.06,len),dst,pan,lite:o.lite,noise:wb}); };
   /* note tenue au clavier : on garde la poignée et on relâche plus tard */
   function synOn(off,vel,op){
-    const t=ctx.currentTime+0.004, v=synthVoice(ctx,S.syn,{t,f:freq(off),vel:vel||0.7,dur:null,dst:rackPlay.in,pan:0,lite:o.lite,noise:wb,fromF:op&&op.fromOff!==undefined?freq(op.fromOff):0,glide:op&&op.glide||0});
+    const t=ctx.currentTime+0.004, v=synN({t,f:freq(off),vel:vel||0.7,dur:null,dst:rackPlay.in,pan:0,lite:o.lite,noise:wb,fromF:op&&op.fromOff!==undefined?freq(op.fromOff):0,glide:op&&op.glide||0});
     if(o.onNote) o.onNote(t,off,"play",0.6,vel||0.6);
     return {release:tt=>v.release(tt===undefined?ctx.currentTime:tt)};
   }
@@ -662,7 +664,7 @@ function buildEngine(ctx, S, o){
   function dawOn(tr,off,vel,op){
     const t=ctx.currentTime+0.004, st=dawT(tr), f=freq(off), v=vel||0.7;
     if(o.onNote) o.onNote(t,off,"play",0.6,v);
-    if(tr.inst==="atelier"){ const h=synthVoice(ctx,S.syn,{t,f,vel:v,dur:null,dst:st.vol,pan:0,lite:o.lite,noise:wb,fromF:op&&op.fromOff!==undefined?freq(op.fromOff):0,glide:op&&op.glide||0}); return {release:tt=>h.release(tt===undefined?ctx.currentTime:tt)}; }
+    if(tr.inst==="atelier"){ const h=synN({t,f,vel:v,dur:null,dst:st.vol,pan:0,lite:o.lite,noise:wb,fromF:op&&op.fromOff!==undefined?freq(op.fromOff):0,glide:op&&op.glide||0}); return {release:tt=>h.release(tt===undefined?ctx.currentTime:tt)}; }
     instOf(tr.inst,"luth")(t,f,v*0.4,E*3,st.vol,0); return {release:()=>{}};
   }
   /* une note à un instant précis (arpégiateur) */
@@ -671,7 +673,7 @@ function buildEngine(ctx, S, o){
 
   /* ---------- nappes ---------- */
   function padVoice(t,len,f,timbre,vol){
-    if(timbre==="atelier"){ synthVoice(ctx,S.syn,{t,f,vel:0.55,dur:len,dst:V.pad.node,pan:0,lite:o.lite,noise:wb}); return; }
+    if(timbre==="atelier"){ synN({t,f,vel:0.55,dur:len,dst:V.pad.node,pan:0,lite:o.lite,noise:wb}); return; }
     const a=Math.min(3,len*0.45), rel=Math.min(3.5,len*0.8), e=G(0);
     e.gain.setValueAtTime(0,t); e.gain.linearRampToValueAtTime(0.09*(vol||1),t+a); e.gain.setValueAtTime(0.09*(vol||1),t+len); e.gain.linearRampToValueAtTime(0,t+len+rel);
     e.connect(V.pad.node);
@@ -1232,7 +1234,7 @@ function buildEngine(ctx, S, o){
     if(!started) return;
     const now=ctx.currentTime, all=what==="all";
     const kill=(name,tc)=>{
-      const old=V[name].node; old.gain.cancelScheduledValues(now); old.gain.setTargetAtTime(0,now,tc||0.03);
+      const old=V[name].node; old.gain.cancelScheduledValues(now); old.gain.setTargetAtTime(0,now,tc||0.03); synDrop(ctx,old,now+Math.max(0.2,(tc||0.03)*6)); synOwn.delete(old);
       if(typeof setTimeout==="function") setTimeout(()=>{ try{ old.disconnect(); }catch(e){} },1500);
       newGen(name);
     };
@@ -1298,6 +1300,7 @@ function buildEngine(ctx, S, o){
   function fadeOut(now,d){
     master.gain.cancelScheduledValues(now); master.gain.setValueAtTime(master.gain.value,now); master.gain.linearRampToValueAtTime(0,now+d);
     starts.forEach(x=>{try{x.stop(now+d+0.2);}catch(e){}});
+    synDropAll(ctx,now+d+0.3,[...synOwn]);
   }
   const pendX=t=>Array.from({length:pendN()},(_,i)=>Math.cos(2*Math.PI*(PEND_N0+i)*(t-t0)/(S.pend.period*bar)));
   built=true; fxAttach();

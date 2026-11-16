@@ -84,6 +84,7 @@ async function renderOffline(Sx,dur,o,onProg){
     const q=128/sr, steps=20;
     for(let k=1;k<steps;k++){ const t=Math.floor(total*k/steps/q)*q; ctx.suspend(t).then(()=>{ onProg(k/steps); ctx.resume(); }).catch(()=>{}); }
   }
+  if(typeof synFlush==="function") await synFlush(ctx);
   const buf=await ctx.startRendering();
   if(onProg) onProg(1);
   let L=buf.getChannelData(0), R=buf.getChannelData(1);

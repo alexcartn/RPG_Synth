@@ -535,6 +535,9 @@ body.jeu .legend, body.atelier .legend, body.daw .legend{display:flex}
 
 /* ---------- curseurs : toute la largeur de la colonne, pour plus de débattement ---------- */
 .fields > .ctl:has(input[type=range]){grid-column:1 / -1}
+/* mode Composer : les curseurs se rangent en colonnes au lieu de s'étirer sur 700 px pour régler un pourcentage */
+#chapters .fields{grid-template-columns:repeat(auto-fill,minmax(min(100%,240px),1fr)); gap:var(--sp-md) var(--sp-xl)}
+#chapters .fields > .ctl:has(input[type=range]){grid-column:auto}
 
 /* ---------- atelier compact : une face avant de douze colonnes, comme un instrument ---------- */
 body.atelier .folio, body.daw .folio{max-width:1560px}

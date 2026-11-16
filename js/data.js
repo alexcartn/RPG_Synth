@@ -92,7 +92,7 @@ const DEFAULT = {
   drone:{lvl:0.8, timbre:"anche", bright:0.5, width:0.5, drift:0.5, glide:0.5},
   mel:{lvl:0.6, inst:"luth", dens:0.85, reg:0, span:2, leap:0.2, orn:0.15, deja:0, loop:2},
   canon:{lvl:0, inst:"harpe", delay:2, shift:"oct+"},
-  pad:{lvl:0.22, timbre:"cordes", len:2, motion:0.5, voices:3, deja:0, loop:2},
+  pad:{lvl:0.22, timbre:"cordes", len:2, motion:0.5, voices:3, deja:0, loop:2, stag:0.5, bass:0.5},
   loops:{lvl:0, count:3, inst:"carillon", speed:1},
   pend:{lvl:0, count:6, period:24, inst:"carillon"},
   amb:{murmur:0.35, clink:0.5, feu:0.15, vent:0, gouttes:0},

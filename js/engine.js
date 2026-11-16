@@ -448,7 +448,7 @@ function buildEngine(ctx, S, o){
       const dur=2.8, o1=ctx.createOscillator(), o2=ctx.createOscillator(), o3=ctx.createOscillator();
       o1.type="triangle"; o2.type="sawtooth"; o3.type="sine"; o1.frequency.value=f; o2.frequency.value=f; o2.detune.value=5; o3.frequency.value=f*2;
       const g2=G(0.18), g3=G(0.22), fl=ctx.createBiquadFilter(); fl.type="lowpass"; fl.Q.value=0.8;
-      fl.frequency.setValueAtTime(3000,t); fl.frequency.exponentialRampToValueAtTime(520,t+1.3);
+      fl.frequency.setValueAtTime(clamp(900+10500*vel,1000,5200),t); fl.frequency.exponentialRampToValueAtTime(520,t+0.9+1.6*clamp(vel*4,0,1));
       const e=envD(t,vel,dur); o1.connect(fl); o2.connect(g2); g2.connect(fl); o3.connect(g3); g3.connect(fl); fl.connect(e); route(e,pan,dst);
       [o1,o2,o3].forEach(o=>{o.start(t); o.stop(t+dur+0.1);});
     },
@@ -456,7 +456,7 @@ function buildEngine(ctx, S, o){
       const dur=4.2, o1=ctx.createOscillator(), o2=ctx.createOscillator(), o3=ctx.createOscillator();
       o1.type="triangle"; o2.type="sine"; o3.type="sine"; o1.frequency.value=f; o2.frequency.value=f*2; o3.frequency.value=f*3;
       const g2=G(0.3), g3=G(0.12), fl=ctx.createBiquadFilter(); fl.type="lowpass"; fl.Q.value=0.6;
-      fl.frequency.setValueAtTime(5200,t); fl.frequency.exponentialRampToValueAtTime(1400,t+1.8);
+      fl.frequency.setValueAtTime(clamp(1800+17000*vel,2200,9000),t); fl.frequency.exponentialRampToValueAtTime(1400,t+1.8);
       const e=envD(t,vel*1.05,dur); o1.connect(fl); o2.connect(g2); g2.connect(fl); o3.connect(g3); g3.connect(fl); fl.connect(e); route(e,pan,dst);
       [o1,o2,o3].forEach(o=>{o.start(t); o.stop(t+dur+0.1);});
     },
@@ -507,7 +507,7 @@ function buildEngine(ctx, S, o){
     },
     oud(t,f,vel,len,dst,pan){
       const dur=2.6, fl=ctx.createBiquadFilter(); fl.type="lowpass"; fl.Q.value=1.2;
-      fl.frequency.setValueAtTime(3400,t); fl.frequency.exponentialRampToValueAtTime(420,t+1);
+      fl.frequency.setValueAtTime(clamp(900+12500*vel,1100,6000),t); fl.frequency.exponentialRampToValueAtTime(420,t+1);
       const e=envD(t,vel*0.95,dur); fl.connect(e); route(e,pan,dst);
       [-5,5].forEach(det=>{
         const a=ctx.createOscillator(), b=ctx.createOscillator(), gb=G(0.45); a.type="triangle"; b.type="sawtooth"; a.frequency.value=f; b.frequency.value=f; a.detune.value=det; b.detune.value=det;
@@ -562,12 +562,12 @@ function buildEngine(ctx, S, o){
   /* ---------- modèle physique : corde pincée (Karplus-Strong avec accord fin) ---------- */
   const pluckCache=new Map();
   function pluckBuf(f,vel,spec){
-    const key=Math.round(f*20)+"|"+Math.round(vel*12)+"|"+spec.id;
+    const key=Math.round(f*20)+"|"+Math.round(vel*16)+"|"+spec.id;
     const hit=pluckCache.get(key); if(hit){ pluckCache.delete(key); pluckCache.set(key,hit); return hit; }
     const dur=Math.min(4.6,spec.t60*1.1), n=Math.floor(sr*dur), P=sr/f, Ld=P-0.5, L=Math.max(2,Math.floor(Ld)), F=Ld-L, c=(1-F)/(1+F);
     const line=new Float32Array(L), rnd=mulberry32((Math.floor(f*100)*2654435761)>>>0), out=new Float32Array(n);
     /* excitation : bruit adouci (plus vif quand la note est forte), avec un peigne qui place le point de pincement */
-    let lp=0; const kx=clamp(0.25+0.65*vel*4*spec.bright,0.15,0.95);
+    let lp=0; const kx=clamp(0.12+0.9*vel*4*spec.bright,0.12,0.95);
     for(let i=0;i<L;i++){ const x=rnd()*2-1; lp+=(x-lp)*kx; line[i]=lp; }
     const m=Math.max(1,Math.round(spec.pos*L)), tmp=Float32Array.from(line); for(let i=0;i<L;i++) line[i]=tmp[i]-tmp[(i-m+L)%L];
     const g=Math.pow(10,-3/(Math.max(0.2,spec.t60)*f)), a=clamp(0.5-0.18*spec.bright,0.3,0.5);
@@ -670,10 +670,10 @@ function buildEngine(ctx, S, o){
   const dawPos=tr=>{ const L=Math.max(1,tr.bars)*barE, x=(ctx.currentTime-t0)/E; return ((x%L)+L)%L; };
 
   /* ---------- nappes ---------- */
-  function padVoice(t,len,f,timbre){
+  function padVoice(t,len,f,timbre,vol){
     if(timbre==="atelier"){ synthVoice(ctx,S.syn,{t,f,vel:0.55,dur:len,dst:V.pad.node,pan:0,lite:o.lite,noise:wb}); return; }
     const a=Math.min(3,len*0.45), rel=Math.min(3.5,len*0.8), e=G(0);
-    e.gain.setValueAtTime(0,t); e.gain.linearRampToValueAtTime(0.09,t+a); e.gain.setValueAtTime(0.09,t+len); e.gain.linearRampToValueAtTime(0,t+len+rel);
+    e.gain.setValueAtTime(0,t); e.gain.linearRampToValueAtTime(0.09*(vol||1),t+a); e.gain.setValueAtTime(0.09*(vol||1),t+len); e.gain.linearRampToValueAtTime(0,t+len+rel);
     e.connect(V.pad.node);
     const end=t+len+rel+0.1, os=[];
     const add=(type,fr,det,dst,gain)=>{const x=ctx.createOscillator(); x.type=type; x.frequency.value=fr; x.detune.value=det; if(gain!==undefined){const g=G(gain); x.connect(g); g.connect(dst);} else x.connect(dst); os.push(x); return x;};
@@ -838,7 +838,7 @@ function buildEngine(ctx, S, o){
   function ensureChords(until){
     if(chordEnd<0) chordEnd=t0;
     while(chordEnd<until){
-      const t=chordEnd, iv=ivOf(S,secOf(t).key), n=iv.length, len=S.pad.len*bar, vc=clamp(Math.round(S.pad.voices),2,o.lite?3:4);
+      const t=chordEnd, iv=ivOf(S,secOf(t).key), n=iv.length, stg=clamp(S.pad.stag===undefined?0.5:S.pad.stag,0,1), len=S.pad.len*bar*(stg>0.05&&R.s()<stg*0.6?[0.5,0.75,1.5,2][Math.floor(R.s()*4)]:1), vc=clamp(Math.round(S.pad.voices),2,o.lite?3:4);
       let dRaw, offs;
       if(modal()){ dRaw=nextDegree(n,secOf(t).key); { const k1=R.k(), k2=R.k(); if(k1<(((S.chance||{}).mutate)||0)*0.6) dRaw=Math.floor(k2*n); } offs=voice(iv,dRaw%n,vc); prevVoicing=offs; }
       else{ dRaw=recall(memP,nChord++,Math.max(1,Math.round(S.pad.loop)),S.pad.deja,R.s,()=>(R.s()<0.35+0.4*(1-S.pad.motion))?0:Math.floor(R.s()*n)); const d=dRaw%n; offs=[degOff(iv,d),degOff(iv,d+2),degOff(iv,d+4),degOff(iv,d+6)].slice(0,vc).map(x=>x+12); }
@@ -853,7 +853,7 @@ function buildEngine(ctx, S, o){
   function motifFor(sec){
     if(motifSec===sec&&motif) return motif;
     motifSec=sec;
-    const pats=[[2,1,1,2],[1,1,2,2],[3,1,2],[2,2,1,1],[1,2,1,2],[2,1,2]], rh=pats[Math.floor(R.m()*pats.length)], sg=R.m()<0.5?-1:1, steps=[];
+    const pats=[[2,1,1,2],[1,1,2,2],[3,1,2],[2,2,1,1],[1,2,1,2],[2,1,2],[3,1,3,1],[3,1,2,2],[1,1,1,1,2,2],[2,1,1,1,1,2],[4,2,2],[1,3,2,2],[3,3,2],[1,1,2,1,3]], rh=pats[Math.floor(R.m()*pats.length)], sg=R.m()<0.5?-1:1, steps=[];
     for(let i=0;i<rh.length-1;i++) steps.push(i===0?sg*(1+Math.floor(R.m()*2)):(R.m()<0.6?-Math.sign(steps[i-1])||1:Math.sign(steps[i-1]))*(R.m()<0.7?1:2));
     motif={steps,rh}; return motif;
   }
@@ -864,6 +864,26 @@ function buildEngine(ctx, S, o){
       if(i-k>=0&&pcs.indexOf(((pool[i-k]%12)+12)%12)>=0) return i-k;
     }
     return i;
+  }
+  /* ambiance lente : tempo bas et densité faible appellent des notes tenues et un placement libre ; les danses gardent la grille */
+  const slowE=dens=>clamp((1-dens)*0.6+clamp((90-S.tempo)/50,0,1)*0.5,0,1);
+  /* nettoyage d'une phrase : peu d'unissons (une paire sur dix au plus) et une part de tonique plafonnée, pour que la mélodie bouge et ne s'appuie pas toujours sur le repos */
+  const pcOf=x=>((x%12)+12)%12;
+  function tidy(notes,pool,keepEnd){
+    const n=notes.length; if(n<2) return notes;
+    const ixs=notes.map(nt=>Math.max(0,pool.indexOf(nearest(pool,nt.off)))), last=n-1;
+    const capT=Math.max(1,Math.floor(n*(0.1+0.12*gravE())+0.5));
+    const move=(k,dir)=>{ /* déplace la note k d'un ou deux degrés, dans le sens dir, sans créer d'unisson ni de tonique de plus */
+      for(const st of [dir,-dir,2*dir,-2*dir]){ const j=clamp(ixs[k]+st,0,pool.length-1); if(j===ixs[k]) continue;
+        if(k>0&&j===ixs[k-1]) continue; if(k<last&&j===ixs[k+1]) continue; if(pcOf(pool[j])===0&&pcOf(pool[ixs[k]])!==0) continue;
+        ixs[k]=j; return true; }
+      return false; };
+    for(let k=1;k<n;k++){
+      if(ixs[k]===ixs[k-1]&&R.h()>=0.08){ const dir=k>=2&&ixs[k-1]!==ixs[k-2]?Math.sign(ixs[k-1]-ixs[k-2]):(R.h()<0.5?1:-1); if(!(keepEnd&&k===last&&pcOf(pool[ixs[k]])===0&&move(k-1,-dir))) move(k,dir); }
+    }
+    let nt=0; ixs.forEach((j,k)=>{ if(pcOf(pool[j])===0) nt++; });
+    for(let k=last-(keepEnd?1:0);k>=0&&nt>capT;k--){ if(pcOf(pool[ixs[k]])!==0) continue; const dir=k>0?Math.sign(ixs[k-1]-ixs[k])||1:1; if(move(k,dir)||move(k,-dir)) nt--; }
+    return notes.map((x,k)=>ixs[k]===pool.indexOf(nearest(pool,x.off))?x:{...x,off:pool[ixs[k]]});
   }
   /* machine de Turing : un registre de pas qui boucle ; le verrou dit à quel point chaque pas résiste à la mutation (1 = boucle exacte, 0 = tout est tiré de nouveau) */
   const TM={steps:null,ix:0};
@@ -876,7 +896,7 @@ function buildEngine(ctx, S, o){
       if(st.rest) return;
       const e=i*step, tn=startT+e*E, strong=Math.round((tn-t0)/E)%2===0; let ix=clamp(st.ix,0,pool.length-1);
       if(strong&&modal()) ix=snapTo(pool,ix,chordPcs(chordAt(tn)),2);
-      notes.push({e,off:pool[ix],dE:step,vel:0.13+0.1*st.acc+(strong?0.03:0),grace:false,gdir:1,jit:(R.h()-0.5)*0.01});
+      notes.push({e,off:pool[ix],dE:step,vel:0.09+0.19*st.acc*(strong?1:0.8),grace:false,gdir:1,jit:(R.h()-0.5)*0.01});
     });
     return {notes,end:N*step,gr:0,pool};
   }
@@ -887,13 +907,14 @@ function buildEngine(ctx, S, o){
     const leapW=1.4-0.9*car().aud, grav=gravE(); let sc=0, steps=0, run=1, maxRun=1;
     for(let i=1;i<ix.length;i++){
       const d=ix[i]-ix[i-1], a=Math.abs(d);
-      if(a===0){ run++; maxRun=Math.max(maxRun,run); } else run=1;
+      if(a===0){ run++; maxRun=Math.max(maxRun,run); sc-=1.1; } else run=1;
       if(a<=1) steps++;
       if(a>=4) sc-=leapW*(a-3)*0.5;
       if(i>1){ const pd=ix[i-1]-ix[i-2]; if(Math.abs(pd)>=3) sc+=(Math.sign(d)===-Math.sign(pd)&&a<=2)?1.2:-1.0; }
       if(Math.abs(Math.abs(nts[i].off-nts[i-1].off)-6)<0.01) sc-=1.3;
     }
     if(maxRun>2) sc-=1.5*(maxRun-2);
+    { const nt0=nts.filter(x=>pcOf(x.off)===0).length/nts.length; if(nt0>0.25) sc-=(nt0-0.25)*6; }
     sc-=3*Math.abs(steps/(ix.length-1)-0.6);
     const hi=Math.max(...ix), lo=Math.min(...ix), nHi=ix.filter(v=>v===hi).length, pos=ix.indexOf(hi)/(ix.length-1);
     sc+=nHi===1?1.2:-0.6*(nHi-1); if(pos>=0.25&&pos<=0.8) sc+=1; if(pos===0) sc-=1.5;
@@ -933,8 +954,8 @@ function buildEngine(ctx, S, o){
     if(lastOff.v!==null){ let bi=0,bd=1e9; pool.forEach((p,j)=>{const d=Math.abs(p-lastOff.v); if(d<bd){bd=d;bi=j;}}); i0=bi; } else i0=Math.floor(pool.length/3);
     let idx=snapTo(pool,i0,chordPcs(ch0),3);
     if(type===1) idx=clamp(idx+[1,-1,2][Math.floor(R.m()*3)],0,pool.length-1); /* le motif repris plus haut ou plus bas */
-    const seq=[idx], dEs=[mt.rh[0]];
-    mt.steps.forEach((st,k)=>{ idx=clamp(idx+(type===1&&nPh%8>=4?-st:st),0,pool.length-1); seq.push(idx); dEs.push(mt.rh[k+1]); });
+    const slow=slowE(dens), mul=R.m()<slow*1.1?(R.m()<0.55?2:3):1, seq=[idx], dEs=[mt.rh[0]*mul];
+    mt.steps.forEach((st,k)=>{ idx=clamp(idx+(type===1&&nPh%8>=4?-st:st),0,pool.length-1); seq.push(idx); dEs.push(mt.rh[k+1]*mul); });
     /* suite de la phrase : en arche pour la question, descendante vers le repos pour la réponse */
     const extra=1+Math.floor(R.m()*(1+3*dens)), durs=dens>0.6?[1,1,2,2,3]:[1,2,2,3,4];
     for(let k=0;k<extra;k++){
@@ -948,10 +969,11 @@ function buildEngine(ctx, S, o){
         if(church&&type!==3&&type!==1){ const tx=pcIx(pool,idx,((degOff(ivK,key==="phrygien"?5:4)%12)+12)%12); if(tx!==idx&&R.m()<0.22) st=Math.sign(tx-idx); }
         else if(maqam){ const tg=seyirTarget(pool,startT); if(tg!==idx&&R.m()<0.45) st=Math.sign(tg-idx); }
       }
-      idx=clamp(idx+st,0,pool.length-1); seq.push(idx); dEs.push(durs[Math.floor(R.m()*durs.length)]);
+      idx=clamp(idx+st,0,pool.length-1); seq.push(idx); dEs.push(R.m()<slow*0.8?[3,4,4,6,8][Math.floor(R.m()*5)]:durs[Math.floor(R.m()*durs.length)]);
     }
+    if(R.m()<slow*0.85&&type!==1) dEs[dEs.length-1]=Math.round(barE*[0.75,1,1,2,3][Math.floor(R.m()*5)]); /* la dernière note se tient, parfois sur plusieurs mesures */
     /* notes : temps forts sur les notes de l'accord, fin de phrase sur le repos voulu, silences et nuances de phrase */
-    const notes=[], n=seq.length; let e=0;
+    const notes=[], n=seq.length, lvl=0.4+0.6*R.m(), freeP=0.14+0.75*slow; let e=0;
     for(let k=0;k<n;k++){
       const tn=startT+e*E, ch=chordAt(tn), strong=Math.round((tn-t0)/E)%2===0;
       let ix=seq[k];
@@ -959,12 +981,12 @@ function buildEngine(ctx, S, o){
         if(type===3||R.m()<Math.max(0,gravE()-0.5)*1.2){ const tpc=stab.indexOf(0)>=0?[0]:[stab[0]]; ix=snapTo(pool,ix,tpc,5); }
         else ix=snapTo(pool,ix,type===2?chordPcs(ch).slice(1,3):chordPcs(ch),4);
       } else if(strong) ix=snapTo(pool,ix,chordPcs(ch),2);
-      const arch=0.5+0.5*Math.sin(Math.PI*(k+0.5)/n), vel=(0.14+0.1*arch)*(strong?1.1:0.92)*(type===2?0.95:1)+(R.m()-0.5)*0.03;
-      const grace=R.m()<ornE(), gdir=R.m()<0.5?-1:1, jit=(R.h()-0.5)*(strong?0.008:0.024), trill=ornE()>0.55&&R.m()<(ornE()-0.55)*0.8;
+      const arch=0.5+0.5*Math.sin(Math.PI*(k+0.5)/n), vel=clamp(0.075+0.25*Math.pow(clamp(lvl*(0.45*arch+0.3*(strong?1:0.1)+0.25*R.m())*(type===2?0.9:1)+0.06*tensAt(tn),0,1),0.9),0.07,0.34);
+      const grace=R.m()<ornE(), gdir=R.m()<0.5?-1:1, jit=(R.h()-0.5)*(strong?0.008:0.024)+(k>0&&k<n-1&&!strong&&R.h()<freeP?(R.h()-0.35)*1.1*Math.min(dEs[k-1],3)*E*0.5:0), trill=ornE()>0.55&&R.m()<(ornE()-0.55)*0.8;
       notes.push({e,off:pool[ix],dE:dEs[k],vel,grace,gdir,jit,trill}); e+=dEs[k];
       if(k<n-2&&R.m()<0.3*(1-dens)*silE()) e+=1+Math.floor(R.m()*2); /* un souffle entre deux notes */
     }
-    return {notes,end:e,gr:R.m(),pool};
+    return {notes:tidy(notes,pool,type===3),end:e,gr:R.m(),pool};
   }
   function genPhrase(pool,stab,dens){
     if(lastOff.v!==null){ let bi=0,bd=1e9; pool.forEach((p,j)=>{const d=Math.abs(p-lastOff.v); if(d<bd){bd=d;bi=j;}}); idx=bi; }
@@ -982,7 +1004,7 @@ function buildEngine(ctx, S, o){
           if(idx-k>=0&&stab.indexOf(((pool[idx-k]%12)+12)%12)>=0){idx-=k;break;}
         }
       }
-      const dE=durs[Math.floor(R.m()*6)], vel=0.16+R.m()*0.1, grace=R.m()<ornE(), gdir=R.m()<0.5?-1:1;
+      const dE=durs[Math.floor(R.m()*6)], vel=0.09+R.m()*0.22, grace=R.m()<ornE(), gdir=R.m()<0.5?-1:1;
       notes.push({e,off:pool[idx],dE,vel,grace,gdir}); e+=dE;
     }
     return {notes,end:e,gr:R.m(),pool};
@@ -1059,7 +1081,7 @@ function buildEngine(ctx, S, o){
       const sc=secOf(cur.mel), iv=ivOf(S,sc.key), stab=stableOf(iv), I=inten(cur.mel);
       const evo=S.form.shape==="constante"?0:(I-0.5)*S.form.amount;
       const dens=clamp(S.mel.dens+evo+(tensAt(cur.mel)-0.5)*0.6+(formE()==='passacaille'?0.07*(Math.floor(cpos/4)%6):0)+0.4*dv("densite"),0,1);
-      const shift=arcOn()?Math.round(arcAt(cur.mel)*10):0, lo=12+12*S.mel.reg+shift, hi=lo+12*S.mel.span, pool=poolOf(iv,lo,hi);
+      const shift=arcOn()?Math.round(arcAt(cur.mel)*6):0, lo=12+12*S.mel.reg+shift, hi=lo+12*S.mel.span, pool=poolOf(iv,lo,hi);
       if(!pool.length){cur.mel+=bar; continue;}
       const genRaw=modal()?(()=>genPhraseModal(pool,stab,dens,cur.mel,sc.i)):(()=>genPhrase(pool,stab,dens)), gen=()=>bestOf(genRaw,pool,stab);
       let ph=formE()==='libre'?recall(memM,nPhrase++,Math.max(1,Math.round(S.mel.loop)),dejaE(),R.m,gen):formPhrase(formE(),gen,pool,cur.mel,dens);
@@ -1069,6 +1091,7 @@ function buildEngine(ctx, S, o){
         if(modal()){ /* et sur l'accord du moment : temps forts et dernière note */
           const last=ph.notes.length-1;
           ph.notes=ph.notes.map((n,k)=>{ const tn=cur.mel+n.e*E, strong=Math.round((tn-t0)/E)%2===0; if(!strong&&k!==last) return n; const ci=pool.indexOf(n.off), ix=snapTo(pool,ci<0?0:ci,chordPcs(chordAt(tn)),k===last?4:2); return {...n,off:pool[ix]}; });
+          ph.notes=tidy(ph.notes,pool,false);
         }
       }
       let t=cur.mel;
@@ -1077,7 +1100,7 @@ function buildEngine(ctx, S, o){
         const C=S.chance||{}, cSkip=R.c(), cMut=R.c(), cDir=R.c(), cMag=R.c(), cOct=R.c(), cOd=R.c(), cRat=R.c(), cRn=R.c();
         let off=nt.off;
         if(cMut<(C.mutate||0)){ const ci=Math.max(0,pool.indexOf(nearest(pool,off))); off=pool[clamp(ci+(cDir<0.5?-1:1)*(cMag<0.3?2:1),0,pool.length-1)]; }
-        if(cOct<(C.octave||0)) off+=(cOd<0.5?-12:12);
+        if(cOct<(C.octave||0)){ const up=off+12<=pool[pool.length-1], dn=off-12>=pool[0]; if(up&&(cOd<0.5||!dn)) off+=12; else if(dn) off-=12; }
         const skipped=cSkip<(C.skip||0), rat=cRat<(C.ratchet||0)?2+Math.floor(cRn*2):1;
         const tt=sw(cur.mel+nt.e*E)+(nt.jit||0), vel=nt.vel, len=E*nt.dE*0.92;
         if(!skipped&&want("mel")&&S.mel.lvl>0.001){
@@ -1105,7 +1128,15 @@ function buildEngine(ctx, S, o){
       if(ch.sched||ch.t>=until) continue;
       ch.sched=true; lastD=ch.d;
       if(M&&want("pad")&&S.pad.lvl>0.001){
-        ch.offs.forEach(off=>{padVoice(ch.t,ch.len,freq(off),S.pad.timbre); rec(2,ch.t,off,ch.len,0.3); if(o.onNote) o.onNote(ch.t,off,"pad",ch.len,0.3);});
+        const stg=clamp(S.pad.stag===undefined?0.5:S.pad.stag,0,1), bs=clamp(S.pad.bass===undefined?0.5:S.pad.bass,0,1), n=ch.iv.length, vs=ch.offs.slice().sort((a,b)=>a-b);
+        const put=(t,len,off)=>{ padVoice(t,len,freq(off),S.pad.timbre); rec(2,t,off,len,0.3); if(o.onNote) o.onNote(t,off,"pad",len,0.3); };
+        vs.forEach((off,i)=>{
+          /* chaque voix entre à son tour ; la voix du milieu change parfois de note en cours d'accord */
+          const dl=stg*ch.len*0.3*(i+R.s()*0.6)/Math.max(1,vs.length-1), len=Math.max(bar*0.5,ch.len-dl+(R.s()<stg*0.5?bar*(0.5+R.s()):0)), mid=i>0&&i<vs.length-1&&R.s()<stg*0.7;
+          if(mid){ const j=ch.iv.map(x=>x+12*Math.round((off-x)/12)).sort((a,b)=>Math.abs(a-off)-Math.abs(b-off)), nb=j.find(x=>x!==off&&Math.abs(x-off)<=3), cut=len*(0.4+0.25*R.s()); if(nb!==undefined&&!vs.includes(nb)){ put(ch.t+dl,cut,off); put(ch.t+dl+cut,len-cut,nb); return; } }
+          put(ch.t+dl,len,off);
+        });
+        if(bs>0.02){ const root=ch.iv[ch.d%n]||0, bo=root; padVoice(ch.t,ch.len,freq(bo),"orgue",0.5+bs); rec(2,ch.t,bo,ch.len,0.3*bs); if(o.onNote) o.onNote(ch.t,bo,"pad",ch.len,0.3*bs); }
       }
     }
     /* bourdon : la quinte glisse vers un degré voisin */

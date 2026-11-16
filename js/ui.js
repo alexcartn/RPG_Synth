@@ -5,7 +5,7 @@
 const $=id=>document.getElementById(id);
 let live=null, timer=null, raf=0, lastFrame=0;
 
-function getP(path){return path.split(".").reduce((a,k)=>a[k],S);}
+function getP(path){ try{ return path.split(".").reduce((a,k)=>a[k],S); }catch(e){ return undefined; } }
 function setP(path,v){const ks=path.split("."); const last=ks.pop(); ks.reduce((a,k)=>a[k],S)[last]=v;}
 
 /* planification : 4 secondes d'avance quand la page est visible (réglages presque immédiats), 10 en arrière-plan */
@@ -388,7 +388,7 @@ function updateTempo(){ $("tempoNum").textContent=S.tempo; $("tempoCap").textCon
 /* préréglages et scènes : chaque changement se fait par fondu enchaîné quand la lecture tourne */
 const fadeSec=()=>parseFloat($("fade").value)||4;
 function loadScene(state,btn,fade){
-  S=merge(clone(DEFAULT),clone(state));
+  S=merge(clone(DEFAULT),clone(state)); normS();
   document.querySelectorAll("#presets .lnk,#scenes .lnk").forEach(x=>x.removeAttribute("aria-current"));
   if(btn) btn.setAttribute("aria-current","true");
   syncUI(); restartIfLive(fade||fadeSec());

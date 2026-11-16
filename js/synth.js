@@ -7,7 +7,7 @@
 const SYN_WAVES=["Sinus","Triangle","Dent de scie","Carré","Impulsion étroite","Orgue","Voyelle","Creux","Cloche","Corde","Dentelle","Verre","Dessinée"];
 const SYN_DRAW=64;
 const SYN_SRC=[["none","Aucune"],["lfo1","LFO 1"],["lfo2","LFO 2"],["lfo3","LFO 3"],["env1","Enveloppe de volume"],["env2","Enveloppe 2"],["vel","Vélocité"],["key","Hauteur de la note"],["rand","Hasard (par note)"]];
-const SYN_DST=[["pitch","Hauteur"],["cutoff","Coupure du filtre"],["reso","Résonance"],["amp","Volume (trémolo)"],["pan","Panoramique"],["fm","Quantité de FM"],["detuneb","Désaccord de B"],["wave","Table d'ondes de A (fondu)"],["lvlb","Niveau de B"]];
+const SYN_DST=[["pitch","Hauteur"],["cutoff","Coupure du filtre"],["reso","Résonance"],["amp","Volume (trémolo)"],["pan","Panoramique"],["fm","Quantité de FM"],["detuneb","Désaccord de B"],["wave","Fondu de table (A)"],["lvlb","Niveau de B"]];
 
 const SYN_DEFAULT={
   oscA:{wave:0.34, oct:0, semi:0, det:0, lvl:0.8, uni:3, spread:14, width:0.6},
@@ -23,7 +23,7 @@ const SYN_DEFAULT={
   lfo2:{shape:"triangle", rate:5},
   lfo3:{shape:"triangle", rate:0.5},
   mod:[{src:"lfo1",dst:"cutoff",amt:0.25},{src:"lfo2",dst:"pitch",amt:0.02},{src:"none",dst:"amp",amt:0},{src:"vel",dst:"cutoff",amt:0.3},{src:"none",dst:"wave",amt:0},{src:"none",dst:"cutoff",amt:0},{src:"none",dst:"pan",amt:0},{src:"none",dst:"lvlb",amt:0}],
-  mono:{on:false, glide:0.08},
+  mono:{on:0, glide:0.08},
   draw:Array.from({length:64},(_,i)=>{ const th=i/64*2*Math.PI; return Math.sin(th)*0.8+Math.sin(3*th)*0.25-Math.sin(5*th)*0.1; }), drawV:0,
   rack:{chorus:{mix:0,rate:0.6,depth:0.5}, delay:{mix:0,time:0.32,fb:0.4}, rev:{mix:0}, eq:{lo:0,mid:0,hi:0}, comp:{amt:0}},
   vel:{amt:0.6},

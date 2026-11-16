@@ -158,7 +158,7 @@ function buildExport(host){
   $("exp").onclick=doExport;
   sec.querySelector("details").addEventListener("toggle",()=>{ $("codeOut").value=codeOf(); });
   $("copyCode").onclick=async()=>{ $("codeOut").value=codeOf(); try{ await navigator.clipboard.writeText($("codeOut").value); status("Code copié.","ok"); }catch(e){ $("codeOut").select(); status("Copie automatique refusée : sélectionne le code et copie-le à la main."); } };
-  $("loadCode").onclick=()=>{ try{ S=merge(clone(DEFAULT),fromCode($("codeIn").value)); syncUI(); restartIfLive(); status("Réglages chargés.","ok"); }catch(e){ status("Code illisible.","err"); } };
+  $("loadCode").onclick=()=>{ try{ S=merge(clone(DEFAULT),fromCode($("codeIn").value)); normS(); syncUI(); restartIfLive(); status("Réglages chargés.","ok"); }catch(e){ status("Code illisible.","err"); } };
 }
 
 async function doExport(){

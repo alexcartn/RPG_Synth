@@ -482,12 +482,13 @@ body.daw .score{margin-bottom:var(--sp-sm)}
 .dw-grid{display:grid; grid-template-columns:minmax(0,1.05fr) minmax(0,1.25fr); gap:var(--sp-xl); align-items:start}
 .dw-mix{display:flex; flex-direction:column; gap:2px; min-width:0}
 .dw-head, .dw-row{display:grid; grid-template-columns:12px minmax(7ch,1.1fr) minmax(12ch,1.4fr) minmax(5ch,1fr) minmax(4ch,.7fr) 26px 26px minmax(8ch,.9fr) 22px; align-items:center; gap:var(--sp-xs) var(--sp-sm)}
-.dw-head{border-left:3px solid transparent; font:400 .72rem/1 var(--caps); letter-spacing:.08em; color:var(--ink-2); padding:0 var(--sp-xs) var(--sp-xs)}
+.dw-head{font:400 .72rem/1 var(--caps); letter-spacing:.08em; color:var(--ink-2); padding:0 var(--sp-xs) var(--sp-xs)}
 .dw-sec{display:flex; justify-content:space-between; align-items:baseline; font:italic 400 1rem/1 var(--body); color:var(--rubric); margin:var(--sp-md) 0 var(--sp-xs); padding-top:var(--sp-sm); border-top:1px solid var(--rule)}
-.dw-row{padding:5px var(--sp-xs); border-left:3px solid transparent}
+.dw-row{padding:5px var(--sp-xs)}
 .dw-row.trk{cursor:pointer}
 .dw-row.trk:hover{background:var(--parch-2)}
-.dw-row.sel{background:var(--parch-3); border-left-color:var(--rubric)}
+.dw-row.sel{background:var(--parch-3); box-shadow:inset 0 0 0 1px var(--rule)}
+.dw-row.sel .dot{box-shadow:0 0 0 3px var(--parch-3), 0 0 0 4px var(--rubric)}
 .dw-row .dot{width:10px; height:10px; border-radius:50%}
 .dw-row .nm{font:400 .95rem/1.1 var(--body); min-width:0}
 .dw-row input.nm{background:transparent; border:0; border-bottom:1px solid transparent; padding:2px 0; color:var(--ink)}
@@ -520,3 +521,54 @@ body.daw .score{margin-bottom:var(--sp-sm)}
 .dw-sbar{display:flex; flex-wrap:wrap; align-items:center; gap:var(--sp-sm) var(--sp-lg); margin-bottom:var(--sp-sm); font:400 .85rem/1 var(--caps); letter-spacing:.06em; color:var(--ink-2)}
 .dw-sbar label{display:flex; align-items:center; gap:var(--sp-xs)}
 #dawSeq{display:block; width:100%; touch-action:none; user-select:none; cursor:crosshair; border:1px solid var(--rule); background:var(--parch)}
+
+/* ---------- curseurs plus grands : piste fine, poignée facile à saisir ---------- */
+input[type=range]{height:34px}
+input[type=range]::-webkit-slider-runnable-track{height:3px; background:var(--ink)}
+input[type=range]::-moz-range-track{height:3px; background:var(--ink)}
+input[type=range]::-webkit-slider-thumb{width:20px; height:20px; margin-top:-8.5px; transition:transform .12s var(--ease), background-color .12s var(--ease)}
+input[type=range]::-moz-range-thumb{width:18px; height:18px}
+input[type=range]:hover::-webkit-slider-thumb{background:var(--rubric-d); transform:rotate(45deg) scale(1.12)}
+input[type=range]:focus-visible{outline:none}
+input[type=range]:focus-visible::-webkit-slider-thumb{outline:2px solid var(--gold); outline-offset:3px}
+.dw-row input[type=range]{height:28px}
+@media (pointer:coarse){ input[type=range]{height:44px} }
+
+/* ---------- atelier : speculum, matrice et rack ---------- */
+.at-scope{padding:var(--sp-md) 0 var(--sp-lg); border-bottom:1px solid var(--rule)}
+.at-scbar{display:flex; flex-wrap:wrap; align-items:baseline; gap:var(--sp-sm) var(--sp-xl); margin-bottom:var(--sp-sm)}
+.at-scbar h3{margin:0; font:400 .98rem/1 var(--caps); letter-spacing:.14em; text-transform:lowercase; color:var(--rubric)}
+.at-scbar h3 .fr{margin-left:var(--sp-sm); font:italic 400 .98rem/1 var(--body); letter-spacing:0; color:var(--ink-2); text-transform:none}
+.at-tabs{display:flex; gap:var(--sp-xl)}
+.at-tabs .lnk{font:italic 400 1.05rem/1 var(--body); color:var(--ink-2); padding:var(--sp-xs) 0; border-bottom:2px solid transparent}
+.at-tabs .lnk[aria-pressed="true"]{color:var(--ink); border-bottom-color:var(--rubric)}
+.at-sel{display:inline-flex; align-items:baseline; gap:var(--sp-sm); font:400 .82rem/1 var(--caps); letter-spacing:.08em; color:var(--ink-2)}
+.at-sel select{font-size:.95rem; letter-spacing:0}
+.at-read{margin-left:auto; font:italic 400 1rem/1 var(--body); color:var(--ink-2); font-variant-numeric:tabular-nums}
+#atScope{display:block; width:100%; height:150px; background:var(--parch-2); border:1px solid var(--rule); touch-action:none}
+.at-grid{gap:var(--sp-xl) var(--sp-2xl)}
+.atelier .knob svg{max-width:72px}
+.atelier .knob .kl{font-size:.82rem}
+.atelier .knob .kv{font-size:1rem}
+.at-dr{display:flex; flex-wrap:wrap; gap:var(--sp-xs) var(--sp-lg)}
+#atDrawCv{cursor:crosshair; touch-action:none}
+canvas#atWA, canvas#atWB{cursor:ew-resize; touch-action:none}
+.at-wide{margin-top:var(--sp-2xl)}
+.at-slots{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:0 var(--sp-2xl)}
+.at-slots .at-slot{grid-template-columns:2ch minmax(0,1fr)}
+.at-slots .at-slot .fields{grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.15fr); gap:var(--sp-sm) var(--sp-md)}
+.at-slots .at-slot .fields > .ctl:last-child{grid-column:auto}
+.at-slots .at-slot:not(:first-of-type) .ctl > .l label, .at-slots .at-slot:not(:first-of-type) .ctl > label{position:static; width:auto; height:auto; clip:auto; overflow:visible}
+.at-slots .at-slot:nth-of-type(n+3) .ctl > .l label, .at-slots .at-slot:nth-of-type(n+3) .ctl > label{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap}
+.at-slots .at-slot:nth-of-type(n+3) .n{padding-top:6px}
+.at-slots .at-slot:nth-of-type(-n+2) .n{padding-top:22px}
+.at-rack{display:grid; grid-template-columns:repeat(5,auto); gap:var(--sp-lg) var(--sp-2xl); justify-content:start}
+.at-rg h4{margin:0 0 var(--sp-sm); font:italic 400 1.05rem/1 var(--display); color:var(--ink)}
+.at-rg .at-knobs{grid-template-columns:repeat(3,76px); gap:var(--sp-md) var(--sp-sm)}
+.at-rg:nth-child(3) .at-knobs, .at-rg:nth-child(5) .at-knobs{grid-template-columns:repeat(1,76px)}
+@media (max-width:1100px){ .at-slots{grid-template-columns:1fr} .at-slots .at-slot:nth-of-type(n+3) .ctl > .l label, .at-slots .at-slot:nth-of-type(n+3) .ctl > label{position:static; width:auto; height:auto; clip:auto; overflow:visible} .at-rack{grid-template-columns:repeat(2,auto)} }
+@media (max-width:700px){ .at-rack{grid-template-columns:1fr} .at-read{margin-left:0} }
+.at-mod .fields > .ctl:only-child{grid-column:1 / -1}
+.at-slots .at-slot:nth-of-type(n+3) .ctl .l{justify-content:flex-end}
+.at-slots .at-slot .ctl .l output{font-variant-numeric:tabular-nums}
+.at-mod .fields select{width:100%}

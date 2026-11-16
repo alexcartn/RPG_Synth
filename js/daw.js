@@ -25,7 +25,7 @@ function dawUndoUI(){ const b=$("dawUndo"); if(b) b.disabled=!DW.undo.length; }
 function dawReplan(tr){ if(live) live.eng.dawReplan(tr?tr.id:undefined); }
 
 /* ---------- jeu au clavier : l'instrument de la piste choisie, et l'enregistrement ---------- */
-function dawHand(off){ if(S.daw.arp.on) return {release(){}}; return live.eng.dawOn(curTrack(),off,0.7); }
+function dawHand(off,op){ if(S.daw.arp.on) return {release(){}}; return live.eng.dawOn(curTrack(),off,0.7,op); }
 function dawRecOn(id,off){ if(DW.rec&&live&&!S.daw.arp.on) DW.held.set(id,{off,t:live.ctx.currentTime}); }
 function dawRecOff(id){
   const h=DW.held.get(id); if(!h||!live) return; DW.held.delete(id);

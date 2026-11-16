@@ -244,3 +244,6 @@ const PRESETS = UNIVERS.flatMap(u=>u.items.map(([n,s,g])=>[n,s,g,u.id]));
 function clone(o){return JSON.parse(JSON.stringify(o));}
 function merge(a,b){for(const k in b){ if(b[k]&&typeof b[k]==="object"&&!Array.isArray(b[k])){ a[k]=merge(a[k]||{},b[k]); } else a[k]=b[k]; } return a;}
 let S = clone(DEFAULT);
+
+/* d'anciennes scènes n'ont que quatre emplacements de modulation : on complète jusqu'à huit */
+function normS(){ if(S.syn&&S.syn.mod){ const dm=SYN_DEFAULT.mod; while(S.syn.mod.length<8) S.syn.mod.push({...dm[S.syn.mod.length]}); } return S; }

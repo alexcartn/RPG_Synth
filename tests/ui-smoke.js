@@ -89,6 +89,8 @@ setTimeout(async()=>{
  console.log('atelier : notes tenues',w.eval('AT.notes.size')); d.getElementById('atPanic').click();
  d.getElementById('atMach').click(); console.log('atelier : machine en sourdine',w.eval('S.mach===false')); d.getElementById('atMach').click();
  w.eval('live.eng.synOn(0,0.7).release()');
+ w.eval('S.syn.fil.type="lowpass24"; S.syn.oscA.wave=1; S.syn.oscB.lvl=0.4; S.syn.mod[4]={src:"lfo3",dst:"wave",amt:0.6}; S.syn.mod[5]={src:"key",dst:"lvlb",amt:0.4}; S.syn.mono.on=1; S.syn.rack.chorus.mix=0.4; S.syn.rack.delay.mix=0.3; S.syn.rack.rev.mix=0.3; S.syn.rack.comp.amt=0.5; live.eng.setLevels(); live.eng.synOn(3,0.7,{fromOff:0,glide:0.1}).release(); atScopeDraw(); S.syn.fil.type="lowpass"; S.syn.mod[4]={src:"none",dst:"wave",amt:0}; S.syn.mono.on=0; S.syn.oscB.lvl=0;');
+ console.log('atelier : tables',w.eval('SYN_WAVES.length'),'| modulations',w.eval('S.syn.mod.length'),'| rack',w.eval('Object.keys(S.syn.rack).join(",")'),'| ancienne scène complétée',w.eval('(()=>{ const o=S; S=merge(clone(DEFAULT),{syn:{mod:[{src:"none",dst:"pitch",amt:0}]}}); normS(); const n=S.syn.mod.length; S=o; return n; })()'));
  d.getElementById('reglBtn').click();
  // météo : mappage et effet sur l'énergie
  console.log('météo :',JSON.stringify(w.eval('wxMap({weather_code:63,rain:1.6,cloud_cover:95,wind_speed_10m:32,is_day:0,temperature_2m:9})')),'|',w.eval('wxText(wxMap({weather_code:95,rain:0,cloud_cover:100,wind_speed_10m:10,is_day:1,temperature_2m:20}))'));

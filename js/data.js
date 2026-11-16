@@ -100,7 +100,7 @@ const DEFAULT = {
   form:{shape:"constante", period:4, amount:0.5},
   wx:{place:null, d:null, t:0},
   mach:true,
-  daw:{sel:0, grid:1, rec:-1, arp:{on:false, mode:"up", rate:0.5, oct:2, gate:0.7}, mix:{mute:{}, solo:{}}, tracks:[
+  daw:{sel:0, grid:1, rec:-1, arp:{on:false, mode:"up", rate:0.5, oct:2, gate:0.7}, mix:{mute:{}, solo:{}, pan:{}}, tracks:[
     {id:1,name:"Piste 1",inst:"atelier",vol:0.8,pan:0,mute:false,solo:false,bars:2,notes:[]},
     {id:2,name:"Piste 2",inst:"luth",vol:0.8,pan:-0.2,mute:false,solo:false,bars:2,notes:[]},
     {id:3,name:"Piste 3",inst:"flute",vol:0.8,pan:0.2,mute:false,solo:false,bars:4,notes:[]}]},

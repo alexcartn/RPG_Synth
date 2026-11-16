@@ -72,7 +72,7 @@ setTimeout(async()=>{
  for(const k of ['pluie','mer','nuit','ruisseau','oiseaux']){ const e=d.getElementById('c_nature_'+k); e.value='0'; e.dispatchEvent(new w.Event('input')); e.dispatchEvent(new w.Event('change')); }
  // mode Conduire : boutons, pad XY, cercle jouable, clavier, figer, replanification
  d.getElementById('jeuBtn').click(); await new Promise(r=>setTimeout(r,150));
- { const st=d.querySelectorAll('#jeuMixer .dw-strip').length; console.log('jeu : mixeur, voies',st,'| faders',d.querySelectorAll('#jeuMixer input.vert').length); if(st<8){ console.log('ECHEC mixeur absent de Conduire'); process.exit(1); } }
+ { const st=d.querySelectorAll('#jeuMixer .dw-strip').length, pn=d.querySelectorAll('#jeuMixer input.pan').length; console.log('jeu : mixeur, voies',st,'| pans',pn,'| faders',d.querySelectorAll('#jeuMixer input.vert').length); if(st!==7||pn!==7){ console.log('ECHEC mixeur de Conduire : 7 voies de la machine avec pan, sans piste vide d\'Arranger'); process.exit(1); } }
  console.log('jeu : actif',w.eval('JEU.on'),'| boutons',d.querySelectorAll('#knobs .knob').length,'| cercle déplacé',!!d.querySelector('#ringSlot .ringwrap'));
  {const kb=d.querySelector('#knobs .knob'); const v0=w.eval('S.vol'); kb.dispatchEvent(new w.KeyboardEvent('keydown',{key:'ArrowDown',bubbles:true})); console.log('bouton au clavier : volume',v0,'→',w.eval('S.vol.toFixed(2)'),'| curseur du chapitre',d.getElementById('c_vol').value);}
  d.dispatchEvent(new w.KeyboardEvent('keydown',{code:'KeyZ',key:'w',bubbles:true})); d.dispatchEvent(new w.KeyboardEvent('keydown',{code:'KeyA',key:'q',bubbles:true}));

@@ -171,10 +171,10 @@ function buildEngine(ctx, S, o){
 
   /* bus */
   function bus(rev,dly){
-    const lvl=G(1), tm=G(1), gs=G(1), it=G(1); lvl.connect(tm); tm.connect(gs); gs.connect(it); it.connect(out);
+    const lvl=G(1), tm=G(1), gs=G(1), it=G(1), pn=PAN(0); lvl.connect(tm); tm.connect(gs); gs.connect(it); it.connect(pn); pn.connect(out);
     const rs=G(rev); it.connect(rs); rs.connect(revIn);
     if(dly){const ds=G(dly); it.connect(ds); ds.connect(dIn);}
-    return {in:lvl, lvl, tm, gs, it};
+    return {in:lvl, lvl, tm, gs, it, pn};
   }
   const B={drone:bus(0.45,0.1), mel:bus(0.9,1), pad:bus(0.8,0.6), perc:bus(0.2,0), amb:bus(0.3,0), loops:bus(0.9,0.8), pend:bus(0.9,0.7), play:bus(0.85,0.9), daw:bus(0.7,0.6)};
   const canonG=G(0); const lCanon=link(canonG,B.mel.it);
@@ -260,6 +260,7 @@ function buildEngine(ctx, S, o){
   const trkOn=t=>!t.mute&&(!anySolo()||!!t.solo);
   function setLevels(){
     const lv=(n,v)=>(want(n)&&mach()&&mixOn(n))?v:0;
+    { const pp=(DAW().mix||{}).pan||{}; ["drone","mel","pad","perc","loops","pend","amb"].forEach(n=>{ const p=B[n].pn.pan; if(p) p.value=clamp(pp[n]||0,-1,1); }); }
     B.drone.lvl.gain.value=lv("drone",S.drone.lvl);
     B.mel.lvl.gain.value=lv("mel",S.mel.lvl);
     canonG.gain.value=lv("mel",S.canon.lvl);
@@ -443,6 +444,7 @@ function buildEngine(ctx, S, o){
   function route(node,pan,dst){const p=PAN(pan); node.connect(p); p.connect(dst);}
   function envA(t,a,peak,rel,len){const e=G(0); e.gain.setValueAtTime(0,t); e.gain.linearRampToValueAtTime(peak,t+a); e.gain.setValueAtTime(peak,t+Math.max(a,len)); e.gain.linearRampToValueAtTime(0,t+len+rel); return e;}
   function envD(t,peak,dur){const e=G(0); e.gain.setValueAtTime(0,t); e.gain.linearRampToValueAtTime(peak,t+0.006); e.gain.exponentialRampToValueAtTime(0.0001,t+dur); return e;}
+  const bri=v=>clamp(v/0.2,0.3,1.8); /* 1 = nuance moyenne ; plus fort, plus de partiels aigus */
   const INST={
     luth(t,f,vel,len,dst,pan){
       const dur=2.8, o1=ctx.createOscillator(), o2=ctx.createOscillator(), o3=ctx.createOscillator();
@@ -463,11 +465,11 @@ function buildEngine(ctx, S, o){
     flute(t,f,vel,len,dst,pan){
       const L=Math.max(0.18,len), o1=ctx.createOscillator(), o2=ctx.createOscillator(), o3=ctx.createOscillator();
       o1.type="sine"; o2.type="sine"; o3.type="sine"; o1.frequency.value=f; o2.frequency.value=f*2; o3.frequency.value=f*3;
-      const g2=G(0.14), g3=G(0.05), mix=G(1);
+      const g2=G(0.14*bri(vel)), g3=G(0.05*bri(vel)*bri(vel)), mix=G(1);
       o1.connect(mix); o2.connect(g2); g2.connect(mix); o3.connect(g3); g3.connect(mix);
       const vib=ctx.createOscillator(); vib.frequency.value=5.1; const vg=G(0); vib.connect(vg); [o1,o2,o3].forEach(o=>vg.connect(o.detune));
       vg.gain.setValueAtTime(0,t); vg.gain.linearRampToValueAtTime(9,t+L*0.7);
-      const br=ctx.createBufferSource(); br.buffer=wb; const bp=ctx.createBiquadFilter(); bp.type="bandpass"; bp.frequency.value=Math.min(9000,f*2.2); bp.Q.value=1.4;
+      const br=ctx.createBufferSource(); br.buffer=wb; const bp=ctx.createBiquadFilter(); bp.type="bandpass"; bp.frequency.value=Math.min(9000,f*2.2*bri(vel)); bp.Q.value=1.4;
       const bg=G(vel*0.5); br.connect(bp); bp.connect(bg); bg.connect(mix);
       const e=envA(t,0.07,vel*1.0,0.16,L); mix.connect(e); route(e,pan,dst);
       br.start(t,R.v()*1.4); br.stop(t+L+0.3);
@@ -475,8 +477,8 @@ function buildEngine(ctx, S, o){
     },
     carillon(t,f,vel,len,dst,pan){
       const sum=G(1);
-      [[1,1,3.8],[2.76,0.45,2.2],[5.4,0.22,1.3],[8.93,0.1,0.7]].forEach(([m,a,d])=>{
-        if(f*m>12000) return;
+      [[1,1,3.8],[2.76,0.45,2.2],[5.4,0.22,1.3],[8.93,0.1,0.7]].forEach(([m,a0,d])=>{
+        const a=m>1?a0*Math.pow(bri(vel),1.5):a0; if(f*m>12000) return;
         const os=ctx.createOscillator(); os.type="sine"; os.frequency.value=f*m;
         const e=envD(t,vel*a*1.1,d); os.connect(e); e.connect(sum); os.start(t); os.stop(t+d+0.1);
       });
@@ -484,24 +486,24 @@ function buildEngine(ctx, S, o){
     },
     bol(t,f,vel,len,dst,pan){
       const sum=G(1);
-      [[1,1,7,-3],[1,0.8,7,3],[2.71,0.3,5,0],[5.15,0.1,3.4,0]].forEach(([m,a,d,det])=>{
-        if(f*m>12000) return; const x=ctx.createOscillator(); x.type="sine"; x.frequency.value=f*m; x.detune.value=det;
+      [[1,1,7,-3],[1,0.8,7,3],[2.71,0.3,5,0],[5.15,0.1,3.4,0]].forEach(([m,a0,d,det])=>{
+        const a=m>1?a0*Math.pow(bri(vel),1.5):a0; if(f*m>12000) return; const x=ctx.createOscillator(); x.type="sine"; x.frequency.value=f*m; x.detune.value=det;
         const e=G(0); e.gain.setValueAtTime(0,t); e.gain.linearRampToValueAtTime(vel*a*0.9,t+0.012); e.gain.exponentialRampToValueAtTime(0.0001,t+d); x.connect(e); e.connect(sum); x.start(t); x.stop(t+d+0.1);
       });
       route(sum,pan,dst);
     },
     verre(t,f,vel,len,dst,pan){
       const sum=G(0.9), tr=ctx.createOscillator(), tg=G(0.1); tr.frequency.value=5.6; tr.connect(tg); tg.connect(sum.gain);
-      [[1,1,5],[2.76,0.26,3.2],[5.4,0.09,2]].forEach(([m,a,d])=>{
-        if(f*m>12000) return; const x=ctx.createOscillator(); x.type="sine"; x.frequency.value=f*m;
+      [[1,1,5],[2.76,0.26,3.2],[5.4,0.09,2]].forEach(([m,a0,d])=>{
+        const a=m>1?a0*Math.pow(bri(vel),1.5):a0; if(f*m>12000) return; const x=ctx.createOscillator(); x.type="sine"; x.frequency.value=f*m;
         const e=G(0); e.gain.setValueAtTime(0,t); e.gain.linearRampToValueAtTime(vel*a*1.05,t+0.04); e.gain.exponentialRampToValueAtTime(0.0001,t+d); x.connect(e); e.connect(sum); x.start(t); x.stop(t+d+0.1);
       });
       tr.start(t); tr.stop(t+5.2); route(sum,pan,dst);
     },
     kalimba(t,f,vel,len,dst,pan){
       const sum=G(1);
-      [[1,1,1.9],[2,0.18,0.9],[5.4,0.3,0.45]].forEach(([m,a,d])=>{
-        if(f*m>12000) return; const x=ctx.createOscillator(); x.type="sine"; x.frequency.value=f*m; const e=envD(t,vel*a*1.2,d); x.connect(e); e.connect(sum); x.start(t); x.stop(t+d+0.1);
+      [[1,1,1.9],[2,0.18,0.9],[5.4,0.3,0.45]].forEach(([m,a0,d])=>{
+        const a=m>1?a0*Math.pow(bri(vel),1.5):a0; if(f*m>12000) return; const x=ctx.createOscillator(); x.type="sine"; x.frequency.value=f*m; const e=envD(t,vel*a*1.2,d); x.connect(e); e.connect(sum); x.start(t); x.stop(t+d+0.1);
       });
       route(sum,pan,dst);
     },
@@ -518,17 +520,17 @@ function buildEngine(ctx, S, o){
     ney(t,f,vel,len,dst,pan){
       const L=Math.max(0.3,len), o1=ctx.createOscillator(), o2=ctx.createOscillator(), mix=G(1);
       o1.type="sine"; o2.type="triangle"; o1.frequency.setValueAtTime(f*0.96,t); o1.frequency.exponentialRampToValueAtTime(f,t+0.14); o2.frequency.setValueAtTime(f*0.96*2,t); o2.frequency.exponentialRampToValueAtTime(f*2,t+0.14);
-      const g2=G(0.12); o1.connect(mix); o2.connect(g2); g2.connect(mix);
+      const g2=G(0.12*bri(vel)); o1.connect(mix); o2.connect(g2); g2.connect(mix);
       const vib=ctx.createOscillator(); vib.frequency.value=4.7; const vg=G(0); vib.connect(vg); vg.connect(o1.detune); vg.connect(o2.detune);
       vg.gain.setValueAtTime(0,t); vg.gain.linearRampToValueAtTime(14,t+L*0.8);
-      const br=ctx.createBufferSource(); br.buffer=wb; const bp=ctx.createBiquadFilter(); bp.type="bandpass"; bp.frequency.value=Math.min(9000,f*2.4); bp.Q.value=2;
+      const br=ctx.createBufferSource(); br.buffer=wb; const bp=ctx.createBiquadFilter(); bp.type="bandpass"; bp.frequency.value=Math.min(9000,f*2.4*bri(vel)); bp.Q.value=2;
       const bg=G(vel*0.75); br.connect(bp); bp.connect(bg); bg.connect(mix);
       const e=envA(t,0.12,vel,0.25,L); mix.connect(e); route(e,pan,dst);
       br.start(t,R.v()*1.4); br.stop(t+L+0.4); [o1,o2,vib].forEach(x=>{x.start(t); x.stop(t+L+0.4);});
     },
     synthe(t,f,vel,len,dst,pan){
       const L=Math.max(0.6,len), fl=ctx.createBiquadFilter(); fl.type="lowpass"; fl.Q.value=0.7;
-      fl.frequency.setValueAtTime(900,t); fl.frequency.linearRampToValueAtTime(1500,t+L*0.4); fl.frequency.linearRampToValueAtTime(700,t+L+0.8);
+      { const b=bri(vel); fl.frequency.setValueAtTime(900*b,t); fl.frequency.linearRampToValueAtTime(1500*b,t+L*0.4); fl.frequency.linearRampToValueAtTime(700*b,t+L+0.8); }
       const e=envA(t,0.25,vel*0.7,0.8,L); fl.connect(e); route(e,pan,dst);
       [-8,8].forEach(det=>{ const x=ctx.createOscillator(); x.type="sawtooth"; x.frequency.value=f; x.detune.value=det; x.connect(fl); x.start(t); x.stop(t+L+1); });
     },
@@ -542,7 +544,7 @@ function buildEngine(ctx, S, o){
       vib.start(t); vib.stop(t+L+0.4);
     },
     archet(t,f,vel,len,dst,pan){
-      const L=Math.max(0.3,len), fl=ctx.createBiquadFilter(); fl.type="lowpass"; fl.Q.value=0.8; fl.frequency.setValueAtTime(Math.min(1500,f*3),t); fl.frequency.linearRampToValueAtTime(Math.min(3800,f*6+1200),t+0.25);
+      const L=Math.max(0.3,len), fl=ctx.createBiquadFilter(); fl.type="lowpass"; fl.Q.value=0.8; fl.frequency.setValueAtTime(Math.min(1500,f*3)*bri(vel),t); fl.frequency.linearRampToValueAtTime(Math.min(3800,f*6+1200)*bri(vel),t+0.25);
       const e=envA(t,0.18,vel*0.8,0.3,L); fl.connect(e); route(e,pan,dst);
       const vib=ctx.createOscillator(); vib.frequency.value=5.2; const vg=G(0); vib.connect(vg); vg.gain.setValueAtTime(0,t); vg.gain.linearRampToValueAtTime(9,t+Math.min(1.5,L*0.7));
       [-7,0,7].forEach(d=>{ const x=ctx.createOscillator(); x.type="sawtooth"; x.frequency.value=f; x.detune.value=d; vg.connect(x.detune); x.connect(fl); x.start(t); x.stop(t+L+0.5); });
@@ -550,7 +552,7 @@ function buildEngine(ctx, S, o){
     },
     orgue(t,f,vel,len,dst,pan){
       const L=Math.max(0.2,len), mix=G(1), os=[];
-      [[1,1],[2,0.45],[4,0.25]].forEach(([m,a])=>{const x=ctx.createOscillator(); x.type="sine"; x.frequency.value=f*m; const g=G(a); x.connect(g); g.connect(mix); os.push(x);});
+      [[1,1],[2,0.45],[4,0.25]].forEach(([m,a])=>{const x=ctx.createOscillator(); x.type="sine"; x.frequency.value=f*m; const g=G(m>1?a*Math.pow(bri(vel),1.3):a); x.connect(g); g.connect(mix); os.push(x);});
       const e=envA(t,0.03,vel*0.85,0.14,L); mix.connect(e); route(e,pan,dst);
       const br=ctx.createBufferSource(); br.buffer=wb; const hp=ctx.createBiquadFilter(); hp.type="highpass"; hp.frequency.value=2500;
       const cg=G(0); cg.gain.setValueAtTime(vel*0.4,t); cg.gain.exponentialRampToValueAtTime(0.0001,t+0.05); br.connect(hp); hp.connect(cg); cg.connect(e);
@@ -603,7 +605,7 @@ function buildEngine(ctx, S, o){
   function wgPlay(kind,t,f,vel,len,dst,pan,o2,gain,scoop){
     const w=wgBuf(kind,f,vel,len+0.2,o2), x=ctx.createBufferSource(); x.buffer=w.buf;
     if(scoop){ x.playbackRate.setValueAtTime(0.965,t); x.playbackRate.exponentialRampToValueAtTime(1,t+0.14); }
-    const e=G(vel*gain); x.connect(e); route(e,pan,dst); x.start(t); x.stop(t+w.dur+0.05);
+    const e=G(vel*gain), lp=ctx.createBiquadFilter(); lp.type="lowpass"; lp.Q.value=0.5; lp.frequency.value=clamp(f*(2.5+14*vel),1200,14000); x.connect(lp); lp.connect(e); route(e,pan,dst); x.start(t); x.stop(t+w.dur+0.05);
   }
   PHYS.flute=(t,f,vel,len,dst,pan)=>wgPlay("f",t,f,vel,Math.max(0.2,len),dst,pan,{noise:0.12},1.2,false);
   PHYS.ney=(t,f,vel,len,dst,pan)=>wgPlay("f",t,f,vel,Math.max(0.25,len),dst,pan,{noise:0.24,att:0.12,pressure:0.97},1.15,true);
@@ -838,7 +840,7 @@ function buildEngine(ctx, S, o){
   function ensureChords(until){
     if(chordEnd<0) chordEnd=t0;
     while(chordEnd<until){
-      const t=chordEnd, iv=ivOf(S,secOf(t).key), n=iv.length, stg=clamp(S.pad.stag===undefined?0.5:S.pad.stag,0,1), len=S.pad.len*bar*(stg>0.05&&R.s()<stg*0.6?[0.5,0.75,1.5,2][Math.floor(R.s()*4)]:1), vc=clamp(Math.round(S.pad.voices),2,o.lite?3:4);
+      const t=chordEnd, iv=ivOf(S,secOf(t).key), n=iv.length, stg=clamp(S.pad.stag===undefined?0.5:S.pad.stag,0,1), nb0=Math.max(1,Math.round(S.pad.len)), nb=ambE()*stg>0.05&&R.s()<ambE()*stg*0.6?[Math.max(1,Math.round(nb0/2)),nb0,nb0+1,nb0*2][Math.floor(R.s()*4)]:nb0, len=nb*bar, vc=clamp(Math.round(S.pad.voices),2,o.lite?3:4);
       let dRaw, offs;
       if(modal()){ dRaw=nextDegree(n,secOf(t).key); { const k1=R.k(), k2=R.k(); if(k1<(((S.chance||{}).mutate)||0)*0.6) dRaw=Math.floor(k2*n); } offs=voice(iv,dRaw%n,vc); prevVoicing=offs; }
       else{ dRaw=recall(memP,nChord++,Math.max(1,Math.round(S.pad.loop)),S.pad.deja,R.s,()=>(R.s()<0.35+0.4*(1-S.pad.motion))?0:Math.floor(R.s()*n)); const d=dRaw%n; offs=[degOff(iv,d),degOff(iv,d+2),degOff(iv,d+4),degOff(iv,d+6)].slice(0,vc).map(x=>x+12); }
@@ -858,28 +860,34 @@ function buildEngine(ctx, S, o){
     motif={steps,rh}; return motif;
   }
   const chordPcs=ch=>ch.offs.map(x=>((x%12)+12)%12);
-  function snapTo(pool,i,pcs,reach){
+  /* cale la note sur l'accord, en évitant la hauteur de la note précédente (c'est ce calage qui écrasait les voisines sur le même son) */
+  function snapTo(pool,i,pcs,reach,avoid){
     for(let k=0;k<=reach;k++){
-      if(i+k<pool.length&&pcs.indexOf(((pool[i+k]%12)+12)%12)>=0) return i+k;
-      if(i-k>=0&&pcs.indexOf(((pool[i-k]%12)+12)%12)>=0) return i-k;
+      const up=i+k<pool.length&&i+k!==avoid&&pcs.indexOf(((pool[i+k]%12)+12)%12)>=0, dn=i-k>=0&&i-k!==avoid&&pcs.indexOf(((pool[i-k]%12)+12)%12)>=0;
+      if(up) return i+k; if(dn) return i-k;
     }
     return i;
   }
   /* ambiance lente : tempo bas et densité faible appellent des notes tenues et un placement libre ; les danses gardent la grille */
   const slowE=dens=>clamp((1-dens)*0.6+clamp((90-S.tempo)/50,0,1)*0.5,0,1);
+  /* part d'ambiance : les nappes ne décalent leurs entrées que pour une musique lente, jamais pour une danse */
+  const ambE=()=>clamp(0.15+1.3*slowE(S.mel.dens),0,1);
   /* nettoyage d'une phrase : peu d'unissons (une paire sur dix au plus) et une part de tonique plafonnée, pour que la mélodie bouge et ne s'appuie pas toujours sur le repos */
   const pcOf=x=>((x%12)+12)%12;
-  function tidy(notes,pool,keepEnd){
+  function tidy(notes,pool,keepEnd,startT){
     const n=notes.length; if(n<2) return notes;
     const ixs=notes.map(nt=>Math.max(0,pool.indexOf(nearest(pool,nt.off)))), last=n-1;
+    /* les notes d'accord des temps forts restent des notes d'accord */
+    const cp=notes.map(nt=>{ const tn=startT+nt.e*E; return Math.round((tn-t0)/E)%2===0?chordPcs(chordAt(tn)):null; });
     const capT=Math.max(1,Math.floor(n*(0.1+0.12*gravE())+0.5));
     const move=(k,dir)=>{ /* déplace la note k d'un ou deux degrés, dans le sens dir, sans créer d'unisson ni de tonique de plus */
       for(const st of [dir,-dir,2*dir,-2*dir]){ const j=clamp(ixs[k]+st,0,pool.length-1); if(j===ixs[k]) continue;
         if(k>0&&j===ixs[k-1]) continue; if(k<last&&j===ixs[k+1]) continue; if(pcOf(pool[j])===0&&pcOf(pool[ixs[k]])!==0) continue;
+        if(cp[k]&&cp[k].indexOf(pcOf(pool[ixs[k]]))>=0&&cp[k].indexOf(pcOf(pool[j]))<0) continue;
         ixs[k]=j; return true; }
       return false; };
     for(let k=1;k<n;k++){
-      if(ixs[k]===ixs[k-1]&&R.h()>=0.08){ const dir=k>=2&&ixs[k-1]!==ixs[k-2]?Math.sign(ixs[k-1]-ixs[k-2]):(R.h()<0.5?1:-1); if(!(keepEnd&&k===last&&pcOf(pool[ixs[k]])===0&&move(k-1,-dir))) move(k,dir); }
+      if(ixs[k]===ixs[k-1]&&R.h()>=0.08){ const dir=k>=2&&ixs[k-1]!==ixs[k-2]?Math.sign(ixs[k-1]-ixs[k-2]):(R.h()<0.5?1:-1); if(!(keepEnd&&k===last&&pcOf(pool[ixs[k]])===0&&move(k-1,-dir))&&!move(k,dir)) move(k-1,-dir); }
     }
     let nt=0; ixs.forEach((j,k)=>{ if(pcOf(pool[j])===0) nt++; });
     for(let k=last-(keepEnd?1:0);k>=0&&nt>capT;k--){ if(pcOf(pool[ixs[k]])!==0) continue; const dir=k>0?Math.sign(ixs[k-1]-ixs[k])||1:1; if(move(k,dir)||move(k,-dir)) nt--; }
@@ -973,20 +981,21 @@ function buildEngine(ctx, S, o){
     }
     if(R.m()<slow*0.85&&type!==1) dEs[dEs.length-1]=Math.round(barE*[0.75,1,1,2,3][Math.floor(R.m()*5)]); /* la dernière note se tient, parfois sur plusieurs mesures */
     /* notes : temps forts sur les notes de l'accord, fin de phrase sur le repos voulu, silences et nuances de phrase */
-    const notes=[], n=seq.length, lvl=0.4+0.6*R.m(), freeP=0.14+0.75*slow; let e=0;
+    let prevIx=-1; const notes=[], n=seq.length, lvl=0.3+0.7*R.m(), freeP=0.75*clamp((slow-0.25)/0.75,0,1); let e=0;
     for(let k=0;k<n;k++){
       const tn=startT+e*E, ch=chordAt(tn), strong=Math.round((tn-t0)/E)%2===0;
       let ix=seq[k];
       if(k===n-1){
-        if(type===3||R.m()<Math.max(0,gravE()-0.5)*1.2){ const tpc=stab.indexOf(0)>=0?[0]:[stab[0]]; ix=snapTo(pool,ix,tpc,5); }
-        else ix=snapTo(pool,ix,type===2?chordPcs(ch).slice(1,3):chordPcs(ch),4);
-      } else if(strong) ix=snapTo(pool,ix,chordPcs(ch),2);
-      const arch=0.5+0.5*Math.sin(Math.PI*(k+0.5)/n), vel=clamp(0.075+0.25*Math.pow(clamp(lvl*(0.45*arch+0.3*(strong?1:0.1)+0.25*R.m())*(type===2?0.9:1)+0.06*tensAt(tn),0,1),0.9),0.07,0.34);
-      const grace=R.m()<ornE(), gdir=R.m()<0.5?-1:1, jit=(R.h()-0.5)*(strong?0.008:0.024)+(k>0&&k<n-1&&!strong&&R.h()<freeP?(R.h()-0.35)*1.1*Math.min(dEs[k-1],3)*E*0.5:0), trill=ornE()>0.55&&R.m()<(ornE()-0.55)*0.8;
+        if(type===3||R.m()<Math.max(0,gravE()-0.5)*1.2){ const tpc=stab.indexOf(0)>=0?[0]:[stab[0]]; ix=snapTo(pool,ix,tpc,5,prevIx); }
+        else ix=snapTo(pool,ix,type===2?chordPcs(ch).slice(1,3):chordPcs(ch),4,prevIx);
+      } else if(strong) ix=snapTo(pool,ix,chordPcs(ch),2,prevIx);
+      prevIx=ix;
+      const arch=0.5+0.5*Math.sin(Math.PI*(k+0.5)/n), vel=clamp(0.06+0.29*Math.pow(clamp(lvl*(0.4*arch+0.35*(strong?1:0.05)+0.25*R.m())*(type===2?0.9:1)+0.06*tensAt(tn),0,1),1.3),0.06,0.34);
+      const grace=R.m()<ornE(), gdir=R.m()<0.5?-1:1, jit=(R.h()-0.5)*(strong?0.008:0.024)+(k>0&&k<n-1&&(!strong||slow>0.5)&&R.h()<freeP?(R.h()-0.35)*1.1*Math.min(dEs[k-1],3)*E*0.5:0), trill=ornE()>0.55&&R.m()<(ornE()-0.55)*0.8;
       notes.push({e,off:pool[ix],dE:dEs[k],vel,grace,gdir,jit,trill}); e+=dEs[k];
       if(k<n-2&&R.m()<0.3*(1-dens)*silE()) e+=1+Math.floor(R.m()*2); /* un souffle entre deux notes */
     }
-    return {notes:tidy(notes,pool,type===3),end:e,gr:R.m(),pool};
+    return {notes:tidy(notes,pool,type===3,startT),end:e,gr:R.m(),pool};
   }
   function genPhrase(pool,stab,dens){
     if(lastOff.v!==null){ let bi=0,bd=1e9; pool.forEach((p,j)=>{const d=Math.abs(p-lastOff.v); if(d<bd){bd=d;bi=j;}}); idx=bi; }
@@ -1012,9 +1021,9 @@ function buildEngine(ctx, S, o){
 
   /* ---------- ordonnanceur ---------- */
   const cur={mel:0,drone:0,clink:0,perc:0,k:0,pad:0,int:0,fire:0,wind:0,drip:0,bird:0};
-  let loopsL=[], pendK=[], lastPh=null, lastD=null, frozen=null;
+  const phBars=new Set(), fillBars=[]; let loopsL=[], pendK=[], lastPh=null, lastD=null, frozen=null;
   const lastOff={v:null};
-  function rec(tr,t,off,dur,vel){ if(o.record||o.rolling) events.push({tr,t,off,dur,vel}); }
+  function rec(tr,t,off,dur,vel,tag){ if(o.record||o.rolling) events.push(tag?{tr,t,off,dur,vel,tag}:{tr,t,off,dur,vel}); }
   const ctr={pm:null,pc:null,li:null};
   function canonNote(t,off,vel,len,iv){
     const n=iv.length, wide=poolOf(iv,-24,72), k=wide.indexOf(off); if(k<0) return;
@@ -1059,26 +1068,6 @@ function buildEngine(ctx, S, o){
       }
       cur.int=t+2;
     }
-    /* percussion */
-    while(cur.perc<until){
-      const k=cur.k%barE, sym=PAT[k], odd=(cur.k%2)===1;
-      const t=cur.perc+(odd?S.swing*E*0.5:0)+R.p()*0.006, bi=Math.floor(cur.k/barE), f1=R.p(), f2=R.p(), endBar=k>=barE-2, endPhr=bi%4===3, endSec=bi%8===7;
-      if(M&&want("perc")&&S.perc.lvl>0.001){
-        /* variations de forme : relance de fin de phrase, roulement de fin de section, frappe fantôme syncopée, creux qui revient */
-        if(sym==="S"&&k===0&&bi%4===0&&f1<0.7){ stomp(t,1); if(o.onNote) o.onNote(t,0,"stomp",0,1); }
-        else if(sym==="s"&&bi%8===4&&f1<0.5){ /* le deuxième temps tombe : un silence qui fait respirer */ }
-        else if(sym==="S"){ stomp(t,0.95); if(o.onNote) o.onNote(t,0,"stomp",0,0.95); } else if(sym==="s"){ stomp(t,0.6); if(o.onNote) o.onNote(t,0,"stomp",0,0.6); }
-        else if(sym==="T"){ const v=0.5+R.p()*0.15; tap(t,v); if(o.onNote) o.onNote(t,0,"tap",0,v); } else if(sym==="t"){ const v=0.4+R.p()*0.1; tap(t,v); if(o.onNote) o.onNote(t,0,"tap",0,v); }
-        else{
-          if(R.p()<S.perc.shaker){ const v=0.1+R.p()*0.08; shaker(t,v); if(o.onNote) o.onNote(t,0,"shk",0,v); }
-          if(k===barE-3&&R.p()<S.perc.ghost) tap(t,0.2);
-        }
-        if(endPhr&&endBar&&f2<(endSec?0.95:0.6)){ const v=0.2+0.1*(k-(barE-2))+0.25*f1; tap(t+(endSec&&k===barE-1?E*0.5:0),v); if(o.onNote) o.onNote(t,0,"tap",0,v); }
-        if(!endPhr&&bi%2===1&&odd&&sym!=="S"&&sym!=="s"&&sym!=="T"&&sym!=="t"&&f2<S.perc.ghost*0.35){ tap(t,0.14+0.1*f1); }
-        if(arcRise(cur.perc,bar/2)&&odd){ const v=0.22+0.5*R.p(); tap(t,v); if(o.onNote) o.onNote(t,0,"tap",0,v); }
-      } else { R.p(); }
-      cur.perc+=E; cur.k++;
-    }
     /* mélodie et canon : chaque phrase est mémorisée, le déjà-vu décide de la rejouer */
     while(cur.mel<until){
       if(!M){ cur.mel=t0+bar*Math.ceil((until-t0)/bar); break; }
@@ -1088,26 +1077,29 @@ function buildEngine(ctx, S, o){
       const dens=clamp(S.mel.dens+evo+(tensAt(cur.mel)-0.5)*0.6+(formE()==='passacaille'?0.07*(Math.floor(cpos/4)%6):0)+0.4*dv("densite"),0,1);
       const shift=arcOn()?Math.round(arcAt(cur.mel)*6):0, lo=12+12*S.mel.reg+shift, hi=lo+12*S.mel.span, pool=poolOf(iv,lo,hi);
       if(!pool.length){cur.mel+=bar; continue;}
-      const genRaw=modal()?(()=>genPhraseModal(pool,stab,dens,cur.mel,sc.i)):(()=>genPhrase(pool,stab,dens)), gen=()=>bestOf(genRaw,pool,stab);
+      const genRaw=modal()?(()=>genPhraseModal(pool,stab,dens,cur.mel,sc.i)):(()=>genPhrase(pool,stab,dens));
+      let gen=()=>bestOf(genRaw,pool,stab);
+      let fresh=false; const gen0=gen; gen=()=>{ fresh=true; return gen0(); };
       let ph=formE()==='libre'?recall(memM,nPhrase++,Math.max(1,Math.round(S.mel.loop)),dejaE(),R.m,gen):formPhrase(formE(),gen,pool,cur.mel,dens);
       lastPh=ph;
-      if(ph.pool!==pool){ /* rejouée : recaler sur la gamme de la section */
+      if(ph.pool!==pool||(!fresh&&modal())){ /* rejouée : recaler sur la gamme de la section et sur l'accord du moment */
         ph={notes:ph.notes.map(n=>({...n,off:nearest(pool,n.off)})),end:ph.end,gr:ph.gr};
         if(modal()){ /* et sur l'accord du moment : temps forts et dernière note */
           const last=ph.notes.length-1;
-          ph.notes=ph.notes.map((n,k)=>{ const tn=cur.mel+n.e*E, strong=Math.round((tn-t0)/E)%2===0; if(!strong&&k!==last) return n; const ci=pool.indexOf(n.off), ix=snapTo(pool,ci<0?0:ci,chordPcs(chordAt(tn)),k===last?4:2); return {...n,off:pool[ix]}; });
-          ph.notes=tidy(ph.notes,pool,false);
+          let pv=-1; ph.notes=ph.notes.map((n,k)=>{ const tn=cur.mel+n.e*E, strong=Math.round((tn-t0)/E)%2===0, ci0=pool.indexOf(n.off); if(k===last&&stab.indexOf(pcOf(n.off))>=0){ pv=ci0; return n; } if(!strong&&k!==last){ pv=ci0; return n; } const ci=ci0<0?0:ci0, ix=snapTo(pool,ci,chordPcs(chordAt(tn)),k===last?4:2,pv); pv=ix; return {...n,off:pool[ix]}; });
+          ph.notes=tidy(ph.notes,pool,false,cur.mel);
         }
       }
       let t=cur.mel;
-      ph.notes.forEach(nt=>{
+      const onsets=ph.notes.map(n=>sw(cur.mel+n.e*E)+(n.jit||0));
+      ph.notes.forEach((nt,ni)=>{
         /* chance : tirages toujours faits, même quand la voix est coupée, pour que les rendus restent alignés */
         const C=S.chance||{}, cSkip=R.c(), cMut=R.c(), cDir=R.c(), cMag=R.c(), cOct=R.c(), cOd=R.c(), cRat=R.c(), cRn=R.c();
         let off=nt.off;
         if(cMut<(C.mutate||0)){ const ci=Math.max(0,pool.indexOf(nearest(pool,off))); off=pool[clamp(ci+(cDir<0.5?-1:1)*(cMag<0.3?2:1),0,pool.length-1)]; }
         if(cOct<(C.octave||0)){ const up=off+12<=pool[pool.length-1], dn=off-12>=pool[0]; if(up&&(cOd<0.5||!dn)) off+=12; else if(dn) off-=12; }
         const skipped=cSkip<(C.skip||0), rat=cRat<(C.ratchet||0)?2+Math.floor(cRn*2):1;
-        const tt=sw(cur.mel+nt.e*E)+(nt.jit||0), vel=nt.vel, len=E*nt.dE*0.92;
+        const tt=onsets[ni], vel=nt.vel, len=Math.max(0.05,Math.min(E*nt.dE*0.92,ni+1<onsets.length?onsets[ni+1]-tt-0.02:1e9));
         if(!skipped&&want("mel")&&S.mel.lvl>0.001){
           const fn=instOf(S.mel.inst,"luth");
           if((nt.grace||nt.trill)&&pool.length>2&&(S.mel.inst==="luth"||S.mel.inst==="harpe"||S.mel.inst==="carillon"||S.mel.inst==="oud"||S.mel.inst==="kalimba")){
@@ -1125,7 +1117,28 @@ function buildEngine(ctx, S, o){
       });
       t=cur.mel+ph.end*E;
       const bars=Math.ceil((t-t0)/bar-1e-6);
-      { const r1=R.c(), r2=R.c(); cur.mel=t0+bar*(bars+Math.round(ph.gr*2*(1.6-1.5*dens)*silE())+(r1<(((S.chance||{}).rest)||0)*2?1+(r2<0.4?1:0):0)); }
+      { const r1=R.c(), r2=R.c(); cur.mel=t0+bar*(bars+Math.round(ph.gr*2*(1.6-1.5*dens)*silE())+(r1<(((S.chance||{}).rest)||0)*2?1+(r2<0.4?1:0):0)); phBars.add(Math.round((cur.mel-t0)/bar)); if(phBars.size>400){ const lo=Math.round((until-t0)/bar)-8; phBars.forEach(b=>{ if(b<lo) phBars.delete(b); }); } }
+    }
+    /* percussion */
+    while(cur.perc<until){
+      const k=cur.k%barE, sym=PAT[k], odd=(cur.k%2)===1;
+      const t=cur.perc+(odd?S.swing*E*0.5:0)+R.p()*0.006, bi=Math.floor(cur.k/barE), f1=R.p(), f2=R.p(), endBar=k>=barE-2, hasMel=M&&want("mel")&&S.mel.lvl>0.001, endPhr=bi>0&&(hasMel?phBars.has(bi+1):bi%4===3), endSec=((bi+1)*bar)%secLen()<1e-6;
+      if(endPhr&&k===barE-2) fillBars.push(bi);
+      if(M&&want("perc")&&S.perc.lvl>0.001){
+        /* variations de forme : relance de fin de phrase, roulement de fin de section, frappe fantôme syncopée, creux qui revient */
+        if(sym==="S"&&k===0&&bi%4===0&&f1<0.7){ stomp(t,1); if(o.onNote) o.onNote(t,0,"stomp",0,1); }
+        else if(sym==="s"&&bi%8===4&&f1<0.5){ /* le deuxième temps tombe : un silence qui fait respirer */ }
+        else if(sym==="S"){ stomp(t,0.95); if(o.onNote) o.onNote(t,0,"stomp",0,0.95); } else if(sym==="s"){ stomp(t,0.6); if(o.onNote) o.onNote(t,0,"stomp",0,0.6); }
+        else if(sym==="T"){ const v=0.5+R.p()*0.15; tap(t,v); if(o.onNote) o.onNote(t,0,"tap",0,v); } else if(sym==="t"){ const v=0.4+R.p()*0.1; tap(t,v); if(o.onNote) o.onNote(t,0,"tap",0,v); }
+        else{
+          if(R.p()<S.perc.shaker){ const v=0.1+R.p()*0.08; shaker(t,v); if(o.onNote) o.onNote(t,0,"shk",0,v); }
+          if(k===barE-3&&R.p()<S.perc.ghost) tap(t,0.2);
+        }
+        if(endPhr&&endBar&&f2<(endSec?0.95:0.6)){ const v=0.2+0.1*(k-(barE-2))+0.25*f1; tap(t+(endSec&&k===barE-1?E*0.5:0),v); if(o.onNote) o.onNote(t,0,"tap",0,v); }
+        if(!endPhr&&bi%2===1&&odd&&sym!=="S"&&sym!=="s"&&sym!=="T"&&sym!=="t"&&f2<S.perc.ghost*0.35){ tap(t,0.14+0.1*f1); }
+        if(arcRise(cur.perc,bar/2)&&odd){ const v=0.22+0.5*R.p(); tap(t,v); if(o.onNote) o.onNote(t,0,"tap",0,v); }
+      } else { R.p(); }
+      cur.perc+=E; cur.k++;
     }
     /* nappes */
     ensureChords(until);
@@ -1133,15 +1146,19 @@ function buildEngine(ctx, S, o){
       if(ch.sched||ch.t>=until) continue;
       ch.sched=true; lastD=ch.d;
       if(M&&want("pad")&&S.pad.lvl>0.001){
-        const stg=clamp(S.pad.stag===undefined?0.5:S.pad.stag,0,1), bs=clamp(S.pad.bass===undefined?0.5:S.pad.bass,0,1), n=ch.iv.length, vs=ch.offs.slice().sort((a,b)=>a-b);
+        const stg=clamp(S.pad.stag===undefined?0.5:S.pad.stag,0,1)*ambE(), bs=clamp(S.pad.bass===undefined?0.5:S.pad.bass,0,1), n=ch.iv.length, beat=2*E, qb=x=>Math.round(x/beat)*beat, vs=ch.offs.slice().sort((a,b)=>a-b);
         const put=(t,len,off)=>{ padVoice(t,len,freq(off),S.pad.timbre); rec(2,t,off,len,0.3); if(o.onNote) o.onNote(t,off,"pad",len,0.3); };
         vs.forEach((off,i)=>{
           /* chaque voix entre à son tour ; la voix du milieu change parfois de note en cours d'accord */
-          const dl=stg*ch.len*0.3*(i+R.s()*0.6)/Math.max(1,vs.length-1), len=Math.max(bar*0.5,ch.len-dl+(R.s()<stg*0.5?bar*(0.5+R.s()):0)), mid=i>0&&i<vs.length-1&&R.s()<stg*0.7;
-          if(mid){ const j=ch.iv.map(x=>x+12*Math.round((off-x)/12)).sort((a,b)=>Math.abs(a-off)-Math.abs(b-off)), nb=j.find(x=>x!==off&&Math.abs(x-off)<=3), cut=len*(0.4+0.25*R.s()); if(nb!==undefined&&!vs.includes(nb)){ put(ch.t+dl,cut,off); put(ch.t+dl+cut,len-cut,nb); return; } }
+          const dl=qb(stg*ch.len*0.3*(i+R.s()*0.6)/Math.max(1,vs.length-1)), len=Math.max(bar*0.5,ch.len-dl+(R.s()<stg*0.5?bar:0)), mid=i>0&&i<vs.length-1&&R.s()<stg*0.7;
+          if(mid){ const j=ch.iv.map(x=>x+12*Math.round((off-x)/12)).sort((a,b)=>Math.abs(a-off)-Math.abs(b-off)), nb=j.find(x=>x!==off&&Math.abs(x-off)<=3), cut=Math.max(beat,qb(len*(0.4+0.25*R.s()))); if(nb!==undefined&&cut<len-beat/2&&!vs.includes(nb)){ put(ch.t+dl,cut,off); put(ch.t+dl+cut,len-cut,nb); return; } }
           put(ch.t+dl,len,off);
         });
-        if(bs>0.02){ const root=ch.iv[ch.d%n]||0, bo=root; padVoice(ch.t,ch.len,freq(bo),"orgue",0.5+bs); rec(2,ch.t,bo,ch.len,0.3*bs); if(o.onNote) o.onNote(ch.t,bo,"pad",ch.len,0.3*bs); }
+        if(bs>0.02){
+          /* octave au-dessus du bourdon ; muette quand sa fondamentale frotte contre la tonique (seconde ou septième) ou contre la quinte (demi-ton) */
+          const root=ch.iv[ch.d%n]||0, pc=pcOf(root), dist=x=>{ const d=Math.abs(pcOf(pc-x)); return Math.min(d,12-d); }, rub=(dist(0)>0&&dist(0)<=2)||(dist(7)>0&&dist(7)<=1), bo=pc+12;
+          if(!rub){ padVoice(ch.t,ch.len,freq(bo),S.pad.timbre,0.5+bs); rec(2,ch.t,bo,ch.len,0.3*bs,"bass"); if(o.onNote) o.onNote(ch.t,bo,"pad",ch.len,0.3*bs); }
+        }
       }
     }
     /* bourdon : la quinte glisse vers un degré voisin */
@@ -1301,5 +1318,5 @@ function buildEngine(ctx, S, o){
   }
   const pendX=t=>Array.from({length:pendN()},(_,i)=>Math.cos(2*Math.PI*(PEND_N0+i)*(t-t0)/(S.pend.period*bar)));
   built=true; fxAttach();
-  return {fxAttach,grainFreeze,fxOn:()=>!!fx,start,schedule,setLevels,setReverb,stop,fadeOut,sleepFade,sleepClear,replan,freeze,reroll,gesture,play,synOn,dawOn,dawNote,rackSync,meter,tap:()=>volG,analyser:k=>k==="all"?anaAll:anaSyn,dawReplan,dawPos,pendX,tensNow:()=>tensAt(ctx.currentTime),adaptNow:()=>adaptE(ctx.currentTime),tensPos:()=>{ if(!curveOn()) return -1; const L=Math.max(30,S.curve.dur*60), x=(ctx.currentTime-t0)/L; return S.curve.mode==='loop'?((x%1)+1)%1:clamp(x,0,1); },events,out,master,secAt:t=>secOf(t),bar,E,t0f:()=>t0};
+  return {fxAttach,grainFreeze,fxOn:()=>!!fx,start,schedule,setLevels,setReverb,stop,fadeOut,sleepFade,sleepClear,replan,freeze,reroll,gesture,play,synOn,dawOn,dawNote,rackSync,meter,tap:()=>volG,analyser:k=>k==="all"?anaAll:anaSyn,dawReplan,dawPos,pendX,tensNow:()=>tensAt(ctx.currentTime),adaptNow:()=>adaptE(ctx.currentTime),tensPos:()=>{ if(!curveOn()) return -1; const L=Math.max(30,S.curve.dur*60), x=(ctx.currentTime-t0)/L; return S.curve.mode==='loop'?((x%1)+1)%1:clamp(x,0,1); },events,out,master,secAt:t=>secOf(t),bar,E,t0f:()=>t0,chords:()=>chordTl.slice(),phraseBars:()=>[...phBars],fillBars:()=>fillBars.slice()};
 }

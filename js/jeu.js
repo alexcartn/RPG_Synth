@@ -7,7 +7,7 @@ const JEU={on:false, frozen:false, xy:{x:"dens",y:"brume"}, seen:{}};
 /* chaque bouton agit sur un ou deux réglages existants ; replan = voix à replanifier, zero = voix qui s'allume ou s'éteint */
 const KNOBS=[
   {id:"vol",label:"Volume",get:()=>S.vol,set:v=>{S.vol=v;},keys:["vol"]},
-  {id:"tension",label:"Tensio",get:()=>S.tension,set:v=>{S.tension=v; releaseCurve();},keys:["tension"],fmt:v=>tensionWord(v)},
+  {id:"tension",label:"Tension",get:()=>S.tension,set:v=>{S.tension=v; releaseCurve();},keys:["tension"],fmt:v=>tensionWord(v)},
   {id:"dens",label:"Densité",get:()=>S.mel.dens,set:v=>{S.mel.dens=v;},keys:["mel.dens"],replan:"mel"},
   {id:"bourdon",label:"Bourdon",get:()=>S.drone.lvl,set:v=>{S.drone.lvl=v;},keys:["drone.lvl"]},
   {id:"nappes",label:"Nappes",get:()=>S.pad.lvl,set:v=>{S.pad.lvl=v;},keys:["pad.lvl"],zero:"pad"},

@@ -247,7 +247,7 @@ function atKeys(e,down){
 }
 
 /* ---------- machine ---------- */
-function atMachUI(){ if(typeof dawMachUI==="function") dawMachUI(); const b=$("atMach"); if(!b) return; b.setAttribute("aria-pressed",S.mach!==false?"true":"false"); b.textContent=S.mach!==false?"Couper la machine":"Rallumer la machine"; }
+function atMachUI(){ if(typeof dawMachUI==="function") dawMachUI(); const b=$("atMach"); if(!b) return; b.setAttribute("aria-pressed",S.mach!==false?"true":"false"); b.textContent="La machine"; b.title=S.mach!==false?"La machine joue : clique pour la mettre en sourdine":"La machine est en sourdine : clique pour la rallumer"; }
 function setMach(on){
   S.mach=on; atMachUI();
   if(live){ live.eng.setLevels(); live.eng.replan("all"); }
@@ -267,7 +267,7 @@ function buildAtelier(){
   /* barre du haut */
   const bar=atEl("div","at-bar");
   bar.innerHTML='<div class="at-title"><span class="kicker">atelier</span><span class="nm" id="synPatchName">Pad doux</span></div>'+
-    '<button class="btn" id="atMach" type="button" aria-pressed="true">Couper la machine</button>'+
+    '<button class="btn tgl" id="atMach" type="button" aria-pressed="true">La machine</button>'+
     '<div class="ctl atpatch"><label for="synPatch">Patch</label><select id="synPatch"></select></div>'+
     '<button class="lnk" id="synRandom" type="button">Au sort</button>'+
     '<details class="fin atsave"><summary>Enregistrer ou supprimer</summary><div class="row"><div class="ctl atname"><label for="synName">Nom</label><input type="text" id="synName" maxlength="40" placeholder="Mon patch"></div><button class="lnk" id="synSaveBtn" type="button">Enregistrer sous ce nom</button><button class="lnk" id="synDelBtn" type="button">Supprimer le patch choisi</button></div></details>';

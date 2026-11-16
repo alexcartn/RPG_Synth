@@ -127,18 +127,21 @@ function dawMixerDraw(){
 }
 function dawMixerFill(host,inDaw){
   host.innerHTML=""; const D=S.daw;
-  const strip=(name,color,val,set,mute,solo,key,hasFader)=>{
+  const strip=(name,color,val,set,mute,solo,key,hasFader,pan)=>{
     const s=dawEl("div","dw-strip"); s.style.setProperty("--tc",color);
     s.appendChild(dawEl("span","nm",name));
+    if(pan){ const pr=dawEl("label","dw-pan"); pr.appendChild(dawEl("span","","Pan")); const r=dawRange(pan.v,-1,1,0.05,"Pan de "+name,pan.set); r.className="pan"; r.ondblclick=()=>{ r.value=0; pan.set(0); }; r.title="Double-clic : recentrer"; pr.appendChild(r); s.appendChild(pr); }
     const m=dawEl("div","dw-fader"); const meter=dawEl("span","dw-vu"); meter.innerHTML="<i></i>"; meter.dataset.k=key; m.appendChild(meter);
     if(hasFader){ const r=dawRange(val,0,1,0.01,"Niveau : "+name,set); r.className="vert"; m.appendChild(r); } else m.appendChild(dawEl("span","dw-nofd","—"));
     s.appendChild(m);
     const bt=dawEl("div","dw-sm"); bt.appendChild(dawBtn("M","Couper : "+name,mute.get(),()=>{ mute.set(); dawLevels(); dawMixDraw(); },"m")); bt.appendChild(dawBtn("S","Solo : "+name,solo.get(),()=>{ solo.set(); dawLevels(); dawMixDraw(); },"s")); s.appendChild(bt);
     return s;
   };
-  MACH.forEach(([id,name,k])=>host.appendChild(strip(name,"var(--ink-2)",k?getP(k):0,v=>dawParam(k,v),{get:()=>!!D.mix.mute[id],set:()=>{ D.mix.mute[id]=!D.mix.mute[id]; }},{get:()=>!!D.mix.solo[id],set:()=>{ D.mix.solo[id]=!D.mix.solo[id]; }},id,!!k)));
-  host.appendChild(dawEl("span","dw-sep"));
-  D.tracks.forEach((tr,i)=>{ const s=strip(tr.name,tcol(i),tr.vol,v=>{ tr.vol=v; dawLevels(); },{get:()=>tr.mute,set:()=>{ tr.mute=!tr.mute; }},{get:()=>tr.solo,set:()=>{ tr.solo=!tr.solo; }},"t"+tr.id,true); s.classList.toggle("sel",i===D.sel); if(inDaw) s.firstChild.onclick=()=>dawSelect(i,false); const pan=dawRange(tr.pan,-1,1,0.05,"Pan de "+tr.name,v=>{ tr.pan=v; dawLevels(); }); pan.className="pan"; s.insertBefore(pan,s.lastChild); host.appendChild(s); });
+  MACH.forEach(([id,name,k])=>host.appendChild(strip(name,"var(--ink-2)",k?getP(k):0,v=>dawParam(k,v),{get:()=>!!D.mix.mute[id],set:()=>{ D.mix.mute[id]=!D.mix.mute[id]; }},{get:()=>!!D.mix.solo[id],set:()=>{ D.mix.solo[id]=!D.mix.solo[id]; }},id,!!k,{v:(D.mix.pan||{})[id]||0,set:v=>{ (D.mix.pan=D.mix.pan||{})[id]=v; dawLevels(); }})));
+  /* dans Conduire, seules les pistes qui contiennent des notes paraissent : les pistes vides d'Arranger n'ont rien à faire sur la page d'accueil */
+  const shown=D.tracks.filter(tr=>inDaw||tr.notes.length);
+  if(shown.length) host.appendChild(dawEl("span","dw-sep"));
+  D.tracks.forEach((tr,i)=>{ if(!inDaw&&!tr.notes.length) return; const s=strip(tr.name,tcol(i),tr.vol,v=>{ tr.vol=v; dawLevels(); },{get:()=>tr.mute,set:()=>{ tr.mute=!tr.mute; }},{get:()=>tr.solo,set:()=>{ tr.solo=!tr.solo; }},"t"+tr.id,true,{v:tr.pan,set:v=>{ tr.pan=v; dawLevels(); }}); s.classList.toggle("sel",i===D.sel); if(inDaw) s.firstChild.onclick=()=>dawSelect(i,false); host.appendChild(s); });
 }
 function dawMetersTick(){
   if(!live) return;
@@ -259,7 +262,7 @@ function dawRollEvents(){
 }
 
 /* ---------- construction ---------- */
-function dawMachUI(){ const b=$("dawMach"); if(!b) return; b.setAttribute("aria-pressed",S.mach!==false?"true":"false"); b.textContent=S.mach!==false?"Couper la machine":"Rallumer la machine"; }
+function dawMachUI(){ const b=$("dawMach"); if(!b) return; b.setAttribute("aria-pressed",S.mach!==false?"true":"false"); b.textContent="La machine"; b.title=S.mach!==false?"La machine joue : clique pour la mettre en sourdine":"La machine est en sourdine : clique pour la rallumer"; }
 function dawRecUI(){ const b=$("dawRec"); if(b) b.setAttribute("aria-pressed",DW.rec?"true":"false"); }
 function buildDaw(){
   if(!S.daw) return;
@@ -268,10 +271,10 @@ function buildDaw(){
   const bar=dawEl("div","dw-bar");
   bar.innerHTML='<button class="seal sm" id="play4" aria-pressed="false">Jouer</button>'+
     '<button class="btn rec" id="dawRec" type="button" aria-pressed="false">Enregistrer</button>'+
-    '<button class="btn" id="dawMach" type="button" aria-pressed="true">Couper la machine</button>'+
+    '<button class="btn tgl" id="dawMach" type="button" aria-pressed="true">La machine</button>'+
     '<span class="dw-info" id="dawInfo"></span>'+
     '<div class="ctl"><label for="dawGrid">Grille</label><select id="dawGrid"></select></div>'+
-    '<button class="btn" id="dawSnapB" type="button" aria-pressed="true" title="Les notes posées à la souris tombent dans la gamme du thème">Aimanter à la gamme</button>'+
+    '<button class="btn tgl" id="dawSnapB" type="button" aria-pressed="true" title="Les notes posées à la souris tombent dans la gamme du thème">Aimanter à la gamme</button>'+
     '<button class="btn" id="dawUndo" type="button" disabled>Annuler</button>';
   sec.appendChild(bar);
   /* arrangement : en-têtes à gauche, ligne de temps à droite */

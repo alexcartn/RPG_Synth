@@ -310,6 +310,12 @@ body.jeu .cols, body.jeu .toc{display:none}
 .jeu-top .seal{width:84px; height:84px; font-size:1.1rem}
 .jeu-actions{display:flex; gap:var(--sp-md); flex-wrap:wrap}
 .btn[aria-pressed="true"]{background:var(--ink); color:var(--parch)}
+/* bascule : un point plein quand c'est actif, un rond vide sinon ; le fond ne change pas */
+.btn.tgl,.btn.tgl[aria-pressed="true"]{background:transparent; color:var(--ink)}
+.btn.tgl::before{content:"○"; margin-right:.55em; color:var(--ink-2)}
+.btn.tgl[aria-pressed="true"]{border-color:var(--rubric)}
+.btn.tgl[aria-pressed="true"]::before{content:"●"; color:var(--rubric)}
+.btn.tgl:hover{background:var(--ink); color:var(--parch)}
 .btn:disabled{opacity:.4; cursor:default}
 .jeu-top .hint{flex:1 1 24ch; max-width:56ch; margin:0}
 .jeu-grid{display:grid; grid-template-columns:minmax(0,1.35fr) minmax(0,1fr) minmax(0,1fr); gap:var(--sp-2xl); padding-top:var(--sp-xl); align-items:start}
@@ -661,7 +667,8 @@ body.atelier .at-kbbar, body.daw .at-kbbar{margin-bottom:var(--sp-xs)}
 .dw-strip input.vert{writing-mode:vertical-lr; direction:rtl; width:32px; height:150px; margin:0}
 .dw-strip input.vert::-webkit-slider-runnable-track{width:3px; height:auto}
 .dw-strip input.vert::-webkit-slider-thumb{margin-top:0; margin-left:-8.5px}
-.dw-strip input.pan{width:60px; height:20px}
+.dw-strip input.pan{width:60px; height:26px; margin:0}
+.dw-pan{display:flex; flex-direction:column; align-items:center; gap:4px; font:400 .66rem/1 var(--caps); letter-spacing:.08em; color:var(--ink-2); padding-bottom:var(--sp-xs); border-bottom:1px solid var(--rule); width:100%}
 .dw-nofd{width:32px; text-align:center; color:var(--ink-2); align-self:center}
 .dw-sm{display:flex; gap:3px}
 .dw-sep{flex:none; width:1px; background:var(--rule); margin:0 var(--sp-xs)}
@@ -718,7 +725,8 @@ h1{font-size:clamp(2.2rem,5vw,3.4rem); margin:0}
 .jeu-amb .presets .ctl{max-width:340px}
 .jeu-amb .presets .row{gap:var(--sp-sm) var(--sp-xl)}
 .jeu-amb .presets .lnk{font-size:1.25rem}
-.jeu-mix{padding:var(--sp-lg) 0 var(--sp-md)}
+@media (min-width:1101px){ .jeu-grid{grid-template-areas:"kn xy ring" "mix mix ring"} .jeu-knobs{grid-area:kn} .jeu-xy{grid-area:xy} .jeu-ring{grid-area:ring} .jeu-mix{grid-area:mix} }
+.jeu-mix{padding:0; min-width:0}
 .jeu-mix h3{font:italic 400 1.25rem/1.1 var(--display); margin:0 0 var(--sp-sm)}
 .jeu-mix .fr{font:400 .9rem/1 var(--caps); letter-spacing:.05em; color:var(--ink-2); margin-left:.6em}
 .jeu-bar{display:flex; flex-wrap:wrap; align-items:center; gap:var(--sp-md) var(--sp-xl); padding:var(--sp-md) 0; border-top:1px solid var(--rule); border-bottom:1px solid var(--rule)}

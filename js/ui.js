@@ -191,18 +191,18 @@ const DRIFT_OPTS=[["none","Rien"],["filtre","Éclat du bourdon"],["reverb","Rév
 const DRIFT2_OPTS=DRIFT_OPTS.concat(DRIFT_OPTS.slice(1).map(([k,l])=>["-"+k,l+", à l'envers"]));
 const SCALE_OPTS=SCALE_GROUPS.map(([g,l])=>[g,l.map(([k,n])=>[k,n])]);
 const UI=[
- {num:"I", title:"Modus", fr:"Gamme et accord", sub:"Tonique, gamme principale, et jusqu'à deux colorations qui se succèdent par sections.", groups:[
+ {num:"I", title:"Gamme et accord", fr:"", sub:"Tonique, gamme principale, et jusqu'à deux colorations qui se succèdent par sections.", groups:[
   {items:[
    {k:"root",type:"select",label:"Tonalité",opts:NOTES.map((n,i)=>[i,n]),num:true,restart:true},
    {k:"scales.0",type:"select",label:"Gamme principale",groups:SCALE_OPTS,restart:false,ring:true},
    {k:"scales.1",type:"select",label:"Puis (facultatif)",groups:SCALE_OPTS,blank:"Aucune",ring:true},
    {k:"scales.2",type:"select",label:"Puis encore (facultatif)",groups:SCALE_OPTS,blank:"Aucune",ring:true},
    {k:"sectionBars",type:"range",label:"Durée d'une section",min:4,max:64,step:4,fmt:v=>v+" mesures"}]},
-  {fin:"Affectus : ce que dégagent les gammes, chercher une ambiance par émotion", items:[], node:()=>affPanel()},
-  {fin:"Temperatio : accord et tempérament", items:[
+  {fin:"Affects : ce que dégagent les gammes, chercher une ambiance par émotion", items:[], node:()=>affPanel()},
+  {fin:"Accord et tempérament", items:[
    {k:"temper",type:"select",label:"Tempérament",opts:[["egal","Égal"],["juste","Juste (intonation pure)"],["pyth","Pythagoricien"],["meso","Mésotonique (quart de comma)"]],restart:true},
    {k:"a4",type:"range",label:"Diapason (La)",min:410,max:450,step:1,fmt:v=>v+" Hz",restart:true}]}]},
- {num:"II", title:"Tempus", fr:"Rythme", sub:"Une grille de croches commune à la mélodie, aux nappes et aux frappes.", groups:[
+ {num:"II", title:"Rythme", fr:"", sub:"Une grille de croches commune à la mélodie, aux nappes et aux frappes.", groups:[
   {items:[
    {k:"tempo",type:"range",label:"Tempo",min:40,max:180,step:1,fmt:v=>v+" bpm",restart:true},
    {k:"meter",type:"select",label:"Mesure",opts:Object.keys(METERS).map(k=>[k,k]),restart:true},
@@ -211,7 +211,7 @@ const UI=[
   {fin:"Réglages de la percussion", items:[
    {k:"perc.shaker",type:"range",label:"Densité du shaker",min:0,max:1,step:0.01,fmt:pct},
    {k:"perc.ghost",type:"range",label:"Frappes fantômes",min:0,max:1,step:0.01,fmt:pct}]}]},
- {num:"III", title:"Bordunus", fr:"Bourdon", sub:"Sous-grave, tonique, quinte, octaves. La quinte glisse vers un degré voisin de la gamme.", groups:[
+ {num:"III", title:"Bourdon", fr:"", sub:"Sous-grave, tonique, quinte, octaves. La quinte glisse vers un degré voisin de la gamme.", groups:[
   {items:[
    {k:"drone.lvl",type:"range",label:"Niveau",min:0,max:1,step:0.01,fmt:pct},
    {k:"drone.timbre",type:"select",label:"Timbre",opts:[["anche","Anche (cornemuse)"],["orgue","Orgue de chambre"],["choeur","Chœur (voyelles)"],["bol","Bol chantant"],["pur","Sinus pur"]],restart:true},
@@ -220,8 +220,8 @@ const UI=[
   {fin:"Réglages du bourdon", items:[
    {k:"drone.width",type:"range",label:"Largeur (désaccord)",min:0,max:1,step:0.01,fmt:pct,restart:true},
    {k:"drone.drift",type:"range",label:"Dérive",min:0,max:1,step:0.01,fmt:pct,restart:true}]}]},
- {num:"IV", title:"Voces", fr:"Voix", sub:"Mélodie, canon décalé et nappes d'accords construits sur la gamme de la section.", groups:[
-  {h:"Musica", hf:"logique musicale et timbres", items:[
+ {num:"IV", title:"Voix", fr:"", sub:"Mélodie, canon décalé et nappes d'accords construits sur la gamme de la section.", groups:[
+  {h:"Logique musicale", hf:"logique musicale et timbres", items:[
    {k:"mus.logic",type:"select",label:"Logique musicale",opts:[["modal","Modale : la mélodie suit les accords"],["hasard","Hasard (ancienne version)"]]},
    {k:"mus.form",type:"select",label:"Forme de la pièce",opts:[["libre","Libre : phrases et déjà-vu"],["passacaille","Passacaille : une basse qui revient, des variations dessus"],["ostinato","Ostinato : un motif qui tourne"],["rondeau","Rondeau : refrain et couplets"],["variations","Thème et variations"],["turing","Machine de Turing : un registre qui boucle et mute"]]},
    {k:"mus.color",type:"select",label:"Couleur du mode",opts:[["off","Fixe : les gammes choisies"],["tension","Suit la tension (du lydien au locrien)"],["meteo","Suit la météo du lieu"],["les deux","Tension et météo"]]},
@@ -229,13 +229,13 @@ const UI=[
    {k:"mus.arc",type:"select",label:"Plan de la pièce",opts:[["aucun","Aucun : des sections égales"],["arche","Arche : intro, thème, développement, apogée, retombée, coda"]]},
    {k:"mus.crit",type:"range",label:"Exigence : la machine tire plusieurs phrases et garde la meilleure",min:0,max:1,step:0.01,fmt:pct},
    {k:"mus.model",type:"select",label:"Cordes et timbres",opts:[["physique","Cordes pincées par modèle physique"],["classique","Synthèse classique"]]}]},
-  {h:"Ingenium", hf:"caractère de la mélodie", items:[
+  {h:"Caractère de la mélodie", hf:"", items:[
    {k:"car.grav",type:"range",label:"Gravité : retour vers la tonique",min:0,max:1,step:0.01,fmt:pct},
    {k:"car.aud",type:"range",label:"Audace : taille des sauts",min:0,max:1,step:0.01,fmt:pct},
    {k:"car.orn",type:"range",label:"Ornements : appoggiatures et trilles",min:0,max:1,step:0.01,fmt:pct},
    {k:"car.sil",type:"range",label:"Silences : souffles entre les notes et les phrases",min:0,max:1,step:0.01,fmt:pct},
    {k:"car.rep",type:"range",label:"Répétition : retour des phrases déjà jouées",min:0,max:1,step:0.01,fmt:pct}]},
-  {h:"Fortuna", hf:"chance et hasard", items:[
+  {h:"Chance", hf:"", items:[
    {k:"chance.skip",type:"range",label:"Notes manquantes",min:0,max:1,step:0.01,fmt:pct},
    {k:"chance.ratchet",type:"range",label:"Roulements : une note répétée vite",min:0,max:1,step:0.01,fmt:pct},
    {k:"chance.mutate",type:"range",label:"Mutations : une note change de degré",min:0,max:1,step:0.01,fmt:pct},
@@ -244,7 +244,7 @@ const UI=[
    {k:"turing.lock",type:"range",label:"Verrou du registre (forme Turing) : 100 % boucle, 0 % tout change",min:0,max:1,step:0.01,fmt:pct},
    {k:"turing.len",type:"select",label:"Longueur du registre",opts:[[1,"1 mesure"],[2,"2 mesures"],[4,"4 mesures"]],num:true},
    {k:"turing.rate",type:"select",label:"Pas du registre",opts:[[1,"Croche"],[2,"Noire"]],num:true}]},
-  {h:"Cantus", hf:"mélodie", items:[
+  {h:"Mélodie", hf:"", items:[
    {k:"mel.inst",type:"select",label:"Instrument",opts:INST_OPTS},
    {k:"mel.lvl",type:"range",label:"Niveau",min:0,max:1,step:0.01,fmt:pct},
    {k:"mel.dens",type:"range",label:"Densité",min:0,max:1,step:0.01,fmt:pct},
@@ -258,7 +258,7 @@ const UI=[
    {k:"canon.inst",type:"select",label:"Instrument",opts:INST_OPTS},
    {k:"canon.delay",type:"range",label:"Retard",min:1,max:8,step:1,fmt:v=>v+(v>1?" mesures":" mesure")},
    {k:"canon.shift",type:"select",label:"Transposition",opts:[["uni","Unisson"],["oct+","Octave au-dessus"],["oct-","Octave en dessous"],["q+","Quinte au-dessus"],["q-","Quinte en dessous"],["t+","Tierce au-dessus"],["contre","Contrepoint : tierces et sixtes en mouvement contraire"]]}]},
-  {h:"Concentus", hf:"nappes", items:[
+  {h:"Nappes", hf:"", items:[
    {k:"pad.lvl",type:"range",label:"Niveau",min:0,max:1,step:0.01,fmt:pct},
    {k:"pad.timbre",type:"select",label:"Timbre",opts:[["choeur","Chœur"],["cordes","Cordes"],["orgue","Orgue"],["synthe","Synthé doux"],["verre","Verre"],["atelier","Synthé perso (Atelier)"]]},
    {k:"pad.len",type:"range",label:"Durée d'un accord",min:1,max:8,step:1,fmt:v=>v+(v>1?" mesures":" mesure")},
@@ -266,26 +266,26 @@ const UI=[
    {k:"pad.voices",type:"range",label:"Voix par accord",min:2,max:4,step:1,fmt:v=>v+" voix"},
    {k:"pad.stag",type:"range",label:"Entrées décalées",min:0,max:1,step:0.01,fmt:pct},
    {k:"pad.bass",type:"range",label:"Basse",min:0,max:1,step:0.01,fmt:pct}]},
-  {fin:"Memoria : déjà-vu de la mélodie et des nappes", items:[
+  {fin:"Mémoire : déjà-vu de la mélodie et des nappes", items:[
    {k:"mel.deja",type:"range",label:"Mélodie : retour du passé",min:0,max:1,step:0.01,fmt:v=>v<0.01?"jamais":pct(v)},
    {k:"mel.loop",type:"range",label:"Mélodie : longueur de la boucle",min:1,max:8,step:1,fmt:v=>v+(v>1?" phrases":" phrase")},
    {k:"pad.deja",type:"range",label:"Nappes : retour du passé",min:0,max:1,step:0.01,fmt:v=>v<0.01?"jamais":pct(v)},
    {k:"pad.loop",type:"range",label:"Nappes : longueur de la boucle",min:1,max:8,step:1,fmt:v=>v+(v>1?" accords":" accord")}]}]},
- {num:"V", title:"Locus", fr:"Lieu", sub:"La salle autour de la musique : de la taverne bruyante à la crypte qui goutte.", groups:[
+ {num:"V", title:"Lieu", fr:"", sub:"La salle autour de la musique : de la taverne bruyante à la crypte qui goutte.", groups:[
   {items:[
    {k:"amb.murmur",type:"range",label:"Murmure de salle",min:0,max:1,step:0.01,fmt:pct},
    {k:"amb.clink",type:"range",label:"Tintements de verres",min:0,max:1,step:0.01,fmt:pct},
    {k:"amb.feu",type:"range",label:"Feu de cheminée",min:0,max:1,step:0.01,fmt:pct},
    {k:"amb.vent",type:"range",label:"Vent",min:0,max:1,step:0.01,fmt:pct},
    {k:"amb.gouttes",type:"range",label:"Gouttes (crypte)",min:0,max:1,step:0.01,fmt:pct}]},
-  {h:"Natura", hf:"sons de nature", items:[
+  {h:"Nature", hf:"sons de nature", items:[
    {k:"nature.pluie",type:"range",label:"Pluie",min:0,max:1,step:0.01,fmt:pct},
    {k:"nature.mer",type:"range",label:"Vagues (mer)",min:0,max:1,step:0.01,fmt:pct},
    {k:"nature.nuit",type:"range",label:"Nuit (grillons)",min:0,max:1,step:0.01,fmt:pct},
    {k:"nature.ruisseau",type:"range",label:"Ruisseau",min:0,max:1,step:0.01,fmt:pct},
    {k:"nature.oiseaux",type:"range",label:"Oiseaux",min:0,max:1,step:0.01,fmt:pct}]}]},
- {num:"VI", title:"Spatium et Patina", fr:"Espace et patine", sub:"Réverbération, écho et le grain d'une vieille bande.", groups:[
-  {h:"Spatium", hf:"espace", items:[
+ {num:"VI", title:"Espace et patine", fr:"", sub:"Réverbération, écho et le grain d'une vieille bande.", groups:[
+  {h:"Espace", hf:"", items:[
    {k:"vol",type:"range",label:"Volume général (l'export est toujours normalisé)",min:0,max:1,step:0.01,fmt:pct},
    {k:"fx.rev",type:"range",label:"Réverb",min:0,max:1,step:0.01,fmt:pct},
    {k:"fx.size",type:"range",label:"Taille de la salle",min:0.5,max:9,step:0.1,fmt:v=>v.toFixed(1)+" s",reverb:true},
@@ -304,26 +304,26 @@ const UI=[
    {k:"grain.size",type:"range",label:"Taille des grains",min:0,max:1,step:0.01,fmt:v=>Math.round(40+560*v*v)+" ms"},
    {k:"grain.spread",type:"range",label:"Mémoire : jusqu'où les grains remontent dans le passé",min:0,max:1,step:0.01,fmt:v=>(0.03+6.2*v*v).toFixed(1)+" s"},
    {k:"grain.pitch",type:"range",label:"Grains à l'octave ou à la quinte",min:0,max:1,step:0.01,fmt:pct}]},
-  {h:"Patina", hf:"patine de bande", items:[
+  {h:"Patine", hf:"patine de bande", items:[
    {k:"fx.sat",type:"range",label:"Saturation",min:0,max:1,step:0.01,fmt:pct},
    {k:"fx.wow",type:"range",label:"Ondulation (wow et flutter)",min:0,max:1,step:0.01,fmt:pct},
    {k:"fx.veil",type:"range",label:"Voile (aigus assourdis)",min:0,max:1,step:0.01,fmt:pct},
    {k:"fx.hiss",type:"range",label:"Souffle",min:0,max:1,step:0.01,fmt:pct}]}]},
- {num:"VII", title:"Mutatio", fr:"Évolution", sub:"La pièce respire : l'intensité module la percussion, les nappes, l'éclat du bourdon et la densité.", groups:[
+ {num:"VII", title:"Évolution", fr:"", sub:"La pièce respire : l'intensité module la percussion, les nappes, l'éclat du bourdon et la densité.", groups:[
   {items:[
    {k:"form.shape",type:"select",label:"Forme",opts:[["constante","Constante"],["arche","Arche"],["vagues","Vagues"],["escalier","Escalier"]]},
    {k:"form.period",type:"range",label:"Période",min:1,max:10,step:0.5,fmt:v=>v+" min"},
    {k:"form.amount",type:"range",label:"Amplitude",min:0,max:1,step:0.01,fmt:pct}]},
-  {h:"Tensio", hf:"courbe de tension", items:[
+  {h:"Tension", hf:"courbe de tension", items:[
    {k:"curve.mode",type:"select",label:"Courbe",opts:[["off","Désactivée"],["loop","Répétée"],["once","Une fois, puis elle tient"]]},
    {k:"curve.dur",type:"range",label:"Durée de la courbe",min:1,max:20,step:1,fmt:v=>v+(v>1?" minutes":" minute")}], node:()=>curveEditor()},
-  {h:"Adaptatio", hf:"selon l'heure ou la durée d'écoute", items:[
+  {h:"Adaptation", hf:"selon l'heure ou la durée d'écoute", items:[
    {k:"adapt.mode",type:"select",label:"Adaptation",opts:[["off","Aucune"],["heure","Selon l'heure de la journée"],["meteo","Selon l'heure et la météo du lieu"],["apaiser","S'apaiser avec la durée d'écoute"]]},
    {k:"adapt.amount",type:"range",label:"Force de l'adaptation",min:0,max:1,step:0.01,fmt:pct},
    {k:"adapt.span",type:"range",label:"Durée de l'apaisement",min:10,max:120,step:5,fmt:v=>v+" minutes"}], node:()=>{ const w=document.createElement("div"); w.appendChild(adaptNote()); w.appendChild(wxPanel()); return w; }},
   {h:"Liens", hf:"les voix agissent les unes sur les autres", items:[
    {k:"link.melPad",type:"range",label:"La mélodie ouvre le filtre des nappes",min:0,max:1,step:0.01,fmt:v=>v<0.01?"aucun":pct(v)}]},
-  {h:"Deriva", hf:"marches aléatoires, sans graine", items:[
+  {h:"Dérives", hf:"marches aléatoires, sans graine", items:[
    {k:"drift.0.t",type:"select",label:"Dérive 1 : ce qu'elle promène",opts:DRIFT_OPTS},
    {k:"drift.0.t2",type:"select",label:"Dérive 1 : et aussi",opts:DRIFT2_OPTS},
    {k:"drift.0.d",type:"range",label:"Dérive 1 : profondeur",min:0,max:1,step:0.01,fmt:pct},
@@ -340,13 +340,13 @@ const UI=[
    {k:"drift.3.t2",type:"select",label:"Dérive 4 : et aussi",opts:DRIFT2_OPTS},
    {k:"drift.3.d",type:"range",label:"Dérive 4 : profondeur",min:0,max:1,step:0.01,fmt:pct},
    {k:"drift.3.v",type:"range",label:"Dérive 4 : vitesse",min:0,max:1,step:0.01,fmt:pct}]}]},
- {num:"VIII", title:"Rotae et Pendula", fr:"Boucles et pendules", sub:"Deux machines à hasard réglé : des boucles de bande de longueurs premières entre elles, et des pendules qui se désynchronisent puis se retrouvent.", groups:[
-  {h:"Rotae", hf:"boucles de bande", items:[
+ {num:"VIII", title:"Boucles et pendules", fr:"", sub:"Deux machines à hasard réglé : des boucles de bande de longueurs premières entre elles, et des pendules qui se désynchronisent puis se retrouvent.", groups:[
+  {h:"Boucles de bande", hf:"", items:[
    {k:"loops.lvl",type:"range",label:"Niveau (0 = absentes)",min:0,max:1,step:0.01,fmt:pct},
    {k:"loops.inst",type:"select",label:"Instrument",opts:INST_OPTS},
    {k:"loops.count",type:"range",label:"Nombre de boucles",min:1,max:5,step:1,fmt:v=>v+(v>1?" boucles":" boucle")},
    {k:"loops.speed",type:"range",label:"Durée des boucles",min:0.6,max:2,step:0.05,fmt:v=>"× "+v.toFixed(2)}]},
-  {h:"Pendula", hf:"pendules", items:[
+  {h:"Pendules", hf:"", items:[
    {k:"pend.lvl",type:"range",label:"Niveau (0 = absents)",min:0,max:1,step:0.01,fmt:pct},
    {k:"pend.inst",type:"select",label:"Instrument",opts:INST_OPTS},
    {k:"pend.count",type:"range",label:"Nombre de pendules",min:3,max:10,step:1,fmt:v=>v+" pendules"},
@@ -360,7 +360,7 @@ function mkCtl(it){
   const row=document.createElement("div"); row.className="l";
   /* un libellé long se coupe : le nom reste court, l'explication passe dans une aide qu'on déplie avec « ? » */
   let name=it.label, help=it.hint||"";
-  if(!help&&name.length>40){ const m=name.match(/^(.{4,44}?) : (.+)$/)||name.match(/^(.{4,44}?) \((.+)\)$/); if(m){ name=m[1]; help=m[2].charAt(0).toUpperCase()+m[2].slice(1)+"."; } }
+  if(!help){ const m=name.match(/^(.{4,44}?) : (.+)$/)||(name.length>40&&name.match(/^(.{4,44}?) \((.+)\)$/)); if(m&&!/^(Mélodie|Nappes|Dérive \d)$/.test(m[1])){ name=m[1]; help=m[2].charAt(0).toUpperCase()+m[2].slice(1)+"."; } }
   const lab=document.createElement("label"); lab.htmlFor=id; lab.textContent=name; row.appendChild(lab);
   let hp=null;
   if(help){ hp=document.createElement("p"); hp.className="hint"; hp.id=id+"_h"; hp.hidden=true; hp.textContent=help;
@@ -426,12 +426,12 @@ function buildToc(){
 }
 function buildChapters(){
   const host=$("chapters");
-  $("tensionHost").appendChild(mkCtl({k:"tension",type:"range",label:"Tensio",min:0,max:1,step:0.01,fmt:tensionWord}));
+  $("tensionHost").appendChild(mkCtl({k:"tension",type:"range",label:"Tension",min:0,max:1,step:0.01,fmt:tensionWord}));
   wireDockTension();
   UI.forEach(ch=>{
     const sec=document.createElement("section"); sec.className="chap";
     const hd=document.createElement("header");
-    hd.innerHTML='<span class="num">'+ch.num+'</span><div><h2>'+ch.title+'</h2><p class="sub"><span class="fr">'+ch.fr+'</span> '+ch.sub+'</p></div>'; sec.id="ch-"+ch.num;
+    hd.innerHTML='<span class="num">'+ch.num+'</span><div><h2>'+ch.title+'</h2><p class="sub">'+(ch.fr?'<span class="fr">'+ch.fr+'</span> ':'')+ch.sub+'</p></div>'; sec.id="ch-"+ch.num;
     sec.appendChild(hd);
     ch.groups.forEach(gr=>{
       let container=sec;

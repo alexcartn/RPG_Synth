@@ -150,6 +150,35 @@ function buildEngine(ctx, S, o){
   const canonG=G(0); const lCanon=link(canonG,B.mel.it);
   /* chaque voix planifiée passe par un gain "de génération" : replan() le coupe et en crée un neuf, ce qui rend les réglages immédiats */
   const V={}, DT={};
+
+  /* ---------- rack d'effets du synthé perso : égaliseur, compresseur, chorus, écho, salle ----------
+     il sert le clavier de l'atelier et les pistes du DAW réglées sur le synthé perso */
+  let rackRev=null;
+  function ensureRackRev(){ if(rackRev||!ctx.createConvolver) return rackRev; const c=ctx.createConvolver(), og=G(1); c.buffer=makeIR(2.6,0.45); c.connect(og); og.connect(out); rackRev={in:c}; return rackRev; }
+  function makeRack(target){
+    const inn=G(1), lo=ctx.createBiquadFilter(), mid=ctx.createBiquadFilter(), hi=ctx.createBiquadFilter(), comp=ctx.createDynamicsCompressor(), post=G(1);
+    lo.type="lowshelf"; lo.frequency.value=220; mid.type="peaking"; mid.frequency.value=1400; mid.Q.value=0.8; hi.type="highshelf"; hi.frequency.value=5200;
+    inn.connect(lo); lo.connect(mid); mid.connect(hi); hi.connect(comp); comp.connect(post); post.connect(target);
+    const chS=G(1), chMix=G(0), d1=ctx.createDelay(0.05), d2=ctx.createDelay(0.05), lfo=ctx.createOscillator(), lg1=G(0), lg2=G(0), p1=PAN(-0.7), p2=PAN(0.7);
+    d1.delayTime.value=0.017; d2.delayTime.value=0.025; lfo.frequency.value=0.6; lfo.connect(lg1); lfo.connect(lg2); lg1.connect(d1.delayTime); lg2.connect(d2.delayTime); starts.push(lfo);
+    chS.connect(d1); chS.connect(d2); d1.connect(p1); d2.connect(p2); p1.connect(chMix); p2.connect(chMix); chMix.connect(post);
+    const dl=ctx.createDelay(1.6), fb=G(0.4), dMix=G(0); dl.connect(fb); fb.connect(dl); dl.connect(dMix); dMix.connect(post);
+    const rv=G(0); hi.connect(rv); let rvOn=false;
+    const lCh=link(hi,chS), lDl=link(hi,dl);
+    function update(R){
+      lo.gain.value=R.eq.lo; mid.gain.value=R.eq.mid; hi.gain.value=R.eq.hi;
+      const ca=R.comp.amt; comp.threshold.value=-4-32*ca; comp.ratio.value=1+9*ca; comp.knee.value=14; comp.attack.value=0.006; comp.release.value=0.22; post.gain.value=1+0.9*ca;
+      const cm=R.chorus.mix; setLink(lCh,cm>0.01); chMix.gain.value=cm*0.9; lfo.frequency.value=R.chorus.rate; lg1.gain.value=0.0035*R.chorus.depth*2; lg2.gain.value=0.0042*R.chorus.depth*2;
+      setLink(lDl,R.delay.mix>0.01); dl.delayTime.value=Math.max(0.02,Math.min(1.5,R.delay.time)); fb.gain.value=Math.min(0.9,R.delay.fb); dMix.gain.value=R.delay.mix;
+      if(R.rev.mix>0.01&&!rvOn&&ensureRackRev()){ rv.connect(rackRev.in); rvOn=true; } rv.gain.value=R.rev.mix*0.9;
+    }
+    return {in:inn,update};
+  }
+  const rackPlay=makeRack(B.play.lvl), rackDaw=makeRack(B.daw.lvl);
+  function rackSync(){ const R=(S.syn&&S.syn.rack)||SYN_DEFAULT.rack; rackPlay.update(R); rackDaw.update(R); }
+  /* oscilloscope et spectre : le synthé seul (clavier et pistes) ou tout le mélange */
+  const anaAll=ctx.createAnalyser(), anaSyn=ctx.createAnalyser(); anaAll.fftSize=anaSyn.fftSize=2048; anaAll.smoothingTimeConstant=anaSyn.smoothingTimeConstant=0.82;
+  master.connect(anaAll); B.play.it.connect(anaSyn); B.daw.it.connect(anaSyn);
   const newGen=name=>{ const v=V[name], g=G(1); g.connect(v.dst); v.node=g; };
   [["mel",B.mel.in],["canon",canonG],["pad",B.pad.in],["loops",B.loops.in],["pend",B.pend.in]].forEach(([n,d])=>{ V[n]={dst:d,node:null}; newGen(n); });
   const murG=G(0), fireG=G(0), windG=G(0), dripG=G(0);
@@ -189,7 +218,7 @@ function buildEngine(ctx, S, o){
     dOut.gain.value=S.fx.dly; dfb.gain.value=Math.min(0.9,S.fx.fb);
     dl.delayTime.value=E*S.fx.dlyDiv; dr.delayTime.value=E*S.fx.dlyDiv*1.0;
     sat.curve=satCurve(S.fx.sat);
-    dawSync();
+    dawSync(); rackSync();
     wowG1.gain.value=S.fx.wow*0.003; wowG2.gain.value=S.fx.wow*0.0003;
     veil.frequency.value=18000*Math.pow(2500/18000,S.fx.veil);
     hissG.gain.value=S.fx.hiss*0.03;
@@ -507,8 +536,8 @@ function buildEngine(ctx, S, o){
   /* ---------- synthé perso : l'Atelier comme instrument ---------- */
   INST.atelier=(t,f,vel,len,dst,pan)=>{ synthVoice(ctx,S.syn,{t,f,vel,dur:Math.max(0.06,len),dst,pan,lite:o.lite,noise:wb}); };
   /* note tenue au clavier : on garde la poignée et on relâche plus tard */
-  function synOn(off,vel){
-    const t=ctx.currentTime+0.004, v=synthVoice(ctx,S.syn,{t,f:freq(off),vel:vel||0.7,dur:null,dst:B.play.in,pan:0,lite:o.lite,noise:wb});
+  function synOn(off,vel,op){
+    const t=ctx.currentTime+0.004, v=synthVoice(ctx,S.syn,{t,f:freq(off),vel:vel||0.7,dur:null,dst:rackPlay.in,pan:0,lite:o.lite,noise:wb,fromF:op&&op.fromOff!==undefined?freq(op.fromOff):0,glide:op&&op.glide||0});
     if(o.onNote) o.onNote(t,off,"play",0.6,vel||0.6);
     return {release:tt=>v.release(tt===undefined?ctx.currentTime:tt)};
   }
@@ -516,11 +545,11 @@ function buildEngine(ctx, S, o){
   /* ---------- pistes de l'utilisateur (DAW) : des clips en boucle, joués par n'importe quel instrument ---------- */
   function dawT(tr){
     let st=DT[tr.id]; if(st) return st;
-    st={vol:G(1),pan:PAN(0),gen:null,k:0,from:-1e9}; st.vol.connect(st.pan); st.pan.connect(B.daw.in);
+    st={vol:G(1),pan:PAN(0),gen:null,k:0,from:-1e9}; st.vol.connect(st.pan); st.pan.connect(B.daw.in); st.dest=B.daw.in;
     st.gen=G(1); st.gen.connect(st.vol); DT[tr.id]=st; return st;
   }
   function dawSync(){
-    DAW().tracks.forEach(tr=>{ const st=dawT(tr); st.vol.gain.value=trkOn(tr)?tr.vol:0; if(st.pan.pan) st.pan.pan.value=tr.pan||0; });
+    DAW().tracks.forEach(tr=>{ const st=dawT(tr); st.vol.gain.value=trkOn(tr)?tr.vol:0; if(st.pan.pan) st.pan.pan.value=tr.pan||0; const want=tr.inst==="atelier"?rackDaw.in:B.daw.in; if(st.dest!==want){ try{ st.pan.disconnect(); }catch(e){} st.pan.connect(want); st.dest=want; } });
     B.daw.lvl.gain.value=want("daw")?1:0;
   }
   function dawSchedule(until){
@@ -553,10 +582,10 @@ function buildEngine(ctx, S, o){
     dawSchedule(now+4);
   }
   /* note jouée à la main avec l'instrument d'une piste (tenue pour le synthé perso) */
-  function dawOn(tr,off,vel){
+  function dawOn(tr,off,vel,op){
     const t=ctx.currentTime+0.004, st=dawT(tr), f=freq(off), v=vel||0.7;
     if(o.onNote) o.onNote(t,off,"play",0.6,v);
-    if(tr.inst==="atelier"){ const h=synthVoice(ctx,S.syn,{t,f,vel:v,dur:null,dst:st.vol,pan:0,lite:o.lite,noise:wb}); return {release:tt=>h.release(tt===undefined?ctx.currentTime:tt)}; }
+    if(tr.inst==="atelier"){ const h=synthVoice(ctx,S.syn,{t,f,vel:v,dur:null,dst:st.vol,pan:0,lite:o.lite,noise:wb,fromF:op&&op.fromOff!==undefined?freq(op.fromOff):0,glide:op&&op.glide||0}); return {release:tt=>h.release(tt===undefined?ctx.currentTime:tt)}; }
     instOf(tr.inst,"luth")(t,f,v*0.4,E*3,st.vol,0); return {release:()=>{}};
   }
   /* une note à un instant précis (arpégiateur) */
@@ -1017,5 +1046,5 @@ function buildEngine(ctx, S, o){
     starts.forEach(x=>{try{x.stop(now+d+0.2);}catch(e){}});
   }
   const pendX=t=>Array.from({length:pendN()},(_,i)=>Math.cos(2*Math.PI*(PEND_N0+i)*(t-t0)/(S.pend.period*bar)));
-  return {start,schedule,setLevels,setReverb,stop,fadeOut,sleepFade,sleepClear,replan,freeze,reroll,play,synOn,dawOn,dawNote,dawReplan,dawPos,pendX,tensNow:()=>tensAt(ctx.currentTime),adaptNow:()=>adaptE(ctx.currentTime),tensPos:()=>{ if(!curveOn()) return -1; const L=Math.max(30,S.curve.dur*60), x=(ctx.currentTime-t0)/L; return S.curve.mode==='loop'?((x%1)+1)%1:clamp(x,0,1); },events,out,master,secAt:t=>secOf(t),bar,E,t0f:()=>t0};
+  return {start,schedule,setLevels,setReverb,stop,fadeOut,sleepFade,sleepClear,replan,freeze,reroll,play,synOn,dawOn,dawNote,rackSync,analyser:k=>k==="all"?anaAll:anaSyn,dawReplan,dawPos,pendX,tensNow:()=>tensAt(ctx.currentTime),adaptNow:()=>adaptE(ctx.currentTime),tensPos:()=>{ if(!curveOn()) return -1; const L=Math.max(30,S.curve.dur*60), x=(ctx.currentTime-t0)/L; return S.curve.mode==='loop'?((x%1)+1)%1:clamp(x,0,1); },events,out,master,secAt:t=>secOf(t),bar,E,t0f:()=>t0};
 }

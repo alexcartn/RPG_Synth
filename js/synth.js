@@ -4,9 +4,10 @@
    Deux oscillateurs à table d'ondes (avec unisson), un sous-oscillateur, du bruit, une modulation de fréquence,
    un filtre à enveloppe, trois enveloppes, deux LFO et une matrice de modulation à quatre emplacements.
    ============================================================ */
-const SYN_WAVES=["Sinus","Triangle","Dent de scie","Carré","Impulsion étroite","Orgue","Voyelle"];
-const SYN_SRC=[["none","Aucune"],["lfo1","LFO 1"],["lfo2","LFO 2"],["env2","Enveloppe 2"],["vel","Vélocité"]];
-const SYN_DST=[["pitch","Hauteur"],["cutoff","Coupure du filtre"],["reso","Résonance"],["amp","Volume (trémolo)"],["pan","Panoramique"],["fm","Quantité de FM"],["detuneb","Désaccord de B"]];
+const SYN_WAVES=["Sinus","Triangle","Dent de scie","Carré","Impulsion étroite","Orgue","Voyelle","Creux","Cloche","Corde","Dentelle","Verre","Dessinée"];
+const SYN_DRAW=64;
+const SYN_SRC=[["none","Aucune"],["lfo1","LFO 1"],["lfo2","LFO 2"],["lfo3","LFO 3"],["env1","Enveloppe de volume"],["env2","Enveloppe 2"],["vel","Vélocité"],["key","Hauteur de la note"],["rand","Hasard (par note)"]];
+const SYN_DST=[["pitch","Hauteur"],["cutoff","Coupure du filtre"],["reso","Résonance"],["amp","Volume (trémolo)"],["pan","Panoramique"],["fm","Quantité de FM"],["detuneb","Désaccord de B"],["wave","Table d'ondes de A (fondu)"],["lvlb","Niveau de B"]];
 
 const SYN_DEFAULT={
   oscA:{wave:0.34, oct:0, semi:0, det:0, lvl:0.8, uni:3, spread:14, width:0.6},
@@ -20,7 +21,11 @@ const SYN_DEFAULT={
   env2:{a:0.2, d:1, s:0.5, r:1},
   lfo1:{shape:"sine", rate:0.3},
   lfo2:{shape:"triangle", rate:5},
-  mod:[{src:"lfo1",dst:"cutoff",amt:0.25},{src:"lfo2",dst:"pitch",amt:0.02},{src:"none",dst:"amp",amt:0},{src:"vel",dst:"cutoff",amt:0.3}],
+  lfo3:{shape:"triangle", rate:0.5},
+  mod:[{src:"lfo1",dst:"cutoff",amt:0.25},{src:"lfo2",dst:"pitch",amt:0.02},{src:"none",dst:"amp",amt:0},{src:"vel",dst:"cutoff",amt:0.3},{src:"none",dst:"wave",amt:0},{src:"none",dst:"cutoff",amt:0},{src:"none",dst:"pan",amt:0},{src:"none",dst:"lvlb",amt:0}],
+  mono:{on:false, glide:0.08},
+  draw:Array.from({length:64},(_,i)=>{ const th=i/64*2*Math.PI; return Math.sin(th)*0.8+Math.sin(3*th)*0.25-Math.sin(5*th)*0.1; }), drawV:0,
+  rack:{chorus:{mix:0,rate:0.6,depth:0.5}, delay:{mix:0,time:0.32,fb:0.4}, rev:{mix:0}, eq:{lo:0,mid:0,hi:0}, comp:{amt:0}},
   vel:{amt:0.6},
   fx:{drive:0, level:0.8}
 };
@@ -36,19 +41,35 @@ function synHarm(kind){
     else if(kind===3) im[k]=(k%2)?4/(Math.PI*k):0;
     else if(kind===4) im[k]=2/(Math.PI*k)*Math.sin(Math.PI*k*0.2);
     else if(kind===5) im[k]=[0,1,0.7,0.5,0.4,0,0.25,0,0.18][k]||0;
+    else if(kind===7) im[k]=(k%2)?(1/k)*((k===3||k===5)?0.15:1):0;
+    else if(kind===8) im[k]=({1:1,3:0.7,5:0.55,7:0.4,9:0.3,11:0.2,13:0.12,2:0.15,4:0.1})[k]||0;
+    else if(kind===9) im[k]=(1/k)*(k%5===0?0.1:1)*((k%2)?1:-1);
+    else if(kind===10) im[k]=((k%3===0)?-1:1)*0.5/Math.sqrt(k)*(k>24?0:1);
+    else if(kind===11) im[k]=([0,1,0,0,0.3,0,0.5,0,0,0.25,0,0.4,0,0,0.15])[k]||0;
     else im[k]=(Math.exp(-Math.pow((k-5)/1.6,2))*0.9+Math.exp(-Math.pow((k-11)/2,2))*0.55+Math.exp(-Math.pow((k-17)/2.4,2))*0.3)+(k===1?0.5:0);
   }
   return [re,im];
 }
-const SYN_BASE=SYN_WAVES.map((_,i)=>synHarm(i));
+const SYN_BASE=SYN_WAVES.slice(0,12).map((_,i)=>synHarm(i));
+/* la table dessinée : une période de SYN_DRAW points, passée aux harmoniques par une transformée de Fourier */
+const synDrawCache=new Map();
+function drawHarm(P){
+  const d=P.draw||[], key=(P.drawV||0)+":"+d.length; let h=synDrawCache.get(key); if(h&&h.src===d) return h.v;
+  const N=d.length||SYN_DRAW, re=new Float32Array(SYN_N+1), im=new Float32Array(SYN_N+1);
+  let mx=0; for(let n=0;n<N;n++) mx=Math.max(mx,Math.abs(d[n]||0));
+  for(let k=1;k<=Math.min(SYN_N,N/2-1);k++){ let a=0,b=0; for(let n=0;n<N;n++){ const x=(d[n]||0)/(mx||1), th=2*Math.PI*k*n/N; a+=x*Math.cos(th); b+=x*Math.sin(th); } re[k]=2*a/N; im[k]=2*b/N; }
+  const v=[re,im]; synDrawCache.set(key,{src:d,v}); if(synDrawCache.size>40) synDrawCache.delete(synDrawCache.keys().next().value); return v;
+}
+const synBases=P=>SYN_BASE.concat([drawHarm(P)]);
 const synWaveCache=new WeakMap();
-function synWave(ctx,p){
+function synWave(ctx,p,P){
   if(!ctx.createPeriodicWave) return null;
   let m=synWaveCache.get(ctx); if(!m){ m=new Map(); synWaveCache.set(ctx,m); }
-  const k=Math.round(Math.max(0,Math.min(1,p))*72); if(m.has(k)) return m.get(k);
-  const x=k/72*(SYN_BASE.length-1), i=Math.min(SYN_BASE.length-2,Math.floor(x)), f=x-i, re=new Float32Array(SYN_N+1), im=new Float32Array(SYN_N+1);
-  for(let h=0;h<=SYN_N;h++){ im[h]=SYN_BASE[i][1][h]*(1-f)+SYN_BASE[i+1][1][h]*f; }
-  const w=ctx.createPeriodicWave(re,im); m.set(k,w); return w;
+  const bases=synBases(P), k=Math.round(Math.max(0,Math.min(1,p))*72), ck=k+":"+(P.drawV||0);
+  if(m.has(ck)) return m.get(ck);
+  const x=k/72*(bases.length-1), i=Math.min(bases.length-2,Math.floor(x)), f=x-i, re=new Float32Array(SYN_N+1), im=new Float32Array(SYN_N+1);
+  for(let h=0;h<=SYN_N;h++){ re[h]=bases[i][0][h]*(1-f)+bases[i+1][0][h]*f; im[h]=bases[i][1][h]*(1-f)+bases[i+1][1][h]*f; }
+  const w=ctx.createPeriodicWave(re,im); m.set(ck,w); return w;
 }
 const synDriveCurves={};
 function synDrive(a){
@@ -77,64 +98,86 @@ function synthVoice(ctx,P,o){
   const G=v=>{ const g=ctx.createGain(); g.gain.value=v; return g; };
   const srcs=[], oscs=[], detB=[];
   const ampPeak=(1-P.vel.amt)+P.vel.amt*vel;
-  const fil=ctx.createBiquadFilter(); fil.type=P.fil.type; fil.Q.value=P.fil.res;
-  fil.frequency.value=Math.max(20,Math.min(20000,P.fil.cut*Math.pow(f/261.63,P.fil.key)));
+  const f24=P.fil.type==="lowpass24"||P.fil.type==="highpass24", ftype=f24?P.fil.type.slice(0,-2):P.fil.type;
+  const fcut=Math.max(20,Math.min(20000,P.fil.cut*Math.pow(f/261.63,P.fil.key)));
+  const fil=ctx.createBiquadFilter(); fil.type=ftype; fil.Q.value=f24?P.fil.res*0.7:P.fil.res; fil.frequency.value=fcut;
+  const fl=[fil]; let fout=fil;
+  if(f24){ const f2=ctx.createBiquadFilter(); f2.type=ftype; f2.Q.value=0.7; f2.frequency.value=fcut; fil.connect(f2); fl.push(f2); fout=f2; }
   const amp=G(0), trem=G(1), pan=ctx.createStereoPanner?ctx.createStereoPanner():null;
-  let tail=fil;
+  let tail=fout;
   if(P.fx.drive>0.02&&ctx.createWaveShaper){ const ws=ctx.createWaveShaper(); ws.curve=synDrive(P.fx.drive); ws.oversample="none"; tail.connect(ws); tail=ws; }
   tail.connect(amp); amp.connect(trem);
   if(pan){ pan.pan.value=o.pan||0; trem.connect(pan); pan.connect(o.dst); } else trem.connect(o.dst);
   /* oscillateurs avec unisson */
-  const setWave=(os,p)=>{ const w=synWave(ctx,p); if(w) os.setPeriodicWave(w); else os.type=p<0.17?"sine":p<0.5?"triangle":p<0.83?"sawtooth":"square"; };
+  const setWave=(os,p)=>{ const w=synWave(ctx,p,P); if(w) os.setPeriodicWave(w); else os.type=p<0.17?"sine":p<0.5?"triangle":p<0.83?"sawtooth":"square"; };
+  /* glissando : la note part de la hauteur précédente et glisse vers la sienne */
+  const glide=(o.glide>0&&o.fromF>0), gl=o.glide||0;
+  const fset=(os,hz)=>{ if(glide){ os.frequency.setValueAtTime(Math.max(10,hz*o.fromF/f),t); os.frequency.exponentialRampToValueAtTime(hz,t+gl); } else os.frequency.value=hz; };
+  const wmods=P.mod.filter(m=>m.dst==="wave"&&m.src!=="none"&&Math.abs(m.amt)>0.001), lmods=P.mod.filter(m=>m.dst==="lvlb"&&m.src!=="none"&&Math.abs(m.amt)>0.001);
+  const wGains=[], bGains=[];
   const addOsc=(def,isB)=>{
     const n=Math.max(1,Math.min(maxU,Math.round(def.uni||1))), out=[];
     for(let u=0;u<n;u++){
-      const os=ctx.createOscillator(); setWave(os,def.wave); os.frequency.value=f*Math.pow(2,(def.oct||0)+(def.semi||0)/12);
-      const sp=n>1?(u/(n-1)*2-1):0; os.detune.value=(def.det||0)+sp*(def.spread||0);
-      const g=G((def.lvl||0)/Math.sqrt(n));
-      os.connect(g);
-      if(n>1&&ctx.createStereoPanner){ const pn=ctx.createStereoPanner(); pn.pan.value=sp*(def.width===undefined?0.6:def.width); g.connect(pn); pn.connect(fil); } else g.connect(fil);
-      os.start(t+u*0.0011); srcs.push(os); oscs.push(os); out.push(os); if(isB) detB.push(os);
+      const hz=f*Math.pow(2,(def.oct||0)+(def.semi||0)/12), sp=n>1?(u/(n-1)*2-1):0, lv=(def.lvl||0)/Math.sqrt(n);
+      const os=ctx.createOscillator(); setWave(os,def.wave); fset(os,hz); os.detune.value=(def.det||0)+sp*(def.spread||0);
+      const g=G(lv); os.connect(g);
+      let dst=fil;
+      if(n>1&&ctx.createStereoPanner){ const pn=ctx.createStereoPanner(); pn.pan.value=sp*(def.width===undefined?0.6:def.width); pn.connect(fil); dst=pn; }
+      g.connect(dst);
+      os.start(t+u*0.0011); srcs.push(os); oscs.push(os); out.push(os); if(isB){ detB.push(os); bGains.push(g); }
+      /* fondu de table : une jumelle sur la table voisine, dont le niveau suit la source */
+      if(!isB&&wmods.length){
+        const dir=wmods[0].amt>=0?1:-1, os2=ctx.createOscillator(); setWave(os2,Math.max(0,Math.min(1,def.wave+dir*0.34))); fset(os2,hz); os2.detune.value=os.detune.value;
+        const g2=G(0); os2.connect(g2); g2.connect(dst); os2.start(t+u*0.0011); srcs.push(os2); oscs.push(os2); out.push(os2); wGains.push({main:g,twin:g2,lv});
+      }
     }
     return out;
   };
   const aOscs=addOsc(P.oscA,false);
   let fmGain=null;
   if(P.fm.amt>0.001){
-    const mo=ctx.createOscillator(); mo.type="sine"; mo.frequency.value=f*(P.fm.ratio||1)*Math.pow(2,(P.oscB.oct||0));
+    const mo=ctx.createOscillator(); mo.type="sine"; fset(mo,f*(P.fm.ratio||1)*Math.pow(2,(P.oscB.oct||0)));
     fmGain=G(P.fm.amt*f*3); mo.connect(fmGain); aOscs.forEach(a=>fmGain.connect(a.frequency)); mo.start(t); srcs.push(mo);
   }
-  if(P.oscB.lvl>0.001) addOsc(P.oscB,true);
-  if(P.sub.lvl>0.001){ const so=ctx.createOscillator(); so.type=P.sub.shape==="square"?"square":"sine"; so.frequency.value=f/2; const sg=G(P.sub.lvl*(P.sub.shape==="square"?0.5:0.8)); so.connect(sg); sg.connect(fil); so.start(t); srcs.push(so); }
+  if(P.oscB.lvl>0.001||lmods.length) addOsc(P.oscB,true);
+  if(P.sub.lvl>0.001){ const so=ctx.createOscillator(); so.type=P.sub.shape==="square"?"square":"sine"; fset(so,f/2); const sg=G(P.sub.lvl*(P.sub.shape==="square"?0.5:0.8)); so.connect(sg); sg.connect(fil); so.start(t); srcs.push(so); }
   if(P.noise.lvl>0.001&&o.noise){ const ns=ctx.createBufferSource(); ns.buffer=o.noise; ns.loop=true; const ng=G(P.noise.lvl*0.6); ns.connect(ng); ng.connect(fil); ns.start(t,Math.random()*1.5); srcs.push(ns); }
   /* enveloppes : volume, filtre (en centièmes de ton) et enveloppe 2 pour la matrice */
   const lvl=0.34*(P.fx.level===undefined?0.8:P.fx.level)/0.8, ampE=P.envA;
   synGate(amp.gain,t,ampE,lvl*ampPeak,0);
-  synGate(fil.detune,t,P.envF,P.fil.env,0);
-  let e2c=null, e2g=null;
-  const needEnv2=P.mod.some(m=>m.src==="env2"&&m.dst!=="none"&&Math.abs(m.amt)>0.001);
-  if(needEnv2&&ctx.createConstantSource){ e2c=ctx.createConstantSource(); e2c.offset.value=1; e2g=G(0); e2c.connect(e2g); e2c.start(t); srcs.push(e2c); synGate(e2g.gain,t,P.env2,1,0); }
+  fl.forEach(x=>synGate(x.detune,t,P.envF,P.fil.env,0));
+  let e2g=null, e1g=null;
+  const needEnv=k=>P.mod.some(m=>m.src===k&&m.dst!=="none"&&Math.abs(m.amt)>0.001);
+  const mkEnv=E=>{ const c=ctx.createConstantSource(); c.offset.value=1; const g=G(0); c.connect(g); c.start(t); srcs.push(c); synGate(g.gain,t,E,1,0); return g; };
+  if(needEnv("env2")&&ctx.createConstantSource) e2g=mkEnv(P.env2);
+  if(needEnv("env1")&&ctx.createConstantSource) e1g=mkEnv(P.envA);
   /* LFO et matrice : chaque emplacement relie une source à un paramètre de la voix */
   const lfos={};
   const lfo=(k)=>{ if(lfos[k]) return lfos[k]; const d=P[k], os=ctx.createOscillator(); os.type=d.shape; os.frequency.value=d.rate; os.start(t); srcs.push(os); return lfos[k]=os; };
-  const velSrc=()=>{ if(!ctx.createConstantSource) return null; const c=ctx.createConstantSource(); c.offset.value=vel; c.start(t); srcs.push(c); return c; };
+  const constSrc=v=>{ if(!ctx.createConstantSource) return null; const c=ctx.createConstantSource(); c.offset.value=v; c.start(t); srcs.push(c); return c; };
+  const velSrc=()=>constSrc(vel);
   const DST={
-    pitch:{params:()=>oscs.map(x=>x.detune),scale:1200}, cutoff:{params:()=>[fil.detune],scale:4800}, reso:{params:()=>[fil.Q],scale:12},
-    amp:{params:()=>[trem.gain],scale:0.9}, pan:{params:()=>pan?[pan.pan]:[],scale:1}, fm:{params:()=>fmGain?[fmGain.gain]:[],scale:f*3}, detuneb:{params:()=>detB.map(x=>x.detune),scale:100}
+    pitch:{params:()=>oscs.map(x=>x.detune),scale:1200}, cutoff:{params:()=>fl.map(x=>x.detune),scale:4800}, reso:{params:()=>[fil.Q],scale:12},
+    amp:{params:()=>[trem.gain],scale:0.9}, pan:{params:()=>pan?[pan.pan]:[],scale:1}, fm:{params:()=>fmGain?[fmGain.gain]:[],scale:f*3}, detuneb:{params:()=>detB.map(x=>x.detune),scale:100},
+    lvlb:{params:()=>bGains.map(g=>g.gain),scale:0.5}
   };
   P.mod.forEach(m=>{
     const amt=m.amt; if(m.src==="none"||!DST[m.dst]||Math.abs(amt)<0.001) return;
-    const ps=DST[m.dst].params(); if(!ps.length) return;
-    let src=null; if(m.src==="lfo1"||m.src==="lfo2") src=lfo(m.src); else if(m.src==="env2") src=e2g; else if(m.src==="vel") src=velSrc();
+    let src=null;
+    if(m.src==="lfo1"||m.src==="lfo2"||m.src==="lfo3") src=lfo(m.src); else if(m.src==="env2") src=e2g; else if(m.src==="env1") src=e1g; else if(m.src==="vel") src=velSrc();
+    else if(m.src==="key") src=constSrc(Math.max(-1,Math.min(1,Math.log2(f/261.63)/2))); else if(m.src==="rand") src=constSrc(Math.random()*2-1);
     if(!src) return;
+    if(m.dst==="wave"){ wGains.forEach(w=>{ const a=Math.abs(amt)*w.lv; const s1=G(a); src.connect(s1); s1.connect(w.twin.gain); const s2=G(-a); src.connect(s2); s2.connect(w.main.gain); }); return; }
+    const ps=DST[m.dst]?DST[m.dst].params():[]; if(!ps.length) return;
     ps.forEach(pr=>{ const sg=G(amt*DST[m.dst].scale); src.connect(sg); sg.connect(pr); });
   });
   let released=false;
   function release(tr){
     if(released) return; released=true; tr=Math.max(tr,t+0.02);
     synRelease(amp.gain,t,tr,ampE,lvl*ampPeak,0);
-    synRelease(fil.detune,t,tr,P.envF,P.fil.env,0);
+    fl.forEach(x=>synRelease(x.detune,t,tr,P.envF,P.fil.env,0));
     if(e2g) synRelease(e2g.gain,t,tr,P.env2,1,0);
+    if(e1g) synRelease(e1g.gain,t,tr,ampE,1,0);
     const end=tr+Math.max(0.05,ampE.r)*1.4+0.15;
     srcs.forEach(s=>{ try{ s.stop(end); }catch(e){} });
   }
@@ -155,7 +198,17 @@ const SYN_PATCHES=[
   ["Lead brillant",{oscA:{wave:0.5,uni:3,spread:16,lvl:0.7},oscB:{wave:0.67,oct:0,lvl:0.5,uni:2,det:7},fil:{type:"lowpass",cut:2600,res:2,key:0.6,env:2400},envA:{a:0.01,d:0.4,s:0.7,r:0.35},envF:{a:0.01,d:0.4,s:0.4,r:0.4},mod:[{src:"lfo2",dst:"pitch",amt:0.01},{src:"vel",dst:"cutoff",amt:0.3},{src:"none",dst:"amp",amt:0},{src:"none",dst:"cutoff",amt:0}],lfo2:{shape:"sine",rate:5.5},fx:{drive:0.25,level:0.5}}],
   ["Nappe de verre",{oscA:{wave:0,uni:5,spread:18,width:0.9,lvl:0.7},oscB:{wave:0.17,oct:1,lvl:0.3,uni:3,det:4},fil:{type:"lowpass",cut:5200,res:0.4,key:0.4,env:800},envA:{a:1.2,d:1.5,s:0.8,r:2.2},envF:{a:1.5,d:1.5,s:0.6,r:2},mod:[{src:"lfo1",dst:"detuneb",amt:0.3},{src:"none",dst:"pitch",amt:0},{src:"none",dst:"amp",amt:0},{src:"none",dst:"cutoff",amt:0}],lfo1:{shape:"triangle",rate:0.12}}]
 ];
-function synMerge(base,over){ const o=JSON.parse(JSON.stringify(base)); for(const k in over){ if(Array.isArray(over[k])) o[k]=over[k].map(x=>({...x})); else if(over[k]&&typeof over[k]==="object") o[k]={...(o[k]||{}),...over[k]}; else o[k]=over[k]; } return o; }
+function synMerge(base,over){
+  const o=JSON.parse(JSON.stringify(base));
+  for(const k in over){
+    if(k==="draw"&&Array.isArray(over[k])) o[k]=over[k].slice();
+    else if(Array.isArray(over[k])) o[k]=over[k].map(x=>({...x}));
+    else if(over[k]&&typeof over[k]==="object"){ const b=o[k]||{}; o[k]={...b}; for(const j in over[k]){ const v=over[k][j]; o[k][j]=(v&&typeof v==="object"&&!Array.isArray(v))?{...(b[j]||{}),...v}:v; } }
+    else o[k]=over[k];
+  }
+  const dm=base.mod||[]; while(o.mod.length<8) o.mod.push({...(dm[o.mod.length]||{src:"none",dst:"cutoff",amt:0})});
+  return o;
+}
 function synPatch(i){ return synMerge(SYN_DEFAULT,SYN_PATCHES[i][1]); }
 /* tirage au sort : des valeurs musicales, pas n'importe lesquelles */
 function synRandom(rnd){

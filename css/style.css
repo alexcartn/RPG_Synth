@@ -83,7 +83,7 @@ canvas#pend{width:100%; height:56px; display:block; background:var(--parch-2); b
 /* chapitres */
 .chap{border-top:1px solid var(--rule); padding:var(--sp-xl) 0 var(--sp-2xl); margin:0}
 .chap:first-child{border-top:0; padding-top:0}
-.chap > header{display:flex; align-items:baseline; gap:var(--sp-lg); margin-bottom:var(--sp-xl)}
+.chap > summary > header{display:flex; align-items:baseline; gap:var(--sp-lg); margin-bottom:var(--sp-xl)}
 .chap .num{font:400 1.05rem/1 var(--caps); letter-spacing:.12em; color:var(--rubric); min-width:2.6ch}
 .chap h2{font:italic 400 clamp(1.6rem,3vw,2.1rem)/1.1 var(--display); margin:0}
 .chap .sub{font:italic 400 1rem/1.4 var(--body); color:var(--ink-2); margin:var(--sp-xs) 0 0}
@@ -186,7 +186,7 @@ button, select, input, summary, .note-g{-webkit-tap-highlight-color:transparent;
   .note-c{stroke-width:1.4}
 }
 @media (max-width:420px){
-  .chap > header{gap:var(--sp-md)}
+  .chap > summary > header{gap:var(--sp-md)}
   .tempo b{font-size:2.4rem}
 }
 
@@ -241,15 +241,9 @@ html{scroll-padding-top:calc(var(--toc-h) + var(--sp-md))}
 .legend .perc::before{width:2px; height:11px; margin-right:.7em; background:var(--ink); vertical-align:-2px}
 @media (max-width:920px){ .score canvas{height:128px} .legend{font-size:.82rem; gap:var(--sp-xs) var(--sp-md)} }
 
-/* ---------- table de jeu : sons, campagne, courbe ---------- */
-.evt{display:flex; justify-content:flex-start; margin:0 0 var(--sp-lg)}
-.evt:has(> [hidden]){display:none}
-#nextStep{margin-left:auto}
+/* ---------- table de jeu : courbe ---------- */
 @media (max-width:920px){
-  .dock #nextStep2{font-size:1rem; white-space:nowrap}
 }
-#nextStep2{display:none}
-@media (max-width:920px){ #nextStep2:not([hidden]){display:inline-block} }
 
 canvas#curveCv{display:block; width:100%; height:150px; background:var(--parch-2); border-top:1px solid var(--rule); border-bottom:1px solid var(--rule); touch-action:none; user-select:none; -webkit-user-select:none; cursor:crosshair; margin-top:var(--sp-lg)}
 .curvetools{display:flex; flex-wrap:wrap; gap:var(--sp-xs) var(--sp-lg); margin-top:var(--sp-sm)}
@@ -298,7 +292,6 @@ canvas#curveCv{display:block; width:100%; height:150px; background:var(--parch-2
 @media (max-width:920px){
   .lede{font-size:1.06rem; line-height:1.4}
   .head{margin-bottom:var(--sp-lg)}
-  .evt{margin-bottom:var(--sp-md)}
 }
 
 #presetGloss:empty{display:none}
@@ -410,7 +403,6 @@ body.atelier .head .lede, body.atelier .legend{display:none}
 body.atelier .head{margin-bottom:var(--sp-sm)}
 body.atelier .score canvas{height:84px}
 body.atelier .score{margin-bottom:var(--sp-sm)}
-body.atelier .evt{margin-bottom:var(--sp-sm)}
 @media (max-width:700px){ body.atelier .score canvas{height:72px} }
 @media (max-width:700px){
   .at-kbbar{flex-wrap:nowrap; gap:var(--sp-sm); margin-bottom:var(--sp-xs)}
@@ -426,7 +418,6 @@ body.atelier .evt{margin-bottom:var(--sp-sm)}
 .modes .lnk{font:italic 400 1.2rem/1 var(--body); color:var(--ink-2); padding:var(--sp-xs) 0; border-bottom:2px solid transparent}
 .modes .lnk:hover{color:var(--ink)}
 .modes .lnk[aria-pressed="true"]{color:var(--ink); border-bottom-color:var(--rubric)}
-#nextStep{margin-left:auto}
 .at-bar{align-items:center; gap:var(--sp-sm) var(--sp-xl)}
 .atpatch{flex:1 1 18ch; max-width:30ch}
 .atsave{flex:1 1 100%; margin-top:0}
@@ -463,3 +454,14 @@ details.atsave{margin-top:0}
 .piano.scalemode .pk.tonic span{color:var(--rubric)}
 .piano.scalemode .pk.w.on{background:oklch(0.85 0.08 85)}
 @media (max-width:700px){ .piano.scalemode .pk.w span{display:block; font-size:.68rem} }
+
+/* chapitres repliables */
+.chap > summary{list-style:none; cursor:pointer; position:relative; padding-right:2rem}
+.chap > summary::-webkit-details-marker{display:none}
+.chap > summary::after{content:"▸"; position:absolute; right:0; top:.2em; font-size:1.1rem; color:var(--rubric); transition:transform .15s var(--ease)}
+.chap[open] > summary::after{transform:rotate(90deg)}
+.chap > summary:hover h2{color:var(--rubric)}
+.chap:not([open]){padding-bottom:var(--sp-lg)}
+.chap:not([open]) > summary > header{margin-bottom:0}
+.chap:not([open]) .sub{display:none}
+.foldrow{display:flex; gap:var(--sp-xl); margin:0 0 var(--sp-md)}

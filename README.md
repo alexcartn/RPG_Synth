@@ -60,7 +60,6 @@ Troisième mode (interrupteur « Réglages · Jeu · Atelier » sous la partitio
 
 ## Table de jeu
 
-- Itinerarium : une campagne, c'est-à-dire une suite d'étapes (préréglage ou scène mémorisée, durée, fondu). Elle avance seule ou à la touche N / au bouton « Suivant », se répète si on veut, et se mémorise dans le navigateur.
 - Tensio : un curseur, ou une courbe de tension dessinée au doigt (répétée ou jouée une fois) qui module percussion, nappes, bourdon, ambiance et densité mélodique. La courbe est rendue dans l'export.
 
 ## Application installable (PWA)
@@ -103,7 +102,7 @@ Le workflow `.github/workflows/pages.yml` lance les tests puis déploie le site 
 
 ## Vocabulaire
 
-Les titres sont en latin, avec le français en sous-titre, comme sur les instruments médiévaux de fantaisie : Modus (gamme et accord), Tempus (rythme), Bordunus (bourdon), Voces (voix : Cantus, Canon, Concentus, Memoria), Locus (lieu), Spatium et Patina, Mutatio (évolution), Rotae et Pendula, Transcriptio (export). Les contrôles restent en français pour ne pas ralentir l'usage. Une table des matières collée en haut permet de sauter d'un chapitre à l'autre. Sur téléphone, la tension est dans la barre du bas, à côté du bouton Incipe.
+Les titres sont en latin, avec le français en sous-titre, comme sur les instruments médiévaux de fantaisie : Modus (gamme et accord), Tempus (rythme), Bordunus (bourdon), Voces (voix : Cantus, Canon, Concentus, Memoria), Locus (lieu), Spatium et Patina, Mutatio (évolution), Rotae et Pendula, Transcriptio (export). Les contrôles restent en français pour ne pas ralentir l'usage. Les chapitres se replient (« Tout ouvrir » et « Tout fermer » au-dessus, le choix est mémorisé) ; une table des matières collée en haut permet de sauter d'un chapitre à l'autre. Sur téléphone, la tension est dans la barre du bas, à côté du bouton Incipe.
 
 ## Architecture
 

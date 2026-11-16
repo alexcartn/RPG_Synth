@@ -90,15 +90,9 @@ setTimeout(async()=>{
  d.getElementById('atMach').click(); console.log('atelier : machine en sourdine',w.eval('S.mach===false')); d.getElementById('atMach').click();
  w.eval('live.eng.synOn(0,0.7).release()');
  d.getElementById('reglBtn').click();
- // courbe de tension, campagne
+ // courbe de tension
  [...d.querySelectorAll('.curvetools .lnk')][2].click(); await new Promise(r=>setTimeout(r,300));
  console.log('courbe : mode',w.eval('S.curve.mode'),'| valeur actuelle',w.eval('live.eng.tensNow().toFixed(2)'));
- d.getElementById('campGo').click(); await new Promise(r=>setTimeout(r,200));
- console.log('campagne : étape',w.eval('camp.idx'),'| statut',d.getElementById('campStatus').textContent);
- d.getElementById('campNext').click(); await new Promise(r=>setTimeout(r,200));
- console.log('campagne : étape suivante',w.eval('camp.idx'));
- d.getElementById('campGo').click();
- console.log('campagne arrêtée',w.eval('camp.running'));
  d.getElementById('play').click();
  for(const [stems,midi,loop,fmt] of [[false,false,false,'wav'],[false,false,false,'mp3-192'],[true,true,true,'both']]){
   d.getElementById('fmt').value=fmt;

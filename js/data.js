@@ -234,7 +234,7 @@ const UNIVERS = [
   {id:"orient", name:"Orient, Égypte et quarts de ton", items:ORIENT},
   {id:"nature", name:"Nature", items:NATURE}
 ];
-/* liste à plat : les six premiers gardent leurs numéros (la campagne les référence par position) */
+/* liste à plat des préréglages */
 const PRESETS = UNIVERS.flatMap(u=>u.items.map(([n,s,g])=>[n,s,g,u.id]));
 function clone(o){return JSON.parse(JSON.stringify(o));}
 function merge(a,b){for(const k in b){ if(b[k]&&typeof b[k]==="object"&&!Array.isArray(b[k])){ a[k]=merge(a[k]||{},b[k]); } else a[k]=b[k]; } return a;}

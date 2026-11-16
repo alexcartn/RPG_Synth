@@ -79,7 +79,6 @@ function stopLive(){
   setTimeout(()=>{try{ctx.close();}catch(e){}},1600);
   clearInterval(sleep.timer); sleep.endMs=0; sleepNote("");
   setPlayUI(false); updateRingCap(); vizClear(); vizDraw(null); $("pend").parentNode.hidden=true;
-  if(camp.running) campStop();
 }
 /* fondu enchaîné : un nouveau moteur démarre pendant que l'ancien s'éteint, sans coupure */
 function crossfade(d){
@@ -332,12 +331,27 @@ function wireDockTension(){
   main.addEventListener("input",show); show();
   CTL[CTL.length-1].sync2=show;
 }
+/* chapitres repliables : on les ouvre ou on les ferme, le choix est mémorisé */
+const FOLD_KEY="bourdon.chapitres";
+function foldChapters(){
+  const host=$("chapters"); let open=["ch-I"]; try{ const j=JSON.parse(localStorage.getItem(FOLD_KEY)); if(Array.isArray(j)) open=j; }catch(e){}
+  const save=()=>{ try{ localStorage.setItem(FOLD_KEY,JSON.stringify([...host.querySelectorAll(".chap[open]")].map(d=>d.id))); }catch(e){} };
+  [...host.querySelectorAll(":scope > section.chap")].forEach(sec=>{
+    const d=document.createElement("details"); d.className="chap"; d.id=sec.id; d.open=open.indexOf(sec.id)>=0;
+    const sm=document.createElement("summary"), hd=sec.querySelector(":scope > header"); sm.appendChild(hd); d.appendChild(sm);
+    while(sec.firstChild) d.appendChild(sec.firstChild);
+    d.addEventListener("toggle",save); host.replaceChild(d,sec);
+  });
+  const row=document.createElement("p"); row.className="foldrow";
+  [["Tout ouvrir",true],["Tout fermer",false]].forEach(([t,v])=>{ const b=document.createElement("button"); b.type="button"; b.className="lnk"; b.textContent=t; b.onclick=()=>{ host.querySelectorAll(".chap").forEach(d=>{ d.open=v; }); save(); }; row.appendChild(b); });
+  host.parentNode.insertBefore(row,host);
+}
 /* table des matières collée en haut : numéros romains et titres latins */
 function buildToc(){
   const nav=$("toc"), secs=[...document.querySelectorAll("#chapters .chap")], links=new Map();
   secs.forEach(sec=>{
     const a=document.createElement("a"); a.href="#"+sec.id; a.innerHTML='<span class="n">'+sec.querySelector(".num").textContent+'</span>'+sec.querySelector("h2").textContent;
-    nav.appendChild(a); links.set(sec,a);
+    a.onclick=e=>{ e.preventDefault(); sec.open=true; sec.scrollIntoView(); }; nav.appendChild(a); links.set(sec,a);
   });
   const mark=sec=>{ links.forEach((a,s)=>{ if(s===sec){ a.setAttribute("aria-current","true"); const l=a.offsetLeft-nav.clientWidth/2+a.clientWidth/2; if(nav.scrollWidth>nav.clientWidth) nav.scrollTo({left:l}); } else a.removeAttribute("aria-current"); }); };
   if("IntersectionObserver" in window){
@@ -364,8 +378,8 @@ function buildChapters(){
     });
     host.appendChild(sec);
   });
-  buildCampaign(host);
   buildExport(host);
+  foldChapters();
   buildToc();
 }
 function syncUI(){
@@ -413,9 +427,9 @@ function drawScenes(){
 $("saveScene").onclick=()=>{
   const a=getScenes(); if(a.length>=8){ a.shift(); }
   const n=(a.reduce((m,x)=>Math.max(m,x.n||0),0))+1;
-  a.push({n,name:"Scaena "+n+" · "+NOTES[S.root],state:clone(S)}); putScenes(a); drawScenes(); campRefresh();
+  a.push({n,name:"Scaena "+n+" · "+NOTES[S.root],state:clone(S)}); putScenes(a); drawScenes();
 };
-$("clearScenes").onclick=()=>{ putScenes([]); drawScenes(); campRefresh(); };
+$("clearScenes").onclick=()=>{ putScenes([]); drawScenes(); };
 /* extinction progressive : le niveau tient puis descend en douceur, la lecture s'arrête au silence */
 const sleep={endMs:0,len:0,timer:0,shown:""};
 function sleepApply(){ if(!live||!sleep.endMs) return; live.eng.sleepFade(live.ctx.currentTime+(sleep.endMs-Date.now())/1000,sleep.len); }

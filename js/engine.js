@@ -559,6 +559,8 @@ function buildEngine(ctx, S, o){
     if(tr.inst==="atelier"){ const h=synthVoice(ctx,S.syn,{t,f,vel:v,dur:null,dst:st.vol,pan:0,lite:o.lite,noise:wb}); return {release:tt=>h.release(tt===undefined?ctx.currentTime:tt)}; }
     instOf(tr.inst,"luth")(t,f,v*0.4,E*3,st.vol,0); return {release:()=>{}};
   }
+  /* une note à un instant précis (arpégiateur) */
+  function dawNote(tr,off,vel,t,len){ const st=dawT(tr); instOf(tr.inst,"luth")(t,freq(off),vel,Math.max(0.05,len),st.vol,0); if(o.onNote) o.onNote(t,off,"play",len,vel); }
   const dawPos=tr=>{ const L=Math.max(1,tr.bars)*barE, x=(ctx.currentTime-t0)/E; return ((x%L)+L)%L; };
 
   /* ---------- nappes ---------- */
@@ -1015,5 +1017,5 @@ function buildEngine(ctx, S, o){
     starts.forEach(x=>{try{x.stop(now+d+0.2);}catch(e){}});
   }
   const pendX=t=>Array.from({length:pendN()},(_,i)=>Math.cos(2*Math.PI*(PEND_N0+i)*(t-t0)/(S.pend.period*bar)));
-  return {start,schedule,setLevels,setReverb,stop,fadeOut,sleepFade,sleepClear,replan,freeze,reroll,play,synOn,dawOn,dawReplan,dawPos,pendX,tensNow:()=>tensAt(ctx.currentTime),adaptNow:()=>adaptE(ctx.currentTime),tensPos:()=>{ if(!curveOn()) return -1; const L=Math.max(30,S.curve.dur*60), x=(ctx.currentTime-t0)/L; return S.curve.mode==='loop'?((x%1)+1)%1:clamp(x,0,1); },events,out,master,secAt:t=>secOf(t),bar,E,t0f:()=>t0};
+  return {start,schedule,setLevels,setReverb,stop,fadeOut,sleepFade,sleepClear,replan,freeze,reroll,play,synOn,dawOn,dawNote,dawReplan,dawPos,pendX,tensNow:()=>tensAt(ctx.currentTime),adaptNow:()=>adaptE(ctx.currentTime),tensPos:()=>{ if(!curveOn()) return -1; const L=Math.max(30,S.curve.dur*60), x=(ctx.currentTime-t0)/L; return S.curve.mode==='loop'?((x%1)+1)%1:clamp(x,0,1); },events,out,master,secAt:t=>secOf(t),bar,E,t0f:()=>t0};
 }

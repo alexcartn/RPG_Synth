@@ -508,3 +508,15 @@ body.daw .score{margin-bottom:var(--sp-sm)}
 #dawRoll{display:block; width:100%; touch-action:none; user-select:none}
 .dw-kb{margin-top:var(--sp-lg)}
 @media (max-width:1100px){ .dw-grid{grid-template-columns:1fr} }
+.dw-arp{display:flex; flex-wrap:wrap; align-items:center; gap:var(--sp-sm) var(--sp-xl); padding:var(--sp-sm) 0; border-bottom:1px solid var(--rule); font:400 .85rem/1 var(--caps); letter-spacing:.06em; color:var(--ink-2)}
+.dw-arp label{display:flex; align-items:center; gap:var(--sp-xs)}
+.dw-arp select{font-size:.9rem}
+.dw-arp .btn[aria-pressed="true"]{background:var(--ink); color:var(--parch)}
+.dw-arp .arpg input{width:12ch}
+.dw-arp .hint{font:italic 400 .9rem/1.3 var(--body); letter-spacing:0; text-transform:none; margin:0}
+.dw-tabs{display:flex; gap:var(--sp-xl); margin-bottom:var(--sp-sm)}
+.dw-tabs .lnk{font:italic 400 1.05rem/1 var(--body); color:var(--ink-2); padding:var(--sp-xs) 0; border-bottom:2px solid transparent}
+.dw-tabs .lnk[aria-pressed="true"]{color:var(--ink); border-bottom-color:var(--rubric)}
+.dw-sbar{display:flex; flex-wrap:wrap; align-items:center; gap:var(--sp-sm) var(--sp-lg); margin-bottom:var(--sp-sm); font:400 .85rem/1 var(--caps); letter-spacing:.06em; color:var(--ink-2)}
+.dw-sbar label{display:flex; align-items:center; gap:var(--sp-xs)}
+#dawSeq{display:block; width:100%; touch-action:none; user-select:none; cursor:crosshair; border:1px solid var(--rule); background:var(--parch)}

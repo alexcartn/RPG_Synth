@@ -97,8 +97,13 @@ setTimeout(async()=>{
  console.log('daw : mode',w.eval('MODE'),'| lignes',d.querySelectorAll('#dawMix .dw-row').length,'| touches',d.querySelectorAll('#piano .pk').length);
  w.eval('S.daw.tracks[0].notes.push({s:0,off:12,d:1,v:0.7},{s:2,off:14,d:2,v:0.7})'); w.eval('live.eng.dawReplan(S.daw.tracks[0].id)');
  w.eval('S.daw.mix.mute.perc=true; live.eng.setLevels(); S.daw.tracks[1].solo=true; live.eng.setLevels(); S.daw.tracks[1].solo=false; S.daw.mix.mute.perc=false; live.eng.setLevels()');
- w.eval('DW.rec=true'); w.eval('atOn("t1",3)'); await new Promise(r=>setTimeout(r,300)); w.eval('atOff("t1")');
+ w.eval('DW.rec=true; dawSnap(S.daw.tracks[0])'); w.eval('atOn("t1",3)'); await new Promise(r=>setTimeout(r,300)); w.eval('atOff("t1")');
  console.log('daw : notes enregistrées',w.eval('S.daw.tracks[0].notes.length'),'| annuler',d.getElementById('dawUndo').disabled);
+ w.eval('dawRecStop()');
+ w.eval('S.daw.arp.on=true; S.daw.arp.mode="updown"; atOn("a1",0); atOn("a2",2); atOn("a3",4)'); console.log('arp : touches tenues',w.eval('arpHeld().length'),'| séquence',w.eval('arpSeq().join(",")'));
+ await new Promise(r=>setTimeout(r,400)); w.eval('atOff("a1"); atOff("a2"); atOff("a3"); S.daw.arp.on=false');
+ d.getElementById('dawTabSeq').click(); w.eval('S.daw.tracks[0].notes=[]; seqRandom()'); console.log('séquenceur : notes au hasard',w.eval('S.daw.tracks[0].notes.length>0'),'| décalage',w.eval('(seqShift(),S.daw.tracks[0].notes.length>0)'));
+ d.getElementById('dawTabRoll').click();
  w.eval('dawUndo()'); console.log('daw : après annulation',w.eval('S.daw.tracks[0].notes.length'));
  d.getElementById('reglBtn').click();
  // courbe de tension

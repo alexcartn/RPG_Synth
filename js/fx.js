@@ -1,6 +1,6 @@
 "use strict";
 /* ============================================================
-   EFFETS EN AUDIOWORKLET : réverbération modulée, nuage de grains
+   AUDIOWORKLET : réverbération modulée, nuage de grains, synthé à tables d'ondes
    Le code des processeurs est une fonction, envoyée au worklet par une URL de blob :
    ça marche en file://, hors ligne et dans un OfflineAudioContext (export).
    ============================================================ */
@@ -129,16 +129,170 @@ function fxWorkletBody(){
     }
   }
   registerProcessor("bourdon-grain",Grain);
+
+  /* ---------- synthé à tables d'ondes ----------
+     Toutes les voix d'une destination sont calculées ici, échantillon par échantillon : tables de 2048 points
+     filtrées par octave (pas de repliement), position de table modulable, unisson à phases libres, torsion,
+     modulation de phase, filtre à variables d'état, enveloppes, LFO, matrice et macros.
+     Les tables sont partagées par tous les processeurs du contexte. */
+  const TS=2048, NH=256, MIPS=9, TAB={tabs:null, v:-1}, SIN=new Float32Array(TS+1);
+  for(let i=0;i<=TS;i++) SIN[i]=Math.sin(2*Math.PI*i/TS);
+  function buildTable(re,im){
+    const acc=new Float32Array(TS), mips=new Array(MIPS);
+    for(let m=MIPS-1;m>=0;m--){
+      const hi=NH>>m, lo=m===MIPS-1?0:NH>>(m+1);
+      for(let k=lo+1;k<=hi;k++){
+        const a=im[k]||0, b=re[k]||0; if(!a&&!b) continue;
+        for(let n=0;n<TS;n++){ const j=(k*n)&(TS-1); acc[n]+=a*SIN[j]+b*SIN[(j+(TS>>2))&(TS-1)]; }
+      }
+      const t=new Float32Array(TS+1); t.set(acc); t[TS]=acc[0]; mips[m]=t;
+    }
+    let pk=0; const top=mips[0]; for(let n=0;n<TS;n++){ const x=top[n]<0?-top[n]:top[n]; if(x>pk) pk=x; }
+    if(pk>0){ const g=1/pk; for(let m=0;m<MIPS;m++){ const t=mips[m]; for(let n=0;n<=TS;n++) t[n]*=g; } }
+    return mips;
+  }
+  const envAt=(E,x)=>{ const a=E.a>0.0005?E.a:0.0005; return x<=0?0:x<a?x/a:E.s+(1-E.s)*Math.exp(-(x-a)/((E.d>0.01?E.d:0.01)/3)); };
+  const envV=(E,tt,tr)=>(tr<0||tt<tr)?envAt(E,tt):envAt(E,tr)*Math.exp(-(tt-tr)/((E.r>0.01?E.r:0.01)/3));
+  const lfoV=(sh,p)=>{ p-=Math.floor(p); return sh==="sine"?Math.sin(6.2831853*p):sh==="triangle"?(p<0.25?4*p:p<0.75?2-4*p:4*p-4):sh==="sawtooth"?(p<0.5?2*p:2*p-2):(p<0.5?1:-1); };
+  const SRCK=["lfo1","lfo2","lfo3","env1","env2","vel","key","rand","mac1","mac2","mac3","mac4"];
+
+  class Synth extends AudioWorkletProcessor{
+    constructor(opt){
+      super();
+      const po=(opt&&opt.processorOptions)||{}; let a=(po.seed||1)>>>0;
+      this.rnd=()=>{ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; };
+      this.maxV=po.lite?10:20; this.maxU=po.lite?3:7; this.P=null; this.pend=[]; this.voices=[]; this.dead=Infinity;
+      this.src={}; this.mod={pitch:0,cutoff:0,reso:0,amp:0,pan:0,fm:0,detuneb:0,lvlb:0,wave:0,waveb:0,warp:0};
+      this.port.onmessage=e=>this.msg(e.data);
+    }
+    msg(d){
+      if(d.type==="patch") this.P=d.P;
+      else if(d.type==="tab"){
+        if(d.spec&&(!TAB.tabs||TAB.tabs.length!==d.spec.length)) TAB.tabs=d.spec.map(s=>buildTable(s[0],s[1]));
+        else if(d.draw&&TAB.tabs) TAB.tabs[TAB.tabs.length-1]=buildTable(d.draw[0],d.draw[1]);
+        TAB.v=d.v;
+      }
+      else if(d.type==="on"){ let i=this.pend.length; while(i>0&&this.pend[i-1].t>d.t) i--; this.pend.splice(i,0,d); }
+      else if(d.type==="off"){
+        for(const v of this.voices) if(v.id===d.id){ const a=Math.max(v.age+1,Math.round((d.t-v.tOn)*sampleRate)); if(a<v.offAge) v.offAge=Math.max(a,Math.round(0.02*sampleRate)); }
+        for(const p of this.pend) if(p.id===d.id) p.dur=Math.max(0.02,d.t-p.t);
+      }
+      else if(d.type==="dead") this.dead=d.t;
+      else if(d.type==="sync") this.port.postMessage({type:"sync",k:d.k});
+      else if(d.type==="panic"){ this.pend.length=0; for(const v of this.voices) v.steal=1; }
+    }
+    start(ev,ofs){
+      if(this.voices.length>=this.maxV){ /* vol de voix : la plus avancée dans son relâchement, sinon la plus ancienne */
+        let b=null, bs=-1; for(const v of this.voices){ if(v.steal) continue; const sc=(v.offAge<=v.age?1e9:0)+v.age; if(sc>bs){ bs=sc; b=v; } } if(b) b.steal=1;
+      }
+      const U=this.maxU, v={id:ev.id, f:ev.f, vel:Math.max(0.02,Math.min(1,ev.vel)), pan:ev.pan||0, tOn:ev.t, age:0, start:ofs,
+        offAge:(ev.dur===null||ev.dur===undefined)?Infinity:Math.round(Math.max(0.02,ev.dur)*sampleRate),
+        fromF:ev.fromF||0, glide:ev.glide||0, rand:this.rnd()*2-1, steal:0, done:false, g:0,
+        phA:new Float64Array(U), phB:new Float64Array(U), incA:new Float64Array(U), incB:new Float64Array(U),
+        glA:new Float32Array(U), grA:new Float32Array(U), glB:new Float32Array(U), grB:new Float32Array(U),
+        pm:0, ps:0, f1:new Float64Array(8)};
+      for(let u=0;u<U;u++){ v.phA[u]=this.rnd(); v.phB[u]=this.rnd(); }
+      this.voices.push(v);
+    }
+    process(inputs,outputs){
+      const out=outputs[0], L=out[0], R=out[1]||out[0], n=L.length, t0=currentTime, sr=sampleRate;
+      if(t0>this.dead) return false;
+      const pend=this.pend, lim=t0+n/sr;
+      while(pend.length&&pend[0].t<lim){ const ev=pend.shift(); this.start(ev,Math.max(0,Math.min(n-1,Math.round((ev.t-t0)*sr)))); }
+      const vs=this.voices; if(!vs.length) return true;
+      const P=this.P; if(!P||!TAB.tabs){ return true; }
+      for(let i=0;i<vs.length;i++) this.render(vs[i],L,R,n,P);
+      for(let i=vs.length-1;i>=0;i--) if(vs[i].done) vs.splice(i,1);
+      return true;
+    }
+    render(v,L,R,n,P){
+      const sr=sampleRate, T=TAB.tabs, nT=T.length, A=P.oscA, B=P.oscB, src=this.src, M=this.mod, mods=P.mod||[], mac=P.mac||{};
+      const nA=A.lvl>0.001?Math.max(1,Math.min(this.maxU,Math.round(A.uni||1))):0;
+      const bMod=mods.some(m=>m.dst==="lvlb"&&m.src!=="none"&&m.amt), nB=(B.lvl>0.001||bMod)?Math.max(1,Math.min(this.maxU,Math.round(B.uni||1))):0;
+      const f24=P.fil.type==="lowpass24"||P.fil.type==="highpass24", ft=f24?P.fil.type.slice(0,-2):P.fil.type, fmode=ft==="lowpass"?0:ft==="highpass"?1:ft==="bandpass"?2:3;
+      /* une voix sans unisson est mono : même niveau que l'ancien moteur (répartition à puissance égale) */
+      const lvl0=0.34*(P.fx.level===undefined?0.8:P.fx.level)/0.8*((1-P.vel.amt)+P.vel.amt*v.vel)*(nA<=1&&nB<=1?0.70710678:1);
+      const drv=P.fx.drive>0.02?1+P.fx.drive*12:0, drvN=drv?1/Math.tanh(drv):1;
+      const subL=P.sub.lvl>0.001?P.sub.lvl*(P.sub.shape==="square"?0.5:0.8):0, subSq=P.sub.shape==="square", nz=P.noise.lvl>0.001?P.noise.lvl*0.6:0;
+      const keyV=Math.max(-1,Math.min(1,Math.log2(v.f/261.63)/2)), octB=Math.pow(2,B.oct||0), rA=Math.pow(2,(A.oct||0)+(A.semi||0)/12), rB=octB*Math.pow(2,(B.semi||0)/12);
+      const tail=2.3*Math.max(0.01,P.envA.r)+0.05, f1=v.f1, rnd=this.rnd;
+      let i=v.start; v.start=0;
+      while(i<n){
+        const m=Math.min(16,n-i), tt=v.age/sr, tr=v.offAge<=v.age?v.offAge/sr:-1;
+        /* sources de modulation, puis la matrice */
+        const e1=envV(P.envA,tt,tr), eF=envV(P.envF,tt,tr);
+        src.lfo1=lfoV(P.lfo1.shape,tt*P.lfo1.rate); src.lfo2=lfoV(P.lfo2.shape,tt*P.lfo2.rate); src.lfo3=lfoV(P.lfo3.shape,tt*P.lfo3.rate);
+        src.env1=e1; src.env2=envV(P.env2,tt,tr); src.vel=v.vel; src.key=keyV; src.rand=v.rand; src.mac1=mac.m1||0; src.mac2=mac.m2||0; src.mac3=mac.m3||0; src.mac4=mac.m4||0;
+        M.pitch=M.cutoff=M.reso=M.amp=M.pan=M.fm=M.detuneb=M.lvlb=M.wave=M.waveb=M.warp=0;
+        for(let q=0;q<mods.length;q++){ const s=mods[q]; if(s.src==="none"||!s.amt||M[s.dst]===undefined) continue; const x=src[s.src]; if(x!==undefined) M[s.dst]+=x*s.amt; }
+        let fb=v.f*Math.pow(2,M.pitch);
+        if(v.glide>0&&v.fromF>0&&tt<v.glide) fb*=Math.pow(v.fromF/v.f,1-tt/v.glide);
+        /* oscillateurs : pas de phase, niveaux et panoramique de chaque voix d'unisson */
+        let maxInc=0;
+        for(let u=0;u<nA;u++){ const sp=nA>1?u/(nA-1)*2-1:0, inc=fb*rA*Math.pow(2,((A.det||0)+sp*(A.spread||0))/1200)/sr; v.incA[u]=inc; if(inc>maxInc) maxInc=inc;
+          const lv=A.lvl/Math.sqrt(nA); if(nA>1){ const th=(sp*(A.width===undefined?0.6:A.width)+1)*0.78539816; v.glA[u]=Math.cos(th)*lv; v.grA[u]=Math.sin(th)*lv; } else v.glA[u]=v.grA[u]=lv; }
+        const lvB=Math.max(0,(B.lvl||0)+0.5*M.lvlb);
+        for(let u=0;u<nB;u++){ const sp=nB>1?u/(nB-1)*2-1:0, inc=fb*rB*Math.pow(2,((B.det||0)+100*M.detuneb+sp*(B.spread||0))/1200)/sr; v.incB[u]=inc; if(inc>maxInc) maxInc=inc;
+          const lv=lvB/Math.sqrt(nB); if(nB>1){ const th=(sp*(B.width===undefined?0.6:B.width)+1)*0.78539816; v.glB[u]=Math.cos(th)*lv; v.grB[u]=Math.sin(th)*lv; } else v.glB[u]=v.grB[u]=lv; }
+        let mip=maxInc>0?Math.ceil(Math.log2(maxInc*NH*2.1)):0; mip=mip<0?0:mip>MIPS-1?MIPS-1:mip;
+        const pa=Math.max(0,Math.min(1,A.wave+0.5*M.wave))*(nT-1), ia=Math.min(nT-2,pa|0), fa=pa-ia, a0=T[ia][mip], a1=T[ia+1][mip];
+        const pb=Math.max(0,Math.min(1,B.wave+0.5*M.waveb))*(nT-1), ib=Math.min(nT-2,pb|0), fbm=pb-ib, b0=T[ib][mip], b1=T[ib+1][mip];
+        const wA=Math.max(-0.95,Math.min(0.95,(A.warp||0)+M.warp)), bkA=0.5+0.47*wA, wB=Math.max(-0.95,Math.min(0.95,B.warp||0)), bkB=0.5+0.47*wB;
+        const fmA=Math.max(0,(P.fm.amt||0)+M.fm), beta=fmA>0.001?fmA*3/((P.fm.ratio||1)*octB)/6.2831853:0, incM=fb*(P.fm.ratio||1)*octB/sr, incS=fb*0.5/sr;
+        let smip=Math.ceil(Math.log2(incS*NH*2.1)); smip=smip<0?0:smip>MIPS-1?MIPS-1:smip; const sq=T[3][smip];
+        /* filtre : coupure suivie par le clavier, l'enveloppe et la matrice */
+        let fc=P.fil.cut*Math.pow(v.f/261.63,P.fil.key)*Math.pow(2,(P.fil.env*eF+4800*M.cutoff)/1200); fc=fc<20?20:fc>sr*0.45?sr*0.45:fc;
+        const res=Math.max(0.05,P.fil.res+12*M.reso), g=Math.tan(Math.PI*fc/sr);
+        const k1=fmode<2?1/Math.pow(10,(f24?res*0.7:res)/20):1/Math.max(0.1,res), a1c=1/(1+g*(g+k1)), a2c=g*a1c, a3c=g*a2c;
+        const k2=1/Math.pow(10,0.035), c1=1/(1+g*(g+k2)), c2=g*c1, c3=g*c2;
+        const gT=Math.max(0,lvl0*e1*(1+0.9*M.amp))*(v.steal?0:1), gs=(gT-v.g)/m; let gg=v.g;
+        const pn=Math.max(-1,Math.min(1,v.pan+M.pan)), bl=pn>0?1-pn:1, br=pn<0?1+pn:1;
+        const phA=v.phA, phB=v.phB, incA=v.incA, incB=v.incB, glA=v.glA, grA=v.grA, glB=v.glB, grB=v.grB;
+        let pm=v.pm, ps=v.ps;
+        for(let s=0;s<m;s++){
+          let xl=0, xr=0, fo=0;
+          if(beta){ pm+=incM; if(pm>=1) pm-=1; const x=pm*TS, j=x|0; fo=beta*(SIN[j]+(SIN[j+1]-SIN[j])*(x-j)); }
+          for(let u=0;u<nA;u++){
+            let ph=phA[u]+incA[u]; if(ph>=1) ph-=1; phA[u]=ph;
+            let q=ph+fo; if(fo) q-=Math.floor(q);
+            if(wA) q=q<bkA?0.5*q/bkA:0.5+0.5*(q-bkA)/(1-bkA);
+            const x=q*TS, j=x|0, fr=x-j, ya=a0[j]+(a0[j+1]-a0[j])*fr, yb=a1[j]+(a1[j+1]-a1[j])*fr, y=ya+(yb-ya)*fa;
+            xl+=y*glA[u]; xr+=y*grA[u];
+          }
+          for(let u=0;u<nB;u++){
+            let q=phB[u]+incB[u]; if(q>=1) q-=1; phB[u]=q;
+            if(wB) q=q<bkB?0.5*q/bkB:0.5+0.5*(q-bkB)/(1-bkB);
+            const x=q*TS, j=x|0, fr=x-j, ya=b0[j]+(b0[j+1]-b0[j])*fr, yb=b1[j]+(b1[j+1]-b1[j])*fr, y=ya+(yb-ya)*fbm;
+            xl+=y*glB[u]; xr+=y*grB[u];
+          }
+          if(subL){ ps+=incS; if(ps>=1) ps-=1; const x=ps*TS, j=x|0, y=(subSq?sq[j]+(sq[j+1]-sq[j])*(x-j):SIN[j]+(SIN[j+1]-SIN[j])*(x-j))*subL; xl+=y; xr+=y; }
+          if(nz){ const y=(rnd()*2-1)*nz; xl+=y; xr+=y; }
+          /* filtre à variables d'état, un ou deux étages, par canal */
+          { let v3=xl-f1[1], v1=a1c*f1[0]+a2c*v3, v2=f1[1]+a2c*f1[0]+a3c*v3; f1[0]=2*v1-f1[0]; f1[1]=2*v2-f1[1];
+            xl=fmode===0?v2:fmode===1?xl-k1*v1-v2:fmode===2?k1*v1:xl-k1*v1;
+            v3=xr-f1[3]; v1=a1c*f1[2]+a2c*v3; v2=f1[3]+a2c*f1[2]+a3c*v3; f1[2]=2*v1-f1[2]; f1[3]=2*v2-f1[3];
+            xr=fmode===0?v2:fmode===1?xr-k1*v1-v2:fmode===2?k1*v1:xr-k1*v1; }
+          if(f24){ let v3=xl-f1[5], v1=c1*f1[4]+c2*v3, v2=f1[5]+c2*f1[4]+c3*v3; f1[4]=2*v1-f1[4]; f1[5]=2*v2-f1[5]; xl=fmode===0?v2:xl-k2*v1-v2;
+            v3=xr-f1[7]; v1=c1*f1[6]+c2*v3; v2=f1[7]+c2*f1[6]+c3*v3; f1[6]=2*v1-f1[6]; f1[7]=2*v2-f1[7]; xr=fmode===0?v2:xr-k2*v1-v2; }
+          if(drv){ xl=Math.tanh(drv*xl)*drvN; xr=Math.tanh(drv*xr)*drvN; }
+          gg+=gs; L[i+s]+=xl*gg*bl; R[i+s]+=xr*gg*br;
+        }
+        v.pm=pm; v.ps=ps; v.g=gT; v.age+=m; i+=m;
+        if((v.steal&&gT===0)||(tr>=0&&tt-tr>tail)){ v.done=true; break; }
+      }
+    }
+  }
+  registerProcessor("bourdon-synth",Synth);
 }
 
 /* charge les processeurs dans un contexte ; la promesse rend true s'ils sont disponibles.
    Une URL de blob d'abord ; en file:// elle est refusée, une URL data: prend le relais. */
 function fxLoad(ctx){
   if(ctx.__fxP) return ctx.__fxP;
-  if(!ctx.audioWorklet) return ctx.__fxP=Promise.resolve(false);
+  if(!ctx.audioWorklet){ ctx.__fxDone=true; return ctx.__fxP=Promise.resolve(false); }
   const src="("+fxWorkletBody.toString()+")();", ways=[];
   if(typeof Blob!=="undefined"&&typeof URL!=="undefined"&&URL.createObjectURL) ways.push(()=>{ const u=URL.createObjectURL(new Blob([src],{type:"application/javascript"})); return ctx.audioWorklet.addModule(u).finally(()=>{ try{ URL.revokeObjectURL(u); }catch(e){} }); });
   ways.push(()=>ctx.audioWorklet.addModule("data:application/javascript;charset=utf-8,"+encodeURIComponent(src)));
   const attempt=i=>{ let p; try{ p=ways[i](); }catch(e){ p=Promise.reject(e); } return p.then(()=>{ ctx.__fx=true; return true; },()=>i+1<ways.length?attempt(i+1):false); };
-  return ctx.__fxP=attempt(0);
+  return ctx.__fxP=attempt(0).then(ok=>{ ctx.__fxDone=true; return ok; });
 }

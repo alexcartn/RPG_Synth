@@ -6,12 +6,13 @@
    ============================================================ */
 const SYN_WAVES=["Sinus","Triangle","Dent de scie","Carré","Impulsion étroite","Orgue","Voyelle","Creux","Cloche","Corde","Dentelle","Verre","Dessinée"];
 const SYN_DRAW=64;
-const SYN_SRC=[["none","Aucune"],["lfo1","LFO 1"],["lfo2","LFO 2"],["lfo3","LFO 3"],["env1","Enveloppe de volume"],["env2","Enveloppe 2"],["vel","Vélocité"],["key","Hauteur de la note"],["rand","Hasard (par note)"]];
-const SYN_DST=[["pitch","Hauteur"],["cutoff","Coupure du filtre"],["reso","Résonance"],["amp","Volume (trémolo)"],["pan","Panoramique"],["fm","Quantité de FM"],["detuneb","Désaccord de B"],["wave","Fondu de table (A)"],["lvlb","Niveau de B"]];
+const SYN_SRC=[["none","Aucune"],["lfo1","LFO 1"],["lfo2","LFO 2"],["lfo3","LFO 3"],["env1","Enveloppe de volume"],["env2","Enveloppe 2"],["vel","Vélocité"],["key","Hauteur de la note"],["rand","Hasard (par note)"],["mac1","Macro 1"],["mac2","Macro 2"],["mac3","Macro 3"],["mac4","Macro 4"]];
+const SYN_DST=[["pitch","Hauteur"],["cutoff","Coupure du filtre"],["reso","Résonance"],["amp","Volume (trémolo)"],["pan","Panoramique"],["fm","Quantité de FM"],["detuneb","Désaccord de B"],["wave","Position de table (A)"],["waveb","Position de table (B)"],["warp","Torsion (A)"],["lvlb","Niveau de B"]];
 
 const SYN_DEFAULT={
-  oscA:{wave:0.34, oct:0, semi:0, det:0, lvl:0.8, uni:3, spread:14, width:0.6},
-  oscB:{wave:0.5, oct:0, semi:0, det:6, lvl:0, uni:1, spread:10, width:0.6},
+  oscA:{wave:0.34, oct:0, semi:0, det:0, lvl:0.8, uni:3, spread:14, width:0.6, warp:0},
+  oscB:{wave:0.5, oct:0, semi:0, det:6, lvl:0, uni:1, spread:10, width:0.6, warp:0},
+  mac:{m1:0, m2:0, m3:0, m4:0},
   sub:{lvl:0, shape:"sine"},
   noise:{lvl:0},
   fm:{amt:0, ratio:2},
@@ -32,9 +33,9 @@ const SYN_DEFAULT={
 
 /* ---- tables d'ondes : chaque position entre deux formes est une interpolation de leurs harmoniques ---- */
 const SYN_N=48;
-function synHarm(kind){
-  const re=new Float32Array(SYN_N+1), im=new Float32Array(SYN_N+1);
-  for(let k=1;k<=SYN_N;k++){
+function synHarm(kind,N){
+  N=N||SYN_N; const re=new Float32Array(N+1), im=new Float32Array(N+1);
+  for(let k=1;k<=N;k++){
     if(kind===0) im[k]=k===1?1:0;
     else if(kind===1) im[k]=(k%2)?((k%4===1?1:-1)*8/(Math.PI*Math.PI*k*k)):0;
     else if(kind===2) im[k]=(2/Math.PI)*((k%2)?1:-1)/k*-1;
@@ -186,6 +187,55 @@ function synthVoice(ctx,P,o){
 }
 
 /* ---- patches : une petite bibliothèque, et un tirage au sort musical ---- */
+/* ---------- moteur à tables d'ondes (AudioWorklet, js/fx.js) ----------
+   Un nœud par destination, qui calcule toutes ses voix. synthNote() l'utilise quand le worklet est chargé,
+   sinon retombe sur synthVoice() (nœuds natifs). Le patch est renvoyé aux nœuds dès qu'il change : les notes tenues suivent les réglages. */
+const SYN_WT_N=256, synCtx=new WeakMap();
+let synSpecBase=null, synNoteId=1;
+function synSpectra(P){
+  if(!synSpecBase) synSpecBase=SYN_WAVES.slice(0,12).map((_,i)=>{ const h=synHarm(i,SYN_WT_N); return [Array.from(h[0]),Array.from(h[1])]; });
+  const d=drawHarm(P); return synSpecBase.concat([[Array.from(d[0]),Array.from(d[1])]]);
+}
+function synCore(P){ const o={}; for(const k in P) if(k!=="draw"&&k!=="rack") o[k]=P[k]; return o; }
+function synState(ctx){ let st=synCtx.get(ctx); if(!st){ st={nodes:new Map(),tabV:null,pv:""}; synCtx.set(ctx,st); } return st; }
+function synNodeFor(ctx,dst,o){
+  const st=synState(ctx); let n=st.nodes.get(dst); if(n) return n;
+  try{ n=new AudioWorkletNode(ctx,"bourdon-synth",{numberOfInputs:0,numberOfOutputs:1,outputChannelCount:[2],processorOptions:{seed:(o.seed||1)+st.nodes.size*7919,lite:!!o.lite}}); }catch(e){ return null; }
+  n.connect(dst); n.__pv=""; st.nodes.set(dst,n); return n;
+}
+/* envoie le patch (et la table dessinée si elle a changé) aux nœuds qui ne l'ont pas encore */
+function synPush(ctx,P,only){
+  const st=synCtx.get(ctx); if(!st||!st.nodes.size) return;
+  const core=synCore(P), pv=JSON.stringify(core), tv=(P.drawV||0)+":"+(P.draw||[]).length;
+  if(st.tabV!==tv){ const first=st.nodes.values().next().value, sp=synSpectra(P); first.port.postMessage(st.tabV===null?{type:"tab",v:tv,spec:sp}:{type:"tab",v:tv,draw:sp[sp.length-1]}); st.tabV=tv; }
+  for(const n of (only?[only]:st.nodes.values())) if(n.__pv!==pv){ n.__pv=pv; n.port.postMessage({type:"patch",P:core}); }
+}
+/* une destination disparaît (voix replanifiée, moteur éteint) : son nœud s'arrête à l'instant t */
+function synDrop(ctx,dst,t){ const st=synCtx.get(ctx); if(!st) return; const n=st.nodes.get(dst); if(!n) return; n.port.postMessage({type:"dead",t}); st.nodes.delete(dst); const ms=Math.max(0,(t-(ctx.currentTime||0))*1000)+300; if(typeof setTimeout==="function") setTimeout(()=>{ try{ n.disconnect(); }catch(e){} },ms); }
+function synDropAll(ctx,t,dsts){ const st=synCtx.get(ctx); if(!st) return; (dsts||[...st.nodes.keys()]).forEach(d=>synDrop(ctx,d,t)); }
+function synPanic(ctx){ const st=synCtx.get(ctx); if(st) st.nodes.forEach(n=>n.port.postMessage({type:"panic"})); }
+/* attend que chaque nœud ait reçu tous ses messages : à faire avant un rendu hors ligne, qui ne lit plus sa boîte une fois lancé */
+function synFlush(ctx){
+  const st=synCtx.get(ctx); if(!st||!st.nodes.size) return Promise.resolve();
+  const k=synNoteId++, all=[...st.nodes.values()].map(n=>new Promise(res=>{ const h=e=>{ if(e.data&&e.data.type==="sync"&&e.data.k===k){ n.port.removeEventListener("message",h); res(); } }; n.port.addEventListener("message",h); n.port.start(); n.port.postMessage({type:"sync",k}); }));
+  return Promise.race([Promise.all(all),new Promise(res=>setTimeout(res,3000))]);
+}
+const synWtOn=ctx=>!!(ctx.__fx&&typeof AudioWorkletNode!=="undefined");
+function synthNote(ctx,P,o){
+  /* le worklet est en cours de chargement (premières millisecondes de la lecture) : la note attend sa réponse */
+  if(ctx.__fxP&&!ctx.__fxDone){
+    let h=null, rel=null;
+    ctx.__fxP.then(()=>{ const q=Object.assign({},o,{t:Math.max(o.t,(ctx.currentTime||0)+0.004)}); h=synthNote(ctx,P,q); if(rel!==null) h.release(Math.max(rel,q.t+0.02)); });
+    return {t:o.t, release(tr){ if(h) h.release(tr); else rel=tr; }};
+  }
+  if(!synWtOn(ctx)) return synthVoice(ctx,P,o);
+  const n=synNodeFor(ctx,o.dst,o); if(!n) return synthVoice(ctx,P,o);
+  synPush(ctx,P,n);
+  const id=synNoteId++, dur=(o.dur===null||o.dur===undefined)?null:o.dur;
+  n.port.postMessage({type:"on",id,t:o.t,f:o.f,vel:o.vel,pan:o.pan||0,dur,fromF:o.fromF||0,glide:o.glide||0});
+  let released=dur!==null;
+  return {t:o.t, release(tr){ if(released) return; released=true; n.port.postMessage({type:"off",id,t:Math.max(tr,o.t+0.02)}); }};
+}
 const SYN_PATCHES=[
   ["Pad doux",{}],
   ["Basse sub",{oscA:{wave:0.5,uni:1,spread:0,lvl:0.7},sub:{lvl:0.8,shape:"sine"},fil:{type:"lowpass",cut:420,res:1.2,key:0.3,env:2200},envA:{a:0.006,d:0.25,s:0.7,r:0.18},envF:{a:0.004,d:0.22,s:0.2,r:0.2},mod:[{src:"none",dst:"cutoff",amt:0},{src:"none",dst:"pitch",amt:0},{src:"none",dst:"amp",amt:0},{src:"vel",dst:"cutoff",amt:0.3}]}],

@@ -24,6 +24,13 @@ Ces trois ajouts tournent dans un AudioWorklet (`js/fx.js`), en direct comme à 
 
 ## Forger : le synthé perso
 
+Depuis la refonte, deux choses ont changé ; le détail plus bas décrit l'ancienne disposition.
+
+- Moteur à tables d'ondes en AudioWorklet (`js/fx.js`, processeur `bourdon-synth`) : toutes les voix d'une destination sont calculées échantillon par échantillon. Tables de 2 048 points sur 256 harmoniques, filtrées par octave ; position de table réellement balayable (destinations « Position de table » A et B) ; unisson à phases libres ; torsion de la forme d'onde ; modulation de phase ; filtre à variables d'état 12 ou 24 dB ; matrice calculée dans le processeur ; quatre macros comme sources. Les réglages agissent sur les notes déjà tenues. Vol de voix au-delà de 20 voix (10 en Économe). Sans AudioWorklet, l'ancien moteur à nœuds natifs prend le relais (`synthVoice`).
+- Mesuré contre l'ancien moteur, note de 220 Hz sur les dix patches : même justesse (écart de 0 à 3 centièmes de ton), niveau à 0,5 dB près sauf Pad doux (1,7 dB plus bas, les phases d'unisson sont maintenant aléatoires). Accord de huit notes à sept voix d'unisson sur deux oscillateurs : 9,5 % d'un cœur contre 20 %. À l'export, `synFlush()` attend que le worklet ait reçu toutes les notes avant de lancer le rendu.
+- Interface sur un seul écran (environ 520 px de haut, clavier compris) : un bandeau (patch, précédent et suivant, au sort, enregistrer, oscilloscope, machine, aide), une rangée de sources (oscillateurs A et B, compléments, filtre), une rangée de ce qui bouge (enveloppes et LFO en onglets avec un seul graphe, macros, sortie), puis les liaisons de modulation, où seules celles qui servent sont affichées. Octave, demi-tons, unisson et type de filtre sont des valeurs qu'on tire. L'enveloppe se règle aussi en tirant sur son graphe. Effets, table dessinée et échange de patch sont sur une seconde page. Le clavier est réduit et repliable.
+- Pas encore fait : modulation par glisser-déposer avec anneaux de profondeur, LFO dessinés et synchronisés au tempo, import de tables depuis un fichier audio, affichage de table animé par la modulation.
+
 Troisième mode, Forger (interrupteur « Composer · Conduire · Forger · Arranger » sous la partition, le mode courant est souligné), indépendant de la génération : un synthétiseur qu'on programme et qu'on joue.
 
 - Voix : deux oscillateurs à table d'ondes (sinus, triangle, dent de scie, carré, impulsion, orgue, voyelle : la position entre deux formes est une interpolation de leurs harmoniques), chacun avec octave, intervalle, désaccord et unisson jusqu'à 7 voix avec écart et largeur stéréo ; un sous-oscillateur, du bruit, une modulation de fréquence (B module A).

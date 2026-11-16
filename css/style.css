@@ -739,3 +739,100 @@ body .score .legend{display:none}
   .jeu:not([hidden]){display:flex; flex-direction:column}
   .jeu-top{order:1} .jeu-grid{order:2; padding-top:var(--sp-md)} .jeu-mix{order:3} .jeu-bar{order:4; margin-top:var(--sp-xl)}
 }
+
+/* ---------- Forger compact : bandeau, deux rangées, liaisons, clavier réduit ---------- */
+body.atelier .head{display:none}
+body.atelier .folio{padding-top:var(--sp-md)}
+body.atelier .modes{margin-bottom:var(--sp-xs)}
+.fg-bar{display:flex; flex-wrap:wrap; align-items:center; gap:var(--sp-xs) var(--sp-lg); padding:var(--sp-xs) 0; border-top:1px solid var(--rule); border-bottom:1px solid var(--rule)}
+.fg-patch{display:flex; align-items:center; gap:var(--sp-xs)}
+.fg-patch select{width:19ch; font:italic 400 1.15rem/1.2 var(--display)}
+.fg-patch .lnk{font-size:1.5rem; line-height:1; padding:0 var(--sp-xs)}
+.fg-nm{font:italic 400 .9rem/1 var(--body); color:var(--rubric); min-width:5ch}
+.fg-tabs{display:flex; gap:var(--sp-lg); margin-left:var(--sp-md)}
+.fg-tabs .lnk, .fg-seg .lnk{border-bottom:2px solid transparent; color:var(--ink-2)}
+.fg-tabs .lnk[aria-pressed="true"], .fg-seg .lnk[aria-pressed="true"]{color:var(--ink); border-bottom-color:var(--rubric)}
+.fg-scope{margin-left:auto; display:flex; align-items:center; gap:var(--sp-sm); cursor:pointer}
+.fg-scope canvas{width:190px; height:34px}
+.fg-scope .at-read{font:italic 400 .8rem/1 var(--body); color:var(--ink-2); min-width:9ch}
+.fg-bar .btn{padding:var(--sp-xs) var(--sp-md); font-size:.82rem}
+.fg-pop{position:relative}
+.fg-pop > summary{list-style:none; cursor:pointer; font:italic 400 1rem/1.2 var(--body); color:var(--ink-2)}
+.fg-pop > summary::-webkit-details-marker{display:none}
+.fg-pop[open] > summary{color:var(--rubric)}
+.fg-help > summary{width:1.6em; height:1.6em; border:1px solid var(--rule); border-radius:50%; text-align:center; line-height:1.5}
+.fg-popin{position:absolute; z-index:12; top:calc(100% + 6px); left:0; width:min(340px,80vw); padding:var(--sp-md); background:var(--parch); border:1px solid var(--ink-2); box-shadow:0 6px 18px rgba(60,40,20,.18); display:flex; flex-direction:column; gap:var(--sp-sm)}
+.fg-help .fg-popin{left:auto; right:0}
+.fg-popin .hint{margin:0; font-size:.86rem; line-height:1.35}
+.fg-grid{display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); gap:var(--sp-sm) var(--sp-xl); padding-top:var(--sp-sm); align-items:start}
+.fg-grid[hidden]{display:none}
+.fg-grid > .g2{grid-column:span 2} .fg-grid > .g3{grid-column:span 3} .fg-grid > .g4{grid-column:span 4} .fg-grid > .g8{grid-column:span 8} .fg-grid > .g12{grid-column:1 / -1}
+.fg-grid .at-mod{padding-top:var(--sp-xs); gap:var(--sp-xs)}
+.fg-grid .at-mod h3{font-size:.8rem; display:flex; align-items:baseline; gap:var(--sp-sm); min-height:1.4em}
+.fg-grid .at-mod h3 .fr{font-size:.82rem; margin-left:0}
+.fg-grid .at-knobs{grid-template-columns:repeat(var(--kn,4),minmax(0,1fr)); gap:2px}
+.fg-seg{display:inline-flex; gap:var(--sp-md); margin-left:auto; text-transform:none; letter-spacing:0}
+.fg-seg .lnk{font:italic 400 .92rem/1.1 var(--body)}
+.fg-add{margin-left:auto; font:italic 400 .92rem/1.1 var(--body); text-transform:none; letter-spacing:0; color:var(--rubric)}
+.fg-add:disabled{opacity:.4}
+.fg-nums{display:flex; gap:var(--sp-sm)}
+.fg-num{flex:1 1 0; min-width:0; display:flex; align-items:baseline; justify-content:space-between; gap:var(--sp-xs); padding:2px var(--sp-sm); border:1px solid var(--rule); background:var(--parch-2); cursor:ns-resize; user-select:none; -webkit-user-select:none; touch-action:none}
+.fg-num .l{font:400 .62rem/1.2 var(--caps); letter-spacing:.05em; color:var(--ink-2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.fg-num b{font:italic 400 .95rem/1.2 var(--display); white-space:nowrap}
+.fg-num:hover{border-color:var(--ink-2)} .fg-num:focus-visible{outline:2px solid var(--rubric); outline-offset:1px}
+.fg-lfo{display:flex; align-items:center; gap:var(--sp-lg)}
+.fg-lfo .knob{width:64px}
+.fg-shapes{display:flex; gap:var(--sp-xs)}
+.fg-shapes .lnk{width:38px; height:26px; border:1px solid var(--rule); display:grid; place-items:center; padding:0}
+.fg-shapes .lnk svg{width:22px; height:14px; fill:none; stroke:var(--ink-2); stroke-width:1.5}
+.fg-shapes .lnk[aria-pressed="true"]{border-color:var(--rubric); background:var(--parch-2)} .fg-shapes .lnk[aria-pressed="true"] svg{stroke:var(--rubric)}
+.fg-links{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:2px var(--sp-xl)}
+.fg-link{display:flex; align-items:center; gap:var(--sp-xs); min-width:0}
+.fg-link[hidden]{display:none}
+.fg-link .fields{display:flex; align-items:center; gap:var(--sp-sm); flex:1 1 auto; min-width:0; margin:0}
+.fg-link .ctl{display:flex; align-items:center; gap:var(--sp-xs); min-width:0; margin:0}
+.fg-link .ctl > .l{order:2; margin:0}
+.fg-link .ctl label{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap}
+.fg-link select{width:auto; max-width:14ch; font-size:.88rem; padding-top:1px; padding-bottom:1px}
+.fg-link .ctl:first-child::after{content:"→"; color:var(--ink-2)}
+.fg-link .ctl:last-child{flex:1 1 auto}
+.fg-link input[type=range]{flex:1 1 60px; min-width:50px; height:20px}
+.fg-link output{font:italic 400 .88rem/1 var(--body); min-width:5ch; text-align:right}
+.fg-x{font-size:1.1rem; line-height:1; color:var(--ink-2); padding:0 var(--sp-xs)}
+#fgNoMod{margin:0; font-size:.86rem}
+#fgNoMod[hidden]{display:none}
+body.atelier .at-kb{margin-top:var(--sp-md); padding:var(--sp-xs) 0 calc(var(--sp-xs) + env(safe-area-inset-bottom))}
+body.atelier .at-kbbar, body.daw .at-kbbar{gap:var(--sp-md); margin-bottom:var(--sp-xs)}
+.at-kbbar .btn{padding:var(--sp-xs) var(--sp-md); font-size:.8rem}
+.at-kbbar select{min-width:14ch; font-size:.9rem}
+#atKbFold{font:400 .8rem/1 var(--caps); letter-spacing:.12em; text-transform:lowercase; color:var(--rubric)}
+#atKbFold::before{content:"▾ "} #atKbFold[aria-expanded="false"]::before{content:"▸ "}
+body.atelier .piano{height:64px}
+.at-kb.folded .piano{display:none}
+#fgP_fx .at-rack{display:flex; flex-wrap:wrap; gap:var(--sp-md) var(--sp-2xl)}
+#fgP_fx textarea{min-height:64px}
+@media (max-width:1100px){
+  .fg-grid > .g2, .fg-grid > .g3{grid-column:span 6} .fg-grid > .g4, .fg-grid > .g8{grid-column:1 / -1}
+  .fg-links{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .fg-scope{margin-left:0}
+}
+@media (max-width:640px){
+  .fg-grid > .g2, .fg-grid > .g3{grid-column:1 / -1}
+  .fg-links{grid-template-columns:1fr}
+  .fg-scope canvas{width:120px}
+  .fg-tabs{margin-left:0}
+}
+#atelier .fg-scope #atScope{width:190px; height:34px; flex:none}
+.fg-bar .fg-pop{display:inline-block; margin:0; border:0; padding:0}
+.fg-bar .fg-pop > summary{padding:0}
+.fg-link .ctl{flex-direction:row}
+.fg-link .ctl > .l{display:flex; width:auto}
+.fg-link .fields > .ctl{grid-column:auto}
+#atelier .fg-grid #atWA, #atelier .fg-grid #atWB, #atelier .fg-grid #atFil{height:72px !important}
+#atelier .fg-grid #atEnv, #atelier .fg-grid #atLfo{height:60px !important}
+body.atelier .piano{height:56px}
+.fg-bar .atsave{flex:none}
+.fg-link select{max-width:17ch}
+.at-kbbar{flex-wrap:wrap}
+.at-kbbar .btn{white-space:nowrap}
+@media (max-width:640px){ .at-kbbar{gap:var(--sp-xs) var(--sp-sm)} .at-kbbar .btn{padding:var(--sp-xs) var(--sp-sm); font-size:.72rem} .at-kbbar select{min-width:0; width:11ch} }

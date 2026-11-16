@@ -93,6 +93,35 @@ setTimeout(async()=>{
  w.eval('live.eng.synOn(0,0.7).release()');
  w.eval('S.syn.fil.type="lowpass24"; S.syn.oscA.wave=1; S.syn.oscB.lvl=0.4; S.syn.mod[4]={src:"lfo3",dst:"wave",amt:0.6}; S.syn.mod[5]={src:"key",dst:"lvlb",amt:0.4}; S.syn.mono.on=1; S.syn.rack.chorus.mix=0.4; S.syn.rack.delay.mix=0.3; S.syn.rack.rev.mix=0.3; S.syn.rack.comp.amt=0.5; live.eng.setLevels(); live.eng.synOn(3,0.7,{fromOff:0,glide:0.1}).release(); atScopeDraw(); S.syn.fil.type="lowpass"; S.syn.mod[4]={src:"none",dst:"wave",amt:0}; S.syn.mono.on=0; S.syn.oscB.lvl=0;');
  console.log('atelier : tables',w.eval('SYN_WAVES.length'),'| modulations',w.eval('S.syn.mod.length'),'| rack',w.eval('Object.keys(S.syn.rack).join(",")'),'| ancienne scène complétée',w.eval('(()=>{ const o=S; S=merge(clone(DEFAULT),{syn:{mod:[{src:"none",dst:"pitch",amt:0}]}}); normS(); const n=S.syn.mod.length; S=o; return n; })()'));
+
+ /* forger : modulation par glisser-déposer, LFO dessinés et synchronisés, table importée, aperçu animé */
+ { const R=w.eval(`(()=>{ const o={};
+   o.chips=document.querySelectorAll('#atelier .fg-chip').length; o.dstKnobs=document.querySelectorAll('#atelier .knob[data-dst]').length;
+   S.syn=synMerge(SYN_DEFAULT,{mod:[{src:"none",dst:"cutoff",amt:0}]}); atelierSync();
+   const k=document.querySelector('#atelier .knob[data-dst="cutoff"]'); synRings(k,k._spec); const n0=k.querySelectorAll('.dr').length; const i=synAddMod("lfo3","cutoff"); synRings(k,k._spec);
+   o.rings=k.querySelectorAll('.dr').length-n0; o.amt=S.syn.mod[i].amt; o.row=document.getElementById('c_syn_mod_'+i+'_src').value;
+   synRingStart(k,k._spec,{target:k.querySelector('.dr'),clientY:100}); synRingMove({el:k,spec:k._spec,i,y0:100,a0:S.syn.mod[i].amt},{clientY:60,shiftKey:false}); o.amtAfter=S.syn.mod[i].amt;
+   synRingRemove(k,k._spec,{target:k.querySelector('.dr')}); synRings(k,k._spec); o.afterRemove=S.syn.mod[i].src+'/'+(k.querySelectorAll('.dr').length-n0);
+   const j1=synAddMod("env2","cutoff"), j2=synAddMod("env2","cutoff"); o.noDup=j1===j2;
+   for(let q=0;q<9;q++) synAddMod("mac"+(q%4+1),["pitch","cutoff","reso","amp","pan","fm","detuneb","wave"][q%8]); o.slots=S.syn.mod.length;
+   /* LFO dessiné et synchronisé */
+   S.syn=synMerge(SYN_DEFAULT,{lfo1:{shape:"draw",sync:1,div:4,draw:Array.from({length:64},(_,n)=>n<32?0.9:-0.3)}}); S.tempo=90;
+   const core=synCore(S.syn); o.coreHz=core.lfo1.rate; o.coreTab=core.lfo1.draw.length; o.coreMean=Math.abs(core.lfo1.draw.reduce((a,b)=>a+b,0)/64)<0.01; o.coreNoDraw=core.lfo2.draw===null;
+   o.val=[synLfoVal(S.syn.lfo1,0.1),synLfoVal(S.syn.lfo1,0.9)].map(v=>+v.toFixed(2));
+   const e=buildEngine(new AudioContext(),merge(clone(DEFAULT),{mel:{lvl:.6,inst:"atelier"},syn:clone(S.syn)}),{}); e.start(0,5,0); e.schedule(30); o.engine='ok';
+   /* table importée */
+   const sr=44100, sin=Float32Array.from({length:sr},(_,n)=>n<4410?0:Math.sin(2*Math.PI*220*n/sr)); const r=atTableFromSamples(sin,sr,'test');
+   o.imp=[Math.round(r.hz),S.syn.draw.length,S.syn.oscA.wave,r.periodic];
+   o.impNull=atTableFromSamples(new Float32Array(100),sr,'vide')===null;
+   /* aperçu animé : la position de table suit le LFO */
+   S.syn=synMerge(SYN_DEFAULT,{lfo2:{shape:"sine",rate:1,sync:0},mod:[{src:"lfo2",dst:"wave",amt:0.8}]}); const real=performance.now; let t=0; performance.now=()=>t;
+   const a=synLiveMod("wave"); t=250; const b=synLiveMod("wave"); t=750; const c=synLiveMod("wave"); performance.now=real; o.live=[a,b,c].map(v=>+v.toFixed(2));
+   return o; })()`);
+   console.log('forger, modulation et LFO :',JSON.stringify(R));
+   const bad=[]; if(R.chips!==12) bad.push('sources'); if(R.dstKnobs<8) bad.push('boutons cibles'); if(R.rings!==1||R.row!=='lfo3') bad.push('anneau créé'); if(!(R.amtAfter>R.amt)) bad.push('anneau tiré'); if(R.afterRemove!=='none/0') bad.push('anneau retiré'); if(!R.noDup) bad.push('doublon'); if(R.slots!==8) bad.push('8 emplacements');
+   if(Math.abs(R.coreHz-1.5)>1e-9||R.coreTab!==64||!R.coreMean||!R.coreNoDraw) bad.push('LFO synchronisé ou dessiné'); if(!(R.val[0]>0&&R.val[1]<0)) bad.push('forme dessinée');
+   if(Math.abs(R.imp[0]-220)>2||R.imp[1]!==256||R.imp[2]!==1||!R.imp[3]||!R.impNull) bad.push('import de table'); if(!(R.live[0]!==R.live[1]&&Math.abs(R.live[2]-R.live[0])>0.1)) bad.push('aperçu animé');
+   if(bad.length){ console.log('ECHEC forger :',bad.join(', ')); process.exit(1); } }
  d.getElementById('reglBtn').click();
  // génératif : formes, contrepoint, couleur de mode, caractère, gestes
  console.log('génératif :',w.eval('(()=>{ const out=[]; let t=60; for(const f of ["libre","passacaille","ostinato","rondeau","variations"]){ S.mus.form=f; live.eng.replan("all"); t+=60; live.eng.schedule(t); out.push(f); } S.mus.form="libre"; S.canon.lvl=0.3; S.canon.shift="contre"; S.car={grav:0.9,aud:0.9,orn:0.9,sil:0.1,rep:0.2}; S.mus.color="tension"; live.eng.replan("all"); live.eng.schedule(t+120); S.mus.color="off"; S.canon.shift="q+"; S.car={grav:0.5,aud:0.5,orn:0.5,sil:0.5,rep:0.5}; ["suspense","revelation","danger"].forEach(g=>live.eng.gesture(g)); return out.join(",")+" ok"; })()'));

@@ -153,7 +153,7 @@ function fxWorkletBody(){
   }
   const envAt=(E,x)=>{ const a=E.a>0.0005?E.a:0.0005; return x<=0?0:x<a?x/a:E.s+(1-E.s)*Math.exp(-(x-a)/((E.d>0.01?E.d:0.01)/3)); };
   const envV=(E,tt,tr)=>(tr<0||tt<tr)?envAt(E,tt):envAt(E,tr)*Math.exp(-(tt-tr)/((E.r>0.01?E.r:0.01)/3));
-  const lfoV=(sh,p)=>{ p-=Math.floor(p); return sh==="sine"?Math.sin(6.2831853*p):sh==="triangle"?(p<0.25?4*p:p<0.75?2-4*p:4*p-4):sh==="sawtooth"?(p<0.5?2*p:2*p-2):(p<0.5?1:-1); };
+  const lfoV=(sh,p,tb)=>{ p-=Math.floor(p); if(sh==="draw"){ if(!tb||!tb.length) return 0; const x=p*tb.length, i=x|0, f=x-i; return tb[i]+(tb[(i+1)%tb.length]-tb[i])*f; } return sh==="sine"?Math.sin(6.2831853*p):sh==="triangle"?(p<0.25?4*p:p<0.75?2-4*p:4*p-4):sh==="sawtooth"?(p<0.5?2*p:2*p-2):(p<0.5?1:-1); };
   const SRCK=["lfo1","lfo2","lfo3","env1","env2","vel","key","rand","mac1","mac2","mac3","mac4"];
 
   class Synth extends AudioWorkletProcessor{
@@ -221,7 +221,7 @@ function fxWorkletBody(){
         const m=Math.min(16,n-i), tt=v.age/sr, tr=v.offAge<=v.age?v.offAge/sr:-1;
         /* sources de modulation, puis la matrice */
         const e1=envV(P.envA,tt,tr), eF=envV(P.envF,tt,tr);
-        src.lfo1=lfoV(P.lfo1.shape,tt*P.lfo1.rate); src.lfo2=lfoV(P.lfo2.shape,tt*P.lfo2.rate); src.lfo3=lfoV(P.lfo3.shape,tt*P.lfo3.rate);
+        src.lfo1=lfoV(P.lfo1.shape,tt*P.lfo1.rate,P.lfo1.draw); src.lfo2=lfoV(P.lfo2.shape,tt*P.lfo2.rate,P.lfo2.draw); src.lfo3=lfoV(P.lfo3.shape,tt*P.lfo3.rate,P.lfo3.draw);
         src.env1=e1; src.env2=envV(P.env2,tt,tr); src.vel=v.vel; src.key=keyV; src.rand=v.rand; src.mac1=mac.m1||0; src.mac2=mac.m2||0; src.mac3=mac.m3||0; src.mac4=mac.m4||0;
         M.pitch=M.cutoff=M.reso=M.amp=M.pan=M.fm=M.detuneb=M.lvlb=M.wave=M.waveb=M.warp=0;
         for(let q=0;q<mods.length;q++){ const s=mods[q]; if(s.src==="none"||!s.amt||M[s.dst]===undefined) continue; const x=src[s.src]; if(x!==undefined) M[s.dst]+=x*s.amt; }

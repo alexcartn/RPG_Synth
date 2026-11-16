@@ -15,7 +15,7 @@ function synKnob(path,label,min,max,o){
   const norm=v=>o.log?Math.log(Math.max(min,v)/min)/Math.log(max/min):(v-min)/(max-min);
   /* path peut être une fonction : le bouton suit alors l'onglet choisi (enveloppe, LFO) */
   const pp=()=>typeof path==="function"?path():path;
-  return {id:"syn."+(typeof path==="function"?label:path), label, keys:[], get:()=>Math.max(0,Math.min(1,norm(synGet(pp())))), set:n=>{ synSet(pp(),real(n)); atDirty(); }, fmt:n=>(o.fmt||(v=>v.toFixed(2)))(real(n))};
+  return {id:"syn."+(typeof path==="function"?label:path), label, keys:[], dst:o.dst, norm, real, raw:()=>synGet(pp()), get:()=>Math.max(0,Math.min(1,norm(synGet(pp())))), set:n=>{ synSet(pp(),real(n)); atDirty(); }, fmt:n=>(o.fmt||(v=>v.toFixed(2)))(real(n))};
 }
 const fmtHz=v=>v>=1000?(v/1000).toFixed(1)+" kHz":Math.round(v)+" Hz";
 const fmtS=v=>v<1?Math.round(v*1000)+" ms":v.toFixed(1)+" s";
@@ -57,7 +57,7 @@ function atSlices(){
   return AT.slices.list;
 }
 function drawWave(id,key){
-  const cv=$(id); if(!cv) return; const g=fit(cv); if(!g) return; const {c,W,H}=g, n=SYN_WAVES.length, sl=atSlices(), P=S.syn[key].wave;
+  const cv=$(id); if(!cv) return; const g=fit(cv); if(!g) return; const {c,W,H}=g, n=SYN_WAVES.length, sl=atSlices(), P0=S.syn[key].wave, mv=synLiveMod(key==="oscA"?"wave":"waveb"), P=Math.max(0,Math.min(1,P0+0.5*mv));
   const cs=getComputedStyle(document.documentElement), bg=cs.getPropertyValue("--parch").trim()||"#efe6d2";
   const dx=Math.min(7,(W*0.22)/(n-1)), dy=(H-30)/(n-1), A=Math.max(9,dy*2.6), x0=8, wd=W-16-dx*(n-1), draw=(arr,j,stroke,lw)=>{
     const yb=H-12-j*dy, xo=x0+j*dx; c.beginPath();
@@ -66,6 +66,7 @@ function drawWave(id,key){
     for(let k=0;k<arr.length;k++){ const x=xo+k/(arr.length-1)*wd, y=yb-arr[k]*A*0.5-A*0.15; k?c.lineTo(x,y):c.moveTo(x,y); } c.stroke();
   };
   for(let j=n-1;j>=0;j--) draw(sl[j],j,"rgba(90,70,45,"+(0.28+0.4*(1-j/(n-1)))+")",1);
+  if(Math.abs(mv)>0.002) draw(waveShape(P0,72),P0*(n-1),"rgba(163,48,28,0.4)",1.2);
   const pos=P*(n-1); draw(waveShape(P,72),pos,g.rub,2);
   c.fillStyle=g.ink2; c.font='italic 12px "Alegreya", Georgia, serif'; c.fillText(SYN_WAVES[Math.round(pos)],8,13);
 }
@@ -83,7 +84,7 @@ function drawTabula(){
   c.strokeStyle=g.rule; c.lineWidth=1; c.beginPath(); c.moveTo(0,H/2+0.5); c.lineTo(W,H/2+0.5); c.stroke();
   c.strokeStyle="rgba(120,100,70,0.22)"; for(let q=1;q<4;q++){ c.beginPath(); c.moveTo(Math.round(W*q/4)+0.5,0); c.lineTo(Math.round(W*q/4)+0.5,H); c.stroke(); }
   c.strokeStyle=g.rub; c.lineWidth=2; c.beginPath(); for(let i=0;i<=N;i++){ const x=i/N*W, y=H/2-d[i%N]*(H/2-8); i?c.lineTo(x,y):c.moveTo(x,y); } c.stroke();
-  c.fillStyle=g.rub; for(let i=0;i<N;i+=4){ const x=i/N*W, y=H/2-d[i]*(H/2-8); c.fillRect(x-1.5,y-1.5,3,3); }
+  c.fillStyle=g.rub; const st=Math.max(4,Math.round(N/64)); for(let i=0;i<N;i+=st){ const x=i/N*W, y=H/2-d[i]*(H/2-8); c.fillRect(x-1.5,y-1.5,3,3); }
 }
 function atDrawEdit(fn){ fn(S.syn.draw); S.syn.drawV=(S.syn.drawV||0)+1; AT.slices=null; drawTabula(); atDraw(); atDirty(); }
 function tabulaEvents(){
@@ -159,7 +160,7 @@ function atScopeDraw(){
     let mx=-200; for(let i=1;i<n;i++) if(fb[i]>mx) mx=fb[i]; if(ro) ro.textContent=mx>-150?"pic "+Math.round(mx)+" dB":"silence";
   }
 }
-function atLoop(){ if(MODE!=="atelier"){ AT.raf=0; return; } atScopeDraw(); AT.raf=requestAnimationFrame(atLoop); }
+function atLoop(){ if(MODE!=="atelier"){ AT.raf=0; return; } atScopeDraw(); atAnim(); AT.raf=requestAnimationFrame(atLoop); }
 function atScopeUI(){
   [["atScOsc","osc"],["atScSpec","spec"]].forEach(([id,v])=>{ const b=$(id); if(b) b.setAttribute("aria-pressed",AT.scope===v?"true":"false"); });
   const sp=$("atScSpan"); if(sp) sp.hidden=AT.scope!=="osc";
@@ -218,6 +219,7 @@ function atOn(id,i){
   if(AT.notes.has(id)||!AT.keys[i]) return;
   if(!live){ if(MODE==="daw") startLive({fade:0.25}); else atelierStartLive(); }
   if(!live) return;
+  AT.lastOnMs=performance.now();
   const off=AT.keys[i].off, mono=S.syn.mono&&S.syn.mono.on, op=mono&&AT.lastOff!==undefined?{fromOff:AT.lastOff,glide:S.syn.mono.glide}:null;
   if(mono){ AT.notes.forEach((n,k)=>{ n.h.release(); const e=pkEl(n.i); if(e) e.classList.remove("on"); }); AT.notes.clear(); }
   const h=MODE==="daw"?dawHand(off,op):live.eng.synOn(off,0.7,op); AT.lastOff=off;
@@ -266,11 +268,12 @@ function atState(){
 
 /* ---------- petits contrôles compacts ---------- */
 /* une valeur à crans (octave, intervalle, unisson, forme) : on la tire, on la fait rouler ou on la règle aux flèches */
-function synNum(path,label,opts){
+function synNum(path0,label,opts){
+  const path=null, pp=()=>typeof path0==="function"?path0():path0;
   const el=atEl("div","fg-num",'<span class="l">'+label+'</span><b></b>'); el.tabIndex=0; el.setAttribute("role","spinbutton"); el.setAttribute("aria-label",label);
-  const ix=()=>{ const v=synGet(path); let b=opts.findIndex(o=>o[0]===v); if(b<0&&typeof v==="number"){ let bd=1e9; opts.forEach((o,i)=>{ const d=Math.abs(o[0]-v); if(d<bd){ bd=d; b=i; } }); } return Math.max(0,b); };
+  const ix=()=>{ const v=synGet(pp()); let b=opts.findIndex(o=>o[0]===v); if(b<0&&typeof v==="number"){ let bd=1e9; opts.forEach((o,i)=>{ const d=Math.abs(o[0]-v); if(d<bd){ bd=d; b=i; } }); } return Math.max(0,b); };
   const paint=()=>{ const o=opts[ix()]; el.querySelector("b").textContent=o[1]; el.setAttribute("aria-valuetext",o[1]); };
-  const step=d=>{ const i=Math.max(0,Math.min(opts.length-1,ix()+d)); if(i===ix()) return; synSet(path,opts[i][0]); paint(); atDirty(); if(live) live.eng.setLevels(); };
+  const step=d=>{ const i=Math.max(0,Math.min(opts.length-1,ix()+d)); if(i===ix()) return; synSet(pp(),opts[i][0]); paint(); atDirty(); if(live) live.eng.setLevels(); };
   let y0=null, acc=0;
   el.addEventListener("pointerdown",e=>{ y0=e.clientY; acc=0; try{ el.setPointerCapture(e.pointerId); }catch(x){} el.focus({preventScroll:true}); e.preventDefault(); });
   el.addEventListener("pointermove",e=>{ if(y0===null) return; const d=Math.trunc((y0-e.clientY)/10)-acc; if(d){ acc+=d; step(d); } });
@@ -280,14 +283,16 @@ function synNum(path,label,opts){
   el._paint=paint; paint(); return el;
 }
 function atNums(list){ const r=atEl("div","fg-nums"); list.forEach(x=>r.appendChild(x)); return r; }
-const LFO_ICON={sine:"M1 7 C4 -1 8 -1 11 7 S18 15 21 7",triangle:"M1 7 L6 1 L16 13 L21 7",sawtooth:"M1 12 L11 2 L11 12 L21 2",square:"M1 12 L1 2 L11 2 L11 12 L21 12 L21 2"};
+const LFO_ICON={draw:"M1 11 L5 4 L8 12 L12 3 L16 10 L21 5",sine:"M1 7 C4 -1 8 -1 11 7 S18 15 21 7",triangle:"M1 7 L6 1 L16 13 L21 7",sawtooth:"M1 12 L11 2 L11 12 L21 2",square:"M1 12 L1 2 L11 2 L11 12 L21 12 L21 2"};
 /* forme du LFO choisi, sur deux périodes */
 function drawLfo(){
-  const cv=$("atLfo"); if(!cv) return; const g=fit(cv); if(!g) return; const {c,W,H}=g, Lf=S.syn[AT.lfo];
+  const cv=$("atLfo"); if(!cv) return; const g=fit(cv); if(!g) return; const {c,W,H}=g, Lf=S.syn[AT.lfo], dr=Lf.shape==="draw", per=dr?1:2, hz=synLfoHz(Lf);
   c.strokeStyle=g.rule; c.lineWidth=1; c.beginPath(); c.moveTo(0,Math.round(H/2)+0.5); c.lineTo(W,Math.round(H/2)+0.5); c.stroke();
-  const f=p=>{ p-=Math.floor(p); return Lf.shape==="sine"?Math.sin(2*Math.PI*p):Lf.shape==="triangle"?(p<0.25?4*p:p<0.75?2-4*p:4*p-4):Lf.shape==="sawtooth"?(p<0.5?2*p:2*p-2):(p<0.5?1:-1); };
-  c.strokeStyle=g.rub; c.lineWidth=1.8; c.beginPath(); for(let x=0;x<=W;x++){ const y=H/2-f(x/W*2)*(H/2-7); x?c.lineTo(x,y):c.moveTo(x,y); } c.stroke();
-  c.fillStyle=g.ink2; c.font='italic 11px "Alegreya", Georgia, serif'; c.fillText(Lf.rate>=1?Lf.rate.toFixed(1)+" Hz":"une période en "+(1/Lf.rate).toFixed(1)+" s",6,12);
+  if(dr){ c.strokeStyle="rgba(120,100,70,0.22)"; for(let q=1;q<4;q++){ c.beginPath(); c.moveTo(Math.round(W*q/4)+0.5,0); c.lineTo(Math.round(W*q/4)+0.5,H); c.stroke(); } }
+  c.strokeStyle=g.rub; c.lineWidth=1.8; c.beginPath(); for(let x=0;x<=W;x++){ const y=H/2-synLfoVal(Lf,x/W*per)*(H/2-7); x?c.lineTo(x,y):c.moveTo(x,y); } c.stroke();
+  if(AT.animOn||AT.notes.size){ const x=((atPhase(hz)%per)/per)*W; c.strokeStyle=g.ink2; c.lineWidth=1; c.setLineDash([2,3]); c.beginPath(); c.moveTo(Math.round(x)+0.5,0); c.lineTo(Math.round(x)+0.5,H); c.stroke(); c.setLineDash([]); }
+  c.fillStyle=g.ink2; c.font='italic 11px "Alegreya", Georgia, serif';
+  c.fillText((Lf.sync?SYN_DIV[Math.max(0,Math.min(SYN_DIV.length-1,Math.round(Lf.div)))][0]+" · ":"")+(hz>=1?hz.toFixed(1)+" Hz":"une période en "+(1/hz).toFixed(1)+" s")+(dr?" · tire pour dessiner":""),6,12);
 }
 /* tirer sur l'enveloppe : à l'horizontale la durée du segment touché, à la verticale le maintien */
 function atEnvDrag(){
@@ -306,12 +311,150 @@ function atTabsUI(){
   [["envA","fgEA"],["envF","fgEF"],["env2","fgE2"]].forEach(([k,id])=>{ const b=$(id); if(b) b.setAttribute("aria-pressed",AT.env===k?"true":"false"); });
   ["lfo1","lfo2","lfo3"].forEach(k=>{ const b=$("fg_"+k); if(b) b.setAttribute("aria-pressed",AT.lfo===k?"true":"false"); });
   Object.keys(LFO_ICON).forEach(sh=>{ const b=$("fgSh_"+sh); if(b) b.setAttribute("aria-pressed",S.syn[AT.lfo].shape===sh?"true":"false"); });
+  { const L=S.syn[AT.lfo], sb=$("fgLfoSync"); if(sb) sb.setAttribute("aria-pressed",L.sync?"true":"false"); if(AT.lfoKnob) AT.lfoKnob.hidden=!!L.sync; if(AT.lfoDiv) AT.lfoDiv.hidden=!L.sync; const lc=$("atLfo"); if(lc) lc.classList.toggle("drawable",L.shape==="draw"); }
   [["syn","fgP_syn","fgT_syn"],["fx","fgP_fx","fgT_fx"]].forEach(([k,p,t])=>{ if($(p)) $(p).hidden=AT.pane!==k; if($(t)) $(t).setAttribute("aria-pressed",AT.pane===k?"true":"false"); });
 }
 /* liaisons de modulation : seules celles qui servent sont affichées */
 function atModRows(){
   let n=0; document.querySelectorAll("#atelier .fg-link").forEach((row,i)=>{ const on=S.syn.mod[i]&&S.syn.mod[i].src!=="none"; row.hidden=!on; if(on) n++; });
   const add=$("fgAddMod"); if(add) add.disabled=n>=8; const none=$("fgNoMod"); if(none) none.hidden=n>0;
+}
+
+/* ---------- modulation par glisser-déposer : sources, anneaux de profondeur, aperçu animé ----------
+   Une source (LFO, enveloppe, vélocité…) se tire sur un bouton ; elle crée une liaison dans la matrice et un anneau de profondeur
+   apparaît sur le bouton. Tirer l'anneau règle la profondeur, un double-clic le retire. */
+const SYN_CHIPS=[["lfo1","LFO 1"],["lfo2","LFO 2"],["lfo3","LFO 3"],["env1","Env. volume"],["env2","Env. 2"],["vel","Vélocité"],["key","Clavier"],["rand","Hasard"],["mac1","Macro 1"],["mac2","Macro 2"],["mac3","Macro 3"],["mac4","Macro 4"]];
+const SYN_BIPOLAR={lfo1:1,lfo2:1,lfo3:1,key:1,rand:1};
+const SYN_DEFAMT={cutoff:0.25,reso:0.3,wave:0.4,waveb:0.4,fm:0.3,detuneb:0.3,lvlb:0.4,amp:0.2,warp:0.3};
+/* valeur réelle du réglage -> valeur modulée pour une quantité a, avec les mêmes échelles que le moteur */
+const SYN_APPLY={cutoff:(r,a)=>r*Math.pow(2,4*a),reso:(r,a)=>r+12*a,wave:(r,a)=>r+0.5*a,waveb:(r,a)=>r+0.5*a,fm:(r,a)=>r+a,detuneb:(r,a)=>r+100*a,lvlb:(r,a)=>r+0.5*a,amp:(r,a)=>r*(1+0.9*a),warp:(r,a)=>r+a};
+const SYN_COL=["#a3301c","#2f6f5e","#b07d1f","#5b4a8a","#8a3f6a","#3d6b9c","#6b6b2a","#9c5a3d"];
+const srcName=k=>(SYN_SRC.find(x=>x[0]===k)||[0,k])[1], dstName=k=>(SYN_DST.find(x=>x[0]===k)||[0,k])[1];
+const SVGNS="http://www.w3.org/2000/svg";
+/* phase d'un LFO : depuis le début de la note tenue (comme le moteur), sinon en roue libre pour l'aperçu */
+const atPhase=hz=>((AT.notes.size&&AT.lastOnMs)?(performance.now()-AT.lastOnMs)/1000:performance.now()/1000)*hz;
+function synSrcLive(k){
+  if(k==="lfo1"||k==="lfo2"||k==="lfo3"){ const L=S.syn[k]; return synLfoVal(L,atPhase(synLfoHz(L))); }
+  if(k==="vel") return 0.7;
+  if(k.slice(0,3)==="mac") return (S.syn.mac&&S.syn.mac["m"+k.slice(3)])||0;
+  return 0;
+}
+const synLiveMod=dst=>S.syn.mod.reduce((a,m)=>a+(m.dst===dst&&m.src!=="none"?m.amt*synSrcLive(m.src):0),0);
+function synRings(el,spec,live){
+  const svg=el.querySelector("svg"); if(!svg||!SYN_APPLY[spec.dst]) return;
+  let g=svg.querySelector(".rings"); if(!g){ g=document.createElementNS(SVGNS,"g"); g.setAttribute("class","rings"); svg.appendChild(g); }
+  const mods=[]; S.syn.mod.forEach((m,i)=>{ if(m.dst===spec.dst&&m.src!=="none"&&Math.abs(m.amt)>0.001) mods.push({m,i}); });
+  el.classList.toggle("modded",mods.length>0);
+  const ap=SYN_APPLY[spec.dst], r=spec.raw(), n0=spec.get(), cl=v=>Math.max(0,Math.min(1,v)), ang=n=>A0+(A1-A0)*n;
+  const key=JSON.stringify(mods.map(x=>[x.i,x.m.src,x.m.amt]))+"|"+r;
+  if(g.dataset.k!==key){
+    g.dataset.k=key; g.textContent="";
+    mods.forEach((x,j)=>{
+      const a=x.m.amt, nA=cl(spec.norm(ap(r,a))), nB=SYN_BIPOLAR[x.m.src]?cl(spec.norm(ap(r,-a))):n0, lo=Math.min(nA,nB), hi=Math.max(nA,nB), rad=[35.6,38.6,32.8][j%3];
+      const pa=document.createElementNS(SVGNS,"path"); pa.setAttribute("class","dr"); pa.setAttribute("d",arcPath(rad,ang(lo),ang(Math.max(hi,lo+0.012)))); pa.setAttribute("stroke",SYN_COL[x.i%SYN_COL.length]); pa.dataset.i=x.i;
+      const t=document.createElementNS(SVGNS,"title"); t.textContent=srcName(x.m.src)+" → "+dstName(spec.dst)+" : "+(a>0?"+":"")+Math.round(a*100)+" %. Tire pour régler, double-clic pour retirer."; pa.appendChild(t); g.appendChild(pa);
+    });
+  }
+  /* point vivant : où la modulation emmène le réglage à cet instant (LFO, macros, vélocité) */
+  let dot=svg.querySelector(".md");
+  if(live&&mods.some(x=>/^lfo/.test(x.m.src))){
+    if(!dot){ dot=document.createElementNS(SVGNS,"circle"); dot.setAttribute("class","md"); dot.setAttribute("r","2"); svg.appendChild(dot); }
+    const lv=cl(spec.norm(ap(r,mods.reduce((a,x)=>a+x.m.amt*synSrcLive(x.m.src),0)))), [x,y]=pol(30,ang(lv)); dot.setAttribute("cx",x.toFixed(2)); dot.setAttribute("cy",y.toFixed(2));
+  }else if(dot) dot.remove();
+}
+const atModNote=t=>{ const n=$("fgModNote"); if(n) n.textContent=t; };
+function synAddMod(src,dst){
+  const mods=S.syn.mod; let i=mods.findIndex(m=>m.src===src&&m.dst===dst);
+  if(i<0){
+    i=mods.findIndex(m=>m.src==="none");
+    if(i<0){ let b=1e9; mods.forEach((m,j)=>{ if(Math.abs(m.amt)<b){ b=Math.abs(m.amt); i=j; } }); }
+    mods[i]={src,dst,amt:src==="env1"||src==="env2"?0.5:(SYN_DEFAMT[dst]||0.3)};
+  }else if(Math.abs(mods[i].amt)<0.001) mods[i].amt=SYN_DEFAMT[dst]||0.3;
+  syncUI(); atModRows(); atPaintKnobs(); atDirty(); if(live) live.eng.setLevels();
+  return i;
+}
+function atDropMod(src,dst){
+  const i=synAddMod(src,dst), a=S.syn.mod[i].amt;
+  atModNote(srcName(src)+" → "+dstName(dst)+" ("+(a>0?"+":"")+Math.round(a*100)+" %). Tire l'anneau du bouton pour régler la profondeur, double-clic pour le retirer.");
+}
+function synRingStart(el,spec,e){ const p=e.target.closest(".dr"), i=p?+p.dataset.i:-1, m=S.syn.mod[i]; return m?{el,spec,i,y0:e.clientY,a0:m.amt}:null; }
+function synRingMove(r,e){
+  const m=S.syn.mod[r.i]; if(!m) return;
+  m.amt=Math.max(-1,Math.min(1,Math.round((r.a0+(r.y0-e.clientY)/(e.shiftKey?500:140))*100)/100));
+  refreshKeys(["syn.mod."+r.i+".amt"]); synRings(r.el,r.spec); atDirty(); if(live) live.eng.setLevels();
+  atModNote(srcName(m.src)+" → "+dstName(m.dst)+" : "+(m.amt>0?"+":"")+Math.round(m.amt*100)+" %");
+}
+function synRingRemove(el,spec,e){
+  const p=e.target.closest(".dr"), i=p?+p.dataset.i:-1, m=S.syn.mod[i]; if(!m) return;
+  atModNote(srcName(m.src)+" → "+dstName(m.dst)+" retiré.");
+  m.src="none"; m.amt=0; syncUI(); atModRows(); atPaintKnobs(); atDirty(); if(live) live.eng.setLevels();
+}
+function atArm(src){
+  AT.armed=AT.armed===src?null:src;
+  document.querySelectorAll("#atelier .fg-chip").forEach(b=>b.setAttribute("aria-pressed",b.dataset.src===AT.armed?"true":"false"));
+  document.body.classList.toggle("armed",!!AT.armed);
+  atModNote(AT.armed?srcName(AT.armed)+" prête : clique un bouton marqué d'un point pour la relier.":"");
+}
+const atKnobAt=e=>{ const el=document.elementFromPoint(e.clientX,e.clientY); return el&&el.closest?el.closest(".knob[data-dst]"):null; };
+function atSrcTray(){
+  const tray=atEl("div","fg-src"); tray.appendChild(atEl("span","fg-srcl","Sources"));
+  SYN_CHIPS.forEach(([k,l])=>{ const b=atEl("button","fg-chip",l); b.type="button"; b.dataset.src=k; b.setAttribute("aria-pressed","false"); b.title="Tire-la sur un bouton marqué d'un point, ou clique-la puis clique un bouton"; tray.appendChild(b); });
+  const note=atEl("span","fg-srcn"); note.id="fgModNote"; note.setAttribute("aria-live","polite"); tray.appendChild(note);
+  let d=null;
+  tray.addEventListener("pointerdown",e=>{ const b=e.target.closest(".fg-chip"); if(!b) return; d={src:b.dataset.src,b,x:e.clientX,y:e.clientY,on:false,ghost:null}; try{ b.setPointerCapture(e.pointerId); }catch(z){} e.preventDefault(); });
+  tray.addEventListener("pointermove",e=>{
+    if(!d) return;
+    if(!d.on&&Math.hypot(e.clientX-d.x,e.clientY-d.y)>6){ d.on=true; d.ghost=atEl("div","fg-ghost",d.b.textContent); document.body.appendChild(d.ghost); document.body.classList.add("dragmod"); }
+    if(d.on){ d.ghost.style.transform="translate("+(e.clientX+12)+"px,"+(e.clientY+12)+"px)"; const k=atKnobAt(e); document.querySelectorAll(".knob.hot").forEach(x=>x.classList.remove("hot")); if(k) k.classList.add("hot"); }
+  });
+  const end=e=>{
+    if(!d) return; const k=d.on?atKnobAt(e):null, src=d.src, on=d.on;
+    if(d.ghost) d.ghost.remove(); document.body.classList.remove("dragmod"); document.querySelectorAll(".knob.hot").forEach(x=>x.classList.remove("hot")); d=null;
+    if(on){ if(k) atDropMod(src,k.dataset.dst); else atModNote("Lâche la source sur un bouton marqué d'un point."); } else atArm(src);
+  };
+  tray.addEventListener("pointerup",end); tray.addEventListener("pointercancel",end);
+  tray.addEventListener("click",e=>{ const b=e.target.closest(".fg-chip"); if(b&&e.detail===0) atArm(b.dataset.src); }); /* au clavier */
+  return tray;
+}
+/* aperçu animé : la table et les anneaux suivent les LFO */
+function atAnim(){
+  if(AT.pane!=="syn") return;
+  const lf=S.syn.mod.some(m=>m.src!=="none"&&Math.abs(m.amt)>0.001&&/^lfo/.test(m.src));
+  if(!lf){ if(AT.animOn){ AT.animOn=false; atDraw(); document.querySelectorAll("#atelier .knob[data-dst]").forEach(el=>synRings(el,el._spec)); } return; }
+  if(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  AT.fr=(AT.fr||0)+1; if(AT.fr%2) return; AT.animOn=true;
+  drawWave("atWA","oscA"); drawWave("atWB","oscB"); drawLfo();
+  document.querySelectorAll("#atelier .knob.modded").forEach(el=>synRings(el,el._spec,true));
+}
+/* ---------- LFO dessiné ---------- */
+function atLfoEvents(){
+  const cv=$("atLfo"); let drag=false, last=-1;
+  const at=e=>{ const r=cv.getBoundingClientRect(), N=S.syn[AT.lfo].draw.length; return {i:Math.max(0,Math.min(N-1,Math.floor((e.clientX-r.left)/r.width*N))), v:Math.max(-1,Math.min(1,1-2*(e.clientY-r.top)/r.height))}; };
+  const put=e=>{
+    const d=S.syn[AT.lfo].draw, {i,v}=at(e);
+    if(last>=0&&Math.abs(i-last)>1){ const a=Math.min(i,last), b=Math.max(i,last); for(let k=a;k<=b;k++) d[k]=d[last]+(v-d[last])*(k-last)/(i-last); }
+    d[i]=v; last=i; drawLfo(); atDirty(); if(live) live.eng.setLevels();
+  };
+  cv.addEventListener("pointerdown",e=>{ if(S.syn[AT.lfo].shape!=="draw") return; drag=true; last=-1; try{ cv.setPointerCapture(e.pointerId); }catch(x){} put(e); e.preventDefault(); });
+  cv.addEventListener("pointermove",e=>{ if(drag) put(e); });
+  const end=()=>{ drag=false; last=-1; }; cv.addEventListener("pointerup",end); cv.addEventListener("pointercancel",end);
+}
+/* ---------- table importée depuis un fichier audio ---------- */
+function atTableFromSamples(x,sr,name){
+  const r=synTableFromAudio(x,sr,256), n=$("atImpNote");
+  if(!r){ if(n) n.textContent="Ce son est trop court ou silencieux pour en tirer une table."; return null; }
+  S.syn.draw=r.table; S.syn.drawV=(S.syn.drawV||0)+1+Math.floor(Math.random()*1e6); S.syn.oscA.wave=1; AT.slices=null;
+  atelierSync(); atDirty(); if(live) live.eng.setLevels();
+  if(n) n.textContent="Table importée de « "+name+" » : un cycle de 256 points, "+(r.periodic?"hauteur trouvée "+Math.round(r.hz)+" Hz":"son sans hauteur nette, donc table de timbre")+". L'oscillateur A la joue.";
+  return r;
+}
+async function atImportFile(file){
+  const n=$("atImpNote"); if(n) n.textContent="Lecture de « "+file.name+" »…";
+  try{
+    const buf=await file.arrayBuffer(), OC=window.OfflineAudioContext||window.webkitOfflineAudioContext, ab=await new OC(1,1,44100).decodeAudioData(buf);
+    const x=new Float32Array(ab.length); for(let c=0;c<ab.numberOfChannels;c++){ const ch=ab.getChannelData(c); for(let i=0;i<x.length;i++) x[i]+=ch[i]/ab.numberOfChannels; }
+    atTableFromSamples(x,ab.sampleRate,file.name);
+  }catch(e){ if(n) n.textContent="Ce fichier ne peut pas être lu comme un son (formats courants : wav, mp3, ogg, m4a)."; }
 }
 
 /* ---------- construction : bandeau, deux rangées, liaisons, clavier ---------- */
@@ -331,20 +474,21 @@ function buildAtelier(){
   const knobs=(list)=>{ const r=atKnobs(list); r.style.setProperty("--kn",list.length); return r; };
   const grid=atEl("div","fg-grid"); grid.id="fgP_syn";
   const put=(span,m)=>{ m.classList.add("g"+span); grid.appendChild(m); return m; };
+  put(12,atSrcTray());
   /* rangée 1 : les sources et le filtre */
   [["oscA","Oscillateur A","atWA"],["oscB","Oscillateur B","atWB"]].forEach(([k,t,cvid])=>{
     const m=atMod(t); m.appendChild(atCanvas(cvid,84));
-    m.appendChild(knobs([K(k+".wave","Table",0,1,{fmt:v=>SYN_WAVES[Math.min(SYN_WAVES.length-1,Math.round(v*(SYN_WAVES.length-1)))]}),K(k+".lvl","Niveau",0,1,{fmt:fmtP}),K(k+".det","Désaccord",-50,50,{fmt:fmtC,step:1}),K(k+".spread","Écart",0,40,{fmt:v=>Math.round(v)+" ¢",step:1}),K(k+".warp","Torsion",-0.95,0.95,{fmt:v=>(v>0?"+":"")+Math.round(v*100)+" %"})]));
+    m.appendChild(knobs([K(k+".wave","Table",0,1,{fmt:v=>SYN_WAVES[Math.min(SYN_WAVES.length-1,Math.round(v*(SYN_WAVES.length-1)))],dst:k==="oscA"?"wave":"waveb"}),K(k+".lvl","Niveau",0,1,{fmt:fmtP,dst:k==="oscB"?"lvlb":undefined}),K(k+".det","Désaccord",-50,50,{fmt:fmtC,step:1,dst:k==="oscB"?"detuneb":undefined}),K(k+".spread","Écart",0,40,{fmt:v=>Math.round(v)+" ¢",step:1}),K(k+".warp","Torsion",-0.95,0.95,{fmt:v=>(v>0?"+":"")+Math.round(v*100)+" %",dst:k==="oscA"?"warp":undefined})]));
     m.appendChild(atNums([synNum(k+".oct","Octave",[-2,-1,0,1,2].map(v=>[v,(v>0?"+":"")+v])),synNum(k+".semi","Demi-tons",[-24,-12,-7,-5,0,5,7,12,19,24].map(v=>[v,(v>0?"+":"")+v])),synNum(k+".uni","Unisson",[1,2,3,4,5,7].map(v=>[v,v+" v."]))]));
     put(3,m);
   });
   const ms=atMod("Compléments");
   ms.appendChild(knobs([K("sub.lvl","Sous-osc.",0,1,{fmt:fmtP}),K("noise.lvl","Bruit",0,1,{fmt:fmtP})]));
-  ms.appendChild(knobs([K("fm.amt","FM",0,1.5,{fmt:v=>v.toFixed(2)}),K("fm.ratio","Rapport",0.5,8,{step:0.5,fmt:v=>"× "+v.toFixed(1)})]));
+  ms.appendChild(knobs([K("fm.amt","FM",0,1.5,{fmt:v=>v.toFixed(2),dst:"fm"}),K("fm.ratio","Rapport",0.5,8,{step:0.5,fmt:v=>"× "+v.toFixed(1)})]));
   ms.appendChild(atNums([synNum("sub.shape","Sous-osc.",[["sine","sinus"],["square","carré"]])]));
   put(2,ms);
   const mf=atMod("Filtre"); mf.appendChild(atCanvas("atFil",84));
-  mf.appendChild(knobs([K("fil.cut","Coupure",40,16000,{log:true,fmt:fmtHz}),K("fil.res","Résonance",0.1,14,{log:true,fmt:v=>v.toFixed(1)}),K("fil.key","Clavier",0,1,{fmt:fmtP}),K("fil.env","Envel.",-4800,4800,{fmt:fmtC,step:50}),K("fx.drive","Saturat.",0,1,{fmt:fmtP})]));
+  mf.appendChild(knobs([K("fil.cut","Coupure",40,16000,{log:true,fmt:fmtHz,dst:"cutoff"}),K("fil.res","Résonance",0.1,14,{log:true,fmt:v=>v.toFixed(1),dst:"reso"}),K("fil.key","Clavier",0,1,{fmt:fmtP}),K("fil.env","Envel.",-4800,4800,{fmt:fmtC,step:50}),K("fx.drive","Saturat.",0,1,{fmt:fmtP})]));
   mf.appendChild(atNums([synNum("fil.type","Type",[["lowpass","passe-bas 12"],["lowpass24","passe-bas 24"],["highpass","passe-haut 12"],["highpass24","passe-haut 24"],["bandpass","passe-bande"],["notch","coupe-bande"]])]));
   put(4,mf);
   /* rangée 2 : ce qui bouge */
@@ -355,16 +499,19 @@ function buildAtelier(){
   put(4,me);
   const ml=atMod("LFO"); ml.querySelector("h3").insertAdjacentHTML("beforeend",'<span class="fg-seg"><button class="lnk" id="fg_lfo1" type="button">1</button><button class="lnk" id="fg_lfo2" type="button">2</button><button class="lnk" id="fg_lfo3" type="button">3</button></span>');
   const lc=atCanvas("atLfo",72); lc.setAttribute("aria-label","Forme du LFO choisi"); ml.appendChild(lc);
-  const lrow=atEl("div","fg-lfo"); lrow.appendChild(makeKnob(K(()=>AT.lfo+".rate","Vitesse",0.03,25,{log:true,fmt:v=>v.toFixed(2)+" Hz"})));
+  const lrow=atEl("div","fg-lfo"); AT.lfoKnob=makeKnob(K(()=>AT.lfo+".rate","Vitesse",0.03,25,{log:true,fmt:v=>v.toFixed(2)+" Hz"})); lrow.appendChild(AT.lfoKnob);
   const shp=atEl("div","fg-shapes"); shp.setAttribute("role","group"); shp.setAttribute("aria-label","Forme du LFO");
-  shapeOpts.forEach(([v,l])=>{ const b=atEl("button","lnk",'<svg viewBox="0 0 22 14" aria-hidden="true"><path d="'+LFO_ICON[v]+'"/></svg>'); b.type="button"; b.id="fgSh_"+v; b.title=l; b.setAttribute("aria-label",l); b.onclick=()=>{ S.syn[AT.lfo].shape=v; atTabsUI(); atDirty(); if(live) live.eng.setLevels(); }; shp.appendChild(b); });
+  shapeOpts.concat([["draw","Dessiné : tire sur le graphe"]]).forEach(([v,l])=>{ const b=atEl("button","lnk",'<svg viewBox="0 0 22 14" aria-hidden="true"><path d="'+LFO_ICON[v]+'"/></svg>'); b.type="button"; b.id="fgSh_"+v; b.title=l; b.setAttribute("aria-label",l); b.onclick=()=>{ S.syn[AT.lfo].shape=v; atTabsUI(); atDirty(); if(live) live.eng.setLevels(); }; shp.appendChild(b); });
   lrow.appendChild(shp); ml.appendChild(lrow);
+  { const lsy=atEl("div","fg-lsync"), sb=atEl("button","btn tgl","Tempo"); sb.type="button"; sb.id="fgLfoSync"; sb.setAttribute("aria-pressed","false"); sb.title="Cale la vitesse du LFO sur le tempo du morceau";
+    sb.onclick=()=>{ const L=S.syn[AT.lfo]; L.sync=L.sync?0:1; atTabsUI(); atDirty(); if(live) live.eng.setLevels(); };
+    AT.lfoDiv=synNum(()=>AT.lfo+".div","Division",SYN_DIV.map((d,i)=>[i,d[0]])); AT.lfoDiv.id="fgLfoDiv"; lsy.appendChild(sb); lsy.appendChild(AT.lfoDiv); ml.appendChild(lsy); }
   put(3,ml);
   const mc=atMod("Macros","sources de liaison");
   mc.appendChild(knobs([K("mac.m1","Macro 1",0,1,{fmt:fmtP}),K("mac.m2","Macro 2",0,1,{fmt:fmtP})])); mc.appendChild(knobs([K("mac.m3","Macro 3",0,1,{fmt:fmtP}),K("mac.m4","Macro 4",0,1,{fmt:fmtP})]));
   put(2,mc);
   const mo=atMod("Sortie et jeu");
-  mo.appendChild(knobs([K("fx.level","Niveau",0.05,4,{log:true,fmt:v=>"× "+v.toFixed(2)}),K("vel.amt","Vélocité",0,1,{fmt:fmtP}),K("mono.glide","Glisse",0.01,1.5,{log:true,fmt:fmtS})]));
+  mo.appendChild(knobs([K("fx.level","Niveau",0.05,4,{log:true,fmt:v=>"× "+v.toFixed(2),dst:"amp"}),K("vel.amt","Vélocité",0,1,{fmt:fmtP}),K("mono.glide","Glisse",0.01,1.5,{log:true,fmt:fmtS})]));
   mo.appendChild(atNums([synNum("mono.on","Jeu",[[0,"polyphonique"],[1,"mono, glissé"]])]));
   put(3,mo);
   /* rangée 3 : les liaisons de modulation */
@@ -392,7 +539,8 @@ function buildAtelier(){
   const mt=atMod("Table dessinée"); mt.classList.add("g4");
   mt.appendChild(atCanvas("atDrawCv",96));
   mt.appendChild(atEl("div","at-dr",'<button class="lnk" id="atDrSin" type="button">Sinus</button><button class="lnk" id="atDrSaw" type="button">Dent</button><button class="lnk" id="atDrSq" type="button">Carré</button><button class="lnk" id="atDrSmooth" type="button">Lisser</button><button class="lnk" id="atDrRnd" type="button">Hasard</button>'));
-  mt.appendChild(atEl("p","hint","Tire sur la courbe : c'est la dernière table, tout à droite du bouton Table."));
+  mt.appendChild(atEl("div","at-dr",'<button class="lnk" id="atImpBtn" type="button">Importer un son…</button><input type="file" id="atImpFile" accept="audio/*" hidden>'));
+  mt.appendChild(atEl("p","hint","Tire sur la courbe : c'est la dernière table, tout à droite du bouton Table. « Importer un son » en tire un cycle (fichier audio, ou glisse-le sur la courbe).")).id="atImpNote";
   g2.appendChild(mt);
   const ex=atMod("Échanger un patch","texte à copier ou à coller"); ex.classList.add("g12");
   ex.appendChild(atEl("div","fields",'<div class="ctl"><label for="synOut">Ton patch</label><textarea id="synOut" readonly></textarea><div class="row"><button class="lnk" id="synCopy" type="button">Copier</button></div></div><div class="ctl"><label for="synIn">Coller un patch</label><textarea id="synIn" placeholder="Colle ici un patch reçu"></textarea><div class="row"><button class="lnk" id="synLoadTxt" type="button">Charger ce patch</button></div></div>'));
@@ -434,7 +582,12 @@ function buildAtelier(){
   $("fgNoMod").textContent="Aucune liaison : « + liaison » relie un LFO, une enveloppe, la vélocité ou une macro à un réglage.";
   sec.addEventListener("input",atDirty); sec.addEventListener("change",()=>{ atDirty(); atModRows(); });
   if(window.ResizeObserver) new ResizeObserver(()=>atDraw()).observe(sec);
-  atWaveDrag("atWA","oscA"); atWaveDrag("atWB","oscB"); tabulaEvents(); atEnvDrag();
+  atWaveDrag("atWA","oscA"); atWaveDrag("atWB","oscB"); tabulaEvents(); atEnvDrag(); atLfoEvents();
+  $("atImpBtn").onclick=()=>$("atImpFile").click();
+  $("atImpFile").onchange=e=>{ const f=e.target.files&&e.target.files[0]; if(f) atImportFile(f); e.target.value=""; };
+  { const dc=$("atDrawCv"); dc.addEventListener("dragover",e=>{ e.preventDefault(); }); dc.addEventListener("drop",e=>{ e.preventDefault(); const f=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0]; if(f) atImportFile(f); }); }
+  sec.addEventListener("click",e=>{ if(!AT.armed) return; const k=e.target.closest&&e.target.closest(".knob[data-dst]"); if(k){ const src=AT.armed; atArm(src); atDropMod(src,k.dataset.dst); e.preventDefault(); } });
+  sec.addEventListener("input",e=>{ if(e.target.closest&&e.target.closest(".fg-link")) atPaintKnobs(); });
   document.querySelector(".fg-scope").onclick=()=>{ AT.scope=AT.scope==="osc"?"spec":"osc"; };
   AT.built=true; atMachUI(); atTabsUI(); atModRows();
 }

@@ -6,6 +6,16 @@
    ============================================================ */
 const SYN_WAVES=["Sinus","Triangle","Dent de scie","Carré","Impulsion étroite","Orgue","Voyelle","Creux","Cloche","Corde","Dentelle","Verre","Dessinée"];
 const SYN_DRAW=64;
+/* LFO : divisions du tempo (en temps), forme dessinée (une période de 64 points, entre -1 et 1) */
+const SYN_DIV=[["4 mesures",16],["2 mesures",8],["1 mesure",4],["1/2",2],["1/4",1],["1/8",0.5],["1/16",0.25],["1/32",0.125]];
+function synLfoSeed(i){ return Array.from({length:64},(_,n)=>{ const th=n/64*2*Math.PI; return +(i===0?Math.sin(th)*0.7+Math.sin(2*th+1)*0.3:i===1?Math.sin(th)*0.5+Math.sin(3*th)*0.35+Math.sin(5*th)*0.15:Math.sin(th+Math.sin(2*th)*1.2)).toFixed(4); }); }
+/* vitesse réelle d'un LFO : en Hz, ou calée sur le tempo du morceau quand la synchronisation est active */
+function synLfoHz(L){ if(L.sync){ const d=SYN_DIV[Math.max(0,Math.min(SYN_DIV.length-1,Math.round(L.div===undefined?2:L.div)))][1], bpm=(typeof S!=="undefined"&&S&&S.tempo)||120; return bpm/60/d; } return L.rate; }
+function synLfoVal(L,p){ p-=Math.floor(p); const sh=L.shape;
+  if(sh==="draw"){ const t=synLfoTable(L.draw), x=p*t.length, i=x|0, f=x-i; return t[i]+(t[(i+1)%t.length]-t[i])*f; }
+  return sh==="sine"?Math.sin(2*Math.PI*p):sh==="triangle"?(p<0.25?4*p:p<0.75?2-4*p:4*p-4):sh==="sawtooth"?(p<0.5?2*p:2*p-2):(p<0.5?1:-1); }
+/* table d'un LFO dessiné : sans composante continue, crête à 1 (le moteur natif retire aussi le continu) */
+function synLfoTable(d){ const a=(d&&d.length>=4)?d:synLfoSeed(0); let m=0; for(const x of a) m+=x; m/=a.length; let pk=0; const o=a.map(x=>{ const y=x-m; pk=Math.max(pk,Math.abs(y)); return y; }); return o.map(y=>+(y/(pk||1)).toFixed(4)); }
 const SYN_SRC=[["none","Aucune"],["lfo1","LFO 1"],["lfo2","LFO 2"],["lfo3","LFO 3"],["env1","Enveloppe de volume"],["env2","Enveloppe 2"],["vel","Vélocité"],["key","Hauteur de la note"],["rand","Hasard (par note)"],["mac1","Macro 1"],["mac2","Macro 2"],["mac3","Macro 3"],["mac4","Macro 4"]];
 const SYN_DST=[["pitch","Hauteur"],["cutoff","Coupure du filtre"],["reso","Résonance"],["amp","Volume (trémolo)"],["pan","Panoramique"],["fm","Quantité de FM"],["detuneb","Désaccord de B"],["wave","Position de table (A)"],["waveb","Position de table (B)"],["warp","Torsion (A)"],["lvlb","Niveau de B"]];
 
@@ -20,9 +30,9 @@ const SYN_DEFAULT={
   envA:{a:0.35, d:0.8, s:0.75, r:1.2},
   envF:{a:0.4, d:0.9, s:0.4, r:1.2},
   env2:{a:0.2, d:1, s:0.5, r:1},
-  lfo1:{shape:"sine", rate:0.3},
-  lfo2:{shape:"triangle", rate:5},
-  lfo3:{shape:"triangle", rate:0.5},
+  lfo1:{shape:"sine", rate:0.3, sync:0, div:2, draw:synLfoSeed(0)},
+  lfo2:{shape:"triangle", rate:5, sync:0, div:4, draw:synLfoSeed(1)},
+  lfo3:{shape:"triangle", rate:0.5, sync:0, div:3, draw:synLfoSeed(2)},
   mod:[{src:"lfo1",dst:"cutoff",amt:0.25},{src:"lfo2",dst:"pitch",amt:0.02},{src:"none",dst:"amp",amt:0},{src:"vel",dst:"cutoff",amt:0.3},{src:"none",dst:"wave",amt:0},{src:"none",dst:"cutoff",amt:0},{src:"none",dst:"pan",amt:0},{src:"none",dst:"lvlb",amt:0}],
   mono:{on:0, glide:0.08},
   draw:Array.from({length:64},(_,i)=>{ const th=i/64*2*Math.PI; return Math.sin(th)*0.8+Math.sin(3*th)*0.25-Math.sin(5*th)*0.1; }), drawV:0,
@@ -54,12 +64,46 @@ function synHarm(kind,N){
 const SYN_BASE=SYN_WAVES.slice(0,12).map((_,i)=>synHarm(i));
 /* la table dessinée : une période de SYN_DRAW points, passée aux harmoniques par une transformée de Fourier */
 const synDrawCache=new Map();
+function synDft(d,maxH){
+  const N=d.length||SYN_DRAW, H=Math.min(maxH,Math.floor(N/2)-1), re=new Float32Array(Math.max(SYN_N,H)+1), im=new Float32Array(Math.max(SYN_N,H)+1);
+  let mx=0; for(let n=0;n<N;n++) mx=Math.max(mx,Math.abs(d[n]||0));
+  for(let k=1;k<=H;k++){ let a=0,b=0; for(let n=0;n<N;n++){ const x=(d[n]||0)/(mx||1), th=2*Math.PI*k*n/N; a+=x*Math.cos(th); b+=x*Math.sin(th); } re[k]=2*a/N; im[k]=2*b/N; }
+  return [re,im];
+}
 function drawHarm(P){
   const d=P.draw||[], key=(P.drawV||0)+":"+d.length; let h=synDrawCache.get(key); if(h&&h.src===d) return h.v;
-  const N=d.length||SYN_DRAW, re=new Float32Array(SYN_N+1), im=new Float32Array(SYN_N+1);
-  let mx=0; for(let n=0;n<N;n++) mx=Math.max(mx,Math.abs(d[n]||0));
-  for(let k=1;k<=Math.min(SYN_N,N/2-1);k++){ let a=0,b=0; for(let n=0;n<N;n++){ const x=(d[n]||0)/(mx||1), th=2*Math.PI*k*n/N; a+=x*Math.cos(th); b+=x*Math.sin(th); } re[k]=2*a/N; im[k]=2*b/N; }
-  const v=[re,im]; synDrawCache.set(key,{src:d,v}); if(synDrawCache.size>40) synDrawCache.delete(synDrawCache.keys().next().value); return v;
+  const v=synDft(d,d.length>128?120:SYN_N); synDrawCache.set(key,{src:d,v}); if(synDrawCache.size>40) synDrawCache.delete(synDrawCache.keys().next().value); return v;
+}
+/* ---- import : un cycle tiré d'un son ----
+   On cherche la partie la plus forte, la période par autocorrélation (40 à 1200 Hz), puis on rééchantillonne la moyenne de quelques cycles
+   sur N points, sans composante continue et sans cassure au raccord. Un son sans hauteur (bruit, percussion) donne une table de timbre, pas une note. */
+function synTableFromAudio(x,sr,N){
+  N=N||256; const L=x.length; if(!L||L<64) return null;
+  const W=Math.min(8192,L); let best=0, bs=-1;
+  for(let s=0;s+W<=L;s+=Math.max(256,W>>2)){ let e=0; for(let i=0;i<W;i+=2) e+=x[s+i]*x[s+i]; if(e>bs){ bs=e; best=s; } }
+  if(bs<=1e-9) return null;
+  const seg=new Float32Array(W); for(let i=0;i<W;i++) seg[i]=x[best+i];
+  const lmin=Math.max(8,Math.floor(sr/1200)), lmax=Math.min(W>>1,Math.floor(sr/40)), n=W-lmax, cor=new Float32Array(lmax+2);
+  let e0=0; for(let i=0;i<n;i++) e0+=seg[i]*seg[i];
+  let mx=0;
+  for(let lag=lmin;lag<=lmax;lag++){ let c=0,e1=0; for(let i=0;i<n;i++){ c+=seg[i]*seg[i+lag]; e1+=seg[i+lag]*seg[i+lag]; } cor[lag]=c/Math.sqrt(e0*e1||1); if(cor[lag]>mx) mx=cor[lag]; }
+  let P=0;
+  if(mx>0.55){ /* la plus courte période presque aussi nette que la meilleure : on évite de prendre une octave plus bas */
+    for(let lag=lmin+1;lag<lmax;lag++) if(cor[lag]>=0.9*mx&&cor[lag]>=cor[lag-1]&&cor[lag]>=cor[lag+1]){ const a=cor[lag-1], b=cor[lag], c=cor[lag+1], d=a-2*b+c; P=lag+(d?0.5*(a-c)/d:0); break; }
+  }
+  const at=p=>{ const i=Math.floor(p), f=p-i; return (seg[Math.max(0,Math.min(W-1,i))])*(1-f)+(seg[Math.max(0,Math.min(W-1,i+1))])*f; };
+  const out=new Float32Array(N);
+  if(P>0){
+    let s0=0; for(let i=1;i<Math.min(W-2,Math.ceil(P)+2);i++) if(seg[i-1]<=0&&seg[i]>0){ s0=i-1+(-seg[i-1])/((seg[i]-seg[i-1])||1); break; }
+    const cycles=Math.max(1,Math.min(4,Math.floor((W-s0-1)/P)));
+    for(let k=0;k<N;k++){ let a=0; for(let c=0;c<cycles;c++) a+=at(s0+c*P+k*P/N); out[k]=a/cycles; }
+  }else{
+    const len=Math.min(W,2048); for(let k=0;k<N;k++){ let a=0, c=0; const i0=Math.floor(k*len/N), i1=Math.max(i0+1,Math.floor((k+1)*len/N)); for(let i=i0;i<i1;i++){ a+=seg[i]; c++; } out[k]=a/c; }
+  }
+  let m=0; for(let k=0;k<N;k++) m+=out[k]; m/=N; for(let k=0;k<N;k++) out[k]-=m;
+  { const gap=out[N-1]-out[0]; for(let k=0;k<N;k++) out[k]-=gap*k/N; } /* raccord : le dernier point rejoint le premier */
+  let pk=0; for(let k=0;k<N;k++) pk=Math.max(pk,Math.abs(out[k])); if(pk<1e-6) return null;
+  return {table:Array.from(out,v=>+(v/pk*0.95).toFixed(4)), hz:P>0?sr/P:0, periodic:P>0, strength:mx};
 }
 const synBases=P=>SYN_BASE.concat([drawHarm(P)]);
 const synWaveCache=new WeakMap();
@@ -154,7 +198,7 @@ function synthVoice(ctx,P,o){
   if(needEnv("env1")&&ctx.createConstantSource) e1g=mkEnv(P.envA);
   /* LFO et matrice : chaque emplacement relie une source à un paramètre de la voix */
   const lfos={};
-  const lfo=(k)=>{ if(lfos[k]) return lfos[k]; const d=P[k], os=ctx.createOscillator(); os.type=d.shape; os.frequency.value=d.rate; os.start(t); srcs.push(os); return lfos[k]=os; };
+  const lfo=(k)=>{ if(lfos[k]) return lfos[k]; const d=P[k], os=ctx.createOscillator(); if(d.shape==="draw"&&ctx.createPeriodicWave){ const h=synDft(synLfoTable(d.draw),31); os.setPeriodicWave(ctx.createPeriodicWave(h[0],h[1])); } else os.type=d.shape==="draw"?"sine":d.shape; os.frequency.value=synLfoHz(d); os.start(t); srcs.push(os); return lfos[k]=os; };
   const constSrc=v=>{ if(!ctx.createConstantSource) return null; const c=ctx.createConstantSource(); c.offset.value=v; c.start(t); srcs.push(c); return c; };
   const velSrc=()=>constSrc(vel);
   const DST={
@@ -196,7 +240,7 @@ function synSpectra(P){
   if(!synSpecBase) synSpecBase=SYN_WAVES.slice(0,12).map((_,i)=>{ const h=synHarm(i,SYN_WT_N); return [Array.from(h[0]),Array.from(h[1])]; });
   const d=drawHarm(P); return synSpecBase.concat([[Array.from(d[0]),Array.from(d[1])]]);
 }
-function synCore(P){ const o={}; for(const k in P) if(k!=="draw"&&k!=="rack") o[k]=P[k]; return o; }
+function synCore(P){ const o={}; for(const k in P) if(k!=="draw"&&k!=="rack") o[k]=P[k]; for(const k of ["lfo1","lfo2","lfo3"]) if(P[k]) o[k]={shape:P[k].shape,rate:synLfoHz(P[k]),draw:P[k].shape==="draw"?synLfoTable(P[k].draw):null}; return o; }
 function synState(ctx){ let st=synCtx.get(ctx); if(!st){ st={nodes:new Map(),tabV:null,pv:""}; synCtx.set(ctx,st); } return st; }
 function synNodeFor(ctx,dst,o){
   const st=synState(ctx); let n=st.nodes.get(dst); if(n) return n;
@@ -253,7 +297,7 @@ function synMerge(base,over){
   for(const k in over){
     if(k==="draw"&&Array.isArray(over[k])) o[k]=over[k].slice();
     else if(Array.isArray(over[k])) o[k]=over[k].map(x=>({...x}));
-    else if(over[k]&&typeof over[k]==="object"){ const b=o[k]||{}; o[k]={...b}; for(const j in over[k]){ const v=over[k][j]; o[k][j]=(v&&typeof v==="object"&&!Array.isArray(v))?{...(b[j]||{}),...v}:v; } }
+    else if(over[k]&&typeof over[k]==="object"){ const b=o[k]||{}; o[k]={...b}; for(const j in over[k]){ const v=over[k][j]; o[k][j]=(v&&typeof v==="object"&&!Array.isArray(v))?{...(b[j]||{}),...v}:(Array.isArray(v)?v.slice():v); } }
     else o[k]=over[k];
   }
   const dm=base.mod||[]; while(o.mod.length<8) o.mod.push({...(dm[o.mod.length]||{src:"none",dst:"cutoff",amt:0})});

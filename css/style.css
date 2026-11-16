@@ -836,3 +836,26 @@ body.atelier .piano{height:56px}
 .at-kbbar{flex-wrap:wrap}
 .at-kbbar .btn{white-space:nowrap}
 @media (max-width:640px){ .at-kbbar{gap:var(--sp-xs) var(--sp-sm)} .at-kbbar .btn{padding:var(--sp-xs) var(--sp-sm); font-size:.72rem} .at-kbbar select{min-width:0; width:11ch} }
+
+/* ---------- modulation par glisser-déposer (Forger) ---------- */
+.fg-src{display:flex; flex-wrap:wrap; align-items:center; gap:var(--sp-xs) var(--sp-sm); padding:var(--sp-xs) 0}
+.fg-srcl{font:400 .8rem/1 var(--caps); letter-spacing:.08em; color:var(--ink-2); margin-right:var(--sp-xs)}
+.fg-chip{font:400 .86rem/1 var(--caps); letter-spacing:.05em; padding:6px 10px; background:transparent; border:1px solid var(--ink-2); border-radius:0; color:var(--ink); cursor:grab; touch-action:none; user-select:none; -webkit-user-select:none}
+.fg-chip:hover{background:var(--parch-3)}
+.fg-chip[aria-pressed="true"]{border-color:var(--rubric); color:var(--rubric); box-shadow:inset 0 0 0 1px var(--rubric)}
+.fg-srcn{flex:1 1 22ch; font:italic 400 .95rem/1.2 var(--body); color:var(--ink-2); min-height:1.2em}
+.fg-ghost{position:fixed; left:0; top:0; z-index:50; pointer-events:none; padding:6px 10px; background:var(--rubric); color:var(--parch); font:400 .86rem/1 var(--caps); letter-spacing:.05em; box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.knob[data-dst]::before{content:""; position:absolute; top:1px; right:4px; width:6px; height:6px; border-radius:50%; border:1px solid var(--ink-2); pointer-events:none}
+.knob.modded::before{background:var(--rubric); border-color:var(--rubric)}
+body.dragmod .knob[data-dst] svg, body.armed .knob[data-dst] svg{outline:1px dashed var(--rubric); outline-offset:2px}
+body.dragmod .knob.hot svg{outline:2px solid var(--rubric); background:rgba(163,48,28,.08)}
+body.armed .knob[data-dst]{cursor:copy}
+.knob[data-dst] svg{overflow:visible}
+.knob[data-dst] .tk{display:none}
+.knob .dr{fill:none; stroke-width:2.8; stroke-linecap:butt; pointer-events:stroke; cursor:ns-resize}
+.knob .dr:hover{stroke-width:3.8}
+.knob .md{fill:var(--ink); stroke:var(--parch); stroke-width:.8; pointer-events:none}
+.knob[hidden], .fg-num[hidden]{display:none}
+.fg-lsync{display:flex; align-items:center; gap:var(--sp-sm); margin-top:var(--sp-xs)}
+.fg-lsync .btn{padding:6px 10px; font-size:.82rem}
+#atLfo.drawable{cursor:crosshair; touch-action:none}

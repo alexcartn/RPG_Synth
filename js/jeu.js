@@ -45,16 +45,20 @@ function paintKnob(el,spec){
   el.querySelector(".kv").textContent=knobText(spec,v);
   el.setAttribute("aria-valuenow",Math.round(v*100)); el.setAttribute("aria-valuetext",knobText(spec,v));
   JEU.seen[spec.id]=v;
+  if(spec.dst&&typeof synRings==="function") synRings(el,spec);
 }
 function makeKnob(spec){
   const el=document.createElement("div"); el.className="knob"; el.setAttribute("role","slider"); el.tabIndex=0;
   el.setAttribute("aria-label",spec.label); el.setAttribute("aria-valuemin","0"); el.setAttribute("aria-valuemax","100");
   let ticks=""; for(let i=0;i<=10;i++){ const a=A0+(A1-A0)*i/10, [x0,y0]=pol(34,a), [x1,y1]=pol(i%5===0?39:37,a); ticks+='<line x1="'+x0.toFixed(1)+'" y1="'+y0.toFixed(1)+'" x2="'+x1.toFixed(1)+'" y2="'+y1.toFixed(1)+'"/>'; }
   el.innerHTML='<svg viewBox="0 0 80 80" aria-hidden="true"><g class="tk">'+ticks+'</g><path class="trk" d="'+arcPath(30,A0,A1)+'"/><path class="val" d=""/><circle class="cap" cx="40" cy="40" r="20"/><line class="ndl" x1="40" y1="40" x2="40" y2="24"/></svg><span class="kl">'+spec.label+'</span><output class="kv"></output>';
-  let dragging=false, y0=0, v0=0;
-  el.addEventListener("pointerdown",e=>{ el.setPointerCapture(e.pointerId); dragging=true; y0=e.clientY; v0=spec.get(); el.focus({preventScroll:true}); e.preventDefault(); });
-  el.addEventListener("pointermove",e=>{ if(!dragging) return; const v=clamp01(v0+(y0-e.clientY)/(e.shiftKey?700:170)); applyKnob(spec,v,false); paintKnob(el,spec); });
-  const end=e=>{ if(!dragging) return; dragging=false; applyKnob(spec,spec.get(),true); paintKnob(el,spec); };
+  let dragging=false, y0=0, v0=0, ring=null;
+  if(spec.dst) el.dataset.dst=spec.dst;
+  el.addEventListener("pointerdown",e=>{ if(spec.dst&&e.target.closest&&e.target.closest(".dr")){ ring=synRingStart(el,spec,e); if(ring){ el.setPointerCapture(e.pointerId); e.preventDefault(); return; } }
+    el.setPointerCapture(e.pointerId); dragging=true; y0=e.clientY; v0=spec.get(); el.focus({preventScroll:true}); e.preventDefault(); });
+  el.addEventListener("pointermove",e=>{ if(ring){ synRingMove(ring,e); return; } if(!dragging) return; const v=clamp01(v0+(y0-e.clientY)/(e.shiftKey?700:170)); applyKnob(spec,v,false); paintKnob(el,spec); });
+  const end=e=>{ if(ring){ ring=null; return; } if(!dragging) return; dragging=false; applyKnob(spec,spec.get(),true); paintKnob(el,spec); };
+  if(spec.dst) el.addEventListener("dblclick",e=>{ const h=document.elementFromPoint(e.clientX,e.clientY); if(h&&h.closest&&h.closest(".dr")) synRingRemove(el,spec,{target:h}); });
   el.addEventListener("pointerup",end); el.addEventListener("pointercancel",end);
   el.addEventListener("wheel",e=>{ e.preventDefault(); applyKnob(spec,spec.get()+(e.deltaY<0?0.03:-0.03),true); paintKnob(el,spec); },{passive:false});
   el.addEventListener("keydown",e=>{

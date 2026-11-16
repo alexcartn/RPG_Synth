@@ -94,7 +94,7 @@ function crossfade(d){
 function restartIfLive(d){ if(live) crossfade(d||0.6); }
 function setPlayUI(on){
   if(window.keepAwake) window.keepAwake(on);
-  ["play","play2","play3"].forEach(id=>{const b=$(id); b.textContent=on?"Arrêter":"Jouer"; b.setAttribute("aria-pressed",on?"true":"false");});
+  ["play","play2","play3","play4"].forEach(id=>{const b=$(id); if(!b) return; b.textContent=on?"Arrêter":"Jouer"; b.setAttribute("aria-pressed",on?"true":"false");});
   if(typeof jeuState==="function") jeuState();
 }
 $("play").onclick=$("play2").onclick=$("play3").onclick=()=>{live?stopLive():startLive();};

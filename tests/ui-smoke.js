@@ -90,6 +90,15 @@ setTimeout(async()=>{
  d.getElementById('atMach').click(); console.log('atelier : machine en sourdine',w.eval('S.mach===false')); d.getElementById('atMach').click();
  w.eval('live.eng.synOn(0,0.7).release()');
  d.getElementById('reglBtn').click();
+ // DAW : mode, mixeur, enregistrement, piano roll
+ d.getElementById('dawBtn').click(); await new Promise(r=>setTimeout(r,100));
+ console.log('daw : mode',w.eval('MODE'),'| lignes',d.querySelectorAll('#dawMix .dw-row').length,'| touches',d.querySelectorAll('#piano .pk').length);
+ w.eval('S.daw.tracks[0].notes.push({s:0,off:12,d:1,v:0.7},{s:2,off:14,d:2,v:0.7})'); w.eval('live.eng.dawReplan(S.daw.tracks[0].id)');
+ w.eval('S.daw.mix.mute.perc=true; live.eng.setLevels(); S.daw.tracks[1].solo=true; live.eng.setLevels(); S.daw.tracks[1].solo=false; S.daw.mix.mute.perc=false; live.eng.setLevels()');
+ w.eval('DW.rec=true'); w.eval('atOn("t1",3)'); await new Promise(r=>setTimeout(r,300)); w.eval('atOff("t1")');
+ console.log('daw : notes enregistrées',w.eval('S.daw.tracks[0].notes.length'),'| annuler',d.getElementById('dawUndo').disabled);
+ w.eval('dawUndo()'); console.log('daw : après annulation',w.eval('S.daw.tracks[0].notes.length'));
+ d.getElementById('reglBtn').click();
  // courbe de tension
  [...d.querySelectorAll('.curvetools .lnk')][2].click(); await new Promise(r=>setTimeout(r,300));
  console.log('courbe : mode',w.eval('S.curve.mode'),'| valeur actuelle',w.eval('live.eng.tensNow().toFixed(2)'));

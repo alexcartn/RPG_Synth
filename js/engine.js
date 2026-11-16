@@ -527,10 +527,11 @@ function buildEngine(ctx, S, o){
     });
   }
   /* après une modification : on coupe ce qui était planifié et on replanifie depuis maintenant */
-  function dawReplan(){
+  function dawReplan(id){
     if(!started) return;
     const now=ctx.currentTime;
     DAW().tracks.forEach(tr=>{
+      if(id!==undefined&&tr.id!==id) return;
       const st=dawT(tr), L=Math.max(1,tr.bars)*barE, old=st.gen;
       old.gain.cancelScheduledValues(now); old.gain.setTargetAtTime(0,now,0.02);
       if(typeof setTimeout==="function") setTimeout(()=>{ try{ old.disconnect(); }catch(e){} },1500);

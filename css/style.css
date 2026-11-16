@@ -466,3 +466,45 @@ details.atsave{margin-top:0}
 .chap:not([open]) > summary > header{margin-bottom:0}
 
 .modehint{margin:calc(-1*var(--sp-xs)) 0 var(--sp-md); font:italic 400 .98rem/1.4 var(--body); color:var(--ink-2); max-width:70ch}
+
+/* ---------- DAW : mixeur, pistes, piano roll ---------- */
+body.daw .cols, body.daw .toc, body.daw .dock{display:none}
+body.daw .head .lede, body.daw .legend{display:none}
+body.daw .head{margin-bottom:var(--sp-sm)}
+body.daw .score canvas{height:84px}
+body.daw .score{margin-bottom:var(--sp-sm)}
+.daw{margin:0 0 var(--sp-2xl)}
+.dw-bar{display:flex; flex-wrap:wrap; align-items:flex-end; gap:var(--sp-md) var(--sp-xl); padding:var(--sp-sm) 0 var(--sp-md); border-bottom:1px solid var(--rule)}
+.dw-bar .seal.sm{width:64px; height:64px; font-size:1rem}
+.dw-bar .ctl{min-width:14ch}
+.dw-bar .btn.rec[aria-pressed="true"]{background:var(--rubric); color:var(--parch); border-color:var(--rubric)}
+.dw-hint{margin:var(--sp-sm) 0 var(--sp-md); max-width:none}
+.dw-grid{display:grid; grid-template-columns:minmax(0,1.05fr) minmax(0,1.25fr); gap:var(--sp-xl); align-items:start}
+.dw-mix{display:flex; flex-direction:column; gap:2px; min-width:0}
+.dw-head, .dw-row{display:grid; grid-template-columns:12px minmax(7ch,1.1fr) minmax(12ch,1.4fr) minmax(5ch,1fr) minmax(4ch,.7fr) 26px 26px minmax(8ch,.9fr) 22px; align-items:center; gap:var(--sp-xs) var(--sp-sm)}
+.dw-head{border-left:3px solid transparent; font:400 .72rem/1 var(--caps); letter-spacing:.08em; color:var(--ink-2); padding:0 var(--sp-xs) var(--sp-xs)}
+.dw-sec{display:flex; justify-content:space-between; align-items:baseline; font:italic 400 1rem/1 var(--body); color:var(--rubric); margin:var(--sp-md) 0 var(--sp-xs); padding-top:var(--sp-sm); border-top:1px solid var(--rule)}
+.dw-row{padding:5px var(--sp-xs); border-left:3px solid transparent}
+.dw-row.trk{cursor:pointer}
+.dw-row.trk:hover{background:var(--parch-2)}
+.dw-row.sel{background:var(--parch-3); border-left-color:var(--rubric)}
+.dw-row .dot{width:10px; height:10px; border-radius:50%}
+.dw-row .nm{font:400 .95rem/1.1 var(--body); min-width:0}
+.dw-row input.nm{background:transparent; border:0; border-bottom:1px solid transparent; padding:2px 0; color:var(--ink)}
+.dw-row input.nm:focus{border-bottom-color:var(--rubric); outline:0}
+.dw-row .gen{font:italic 400 .85rem/1 var(--body); color:var(--ink-2)}
+.dw-row select{font-size:.85rem; min-width:0; width:100%; padding:2px 0}
+.dw-row input[type=range]{width:100%; min-width:0}
+.dw-b{font:400 .78rem/1 var(--caps); width:24px; height:24px; padding:0; border:1px solid var(--ink-2); background:transparent; color:var(--ink); cursor:pointer}
+.dw-b[aria-pressed="true"].m{background:var(--ink); color:var(--parch)}
+.dw-b[aria-pressed="true"].s{background:var(--gold); color:var(--ink); border-color:var(--gold)}
+.dw-b.x{border:0; color:var(--ink-2); font-size:1rem}
+.dw-b:disabled{opacity:.3; cursor:default}
+.dw-roll{min-width:0}
+.dw-rh{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:var(--sp-xs)}
+.dw-rh h3{font:italic 400 1.3rem/1 var(--display); margin:0}
+.dw-tools{display:flex; gap:var(--sp-lg)}
+.dw-wrap{max-height:400px; overflow-y:auto; border:1px solid var(--rule); background:var(--parch); scrollbar-width:thin}
+#dawRoll{display:block; width:100%; touch-action:none; user-select:none}
+.dw-kb{margin-top:var(--sp-lg)}
+@media (max-width:1100px){ .dw-grid{grid-template-columns:1fr} }

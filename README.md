@@ -58,6 +58,16 @@ Troisième mode (interrupteur « Réglages · Jeu · Atelier » sous la partitio
 - Natura : cinq sons de nature (pluie, vagues, nuit avec grillons, ruisseau, oiseaux), chapitre Locus. Les textures sont des boucles précalculées construites seulement quand on les active (environ 1 % d'un cœur chacune), les oiseaux sont des phrases tirées au hasard. Un univers Nature les met en avant : Pluvia, Mare, Silva, Nox. Les maqams ont leurs préréglages dans l'univers Orient : Bayati et Enharmonia.
 - Limites connues : les quarts de ton sont ceux de la théorie à 24 notes égales, pas les intonations exactes de chaque maqam ; pas de bruit continu rose ou brun ; la percussion reste le bodhrán et le shaker.
 
+## DAW : pistes par-dessus la machine
+
+Quatrième mode (« Réglages · Jeu · Atelier · DAW »), pensé pour l'ordinateur. La machine continue de générer, tes pistes bouclent par-dessus.
+
+- Mixeur : une ligne par voix de la machine (bourdon, mélodie et canon, nappes, percussion, boucles, pendules, lieu) avec niveau, muet (M) et solo (S), puis jusqu'à huit pistes à toi avec instrument (n'importe lequel de la machine, dont le synthé perso), niveau, pan, muet, solo et longueur de boucle (1, 2, 4 ou 8 mesures). Le solo vaut pour les voix de la machine et les pistes à la fois.
+- Piano roll : on pose une note d'un clic, on l'allonge en tirant, on la déplace, on l'efface avec Maj ou un clic droit. La grille est réglable (noire, croche, double-croche, libre) et les notes tombent dans la gamme du thème en cours (rangées de la gamme éclaircies, toniques marquées), au choix. « Doubler la boucle » copie le clip pour construire une phrase plus longue.
+- Enregistrement : « Enregistrer » arme la piste choisie, on joue au clavier de l'ordinateur ou à l'écran (le clavier de l'atelier, dans la gamme) et la prise est calée sur la grille, en boucle, avec annulation (Ctrl+Z ou bouton). Barre d'espace : jouer ou arrêter.
+- Les pistes sont enregistrées avec les scènes, rendues dans l'export audio, présentes dans le MIDI (une piste par piste) et ont leur stem « pistes ».
+- Limites : les notes du piano roll sont placées au demi-ton (une note enregistrée à un quart de ton est conservée et jouée, mais se déplace au demi-ton) ; les modifications s'entendent à la prochaine boucle ; pas de capture automatique de la machine en clip pour l'instant.
+
 ## Table de jeu
 
 - Tensio : un curseur, ou une courbe de tension dessinée au doigt (répétée ou jouée une fois) qui module percussion, nappes, bourdon, ambiance et densité mélodique. La courbe est rendue dans l'export.

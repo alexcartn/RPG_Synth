@@ -133,13 +133,15 @@ function buildPiano(){
 function pkEl(i){ return document.querySelector('#piano .pk[data-i="'+i+'"]'); }
 function atOn(id,i){
   if(AT.notes.has(id)||!AT.keys[i]) return;
-  if(!live){ atelierStartLive(); }
+  if(!live){ if(MODE==="daw") startLive({fade:0.25}); else atelierStartLive(); }
   if(!live) return;
-  const h=live.eng.synOn(AT.keys[i].off,0.7);
+  const off=AT.keys[i].off, h=MODE==="daw"?dawHand(off):live.eng.synOn(off,0.7);
   AT.notes.set(id,{h,i}); const k=pkEl(i); if(k) k.classList.add("on");
+  if(MODE==="daw") dawRecOn(id,off);
 }
 function atOff(id){
   const n=AT.notes.get(id); if(!n) return; AT.notes.delete(id);
+  if(MODE==="daw") dawRecOff(id);
   const k=pkEl(n.i); if(k) k.classList.remove("on");
   if(AT.hold) AT.latch.push(n); else n.h.release();
 }
@@ -148,11 +150,11 @@ function atReleaseAll(){
   AT.latch.forEach(n=>n.h.release()); AT.latch=[]; document.querySelectorAll("#piano .pk.on").forEach(k=>k.classList.remove("on"));
 }
 /* la gamme du thème change au fil des sections : le clavier la suit */
-function atScaleSync(){ if(AT.built&&MODE==="atelier"&&AT.sig!==atSig()){ buildPiano(); atState(); } }
+function atScaleSync(){ if(AT.built&&(MODE==="atelier"||MODE==="daw")&&AT.sig!==atSig()){ buildPiano(); atState(); } }
 function atScaleUI(){ const b=$("atScale"); if(b) b.setAttribute("aria-pressed",AT.scale?"true":"false"); }
 function atelierStartLive(){ if(live) return; S.mach=false; atMachUI(); startLive({fade:0.25}); }
 function atKeys(e,down){
-  if(MODE!=="atelier"||e.ctrlKey||e.metaKey||e.altKey) return;
+  if((MODE!=="atelier"&&MODE!=="daw")||e.ctrlKey||e.metaKey||e.altKey) return;
   const t=e.target, tg=t&&t.tagName; if(tg==="SELECT"||tg==="TEXTAREA"||(tg==="INPUT"&&t.type!=="range"&&t.type!=="checkbox")) return;
   let idx;
   if(AT.scale){ const n=ivOf(S,curScaleKey()).length, b=SC_BOT.indexOf(e.code), u=SC_TOP.indexOf(e.code); idx=b>=0?b:u>=0?n+u:undefined; }
@@ -163,7 +165,7 @@ function atKeys(e,down){
 }
 
 /* ---------- machine ---------- */
-function atMachUI(){ const b=$("atMach"); if(!b) return; b.setAttribute("aria-pressed",S.mach!==false?"true":"false"); b.textContent=S.mach!==false?"La machine joue":"La machine est en sourdine"; }
+function atMachUI(){ if(typeof dawMachUI==="function") dawMachUI(); const b=$("atMach"); if(!b) return; b.setAttribute("aria-pressed",S.mach!==false?"true":"false"); b.textContent=S.mach!==false?"La machine joue":"La machine est en sourdine"; }
 function setMach(on){
   S.mach=on; atMachUI();
   if(live){ live.eng.setLevels(); live.eng.replan("all"); }
@@ -228,7 +230,7 @@ function buildAtelier(){
   c3.appendChild(mx);
   grid.appendChild(c1); grid.appendChild(c2); grid.appendChild(c3); sec.appendChild(grid);
   /* clavier */
-  const kb=atEl("div","at-kb"); kb.innerHTML='<div class="row at-kbbar"><span class="ctl"><label for="atOct">Octave du clavier</label></span><select id="atOct"></select><button class="btn" id="atScale" type="button" aria-pressed="true" title="Toutes les touches dans la gamme du thème en cours">Dans la gamme</button><button class="btn" id="atHold" type="button" aria-pressed="false">Maintien</button><button class="btn" id="atPanic" type="button">Tout couper</button></div><div class="piano" id="piano" aria-label="Clavier"></div>';
+  const kb=atEl("div","at-kb"); kb.id="atKb"; kb.innerHTML='<div class="row at-kbbar"><span class="ctl"><label for="atOct">Octave du clavier</label></span><select id="atOct"></select><button class="btn" id="atScale" type="button" aria-pressed="true" title="Toutes les touches dans la gamme du thème en cours">Dans la gamme</button><button class="btn" id="atHold" type="button" aria-pressed="false">Maintien</button><button class="btn" id="atPanic" type="button">Tout couper</button></div><div class="piano" id="piano" aria-label="Clavier"></div>';
   sec.appendChild(kb);
   /* échanger un patch */
   const ex=atEl("details","fin"); ex.innerHTML='<summary>Échanger un patch (texte)</summary><div class="fields"><div class="ctl"><label for="synOut">Ton patch</label><textarea id="synOut" readonly></textarea><div class="row"><button class="lnk" id="synCopy" type="button">Copier</button></div></div><div class="ctl"><label for="synIn">Coller un patch</label><textarea id="synIn" placeholder="Colle ici un patch reçu"></textarea><div class="row"><button class="lnk" id="synLoadTxt" type="button">Charger ce patch</button></div></div></div>';
@@ -268,21 +270,23 @@ function atelierSync(){
 /* ---------- modes : réglages, jeu, atelier ---------- */
 function setMode(m){
   const old=MODE; MODE=m;
-  const jeu=m==="jeu", at=m==="atelier";
-  JEU.on=jeu; document.body.classList.toggle("jeu",jeu); document.body.classList.toggle("atelier",at);
-  $("jeu").hidden=!jeu; if($("atelier")) $("atelier").hidden=!at;
+  const jeu=m==="jeu", at=m==="atelier", dw=m==="daw";
+  JEU.on=jeu; document.body.classList.toggle("jeu",jeu); document.body.classList.toggle("atelier",at); document.body.classList.toggle("daw",dw);
+  $("jeu").hidden=!jeu; if($("atelier")) $("atelier").hidden=!at; if($("daw")) $("daw").hidden=!dw;
   const rw=document.querySelector(".ringwrap"); if(rw) (jeu?$("ringSlot"):document.querySelector(".marge")).appendChild(rw);
-  $("reglBtn").setAttribute("aria-pressed",(!jeu&&!at)?"true":"false");
+  $("reglBtn").setAttribute("aria-pressed",(!jeu&&!at&&!dw)?"true":"false"); $("dawBtn").setAttribute("aria-pressed",dw?"true":"false");
   $("jeuBtn").setAttribute("aria-pressed",jeu?"true":"false");
   $("atelierBtn").setAttribute("aria-pressed",at?"true":"false");
-  const mh=$("modeHint"); if(mh) mh.textContent=jeu?"Jeu : la machine joue, tu la pilotes en direct avec des boutons, un pad et le cercle des hauteurs.":at?"Atelier : tu construis ton synthé et tu le joues au clavier, dans la gamme du thème, avec ou sans la machine.":"Réglages : tout ce qui compose la pièce, chapitre par chapitre. Ouvre un chapitre pour le régler.";
+  const mh=$("modeHint"); if(mh) mh.textContent=jeu?"Jeu : la machine joue, tu la pilotes en direct avec des boutons, un pad et le cercle des hauteurs.":dw?"DAW : des pistes qui bouclent par-dessus la machine, que tu écris au piano roll ou que tu enregistres au clavier, avec un mixeur pour tout équilibrer.":at?"Atelier : tu construis ton synthé et tu le joues au clavier, dans la gamme du thème, avec ou sans la machine.":"Réglages : tout ce qui compose la pièce, chapitre par chapitre. Ouvre un chapitre pour le régler.";
   try{ localStorage.setItem("bourdon.mode",m); }catch(e){}
-  if(old==="atelier"&&!at) atReleaseAll();
+  if((old==="atelier"&&!at)||(old==="daw"&&!dw)) atReleaseAll();
+  if(old==="daw"&&!dw) dawLeave();
   if(jeu){ jeuSync(); jeuState(); }
   if(at){ atelierSync(); atState(); }
+  if(dw) dawEnter();
   if(old!==m) window.scrollTo({top:0,behavior:"instant"});
 }
 function restoreMode(){
   let m="reglage"; try{ m=localStorage.getItem("bourdon.mode")||"reglage"; }catch(e){}
-  if(m==="jeu"||m==="atelier") setMode(m);
+  if(m==="jeu"||m==="atelier"||m==="daw") setMode(m);
 }

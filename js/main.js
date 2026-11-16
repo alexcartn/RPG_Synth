@@ -2,7 +2,7 @@
 /* ============================================================
    DÉMARRAGE
    ============================================================ */
-buildRing(); buildChapters(); buildPresets(); buildJeu(); buildAtelier(); $("reglBtn").onclick=()=>setMode("reglage"); $("atelierBtn").onclick=()=>setMode("atelier"); syncUI(); restoreMode(); setMode(MODE);
+buildRing(); buildChapters(); buildPresets(); buildJeu(); buildAtelier(); buildDaw(); $("dawBtn").onclick=()=>setMode("daw"); $("reglBtn").onclick=()=>setMode("reglage"); $("atelierBtn").onclick=()=>setMode("atelier"); syncUI(); restoreMode(); setMode(MODE);
 document.querySelector("#presets .lnk").setAttribute("aria-current","true");
 /* la partition suit la taille de son cadre et attend que les polices soient chargées */
 vizFit();

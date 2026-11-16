@@ -391,7 +391,7 @@ function setMode(m){
   try{ localStorage.setItem("bourdon.mode2",m); }catch(e){}
   if((old==="atelier"&&!at)||(old==="daw"&&!dw)) atReleaseAll();
   if(old==="daw"&&!dw) dawLeave();
-  if(jeu){ jeuSync(); jeuState(); }
+  if(jeu){ JEU.mixSig=""; jeuSync(); jeuState(); }
   if(at){ atelierSync(); atState(); if(!AT.raf) AT.raf=requestAnimationFrame(atLoop); }
   if(dw) dawEnter();
   if(old!==m) window.scrollTo({top:0,behavior:"instant"});

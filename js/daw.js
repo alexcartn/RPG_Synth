@@ -125,7 +125,10 @@ function dawTimeEvents(){
 }
 /* le mixeur : un faders vertical par voix et par piste, avec vumètre */
 function dawMixerDraw(){
-  const host=$("dawMixer"); if(!host) return; host.innerHTML=""; const D=S.daw;
+  ["dawMixer","jeuMixer"].forEach(id=>{ const h=$(id); if(h) dawMixerFill(h,id==="dawMixer"); });
+}
+function dawMixerFill(host,inDaw){
+  host.innerHTML=""; const D=S.daw;
   const strip=(name,color,val,set,mute,solo,key,hasFader)=>{
     const s=dawEl("div","dw-strip"); s.style.setProperty("--tc",color);
     s.appendChild(dawEl("span","nm",name));
@@ -137,11 +140,11 @@ function dawMixerDraw(){
   };
   MACH.forEach(([id,name,k])=>host.appendChild(strip(name,"var(--ink-2)",k?getP(k):0,v=>dawParam(k,v),{get:()=>!!D.mix.mute[id],set:()=>{ D.mix.mute[id]=!D.mix.mute[id]; }},{get:()=>!!D.mix.solo[id],set:()=>{ D.mix.solo[id]=!D.mix.solo[id]; }},id,!!k)));
   host.appendChild(dawEl("span","dw-sep"));
-  D.tracks.forEach((tr,i)=>{ const s=strip(tr.name,tcol(i),tr.vol,v=>{ tr.vol=v; dawLevels(); },{get:()=>tr.mute,set:()=>{ tr.mute=!tr.mute; }},{get:()=>tr.solo,set:()=>{ tr.solo=!tr.solo; }},"t"+tr.id,true); s.classList.toggle("sel",i===D.sel); s.firstChild.onclick=()=>dawSelect(i,false); const pan=dawRange(tr.pan,-1,1,0.05,"Pan de "+tr.name,v=>{ tr.pan=v; dawLevels(); }); pan.className="pan"; s.insertBefore(pan,s.lastChild); host.appendChild(s); });
+  D.tracks.forEach((tr,i)=>{ const s=strip(tr.name,tcol(i),tr.vol,v=>{ tr.vol=v; dawLevels(); },{get:()=>tr.mute,set:()=>{ tr.mute=!tr.mute; }},{get:()=>tr.solo,set:()=>{ tr.solo=!tr.solo; }},"t"+tr.id,true); s.classList.toggle("sel",i===D.sel); if(inDaw) s.firstChild.onclick=()=>dawSelect(i,false); const pan=dawRange(tr.pan,-1,1,0.05,"Pan de "+tr.name,v=>{ tr.pan=v; dawLevels(); }); pan.className="pan"; s.insertBefore(pan,s.lastChild); host.appendChild(s); });
 }
 function dawMetersTick(){
   if(!live) return;
-  document.querySelectorAll("#dawMixer .dw-vu").forEach(m=>{ const pk=live.eng.meter(m.dataset.k), v=Math.min(1,Math.pow(pk,0.5)*1.25); m.firstChild.style.transform="scaleY("+v.toFixed(3)+")"; });
+  document.querySelectorAll("#dawMixer .dw-vu, #jeuMixer .dw-vu").forEach(m=>{ const pk=live.eng.meter(m.dataset.k), v=Math.min(1,Math.pow(pk,0.5)*1.25); m.firstChild.style.transform="scaleY("+v.toFixed(3)+")"; });
   document.querySelectorAll("#dawHeads .dw-mt").forEach(m=>{ const pk=live.eng.meter(m.dataset.k), v=Math.min(1,Math.pow(pk,0.5)*1.25); m.firstChild.style.transform="scaleX("+v.toFixed(3)+")"; });
 }
 /* chaîne de la piste choisie : instrument, arpégiateur, niveau (comme les « devices » d'Ableton) */

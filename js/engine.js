@@ -789,7 +789,7 @@ function buildEngine(ctx, S, o){
   }
   /* ---------- harmonie modale : une succession d'accords liée à la mélodie ---------- */
   /* grammaire des modes : progressions typiques, ton de récitation des modes d'église, chemin du maqam */
-  const IDIOM={dorien:[0,3,0,6], mixolydien:[0,6,3,0], phrygien:[0,1,0,6], eolien:[0,5,6,0], ionien:[0,3,4,0], lydien:[0,1,0,4], locrien:[0,1,0,5], harm:[0,3,4,0], melo:[0,3,4,0]}, CHURCH=["ionien","dorien","phrygien","lydien","mixolydien","eolien"];
+  const IDIOM={dorien:[[0,3,0,6],[0,6,3,0],[0,3,6,0],[0,4,3,0]], mixolydien:[[0,6,3,0],[0,3,6,0],[0,6,0,3],[0,4,6,0]], phrygien:[[0,1,0,6],[0,1,6,0],[0,6,1,0],[0,3,1,0]], eolien:[[0,5,6,0],[0,6,5,0],[0,3,6,0],[0,5,3,6]], ionien:[[0,3,4,0],[0,5,3,4],[0,3,0,4],[0,4,3,0]], lydien:[[0,1,0,4],[0,1,4,0],[0,4,1,0],[0,1,5,0]], locrien:[[0,1,0,5],[0,5,1,0],[0,1,5,0]], harm:[[0,3,4,0],[0,5,4,0],[0,3,5,4]], melo:[[0,3,4,0],[0,5,4,0],[0,3,5,4]]}, CHURCH=["ionien","dorien","phrygien","lydien","mixolydien","eolien"];
   const harmE=()=>(S.mus&&S.mus.harm)||"idiome";
   function pcIx(pool,i,pc){ let best=i,bd=1e9; pool.forEach((p,j)=>{ if(Math.abs((((p%12)+12)%12)-pc)<0.01){ const d=Math.abs(j-i); if(d<bd){ bd=d; best=j; } } }); return best; }
   function seyirTarget(pool,startT){
@@ -805,12 +805,12 @@ function buildEngine(ctx, S, o){
   const formE=()=>(S.mus&&S.mus.form)||"libre";
   const FS={ref:[],theme:[],ost:null,ostN:0};
   const tonicIx=(pool,i)=>{ let best=i,bd=1e9; pool.forEach((p,j)=>{ if(((p%12)+12)%12===0){ const d=Math.abs(j-i); if(d<bd){bd=d;best=j;} } }); return best; };
-  const chordTl=[]; let chordEnd=-1, cpos=0, lastDeg=0, holdDeg=null, prevVoicing=null;
+  let idiomProg=null; const chordTl=[]; let chordEnd=-1, cpos=0, lastDeg=0, holdDeg=null, prevVoicing=null;
   /* progression en cycles de quatre accords : retour à la tonique, un accord libre, un accord de préparation (sous-tonique, dominante ou sous-dominante), puis la tonique */
   function nextDegree(n,key){
     if(holdDeg!==null) return holdDeg%n;
     { const F=formE(); if(F==="passacaille"){ const g=[0,n-1,Math.round(n*5/7)%n,Math.round(n*4/7)%n]; lastDeg=g[cpos++%4]; return lastDeg; } if(F==="ostinato"){ const p=cpos++%4; lastDeg=p===3?Math.round(n*4/7)%n:0; return lastDeg; } }
-    if(n===7&&IDIOM[key]&&formE()==="libre"&&harmE()==="idiome"){ const ip=cpos%4; if(R.s()<0.72){ cpos++; lastDeg=IDIOM[key][ip]; return lastDeg; } }
+    if(n===7&&IDIOM[key]&&formE()==="libre"&&harmE()==="idiome"){ const ip=cpos%4, vs=IDIOM[key]; if(ip===0||!idiomProg) idiomProg=vs[Math.floor(R.s()*vs.length)]; if(R.s()<0.62){ cpos++; lastDeg=idiomProg[ip]; return lastDeg; } }
     const pos=cpos++%4, s4=Math.round(n*3/7)%n, s5=Math.round(n*4/7)%n, sub=n-1, vi=Math.round(n*5/7)%n, mot=clamp(S.pad.motion,0,1);
     const pick=(cands)=>{ const tot=cands.reduce((a,c)=>a+c[1],0); let r=R.s()*tot; for(const [d,w] of cands){ r-=w; if(r<=0) return d; } return cands[0][0]; };
     let d;
@@ -1062,14 +1062,19 @@ function buildEngine(ctx, S, o){
     /* percussion */
     while(cur.perc<until){
       const k=cur.k%barE, sym=PAT[k], odd=(cur.k%2)===1;
-      const t=cur.perc+(odd?S.swing*E*0.5:0)+R.p()*0.006;
+      const t=cur.perc+(odd?S.swing*E*0.5:0)+R.p()*0.006, bi=Math.floor(cur.k/barE), f1=R.p(), f2=R.p(), endBar=k>=barE-2, endPhr=bi%4===3, endSec=bi%8===7;
       if(M&&want("perc")&&S.perc.lvl>0.001){
-        if(sym==="S"){ stomp(t,0.95); if(o.onNote) o.onNote(t,0,"stomp",0,0.95); } else if(sym==="s"){ stomp(t,0.6); if(o.onNote) o.onNote(t,0,"stomp",0,0.6); }
+        /* variations de forme : relance de fin de phrase, roulement de fin de section, frappe fantôme syncopée, creux qui revient */
+        if(sym==="S"&&k===0&&bi%4===0&&f1<0.7){ stomp(t,1); if(o.onNote) o.onNote(t,0,"stomp",0,1); }
+        else if(sym==="s"&&bi%8===4&&f1<0.5){ /* le deuxième temps tombe : un silence qui fait respirer */ }
+        else if(sym==="S"){ stomp(t,0.95); if(o.onNote) o.onNote(t,0,"stomp",0,0.95); } else if(sym==="s"){ stomp(t,0.6); if(o.onNote) o.onNote(t,0,"stomp",0,0.6); }
         else if(sym==="T"){ const v=0.5+R.p()*0.15; tap(t,v); if(o.onNote) o.onNote(t,0,"tap",0,v); } else if(sym==="t"){ const v=0.4+R.p()*0.1; tap(t,v); if(o.onNote) o.onNote(t,0,"tap",0,v); }
         else{
           if(R.p()<S.perc.shaker){ const v=0.1+R.p()*0.08; shaker(t,v); if(o.onNote) o.onNote(t,0,"shk",0,v); }
           if(k===barE-3&&R.p()<S.perc.ghost) tap(t,0.2);
         }
+        if(endPhr&&endBar&&f2<(endSec?0.95:0.6)){ const v=0.2+0.1*(k-(barE-2))+0.25*f1; tap(t+(endSec&&k===barE-1?E*0.5:0),v); if(o.onNote) o.onNote(t,0,"tap",0,v); }
+        if(!endPhr&&bi%2===1&&odd&&sym!=="S"&&sym!=="s"&&sym!=="T"&&sym!=="t"&&f2<S.perc.ghost*0.35){ tap(t,0.14+0.1*f1); }
         if(arcRise(cur.perc,bar/2)&&odd){ const v=0.22+0.5*R.p(); tap(t,v); if(o.onNote) o.onNote(t,0,"tap",0,v); }
       } else { R.p(); }
       cur.perc+=E; cur.k++;

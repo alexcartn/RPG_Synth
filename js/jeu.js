@@ -127,6 +127,7 @@ function jeuSync(){
   if(!JEU.on) return;
   document.querySelectorAll("#knobs .knob").forEach(el=>paintKnob(el,el._spec));
   xyDraw();
+  { const h=$("jeuMixer"); if(h&&!h.contains(document.activeElement)) dawMixerDraw(); }
 }
 /* appelée à chaque image : le tableau suit les changements venus d'ailleurs (courbe de tension, scènes) */
 function jeuFrame(){
@@ -134,6 +135,11 @@ function jeuFrame(){
   let dirty=false;
   document.querySelectorAll("#knobs .knob").forEach(el=>{ const v=clamp01(el._spec.get()); if(Math.abs((JEU.seen[el._spec.id]??-1)-v)>0.003){ paintKnob(el,el._spec); dirty=true; } });
   if(dirty) xyDraw();
+  /* le mixeur suit les niveaux venus d'ailleurs (préréglages, scènes) et anime les vumètres */
+  if((JEU.n=(JEU.n||0)+1)%3===0){
+    const h=$("jeuMixer"); if(h&&!h.contains(document.activeElement)){ const sig=JSON.stringify([MACH.map(m=>m[2]?getP(m[2]):0),S.daw.mix,S.daw.tracks.map(t=>[t.name,t.vol,t.pan,t.mute,t.solo])]); if(sig!==JEU.mixSig){ JEU.mixSig=sig; dawMixerDraw(); } }
+    dawMetersTick();
+  }
 }
 function setJeu(on){ setMode(on?"jeu":"reglage"); }
 function buildJeu(){
@@ -159,5 +165,5 @@ function buildJeu(){
   };
   $("jeuSus").onclick=()=>{ if(live) live.eng.gesture("suspense"); }; $("jeuRev").onclick=()=>{ if(live) live.eng.gesture("revelation"); }; $("jeuDan").onclick=()=>{ if(live) live.eng.gesture("danger"); };
   document.addEventListener("keydown",jeuKeys);
-  jeuState();
+  JEU.mixSig=""; jeuState();
 }

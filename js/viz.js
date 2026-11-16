@@ -60,9 +60,9 @@ function vizDraw(now,eng){
   c.globalAlpha=1;
   for(let k=Math.floor((now-VIZ_PAST-t0)/secLen);;k++){
     const t=t0+k*secLen; if(t>now+VIZ_FUTURE) break; if(t<t0-0.01) continue;
-    const x=Math.round(x0+(t-now)*pps)+0.5, key=eng.secAt(t+0.01).key;
+    const x=Math.round(x0+(t-now)*pps)+0.5, sec=eng.secAt(t+0.01), key=sec.key;
     c.strokeStyle=C.rub; c.globalAlpha=0.5; c.beginPath(); c.moveTo(x,2); c.lineTo(x,H-bot+9); c.stroke(); c.globalAlpha=1;
-    c.fillStyle=C.rub; c.fillText((SC[key]||SC.mixolydien).n.toLowerCase(),x+4,13);
+    c.fillStyle=C.rub; c.fillText((SC[key]||SC.mixolydien).n.toLowerCase()+(sec.role?" · "+sec.role:""),x+4,13);
   }
   /* notes */
   const bh=Math.max(4,Math.min(9,ph/(VIZ.hi-VIZ.lo)*1.6));

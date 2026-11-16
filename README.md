@@ -8,9 +8,9 @@ Usage prévu : composer hors ligne. On règle, on écoute, puis on rend en WAV (
 
 Ouvrir `index.html` dans un navigateur récent (Chrome, Firefox, Safari). Les polices sont dans le dépôt (`fonts/`, licence SIL OFL), aucune requête externe sauf l'encodeur MP3 à la demande.
 
-## Atelier : le synthé perso
+## Forger : le synthé perso
 
-Troisième mode (interrupteur « Réglages · Jeu · Atelier » sous la partition, le mode courant est souligné), indépendant de la génération : un synthétiseur qu'on programme et qu'on joue.
+Troisième mode, Forger (interrupteur « Composer · Conduire · Forger · Arranger » sous la partition, le mode courant est souligné), indépendant de la génération : un synthétiseur qu'on programme et qu'on joue.
 
 - Voix : deux oscillateurs à table d'ondes (sinus, triangle, dent de scie, carré, impulsion, orgue, voyelle : la position entre deux formes est une interpolation de leurs harmoniques), chacun avec octave, intervalle, désaccord et unisson jusqu'à 7 voix avec écart et largeur stéréo ; un sous-oscillateur, du bruit, une modulation de fréquence (B module A).
 - Filtre passe-bas, passe-haut, passe-bande ou coupe-bande avec coupure, résonance, suivi du clavier et quantité d'enveloppe ; la courbe de réponse est dessinée en direct.
@@ -46,9 +46,9 @@ Troisième mode (interrupteur « Réglages · Jeu · Atelier » sous la partitio
 - Adaptation sans matériel (Mutatio, groupe Adaptatio) : « selon l'heure » fait suivre à l'énergie la courbe de la journée (creux vers 2 h, pic vers 14 h) et agit sur la tension (percussion, nappes, densité), l'éclat du bourdon et le voile ; « s'apaiser » fait baisser l'énergie sur la durée d'écoute choisie. Mesuré : 12 % de notes en moins à 3 h et 25 % de plus à 14 h qu'en l'absence d'adaptation. L'export capte l'heure du moment, donc il dépend de l'heure quand l'adaptation est active.
 - Garde-fou : avec « Hasard » et « Synthèse classique », les six anciens préréglages donnent exactement les mêmes notes qu'avant.
 
-## Jeu et réponse immédiate
+## Conduire et réponse immédiate
 
-- Mode Jeu (interrupteur « Réglages · Jeu · Atelier » sous la partition) : un panneau sans défilement avec huit boutons rotatifs (volume, tension, densité, bourdon, nappes, canon, brume, chaleur), un pad XY dont on choisit les deux axes, et le cercle des hauteurs qui devient un clavier. On glisse un bouton vers le haut ou le bas (Maj pour affiner), on utilise la molette ou les flèches. Le choix du mode est mémorisé.
+- Mode Conduire (interrupteur « Composer · Conduire · Forger · Arranger » sous la partition) : un panneau sans défilement avec huit boutons rotatifs (volume, tension, densité, bourdon, nappes, canon, brume, chaleur), un pad XY dont on choisit les deux axes, et le cercle des hauteurs qui devient un clavier. On glisse un bouton vers le haut ou le bas (Maj pour affiner), on utilise la molette ou les flèches. Le choix du mode est mémorisé.
 - Jouer par-dessus la machine : le cercle joue les notes de la gamme courante (les autres sont ignorées, pour que ça sonne toujours juste). Au clavier, trois rangées de la gamme, du grave à l'aigu : Z X C V B N M , . / puis A S D F G H J K L ; puis Q W E R T Y U I O P, repérées par position physique de la touche donc valables en AZERTY. Instrument, registre et niveau de ton jeu se règlent sous le cercle ; si le canon est actif, il reprend ce que tu joues.
 - Figer : la dernière phrase et le dernier accord tournent en boucle jusqu'à ce qu'on relâche. Autre phrase : la mémoire est oubliée et la machine repart sur du neuf.
 - Réponse immédiate : la planification en direct est de 4 secondes (10 si la page est en arrière-plan) au lieu de 8, et `replan()` coupe d'un coup les notes déjà planifiées d'une voix pour en planifier de nouvelles avec les réglages actuels. Mesuré : un changement de réglage de la mélodie s'entendait après environ 9 secondes, maintenant après 0,3 seconde. Instrument, densité, registre, gamme, nappes, boucles, pendules, déjà-vu, durée de section et courbe de tension ne redémarrent plus le moteur. Tonalité, tempérament, diapason, tempo, mesure, graine et timbre du bourdon passent toujours par un fondu enchaîné, raccourci à 0,6 seconde.
@@ -64,9 +64,9 @@ Troisième mode (interrupteur « Réglages · Jeu · Atelier » sous la partitio
 - Natura : cinq sons de nature (pluie, vagues, nuit avec grillons, ruisseau, oiseaux), chapitre Locus. Les textures sont des boucles précalculées construites seulement quand on les active (environ 1 % d'un cœur chacune), les oiseaux sont des phrases tirées au hasard. Un univers Nature les met en avant : Pluvia, Mare, Silva, Nox. Les maqams ont leurs préréglages dans l'univers Orient : Bayati et Enharmonia.
 - Limites connues : les quarts de ton sont ceux de la théorie à 24 notes égales, pas les intonations exactes de chaque maqam ; pas de bruit continu rose ou brun ; la percussion reste le bodhrán et le shaker.
 
-## DAW : pistes par-dessus la machine
+## Arranger : pistes par-dessus la machine
 
-Quatrième mode (« Réglages · Jeu · Atelier · DAW »), pensé pour l'ordinateur. La machine continue de générer, tes pistes bouclent par-dessus.
+Quatrième mode (« Composer · Conduire · Forger · Arranger »), pensé pour l'ordinateur. La machine continue de générer, tes pistes bouclent par-dessus.
 
 - Mixeur : une ligne par voix de la machine (bourdon, mélodie et canon, nappes, percussion, boucles, pendules, lieu) avec niveau, muet (M) et solo (S), puis jusqu'à huit pistes à toi avec instrument (n'importe lequel de la machine, dont le synthé perso), niveau, pan, muet, solo et longueur de boucle (1, 2, 4 ou 8 mesures). Le solo vaut pour les voix de la machine et les pistes à la fois.
 - Piano roll : on pose une note d'un clic, on l'allonge en tirant, on la déplace, on l'efface avec Maj ou un clic droit. La grille est réglable (noire, croche, double-croche, libre) et les notes tombent dans la gamme du thème en cours (rangées de la gamme éclaircies, toniques marquées), au choix. « Doubler la boucle » copie le clip pour construire une phrase plus longue.
@@ -75,6 +75,18 @@ Quatrième mode (« Réglages · Jeu · Atelier · DAW »), pensé pour l'ordina
 - Séquenceur à pas : second onglet du piano roll, la même boucle en grille avec une rangée par degré de la gamme du thème. On clique ou on glisse pour allumer des pas, « Au hasard » remplit selon une densité (les degrés stables sont favorisés), « Décaler d'un pas » fait tourner le motif. Piano roll et séquenceur modifient les mêmes notes.
 - Les pistes sont enregistrées avec les scènes, rendues dans l'export audio, présentes dans le MIDI (une piste par piste) et ont leur stem « pistes ».
 - Limites : les notes du piano roll sont placées au demi-ton (une note enregistrée à un quart de ton est conservée et jouée, mais se déplace au demi-ton) ; les modifications s'entendent à la prochaine boucle ; pas de capture automatique de la machine en clip pour l'instant.
+
+## Intelligence musicale, deuxième étage
+
+- Exigence (Voces, Musica) : à chaque phrase la machine en tire jusqu'à douze et garde la meilleure. Elle compte les grands sauts (et leur retour en sens inverse), les tritons non voulus, les séries de notes répétées, la part de mouvement conjoint, l'unicité du point culminant et sa place dans la phrase, une fin stable (la tonique est favorisée par la gravité), l'étendue, et évite de recopier la phrase précédente. À zéro, un seul tirage comme avant. Mesuré sur six pièces de quatre minutes : les tritons passent de 24 à 14 et les séries de trois notes identiques de 56 à 27.
+- Harmonie idiomatique (Voces, Musica, par défaut) : chaque mode diatonique suit ses progressions typiques, 72 % du temps (dorien i-IV-i-bVII, mixolydien I-bVII-IV-I, phrygien i-bII-i-bvii, éolien i-bVI-bVII-i, ionien I-IV-V-I, lydien I-II-I-V, locrien i-bII-i-bV, mineurs harmonique et mélodique i-iv-V-i). Les modes d'église gravitent autour d'un ton de récitation (la quinte, la sixte pour le phrygien) avant de revenir à la finale. Les gammes à quarts de ton suivent un chemin de maqam sur chaque section : installation sur la tonique, montée vers la dominante, point haut, retour à la tonique.
+- Plan de la pièce (Voces, Musica) : « Arche » donne aux sections un rôle (intro, thème, développement, apogée, retombée, coda), affiché sur la partition à côté du mode. Chaque rôle porte une énergie, qui module la tension (donc percussion, nappes, bourdon et densité), le registre de la mélodie et l'ouverture du voile. Avant une section plus énergique : une mesure de silence de la mélodie et un roulement de percussion sur la demi-mesure. Le mode suit un trajet, plus sombre au développement et plus clair à l'apogée. Plusieurs préréglages le choisissent (Taberna, Chorea, Turris, Tripudium, Scriptorium, Aegyptus).
+
+## Affectus : les émotions des gammes et des tonalités
+
+- Table de correspondance (Modus) : chaque gamme (vingt-sept) et chaque tonalité, majeure ou mineure, porte des affects pondérés parmi quatorze : mystérieux, fataliste, héroïque, mélancolique, joyeux, féerique, inquiétant, majestueux, nostalgique, serein, tragique, étrange, sauvage, sacré. Les caractères des tonalités s'inspirent librement du caractère traditionnel des tons de l'époque baroque, sans en faire une règle.
+- Lecture : sous les menus, la gamme et la tonalité choisies sont décrites en une phrase et résumées par leurs trois affects dominants (65 % gamme, 35 % tonalité). La même phrase s'affiche sous le cercle des hauteurs.
+- Recherche : on choisit une ou plusieurs émotions, la table propose les six gammes qui les dégagent le mieux, chacune dans sa meilleure tonalité, avec une jauge ; un clic l'applique. « La table des affects en entier » liste tout.
 
 ## Hasard vivant : chance, dérives, machine de Turing, capture
 
@@ -90,7 +102,7 @@ Quatrième mode (« Réglages · Jeu · Atelier · DAW »), pensé pour l'ordina
 - Forme de la pièce (Voces, Musica) : libre (phrases et déjà-vu, comme avant), passacaille (une basse descendante qui revient, tonique, sensible, sus-dominante, dominante, avec des variations dont la densité grandit à chaque tour), ostinato (un court motif répété, renouvelé toutes les huit reprises, sur une pédale de tonique), rondeau (refrain de deux phrases, couplets nouveaux, refrain, couplet, refrain), thème et variations (quatre phrases de thème, puis reprises ornées, renversées, ralenties ou transposées). Les préréglages en choisissent une.
 - Contrepoint (Voces, Canon, Transposition) : une voix sous la mélodie en tierces et sixtes, de préférence en mouvement contraire, sans quintes ni octaves parallèles, jouée en même temps que la mélodie.
 - Couleur du mode (Voces, Musica) : suit la tension (du lydien, clair, au locrien, sombre), la météo du lieu (ciel dégagé clair, pluie et brouillard plus sombres, orage phrygien) ou les deux. Le mode est décidé au début de chaque section et remplace les gammes choisies tant que l'option n'est pas sur « Fixe ».
-- Gestes musicaux (mode Jeu) : suspense (la mélodie se tait, une nappe tenue sur la dominante monte, le bourdon s'ouvre), révélation (l'accord s'ouvre vers le majeur, une montée claire), danger (motif de triton grave, percussion et bourdon qui montent). Ils partent sur la noire suivante et retombent d'eux-mêmes.
+- Gestes musicaux (mode Conduire) : suspense (la mélodie se tait, une nappe tenue sur la dominante monte, le bourdon s'ouvre), révélation (l'accord s'ouvre vers le majeur, une montée claire), danger (motif de triton grave, percussion et bourdon qui montent). Ils partent sur la noire suivante et retombent d'eux-mêmes.
 
 ## Table de jeu
 

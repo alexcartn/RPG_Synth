@@ -105,7 +105,7 @@ const DEFAULT = {
     {id:2,name:"Piste 2",inst:"luth",vol:0.8,pan:-0.2,mute:false,solo:false,bars:2,notes:[]},
     {id:3,name:"Piste 3",inst:"flute",vol:0.8,pan:0.2,mute:false,solo:false,bars:4,notes:[]}]},
   syn:clone(SYN_DEFAULT),
-  mus:{logic:"modal", model:"physique", form:"libre", color:"off"},
+  mus:{logic:"modal", model:"physique", form:"libre", color:"off", harm:"idiome", arc:"aucun", crit:0.6},
   car:{grav:0.5, aud:0.5, orn:0.5, sil:0.5, rep:0.5},
   chance:{skip:0.08, ratchet:0.07, mutate:0.12, octave:0.05, rest:0.08},
   turing:{lock:0.85, len:2, rate:1},
@@ -116,8 +116,8 @@ const DEFAULT = {
   curve:{mode:"off", dur:6, pts:Array.from({length:96},()=>0.5)}
 };
 const MEDIEVAL = [
-  ["Taberna", {car:{grav:0.4, aud:0.55, orn:0.7, sil:0.25, rep:0.6}, fx:{room:"salle"}}, "taverne animée"],
-  ["Chorea", {car:{grav:0.35, aud:0.65, orn:0.8, sil:0.15, rep:0.7}, mus:{form:"rondeau"}, seed:218, root:4, scales:["dorien","",""], tempo:138, meter:"6/8", swing:0,
+  ["Taberna", {mus:{arc:"arche"}, car:{grav:0.4, aud:0.55, orn:0.7, sil:0.25, rep:0.6}, fx:{room:"salle"}}, "taverne animée"],
+  ["Chorea", {car:{grav:0.35, aud:0.65, orn:0.8, sil:0.15, rep:0.7}, mus:{form:"rondeau", arc:"arche"}, seed:218, root:4, scales:["dorien","",""], tempo:138, meter:"6/8", swing:0,
     perc:{lvl:0.55, shaker:0.7, ghost:0.4}, mel:{inst:"flute", dens:0.9, leap:0.3, orn:0.3, reg:1, span:1},
     canon:{lvl:0.35, inst:"harpe", delay:1, shift:"oct+"}, pad:{lvl:0}, amb:{murmur:0.3, clink:0.7, feu:0},
     fx:{rev:0.3, size:2.2, room:"salle", dly:0.18, dlyDiv:1.5, fb:0.35}}, "gigue, danse en rond"],
@@ -128,19 +128,19 @@ const MEDIEVAL = [
     fx:{rev:0.85, size:7, dark:0.7, room:"grotte", dly:0.25, dlyDiv:3, fb:0.5, sat:0.35, wow:0.3, veil:0.55, hiss:0.15},
     loops:{lvl:0.3, count:3, inst:"carillon", speed:1.2},
     form:{shape:"arche", period:5, amount:0.6}}, "crypte froide et humide"],
-  ["Scriptorium", {car:{grav:0.7, aud:0.25, orn:0.5, sil:0.6, rep:0.55}, mus:{form:"variations"}, seed:1033, root:9, scales:["eolien","hexacorde",""], tempo:68, meter:"4/4", swing:0,
+  ["Scriptorium", {car:{grav:0.7, aud:0.25, orn:0.5, sil:0.6, rep:0.55}, mus:{form:"variations", arc:"arche"}, seed:1033, root:9, scales:["eolien","hexacorde",""], tempo:68, meter:"4/4", swing:0,
     perc:{lvl:0}, drone:{lvl:0.7, timbre:"orgue"},
     canon:{lvl:0.3, inst:"orgue", delay:2, shift:"q+"}, pad:{lvl:0.4, timbre:"orgue", len:4, motion:0.4, voices:3},
     amb:{murmur:0, clink:0, feu:0.35, vent:0, gouttes:0}, fx:{rev:0.65, size:4.5, dark:0.55, room:"chapelle", sat:0.2, wow:0.2, veil:0.45, hiss:0.1},
     mel:{inst:"flute", dens:0.4, reg:1, span:1, orn:0.1, deja:0.85, loop:3}, loops:{lvl:0.25, count:4, inst:"orgue", speed:1}}, "salle d'écriture des moines"],
-  ["Turris", {car:{grav:0.5, aud:0.5, orn:0.5, sil:0.45, rep:0.45}, seed:77, root:1, scales:["dblharm","lydidom",""], tempo:60, meter:"7/8", swing:0, sectionBars:12,
+  ["Turris", {mus:{arc:"arche"}, car:{grav:0.5, aud:0.5, orn:0.5, sil:0.45, rep:0.45}, seed:77, root:1, scales:["dblharm","lydidom",""], tempo:60, meter:"7/8", swing:0, sectionBars:12,
     perc:{lvl:0.25, shaker:0.3, ghost:0.1}, drone:{lvl:0.85, timbre:"choeur", bright:0.45, width:0.6, drift:0.7, glide:0.6},
     mel:{inst:"harpe", dens:0.5, reg:1, span:2, leap:0.4, orn:0.2}, canon:{lvl:0.35, inst:"carillon", delay:2, shift:"q+"},
     pad:{lvl:0.45, timbre:"cordes", len:2, motion:0.8, voices:4}, amb:{murmur:0, clink:0, feu:0.1, vent:0.2, gouttes:0.15},
     fx:{rev:0.7, size:5, dark:0.45, dly:0.3, dlyDiv:1.5, fb:0.45, sat:0.25, wow:0.25, veil:0.4, hiss:0.08},
     pend:{lvl:0.3, count:7, period:20, inst:"harpe"},
     form:{shape:"vagues", period:4, amount:0.6}}, "tour du mage"],
-  ["Tripudium", {car:{grav:0.3, aud:0.7, orn:0.8, sil:0.1, rep:0.65}, mus:{form:"rondeau"}, seed:905, root:7, scales:["hexacorde","ionien",""], tempo:104, meter:"3/4", swing:0.15,
+  ["Tripudium", {car:{grav:0.3, aud:0.7, orn:0.8, sil:0.1, rep:0.65}, mus:{form:"rondeau", arc:"arche"}, seed:905, root:7, scales:["hexacorde","ionien",""], tempo:104, meter:"3/4", swing:0.15,
     perc:{lvl:0.6, shaker:0.6, ghost:0.3}, mel:{inst:"luth", dens:0.95, leap:0.15, orn:0.2},
     canon:{lvl:0.3, inst:"flute", delay:2, shift:"t+"}, pad:{lvl:0.15, timbre:"cordes"}, amb:{murmur:0.4, clink:0.6, feu:0.1},
     fx:{rev:0.35, size:2.4, sat:0.12, wow:0.1, veil:0.25}}, "branle, danse à trois temps"]
@@ -187,7 +187,7 @@ const ESPACE = [
     loops:{lvl:0.18, count:3, inst:"bol", speed:1.8}}, "gouffre, grave et sombre"]
 ];
 const ORIENT = [
-  ["Aegyptus", {car:{grav:0.5, aud:0.45, orn:0.75, sil:0.4, rep:0.6}, mus:{form:"variations"}, seed:1301, root:2, scales:["phrygdom","dblharm",""], sectionBars:12, tempo:84, temper:"juste",
+  ["Aegyptus", {car:{grav:0.5, aud:0.45, orn:0.75, sil:0.4, rep:0.6}, mus:{form:"variations", arc:"arche"}, seed:1301, root:2, scales:["phrygdom","dblharm",""], sectionBars:12, tempo:84, temper:"juste",
     perc:{lvl:0.38, shaker:0.5, ghost:0.3}, drone:{lvl:0.75, timbre:"anche", bright:0.5, width:0.6, drift:0.5, glide:0.55},
     mel:{lvl:0.6, inst:"oud", dens:0.55, reg:1, span:2, leap:0.25, orn:0.4, deja:0.5, loop:3}, canon:{lvl:0.3, inst:"ney", delay:2, shift:"oct+"},
     pad:{lvl:0.25, timbre:"cordes", len:4, motion:0.4, voices:3}, amb:{vent:0.1, feu:0.05},

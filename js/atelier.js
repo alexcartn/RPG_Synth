@@ -254,7 +254,7 @@ function setMach(on){
 }
 function atState(){
   const h=$("atHint"); if(h){
-    const go=live?"":"Touche une note ou une touche : l'atelier démarre, machine en sourdine. ";
+    const go=live?"":"Touche une note ou une touche : le synthé démarre, machine en sourdine. ";
     if(AT.scale){ const k=curScaleKey(); h.textContent=go+"Toutes les touches sont dans la gamme du thème ("+NOTES[S.root]+" "+(SC[k]||SC.mixolydien).n.toLowerCase()+"), le clavier la suit quand elle change. Ordinateur : Z X C V B N M , . / puis Q W E R T Y U I O P, les marques sont les toniques."; }
     else h.textContent=go+"Clavier chromatique. Ordinateur : Z, S, X, D, C… et Q, 2, W, 3, E…";
   }
@@ -263,7 +263,7 @@ function atState(){
 
 /* ---------- construction ---------- */
 function buildAtelier(){
-  const host=document.querySelector(".folio"), sec=atEl("section","atelier"); sec.id="atelier"; sec.hidden=true; sec.setAttribute("aria-label","Atelier de synthèse");
+  const host=document.querySelector(".folio"), sec=atEl("section","atelier"); sec.id="atelier"; sec.hidden=true; sec.setAttribute("aria-label","Forger un synthé");
   /* barre du haut */
   const bar=atEl("div","at-bar");
   bar.innerHTML='<div class="at-title"><span class="kicker">atelier</span><span class="nm" id="synPatchName">Pad doux</span></div>'+
@@ -385,7 +385,7 @@ function setMode(m){
   $("reglBtn").setAttribute("aria-pressed",(!jeu&&!at&&!dw)?"true":"false"); $("dawBtn").setAttribute("aria-pressed",dw?"true":"false");
   $("jeuBtn").setAttribute("aria-pressed",jeu?"true":"false");
   $("atelierBtn").setAttribute("aria-pressed",at?"true":"false");
-  const mh=$("modeHint"); if(mh) mh.textContent=jeu?"Jeu : la machine joue, tu la pilotes en direct avec des boutons, un pad et le cercle des hauteurs.":dw?"DAW : des pistes qui bouclent par-dessus la machine, que tu écris au piano roll ou que tu enregistres au clavier, avec un mixeur pour tout équilibrer.":at?"Atelier : tu construis ton synthé et tu le joues au clavier, dans la gamme du thème, avec ou sans la machine.":"Réglages : tout ce qui compose la pièce, chapitre par chapitre. Ouvre un chapitre pour le régler.";
+  const mh=$("modeHint"); if(mh) mh.textContent=jeu?"Conduire : la machine joue, tu la pilotes en direct avec des boutons, un pad, le cercle des hauteurs et des gestes musicaux.":dw?"Arranger : des pistes qui bouclent par-dessus la machine, écrites au piano roll ou enregistrées au clavier, avec un mixeur pour tout équilibrer.":at?"Forger : tu construis ton synthé et tu le joues au clavier, dans la gamme du thème, avec ou sans la machine.":"Composer : tout ce qui fait la pièce, chapitre par chapitre. Ouvre un chapitre pour le régler.";
   try{ localStorage.setItem("bourdon.mode",m); }catch(e){}
   if((old==="atelier"&&!at)||(old==="daw"&&!dw)) atReleaseAll();
   if(old==="daw"&&!dw) dawLeave();

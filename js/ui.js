@@ -163,8 +163,8 @@ function drawRing(){
 }
 function updateRingCap(){
   const key=curScaleKey(), iv=ivOf(S,key), nm=(SC[key]||SC.mixolydien).n;
-  $("ringcap").innerHTML="<strong>"+NOTES[S.root]+" "+nm.toLowerCase()+"</strong><br>"+iv.map(noteName).join(" ");
-  drawRing();
+  $("ringcap").innerHTML="<strong>"+NOTES[S.root]+" "+nm.toLowerCase()+"</strong><br>"+iv.map(noteName).join(" ")+(typeof affOf==="function"?"<br><em class=\"aff-cap\">"+affOf(key,S.root).scText+"</em>":"");
+  drawRing(); if(typeof affUpdate==="function") affUpdate();
 }
 function flashNote(off,kind){
   const p=Math.round((((off%12)+12)%12)*2)%24, r=ringEls[p]; if(!r) return;
@@ -193,6 +193,7 @@ const UI=[
    {k:"scales.1",type:"select",label:"Puis (facultatif)",groups:SCALE_OPTS,blank:"Aucune",ring:true},
    {k:"scales.2",type:"select",label:"Puis encore (facultatif)",groups:SCALE_OPTS,blank:"Aucune",ring:true},
    {k:"sectionBars",type:"range",label:"Durée d'une section",min:4,max:64,step:4,fmt:v=>v+" mesures"}]},
+  {h:"Affectus", hf:"ce que dégagent les gammes et les tonalités", items:[], node:()=>affPanel()},
   {fin:"Temperatio : accord et tempérament", items:[
    {k:"temper",type:"select",label:"Tempérament",opts:[["egal","Égal"],["juste","Juste (intonation pure)"],["pyth","Pythagoricien"],["meso","Mésotonique (quart de comma)"]],restart:true},
    {k:"a4",type:"range",label:"Diapason (La)",min:410,max:450,step:1,fmt:v=>v+" Hz",restart:true}]}]},
@@ -219,6 +220,9 @@ const UI=[
    {k:"mus.logic",type:"select",label:"Logique musicale",opts:[["modal","Modale : la mélodie suit les accords"],["hasard","Hasard (ancienne version)"]]},
    {k:"mus.form",type:"select",label:"Forme de la pièce",opts:[["libre","Libre : phrases et déjà-vu"],["passacaille","Passacaille : une basse qui revient, des variations dessus"],["ostinato","Ostinato : un motif qui tourne"],["rondeau","Rondeau : refrain et couplets"],["variations","Thème et variations"],["turing","Machine de Turing : un registre qui boucle et mute"]]},
    {k:"mus.color",type:"select",label:"Couleur du mode",opts:[["off","Fixe : les gammes choisies"],["tension","Suit la tension (du lydien au locrien)"],["meteo","Suit la météo du lieu"],["les deux","Tension et météo"]]},
+   {k:"mus.harm",type:"select",label:"Harmonie",opts:[["idiome","Idiomatique : les progressions typiques de chaque mode"],["libre","Libre : accords pondérés par le mode"]]},
+   {k:"mus.arc",type:"select",label:"Plan de la pièce",opts:[["aucun","Aucun : des sections égales"],["arche","Arche : intro, thème, développement, apogée, retombée, coda"]]},
+   {k:"mus.crit",type:"range",label:"Exigence : la machine tire plusieurs phrases et garde la meilleure",min:0,max:1,step:0.01,fmt:pct},
    {k:"mus.model",type:"select",label:"Cordes et timbres",opts:[["physique","Cordes pincées par modèle physique"],["classique","Synthèse classique"]]}]},
   {h:"Ingenium", hf:"caractère de la mélodie", items:[
    {k:"car.grav",type:"range",label:"Gravité : retour vers la tonique",min:0,max:1,step:0.01,fmt:pct},

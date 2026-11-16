@@ -49,7 +49,7 @@ function buildEngine(ctx, S, o){
       v=p[a]+(p[b]-p[a])*(i-a);
     }
     if(adaptOn()) v+=S.adapt.amount*(adaptE(t)-0.5)*0.9;
-    v+=0.4*dv("tension");
+    v+=0.4*dv("tension")+arcAt(t);
     return clamp(v,0,1);
   }
   const tensMul=k=>({perc:clamp(1+k,0,2), pad:clamp(1-0.5*k,0,2), drone:1+0.3*k, amb:clamp(1-0.6*k,0,2)});
@@ -65,6 +65,17 @@ function buildEngine(ctx, S, o){
 
   /* sections */
   /* couleur de mode : la tension et la météo font glisser la gamme du plus clair (lydien) au plus sombre (locrien), section par section */
+  /* forme de la pièce : un plan d'intro, thème, développement, apogée, retombée, coda, avec ses transitions */
+  const ARC=[{n:"intro",e:-0.35,sh:0},{n:"thème",e:0,sh:0},{n:"développement",e:0.12,sh:1},{n:"apogée",e:0.4,sh:-2},{n:"retombée",e:-0.15,sh:0},{n:"coda",e:-0.4,sh:0}];
+  const arcOn=()=>(S.mus&&S.mus.arc)==="arche", secLen=()=>S.sectionBars*bar;
+  const roleOf=i=>ARC[i%ARC.length];
+  function arcAt(t){
+    if(!arcOn()) return 0;
+    const x=(t-t0)/secLen(), i=Math.max(0,Math.floor(x+1e-6)), f=Math.max(0,x-i), a=roleOf(i).e, b=roleOf(i+1).e, k=f<0.8?0:0.5-0.5*Math.cos(Math.PI*(f-0.8)/0.2);
+    return a+(b-a)*k;
+  }
+  /* transition : la dernière mesure (ou demi-mesure) avant une section plus énergique */
+  function arcRise(t,span){ if(!arcOn()) return false; const L=secLen(), x=(t-t0)/L, i=Math.max(0,Math.floor(x+1e-6)), f=x-i; return f>=1-span/L-1e-6&&roleOf(i+1).e>roleOf(i).e+0.2; }
   const LADDER=["lydien","ionien","mixolydien","dorien","eolien","phrygien","locrien"], COL={};
   function wxDark(w){ return w.storm?0.95:w.snow?0.4:w.fog?0.6:w.rain>0.5?0.72:w.rain>0.1?0.6:w.night?(w.clouds<0.6?0.45:0.55):w.clouds>0.7?0.5:0.15; }
   function colorKey(i){
@@ -79,7 +90,8 @@ function buildEngine(ctx, S, o){
   function secOf(t){
     const l=S.scales.filter(Boolean); if(!l.length) l.push("mixolydien");
     const i=Math.max(0,Math.floor((t-t0)/(S.sectionBars*bar)+1e-6));
-    return {i, key:colorKey(i)||l[i%l.length]};
+    const base=l[i%l.length], ar=arcOn()&&!(S.mus&&S.mus.color&&S.mus.color!=="off"), lx=LADDER.indexOf(base);
+    return {i, key:colorKey(i)||(ar&&lx>=0?LADDER[clamp(lx+roleOf(i).sh,0,6)]:base), role:arcOn()?roleOf(i).n:""};
   }
   function sw(t){ const k=Math.round((t-t0)/E); return (k%2===1)? t+S.swing*E*0.5 : t; }
 
@@ -735,6 +747,15 @@ function buildEngine(ctx, S, o){
     const v=gen(); mem[j]=v; return v;
   }
   /* ---------- harmonie modale : une succession d'accords liée à la mélodie ---------- */
+  /* grammaire des modes : progressions typiques, ton de récitation des modes d'église, chemin du maqam */
+  const IDIOM={dorien:[0,3,0,6], mixolydien:[0,6,3,0], phrygien:[0,1,0,6], eolien:[0,5,6,0], ionien:[0,3,4,0], lydien:[0,1,0,4], locrien:[0,1,0,5], harm:[0,3,4,0], melo:[0,3,4,0]}, CHURCH=["ionien","dorien","phrygien","lydien","mixolydien","eolien"];
+  const harmE=()=>(S.mus&&S.mus.harm)||"idiome";
+  function pcIx(pool,i,pc){ let best=i,bd=1e9; pool.forEach((p,j)=>{ if(Math.abs((((p%12)+12)%12)-pc)<0.01){ const d=Math.abs(j-i); if(d<bd){ bd=d; best=j; } } }); return best; }
+  function seyirTarget(pool,startT){
+    const L=secLen(), p=(((startT-t0)/L)%1+1)%1, t0i=tonicIx(pool,Math.floor(pool.length/3)), d5=Math.min(pool.length-1,pcIx(pool,t0i+3,7)), top=Math.min(pool.length-1,d5+4);
+    if(p<0.25) return t0i; if(p<0.6) return Math.round(t0i+(d5-t0i)*(p-0.25)/0.35); if(p<0.8) return Math.round(d5+(top-d5)*(p-0.6)/0.2); return Math.round(top+(t0i-top)*(p-0.8)/0.2);
+  }
+
   const modal=()=>!(S.mus&&S.mus.logic==="hasard");
   /* caractère de la mélodie : cinq curseurs qui orientent le tirage (0,5 = comme avant) */
   const car=()=>S.car||{grav:0.5,aud:0.5,orn:0.5,sil:0.5,rep:0.5};
@@ -745,9 +766,10 @@ function buildEngine(ctx, S, o){
   const tonicIx=(pool,i)=>{ let best=i,bd=1e9; pool.forEach((p,j)=>{ if(((p%12)+12)%12===0){ const d=Math.abs(j-i); if(d<bd){bd=d;best=j;} } }); return best; };
   const chordTl=[]; let chordEnd=-1, cpos=0, lastDeg=0, holdDeg=null, prevVoicing=null;
   /* progression en cycles de quatre accords : retour à la tonique, un accord libre, un accord de préparation (sous-tonique, dominante ou sous-dominante), puis la tonique */
-  function nextDegree(n){
+  function nextDegree(n,key){
     if(holdDeg!==null) return holdDeg%n;
     { const F=formE(); if(F==="passacaille"){ const g=[0,n-1,Math.round(n*5/7)%n,Math.round(n*4/7)%n]; lastDeg=g[cpos++%4]; return lastDeg; } if(F==="ostinato"){ const p=cpos++%4; lastDeg=p===3?Math.round(n*4/7)%n:0; return lastDeg; } }
+    if(n===7&&IDIOM[key]&&formE()==="libre"&&harmE()==="idiome"){ const ip=cpos%4; if(R.s()<0.72){ cpos++; lastDeg=IDIOM[key][ip]; return lastDeg; } }
     const pos=cpos++%4, s4=Math.round(n*3/7)%n, s5=Math.round(n*4/7)%n, sub=n-1, vi=Math.round(n*5/7)%n, mot=clamp(S.pad.motion,0,1);
     const pick=(cands)=>{ const tot=cands.reduce((a,c)=>a+c[1],0); let r=R.s()*tot; for(const [d,w] of cands){ r-=w; if(r<=0) return d; } return cands[0][0]; };
     let d;
@@ -777,7 +799,7 @@ function buildEngine(ctx, S, o){
     while(chordEnd<until){
       const t=chordEnd, iv=ivOf(S,secOf(t).key), n=iv.length, len=S.pad.len*bar, vc=clamp(Math.round(S.pad.voices),2,o.lite?3:4);
       let dRaw, offs;
-      if(modal()){ dRaw=nextDegree(n); { const k1=R.k(), k2=R.k(); if(k1<(((S.chance||{}).mutate)||0)*0.6) dRaw=Math.floor(k2*n); } offs=voice(iv,dRaw%n,vc); prevVoicing=offs; }
+      if(modal()){ dRaw=nextDegree(n,secOf(t).key); { const k1=R.k(), k2=R.k(); if(k1<(((S.chance||{}).mutate)||0)*0.6) dRaw=Math.floor(k2*n); } offs=voice(iv,dRaw%n,vc); prevVoicing=offs; }
       else{ dRaw=recall(memP,nChord++,Math.max(1,Math.round(S.pad.loop)),S.pad.deja,R.s,()=>(R.s()<0.35+0.4*(1-S.pad.motion))?0:Math.floor(R.s()*n)); const d=dRaw%n; offs=[degOff(iv,d),degOff(iv,d+2),degOff(iv,d+4),degOff(iv,d+6)].slice(0,vc).map(x=>x+12); }
       chordTl.push({t,len,d:dRaw,iv,offs,sched:false}); chordEnd=t+len;
     }
@@ -817,6 +839,35 @@ function buildEngine(ctx, S, o){
     });
     return {notes,end:N*step,gr:0,pool};
   }
+  /* critique : la machine tire plusieurs phrases et garde la meilleure selon des critères musicaux */
+  function scorePhrase(ph,pool,stab){
+    const nts=ph.notes; if(nts.length<2) return -5;
+    const ix=nts.map(n=>{ let j=pool.indexOf(n.off); if(j<0) j=pool.indexOf(nearest(pool,n.off)); return j; });
+    const leapW=1.4-0.9*car().aud, grav=gravE(); let sc=0, steps=0, run=1, maxRun=1;
+    for(let i=1;i<ix.length;i++){
+      const d=ix[i]-ix[i-1], a=Math.abs(d);
+      if(a===0){ run++; maxRun=Math.max(maxRun,run); } else run=1;
+      if(a<=1) steps++;
+      if(a>=4) sc-=leapW*(a-3)*0.5;
+      if(i>1){ const pd=ix[i-1]-ix[i-2]; if(Math.abs(pd)>=3) sc+=(Math.sign(d)===-Math.sign(pd)&&a<=2)?1.2:-1.0; }
+      if(Math.abs(Math.abs(nts[i].off-nts[i-1].off)-6)<0.01) sc-=1.3;
+    }
+    if(maxRun>2) sc-=1.5*(maxRun-2);
+    sc-=3*Math.abs(steps/(ix.length-1)-0.6);
+    const hi=Math.max(...ix), lo=Math.min(...ix), nHi=ix.filter(v=>v===hi).length, pos=ix.indexOf(hi)/(ix.length-1);
+    sc+=nHi===1?1.2:-0.6*(nHi-1); if(pos>=0.25&&pos<=0.8) sc+=1; if(pos===0) sc-=1.5;
+    const lpc=(((nts[nts.length-1].off)%12)+12)%12; if(stab.indexOf(lpc)>=0) sc+=1.5*(0.6+grav); if(lpc===0) sc+=1.6*grav;
+    const span=hi-lo; if(span<3) sc-=(3-span)*0.8; if(span>9) sc-=(span-9)*0.5;
+    if(lastPh&&lastPh.notes.length===nts.length){ let same=0; for(let i=0;i<nts.length;i++) if(nts[i].off===lastPh.notes[i].off) same++; if(same/nts.length>0.8) sc-=2; }
+    return sc;
+  }
+  function bestOf(gen,pool,stab){
+    const c=S.mus&&S.mus.crit!==undefined?S.mus.crit:0.6, K=1+Math.round(clamp(c,0,1)*11);
+    if(K<=1) return gen();
+    const saved=nPh; let best=null, bs=-1e9;
+    for(let k=0;k<K;k++){ nPh=saved; const ph=gen(), sc=scorePhrase(ph,pool,stab)+R.c()*0.3; if(sc>bs){ bs=sc; best=ph; } }
+    nPh=saved+1; return best;
+  }
   /* formes de la pièce : le plan que suivent les phrases */
   function varyPhrase(ph,cyc,pool){
     const kind=cyc%4, ix0=pool.indexOf(nearest(pool,ph.notes[0].off)), idxOf=o2=>Math.max(0,pool.indexOf(nearest(pool,o2)));
@@ -836,7 +887,7 @@ function buildEngine(ctx, S, o){
     return gen();
   }
   function genPhraseModal(pool,stab,dens,startT,secI){
-    const mt=motifFor(secI), type=nPh++%4, ch0=chordAt(startT);
+    const mt=motifFor(secI), type=nPh++%4, ch0=chordAt(startT), key=secOf(startT).key, ivK=ivOf(S,key), church=CHURCH.indexOf(key)>=0, maqam=ivK.some(x=>x%1!==0);
     let i0;
     if(lastOff.v!==null){ let bi=0,bd=1e9; pool.forEach((p,j)=>{const d=Math.abs(p-lastOff.v); if(d<bd){bd=d;bi=j;}}); i0=bi; } else i0=Math.floor(pool.length/3);
     let idx=snapTo(pool,i0,chordPcs(ch0),3);
@@ -852,6 +903,10 @@ function buildEngine(ctx, S, o){
       else if(type===3) st=R.m()<0.8?-1:(R.m()<0.5?-2:1);
       else st=[-2,-1,-1,1,1,2][Math.floor(R.m()*6)];
       { const pg=Math.max(0,gravE()-0.35)*0.9, ti=tonicIx(pool,idx); if(ti!==idx&&R.m()<pg) st=Math.sign(ti-idx); }
+      if(harmE()==="idiome"){
+        if(church&&type!==3&&type!==1){ const tx=pcIx(pool,idx,((degOff(ivK,key==="phrygien"?5:4)%12)+12)%12); if(tx!==idx&&R.m()<0.22) st=Math.sign(tx-idx); }
+        else if(maqam){ const tg=seyirTarget(pool,startT); if(tg!==idx&&R.m()<0.45) st=Math.sign(tg-idx); }
+      }
       idx=clamp(idx+st,0,pool.length-1); seq.push(idx); dEs.push(durs[Math.floor(R.m()*durs.length)]);
     }
     /* notes : temps forts sur les notes de l'accord, fin de phrase sur le repos voulu, silences et nuances de phrase */
@@ -931,7 +986,7 @@ function buildEngine(ctx, S, o){
       const t=cur.int, I=inten(t), A=S.form.shape==="constante"?0:S.form.amount, m=1-A+A*I, ie=S.form.shape==="constante"?0.5:I;
       B.perc.it.gain.setTargetAtTime(m,t,1.2); B.pad.it.gain.setTargetAtTime(0.45+0.55*m,t,1.2);
       droneFilters.forEach(({f,base})=>f.frequency.setTargetAtTime(base*(0.7+0.6*ie)*(adaptOn()?1+S.adapt.amount*(adaptE(t+1)-0.5)*0.6:1)*(1+0.7*dv("filtre")),t,2));
-      { const vv=clamp(S.fx.veil+(adaptOn()?S.adapt.amount*(0.5-adaptE(t+1))*0.6:0)+0.5*dv("voile"),0,1); veil.frequency.setTargetAtTime(18000*Math.pow(2500/18000,vv),t,3); }
+      { const vv=clamp(S.fx.veil+(adaptOn()?S.adapt.amount*(0.5-adaptE(t+1))*0.6:0)+0.5*dv("voile")-0.35*arcAt(t+1),0,1); veil.frequency.setTargetAtTime(18000*Math.pow(2500/18000,vv),t,3); }
       wet.gain.setTargetAtTime(Math.max(0,S.fx.rev*2*(1+0.9*dv("reverb"))),t,3);
       if(dynTens()){
         const m=tensMul((tensAt(t+1)-0.5)*2);
@@ -951,18 +1006,20 @@ function buildEngine(ctx, S, o){
           if(R.p()<S.perc.shaker){ const v=0.1+R.p()*0.08; shaker(t,v); if(o.onNote) o.onNote(t,0,"shk",0,v); }
           if(k===barE-3&&R.p()<S.perc.ghost) tap(t,0.2);
         }
+        if(arcRise(cur.perc,bar/2)&&odd){ const v=0.22+0.5*R.p(); tap(t,v); if(o.onNote) o.onNote(t,0,"tap",0,v); }
       } else { R.p(); }
       cur.perc+=E; cur.k++;
     }
     /* mélodie et canon : chaque phrase est mémorisée, le déjà-vu décide de la rejouer */
     while(cur.mel<until){
       if(!M){ cur.mel=t0+bar*Math.ceil((until-t0)/bar); break; }
+      if(arcRise(cur.mel,bar)){ cur.mel=t0+(Math.floor((cur.mel-t0)/secLen()+1e-6)+1)*secLen(); continue; }
       const sc=secOf(cur.mel), iv=ivOf(S,sc.key), stab=stableOf(iv), I=inten(cur.mel);
       const evo=S.form.shape==="constante"?0:(I-0.5)*S.form.amount;
       const dens=clamp(S.mel.dens+evo+(tensAt(cur.mel)-0.5)*0.6+(formE()==='passacaille'?0.07*(Math.floor(cpos/4)%6):0)+0.4*dv("densite"),0,1);
-      const lo=12+12*S.mel.reg, hi=lo+12*S.mel.span, pool=poolOf(iv,lo,hi);
+      const shift=arcOn()?Math.round(arcAt(cur.mel)*10):0, lo=12+12*S.mel.reg+shift, hi=lo+12*S.mel.span, pool=poolOf(iv,lo,hi);
       if(!pool.length){cur.mel+=bar; continue;}
-      const gen=modal()?(()=>genPhraseModal(pool,stab,dens,cur.mel,sc.i)):(()=>genPhrase(pool,stab,dens));
+      const genRaw=modal()?(()=>genPhraseModal(pool,stab,dens,cur.mel,sc.i)):(()=>genPhrase(pool,stab,dens)), gen=()=>bestOf(genRaw,pool,stab);
       let ph=formE()==='libre'?recall(memM,nPhrase++,Math.max(1,Math.round(S.mel.loop)),dejaE(),R.m,gen):formPhrase(formE(),gen,pool,cur.mel,dens);
       lastPh=ph;
       if(ph.pool!==pool){ /* rejouée : recaler sur la gamme de la section */

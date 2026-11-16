@@ -149,7 +149,7 @@ function dawChainDraw(){
   const host=$("dawChainTrk"); if(!host) return; const keep=$("daw"), arp0=$("dawArp"); if(arp0&&arp0.parentNode===host) keep.appendChild(arp0); host.innerHTML=""; const tr=curTrack(), D=S.daw, i=D.sel;
   const dev=(title,note)=>{ const d=dawEl("div","dw-dev"); d.innerHTML='<h4>'+title+(note?'<em>'+note+'</em>':'')+'</h4>'; return d; };
   const d1=dev("Instrument","de la piste "+(i+1)); d1.style.setProperty("--tc",tcol(i)); d1.appendChild(dawSel(INST_OPTS,tr.inst,"Instrument",v=>{ tr.inst=v; dawReplan(tr); dawLevels(); dawMixDraw(); }));
-  if(tr.inst==="atelier"){ const b=dawEl("button","lnk","Régler le synthé dans l'atelier ›"); b.type="button"; b.onclick=()=>setMode("atelier"); d1.appendChild(b); }
+  if(tr.inst==="atelier"){ const b=dawEl("button","lnk","Forger le synthé ›"); b.type="button"; b.onclick=()=>setMode("atelier"); d1.appendChild(b); }
   host.appendChild(d1); host.appendChild(dawEl("span","dw-arrow","→"));
   const arp=$("dawArp"); host.appendChild(arp); host.appendChild(dawEl("span","dw-arrow","→"));
   const d3=dev("Piste","niveau et position"); const f=dawEl("div","dw-f g2");
@@ -262,7 +262,7 @@ function dawMachUI(){ const b=$("dawMach"); if(!b) return; b.setAttribute("aria-
 function dawRecUI(){ const b=$("dawRec"); if(b) b.setAttribute("aria-pressed",DW.rec?"true":"false"); }
 function buildDaw(){
   if(!S.daw) return;
-  const host=document.querySelector(".folio"), sec=dawEl("section","daw"); sec.id="daw"; sec.hidden=true; sec.setAttribute("aria-label","Mode DAW");
+  const host=document.querySelector(".folio"), sec=dawEl("section","daw"); sec.id="daw"; sec.hidden=true; sec.setAttribute("aria-label","Arranger");
   /* transport */
   const bar=dawEl("div","dw-bar");
   bar.innerHTML='<button class="seal sm" id="play4" aria-pressed="false">Jouer</button>'+

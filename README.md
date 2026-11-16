@@ -102,7 +102,7 @@ Le workflow `.github/workflows/pages.yml` lance les tests puis déploie le site 
 
 ## Vocabulaire
 
-Les titres sont en latin, avec le français en sous-titre, comme sur les instruments médiévaux de fantaisie : Modus (gamme et accord), Tempus (rythme), Bordunus (bourdon), Voces (voix : Cantus, Canon, Concentus, Memoria), Locus (lieu), Spatium et Patina, Mutatio (évolution), Rotae et Pendula, Transcriptio (export). Les contrôles restent en français pour ne pas ralentir l'usage. Les chapitres se replient (« Tout ouvrir » et « Tout fermer » au-dessus, le choix est mémorisé) ; une table des matières collée en haut permet de sauter d'un chapitre à l'autre. Sur téléphone, la tension est dans la barre du bas, à côté du bouton Incipe.
+Les titres sont en latin, avec le français en sous-titre, comme sur les instruments médiévaux de fantaisie : Modus (gamme et accord), Tempus (rythme), Bordunus (bourdon), Voces (voix : Cantus, Canon, Concentus, Memoria), Locus (lieu), Spatium et Patina, Mutatio (évolution), Rotae et Pendula, Transcriptio (export). Les contrôles restent en français pour ne pas ralentir l'usage. Les chapitres se replient (une courte description reste visible quand ils sont fermés, le choix est mémorisé) ; une table des matières collée en haut permet de sauter d'un chapitre à l'autre. Sur téléphone, la tension est dans la barre du bas, à côté du bouton Incipe.
 
 ## Architecture
 

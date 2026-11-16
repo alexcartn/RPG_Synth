@@ -342,9 +342,6 @@ function foldChapters(){
     while(sec.firstChild) d.appendChild(sec.firstChild);
     d.addEventListener("toggle",save); host.replaceChild(d,sec);
   });
-  const row=document.createElement("p"); row.className="foldrow";
-  [["Tout ouvrir",true],["Tout fermer",false]].forEach(([t,v])=>{ const b=document.createElement("button"); b.type="button"; b.className="lnk"; b.textContent=t; b.onclick=()=>{ host.querySelectorAll(".chap").forEach(d=>{ d.open=v; }); save(); }; row.appendChild(b); });
-  host.parentNode.insertBefore(row,host);
 }
 /* table des matières collée en haut : numéros romains et titres latins */
 function buildToc(){

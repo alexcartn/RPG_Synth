@@ -275,6 +275,7 @@ function setMode(m){
   $("reglBtn").setAttribute("aria-pressed",(!jeu&&!at)?"true":"false");
   $("jeuBtn").setAttribute("aria-pressed",jeu?"true":"false");
   $("atelierBtn").setAttribute("aria-pressed",at?"true":"false");
+  const mh=$("modeHint"); if(mh) mh.textContent=jeu?"Jeu : la machine joue, tu la pilotes en direct avec des boutons, un pad et le cercle des hauteurs.":at?"Atelier : tu construis ton synthé et tu le joues au clavier, dans la gamme du thème, avec ou sans la machine.":"Réglages : tout ce qui compose la pièce, chapitre par chapitre. Ouvre un chapitre pour le régler.";
   try{ localStorage.setItem("bourdon.mode",m); }catch(e){}
   if(old==="atelier"&&!at) atReleaseAll();
   if(jeu){ jeuSync(); jeuState(); }

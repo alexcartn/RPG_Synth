@@ -9,8 +9,8 @@ const ACC_STEPS=[
   {sel:"#seekUni", t:"Univers", x:"Choisis l'univers de la pièce : médiéval, pirates, cyberpunk, espace, nature. « Au hasard » en tire un pour toi."},
   {sel:"#affChips", t:"Je cherche", x:"Une ou plusieurs émotions règlent la gamme, la tonalité et la tension. C'est facultatif : sans choix, on part de la première ambiance de l'univers."},
   {sel:"#play3", t:"Jouer", x:"Lance la lecture. Chaque fois, la pièce est nouvelle : rien n'est enregistré, tout est composé sur le moment."},
-  {sel:"#knobs", t:"Les boutons", x:"Tourne-les en direct : tension, densité, bourdon, brume. Glisse vers le haut ou le bas, ou utilise la molette et les flèches du clavier."},
-  {sel:"#jeuGest", t:"Les gestes", x:"Suspense, Révélation, Danger, Poursuite, Triomphe, Apaisement : un geste musical pour infléchir la pièce en direct. L'ampleur règle sa force."},
+  {sel:"#knobs", t:"Les boutons", x:"Six boutons pour l'écoute : Profondeur, Lumière, Mouvement, Densité, Texture, Lieu. Tourne-les en direct. Glisse vers le haut ou le bas, ou utilise la molette et les flèches du clavier."},
+  {sel:"#jeuGest", t:"Les gestes", x:"Suspense, Révélation, Apaisement : un geste pour infléchir la pièce en direct, quand la partie bascule. L'ampleur règle sa force."},
   {sel:"#studioLnk", t:"Studio", x:"Pour composer toi-même au lieu de laisser la machine décider : tu choisis la gamme, poses tes accords, empiles nappe, bourdon et arpège, écris ta mélodie, puis arranges et exportes en MP3. Le studio te conseille à chaque étape, à la manière d'Ableton (vue Session, effets en chaîne)."},
   {sel:"#modes", t:"Aller plus loin", x:"Composer : tous les réglages, et Capturer pour garder une prise en WAV, MP3 ou MIDI. Forger : ton propre synthé. Veillée : la machine en grand, à regarder en fond."}
 ];

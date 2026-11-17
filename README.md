@@ -32,6 +32,12 @@ Une page à part, reliée par le lien « Studio » de la barre des modes. Ici ri
 
 On arrive sur Conduire : un univers (Médiéval, Aventure, Pirates, Nordique, Féerie, Horreur, Far West, Cyberpunk, Espace, Orient, Nature, Calme, ou Au hasard) et ce qu'on cherche (quatorze émotions), le bouton Jouer, huit boutons (volume, tension, densité, bourdon, nappes, brume, nuage, chaleur), un pad XY et le cercle des hauteurs. Les réglages fins sont dans Composer, en neuf chapitres repliés. L'en-tête est réduit au titre, la légende de la partition n'apparaît qu'en lecture, l'extinction a rejoint « Séance » dans la marge.
 
+## Conduire, recentré sur l'écoute planante
+
+- Six boutons, plus le volume : Profondeur (la réverbération, de la chambre au gouffre), Lumière (de la nuit à la clarté : le voile des aigus et la brillance de la salle), Mouvement (vitesse et ampleur des lentes dérives du filtre, de l'espace, de la densité et du stéréo ; à zéro tout est immobile), Densité (de rares notes à un chant continu), Texture (des notes vers le souffle : nuage de grains, pierre qui chante, air), Lieu.
+- Tension, bourdon, nappes, chaleur, canon et écho restent sur le pad XY (par défaut Lumière × Profondeur) et dans Composer. Le curseur Rituel ↔ Chanson quitte Conduire.
+- Trois gestes : Suspense, Révélation, Apaisement. Danger, Poursuite et Triomphe, gestes d'action, sont retirés.
+
 ## Équilibre du lieu et du bourdon
 
 - Le lieu reste un fond : feu, pluie, mer, ruisseau et nuit ont été recalés au niveau du murmure et du vent (ils sortaient 10 à 13 dB plus fort pour le même réglage). Mesuré en sonie pondérée sur les 65 ambiances, le lieu est maintenant au moins 12 dB sous la musique ; les ambiances où il restait présent (Desertum, Nox, Mare, Fjordus, Odyssea, Saloon, Silva…) ont leur niveau de lieu abaissé (table `PRESET_MIX`).

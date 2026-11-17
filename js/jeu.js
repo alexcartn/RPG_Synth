@@ -2,20 +2,25 @@
 /* ============================================================
    MODE JEU : un panneau de boutons, un pad XY, le cercle et le clavier pour jouer par-dessus la machine
    ============================================================ */
-const JEU={on:false, frozen:false, amp:1, xy:{x:"dens",y:"brume"}, seen:{}};
+const JEU={on:false, frozen:false, amp:1, xy:{x:"lum",y:"prof"}, seen:{}};
 
 /* chaque bouton agit sur un ou deux réglages existants ; replan = voix à replanifier, zero = voix qui s'allume ou s'éteint */
+const DRIFTS=()=>Array.isArray(S.drift)?S.drift:[];
 const KNOBS=[
   {id:"vol",label:"Volume",tip:"Volume général de la sortie.",get:()=>S.vol,set:v=>{S.vol=v;},keys:["vol"]},
-  {id:"tension",label:"Tension",tip:"Monte : plus de nervosité, de dissonance et de percussion. Descend : tout se détend.",get:()=>S.tension,set:v=>{S.tension=v; releaseCurve();},keys:["tension"],fmt:v=>tensionWord(v)},
-  {id:"dens",label:"Densité",tip:"Nombre de notes de la mélodie : peu pour un chant épars, beaucoup pour une danse.",get:()=>S.mel.dens,set:v=>{S.mel.dens=v;},keys:["mel.dens"],replan:"mel"},
-  {id:"bourdon",label:"Bourdon",tip:"Le son continu et grave sur la tonique, qui tient toute la pièce.",get:()=>S.drone.lvl,set:v=>{S.drone.lvl=v;},keys:["drone.lvl"]},
-  {id:"nappes",label:"Nappes",tip:"Les accords tenus en arrière-plan.",get:()=>S.pad.lvl,set:v=>{S.pad.lvl=v;},keys:["pad.lvl"],zero:"pad"},
-  {id:"brume",label:"Brume",tip:"Réverbération : l'espace autour des sons, de la chambre à la cathédrale.",get:()=>S.fx.rev,set:v=>{S.fx.rev=v;},keys:["fx.rev"]},
-  {id:"nuage",label:"Nuage",tip:"Nuage de grains : la mélodie hachée en poussières de son qui flottent.",get:()=>(S.grain&&S.grain.mix)||0,set:v=>{S.grain.mix=v;},keys:["grain.mix"]},
+  /* les six boutons de l'écoute planante */
+  {id:"prof",label:"Profondeur",tip:"L'espace autour des sons : de la chambre proche à la cathédrale, au gouffre.",get:()=>S.fx.rev,set:v=>{S.fx.rev=v;},keys:["fx.rev"]},
+  {id:"lum",label:"Lumière",tip:"De l'ombre à la clarté : les aigus s'ouvrent, la salle devient plus brillante. À gauche, tout est voilé et sourd.",get:()=>1-S.fx.veil,set:v=>{S.fx.veil=+(1-v).toFixed(3); S.fx.dark=+Math.min(1,1.1-v).toFixed(3);},keys:["fx.veil","fx.dark"],fmt:v=>v<0.25?"nuit":v<0.5?"pénombre":v<0.75?"jour voilé":"clarté"},
+  {id:"mouv",label:"Mouvement",tip:"La vitesse et l'ampleur des lentes dérives : le filtre, l'espace, la densité et le stéréo qui se promènent tout seuls. À zéro, tout reste immobile.",get:()=>{ const d=DRIFTS(); return d.length?Math.min(1,d.reduce((a,w)=>a+(w.d||0),0)/d.length/0.7):0; },set:v=>{ DRIFTS().forEach(w=>{ w.d=+(v*0.7).toFixed(3); w.v=+(0.05+v*0.6).toFixed(3); }); },keys:[],fmt:v=>v<0.1?"immobile":v<0.4?"lent":v<0.7?"vivant":"houleux"},
+  {id:"dens",label:"Densité",tip:"Nombre de notes : de rares notes qui passent comme des souvenirs à un chant continu.",get:()=>S.mel.dens,set:v=>{S.mel.dens=v;},keys:["mel.dens"],replan:"mel"},
+  {id:"tex",label:"Texture",tip:"Des notes vers le souffle : le nuage de grains, la pierre qui chante et l'air prennent le dessus sur les notes.",get:()=>Math.min(1,((S.grain&&S.grain.mix)||0)/0.7),set:v=>{ S.grain.mix=+(v*0.7).toFixed(3); S.tex=Object.assign({lvl:1,sub:0,mid:0,air:0},S.tex||{}); S.tex.mid=+(v*0.6).toFixed(3); S.tex.air=+(v*0.5).toFixed(3); },keys:["grain.mix","tex.mid","tex.air"]},
+  {id:"lieu",label:"Lieu",tip:"Les sons du lieu : vent, pluie, feu, nuit, bêtes. Toujours en fond.",get:()=>Math.min(1,S.amb.lvl===undefined?1:S.amb.lvl),set:v=>{S.amb.lvl=v;},keys:["amb.lvl"]},
+  /* toujours disponibles sur le pad XY et dans Composer */
+  {id:"tension",label:"Tension",tip:"Monte : plus de nervosité et de dissonance. Descend : tout se détend.",get:()=>S.tension,set:v=>{S.tension=v; releaseCurve();},keys:["tension"],fmt:v=>tensionWord(v),noKnob:true},
+  {id:"bourdon",label:"Bourdon",tip:"Le son continu et grave sur la tonique.",get:()=>S.drone.lvl,set:v=>{S.drone.lvl=v;},keys:["drone.lvl"],noKnob:true},
+  {id:"nappes",label:"Nappes",tip:"Les accords tenus en arrière-plan.",get:()=>S.pad.lvl,set:v=>{S.pad.lvl=v;},keys:["pad.lvl"],zero:"pad",noKnob:true},
+  {id:"chaleur",label:"Chaleur",tip:"Saturation et léger tremblé, comme une vieille bande magnétique.",get:()=>Math.min(1,S.fx.sat/0.6),set:v=>{S.fx.sat=v*0.6; S.fx.wow=0.04+v*0.36;},keys:["fx.sat","fx.wow"],noKnob:true},
   {id:"canon",label:"Canon",tip:"Une seconde voix qui reprend la mélodie en décalé.",get:()=>S.canon.lvl,set:v=>{S.canon.lvl=v;},keys:["canon.lvl"],zero:"mel",noKnob:true},
-  {id:"chaleur",label:"Chaleur",tip:"Saturation et léger tremblé, comme une vieille bande magnétique.",get:()=>Math.min(1,S.fx.sat/0.6),set:v=>{S.fx.sat=v*0.6; S.fx.wow=0.04+v*0.36;},keys:["fx.sat","fx.wow"]},
-  {id:"rc",label:"Rituel ↔ Chanson",tip:"Rituel : le bourdon, des accords qui ne bougent presque pas, les boucles et les pendules libres. Chanson : des accords qui avancent, l'arpège, un thème qui revient, le bourdon en simple pédale.",get:()=>S.rc===undefined?0.5:S.rc,set:v=>{S.rc=v;},keys:["rc"],noKnob:true,fmt:v=>v<0.34?"rituel":v>0.66?"chanson":"entre les deux"},
   {id:"echo",label:"Écho",tip:"Répétitions qui s'éteignent.",get:()=>S.fx.dly,set:v=>{S.fx.dly=v;},keys:["fx.dly"],noKnob:true}
 ];
 const KNOB=Object.fromEntries(KNOBS.map(k=>[k.id,k]));
@@ -48,7 +53,7 @@ function paintKnob(el,spec){
   JEU.seen[spec.id]=v;
   if(spec.dst&&typeof synRings==="function") synRings(el,spec);
 }
-const ICK={vol:"volume",dens:"densite"};
+const ICK={vol:"volume",dens:"densite",prof:"brume",lum:"revelation",mouv:"phrase",tex:"nuage",lieu:"nature"};
 function makeKnob(spec){
   const el=document.createElement("div"); el.className="knob"; el.setAttribute("role","slider"); el.tabIndex=0;
   el.setAttribute("aria-label",spec.label); if(spec.tip) el.dataset.tip=spec.tip+" Glisse vers le haut ou le bas, molette ou flèches du clavier."; el.setAttribute("aria-valuemin","0"); el.setAttribute("aria-valuemax","100");
@@ -174,8 +179,6 @@ function varyBack(){ const p=VARY.stack.pop(); if(!p) return; loadScene(p.s,null
 function setJeu(on){ setMode(on?"jeu":"reglage"); }
 function buildJeu(){
   const kn=$("knobs"); KNOBS.filter(k=>!k.noKnob).forEach(k=>kn.appendChild(makeKnob(k)));
-  /* le curseur Rituel ↔ Chanson, au-dessus des boutons : la commande centrale */
-  { const w=document.createElement("div"); w.className="jeu-rc"; w.appendChild(mkCtl({k:"rc",type:"range",label:"Rituel ↔ Chanson",min:0,max:1,step:0.01,fmt:v=>KNOB.rc.fmt(v),hint:KNOB.rc.tip})); kn.parentNode.parentNode.insertBefore(w,kn.parentNode); }
   const opts=KNOBS.map(k=>'<option value="'+k.id+'">'+k.label+'</option>').join("");
   $("xSel").innerHTML=opts; $("ySel").innerHTML=opts; $("xSel").value=JEU.xy.x; $("ySel").value=JEU.xy.y;
   $("xSel").onchange=()=>{ JEU.xy.x=$("xSel").value; xyDraw(); }; $("ySel").onchange=()=>{ JEU.xy.y=$("ySel").value; xyDraw(); };
@@ -193,7 +196,7 @@ function buildJeu(){
     if(!live) return;
     if(!live.eng.fxOn()){ $("jeuHint").textContent="Le nuage de grains n'est pas disponible dans ce navigateur."; return; }
     const on=!JEU.gel;
-    if(on&&S.grain.mix<0.05){ applyKnob(KNOB.nuage,0.5,true); jeuSync(); }
+    if(on&&S.grain.mix<0.05){ applyKnob(KNOB.tex,0.6,true); jeuSync(); }
     JEU.gel=live.eng.grainFreeze(on); $("jeuGel").setAttribute("aria-pressed",JEU.gel?"true":"false");
   };
   document.querySelectorAll("#jeuAmp .lnk").forEach(b=>{ b.onclick=()=>{ JEU.amp=+b.dataset.amp; jeuAmpUI(); }; }); jeuAmpUI();

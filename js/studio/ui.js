@@ -183,7 +183,7 @@
       if(t.kind==="harm") t.clips[r]={name:"Accords",chords:[{r:0,q:TH.diatonic(TH.MODES[P.mode].iv)[0].q,x:"",b:1}]};
       else if(t.kind==="drums") t.clips[r]=PJ.drumClip(t,1,P.meter);
       else if(kind==="notes") t.clips[r]={name:"Notes",type:"notes",bars:4,notes:[]};
-      else t.clips[r]={name:TH.GEN_N[kind],type:"gen",gen:kind,g:{}};
+      else { t.clips[r]={name:TH.GEN_N[kind],type:"gen",gen:kind,g:{}}; if(kind==="nappe") quietHarm(); }
       UI.t=i; UI.r=r; UI.focus="clip"; UI.tab="clip"; UI.chordSel=t.kind==="harm"?0:-1;
     },"all");
   }
@@ -586,7 +586,8 @@
     }
     else add("Session",[{k:"info",t:"Chaque colonne est une piste, chaque rangée une scène (une partie du morceau). ▶ sur un clip le lance, ▶ à droite lance toute la scène. Les lancements tombent sur la mesure suivante."}]);
   }
-  function addLayer(role){ edit(()=>{ let i=P.tracks.findIndex(t=>t.role===role); if(i<0){ P.tracks.push(PJ.newTrack(role,P.scenes.length)); i=P.tracks.length-1; } const t=P.tracks[i]; if(!t.clips[UI.r]) t.clips[UI.r]={name:TH.GEN_N[role]||"Notes",type:"gen",gen:role,g:{}}; UI.t=i; UI.focus="clip"; UI.tab="clip"; P.step=Math.max(P.step||0,1); },"all"); }
+  function quietHarm(){ const h=PJ.harmTrack(P); if(h&&!h.mute&&!h.quietDone){ h.mute=true; h.quietDone=true; toast("La nappe joue maintenant les accords : la piste Harmonie passe en sourdine (M pour la réentendre)."); } }
+  function addLayer(role){ edit(()=>{ quietHarm(); let i=P.tracks.findIndex(t=>t.role===role); if(i<0){ P.tracks.push(PJ.newTrack(role,P.scenes.length)); i=P.tracks.length-1; } const t=P.tracks[i]; if(!t.clips[UI.r]) t.clips[UI.r]={name:TH.GEN_N[role]||"Notes",type:"gen",gen:role,g:{}}; UI.t=i; UI.focus="clip"; UI.tab="clip"; P.step=Math.max(P.step||0,1); },"all"); }
   function layerInfo(){ const roles=[], r=UI.r; let low=0, arpOct=null, melOct=null, insRev=0;
     P.tracks.forEach(t=>{ if(t.devs.some(d=>d.type==="reverb")) insRev++; const c=t.clips[r]; if(!c||t.kind==="harm"||t.mute) return; if(t.kind==="drums"){ roles.push("percu"); return; }
       if(c.type==="gen"){ roles.push(c.gen); const g=Object.assign({},TH.GEN_DEF[c.gen],c.g); if(g.oct<=2||(c.gen==="nappe"&&g.oct<3)) low++; if(c.gen==="arpege") arpOct=g.oct; }
@@ -651,7 +652,15 @@
     const L=c.bars*TH.bb(P.meter), now=TR.beatNow(), g=UI.grid; let s=(((h.b-st.anchor)%L)+L)%L; s=Math.round(s/g)*g; if(s>=L) s-=L; const d=Math.max(g,Math.round((now-h.b)/g)*g);
     snap(); c.notes.push({s,d:Math.min(d,L-s),p:h.p,v:0.8}); save(); if(UI.roll&&UI.roll.c===c) drawRoll(); clearTimeout(recNote.t); recNote.t=setTimeout(renderConseils,600);
   }
-  function togglePlay(){ audio(); if(TR.X.playing){ TR.stop(); } else if(UI.view==="arr"){ if(PJ.arrLen(P.arr)) TR.playArr(UI.arrCur); else toast("L'arrangement est vide."); } else TR.launchScene(UI.r); renderTopState(); }
+  function togglePlay(){ audio(); if(TR.X.playing){ TR.stop(); renderTopState(); return; }
+    if(UI.view==="arr"){ if(PJ.arrLen(P.arr)) TR.playArr(UI.arrCur); else toast("L'arrangement est vide : passe en vue Session pour jouer tes scènes."); renderTopState(); return; }
+    /* la scène choisie si elle a des clips, sinon la première qui en a */
+    const has=r=>P.tracks.some(t=>t.clips[r]); let r=has(UI.r)?UI.r:P.scenes.findIndex((s,i)=>has(i));
+    if(r<0){ toast("Rien à jouer pour l'instant : commence par poser des accords (étape II)."); return; }
+    if(r!==UI.r){ UI.r=r; renderSession(); }
+    const audible=P.tracks.some(t=>t.clips[r]&&!t.mute&&!(t.kind==="drums"&&t.clips[r].steps&&t.clips[r].steps.every(a=>a.every(v=>!v)))&&!(t.clips[r].type==="notes"&&!t.clips[r].notes.length));
+    if(!audible) toast("Cette scène ne contient que des pistes muettes ou vides : démute l'Harmonie (M) ou ajoute une nappe.");
+    TR.launchScene(r); renderTopState(); }
 
   /* ============================================================ BOUCLE D'AFFICHAGE ============================================================ */
   function frame(){
@@ -671,6 +680,7 @@
   /* ============================================================ BRANCHEMENTS ============================================================ */
   function renderAll(){ renderTop(); renderGamme(); renderSession(); renderDetail(); renderArr(); renderConseils(); }
   $("bPlay").onclick=()=>{ audio(); if(TR.X.playing) return; togglePlay(); };
+  $("dlgProj").addEventListener("close",()=>{ if(!localStorage.getItem(KEY)) save(); });
   $("bStop").onclick=()=>{ if(TR) TR.stop(); renderTopState(); };
   $("bRec").onclick=()=>{ audio(); TR.X.rec=!TR.X.rec; renderTopState(); toast(TR.X.rec?"Enregistrement armé : lance la lecture, puis tes scènes et clips. L'arrêt écrit l'arrangement.":"Enregistrement désarmé."); };
   $("iTempo").onchange=()=>{ const v=clamp(+$("iTempo").value||P.tempo,30,220), old=60/P.tempo; edit(()=>P.tempo=v,"top"); if(TR) TR.retempo(old); if(graph) graph.soft(); };

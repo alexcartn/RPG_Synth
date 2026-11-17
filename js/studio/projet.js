@@ -36,7 +36,7 @@ const PJ=(()=>{
   }
   function template(kind){
     const P=blank();
-    if(kind==="vide"){ P.step=0; return P; }
+    if(kind==="vide"){ P.step=0; P.tracks[0].mute=false; P.tracks[0].vol=-6; return P; }
     if(kind==="dark"){
       P.name="Dark ambient"; P.tempo=60; P.key=4; P.mode="phrygien";
       const iv=TH.MODES[P.mode].iv; P.tracks[0].clips[0]={name:"Rituel",chords:parse("i bII i bII",iv).map(c=>({...c,b:2}))};

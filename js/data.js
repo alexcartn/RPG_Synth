@@ -372,9 +372,11 @@ const UNIVERS = [
 ];
 /* hors du Moyen Âge, un préréglage qui ne cite pas un bruit de lieu n'en veut pas : sans cela, murmure et tintements de taverne s'invitaient dans l'espace ou chez les pirates */
 UNIVERS.forEach(u=>{ if(u.id!=="medieval") u.items.forEach(it=>{ it[1].amb=Object.assign({murmur:0,clink:0,feu:0,vent:0,gouttes:0},it[1].amb||{}); }); });
+/* sonie : gain (dB) de chaque ambiance, mesuré hors ligne (BS.1770, 24 s, après le limiteur) pour viser -13 LUFS (-15 pour Calme) */
+const PRESET_NORM={"Taberna":-3.4,"Chorea":-3.3,"Crypta":-3.8,"Scriptorium":-8.1,"Turris":-4.2,"Tripudium":-2.6,"Pugna":-3.2,"Iter":-3.3,"Triumphus":-3.2,"Insidiae":-1.3,"Portus":-0.9,"Navigium":-5.6,"Tempestas":-4.5,"Thesaurus":-4.9,"Skalda":-3.8,"Bellum":-4.4,"Fjordus":-5.8,"Runae":-3.6,"Fata":-5.1,"Aula Fatarum":-5.3,"Sylva Magica":0.8,"Lullaby":2.3,"Larva":-2.5,"Domus Obscura":-7.0,"Sacrificium":-5.4,"Cella":-2.8,"Desertum":1.1,"Saloon":0.8,"Duellum":-5.0,"Equitatus":-1.4,"Urbs Neon":-2.5,"Machina":-0.3,"Datum":-3.2,"Imber Toxicus":-2.4,"Sidera":1.6,"Nebula":-1.9,"Abyssus":0.1,"Aegyptus":-2.2,"Eremus":-6.2,"Hortus":-5.2,"Bayati":-2.3,"Enharmonia":0.1,"Pluvia":-0.9,"Mare":-0.3,"Silva":-1.7,"Nox":1.3,"Somnus":0.6,"Meditatio":-3.5,"Labor":-3.1};
 /* chaque univers a sa batterie ; un préréglage peut en citer une autre */
 const UNIV_KIT={medieval:"cadre", aventure:"caisse", pirates:"bastringue", nordique:"taiko", feerie:"cadre", horreur:"taiko", western:"bastringue", cyber:"electro", espace:"electro", orient:"darbouka", nature:"cadre", calme:"cadre"};
-UNIVERS.forEach(u=>u.items.forEach(it=>{ const p=it[1]; p.perc=Object.assign({kit:UNIV_KIT[u.id]||"cadre"},p.perc||{}); }));
+UNIVERS.forEach(u=>u.items.forEach(it=>{ const p=it[1]; p.perc=Object.assign({kit:UNIV_KIT[u.id]||"cadre"},p.perc||{}); if(p.norm===undefined) p.norm=PRESET_NORM[it[0]]||0; }));
 /* liste à plat des préréglages */
 const PRESETS = UNIVERS.flatMap(u=>u.items.map(([n,s,g])=>[n,s,g,u.id]));
 function clone(o){return JSON.parse(JSON.stringify(o));}

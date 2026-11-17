@@ -1062,3 +1062,25 @@ body.playing .veil-open{box-shadow:3px 3px 0 var(--rubric)}
 @media (max-width:640px){ .seek .seek-uni{grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px} .seek .seek-uni .lnk{min-height:64px} }
 @media (prefers-reduced-motion:reduce){ .seek .seek-uni .lnk{transition:none} }
 .seek .seek-tag{margin-top:10px}
+
+/* veillée : volume général, capture, tiroir « mixeur et jeu » */
+.vl-keys{flex-wrap:wrap; justify-content:flex-end; align-items:center}
+.vl-vol{display:inline-flex; align-items:center; gap:8px; min-height:44px; padding:0 12px; border:1px solid var(--rule); border-radius:999px; color:var(--ink-2)}
+.vl-vol .ic{width:18px; height:18px}
+.vl-vol input[type=range]{width:110px; margin:0; accent-color:var(--rubric)}
+#veilCap.on{background:var(--rubric); border-color:var(--rubric); color:var(--parch)}
+#veilCap.on .ic .a{fill:var(--parch)}
+#veilCap:disabled{opacity:.45; cursor:default}
+.vl-meta #vlCapMsg{color:var(--rubric); font:italic 400 .9rem/1.3 var(--body); letter-spacing:.02em}
+.vl-mixbody{display:flex; align-items:stretch; gap:var(--sp-lg)}
+.vl-play{flex:0 0 220px; display:flex; flex-direction:column; gap:var(--sp-sm); padding-left:var(--sp-lg); border-left:1px solid var(--rule); min-width:0}
+.vl-play h4{margin:0; font:400 .78rem/1 var(--caps); letter-spacing:.18em; color:var(--ink-2)}
+.vl-play .hint{margin:0; font:italic 400 .88rem/1.3 var(--body); color:var(--ink-2)}
+.vl-f{display:flex; flex-direction:column; gap:3px; margin-bottom:var(--sp-xs)}
+.vl-f span{font:400 .76rem/1 var(--caps); letter-spacing:.12em; color:var(--ink-2)}
+.vl-f select{width:100%; background:transparent; color:var(--ink); border:0; border-bottom:1px solid var(--rule); border-radius:0; font:400 .95rem/1.4 var(--body); padding:4px 0}
+.vl-f select option{background:var(--parch-2); color:var(--ink)}
+.vl-f input[type=range]{width:100%; margin:0; accent-color:var(--rubric)}
+@media (max-width:760px){ .vl-mixbody{flex-direction:column} .vl-play{flex:none; padding-left:0; border-left:0; border-top:1px solid var(--rule); padding-top:var(--sp-md)} .vl-mix{max-height:62vh; overflow-y:auto} .vl-vol input[type=range]{width:84px} }
+
+.vl-play h4:not(:first-child){margin-top:var(--sp-md)}

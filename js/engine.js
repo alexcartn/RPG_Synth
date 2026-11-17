@@ -230,15 +230,19 @@ function buildEngine(ctx, S, o){
      fxAttach() les branche dès que les processeurs sont chargés ; sans eux, la réverbération à convolution reste seule */
   const GR=()=>S.grain||{mix:0};
   let fx=null, built=false;
-  const vivante=()=>!!fx&&S.fx.algo!=="lieu";
+  const PLATE_G=3.59, HALL_G=3.56; /* niveaux alignés sur la réverbération vivante (mesuré) */
+  const algoR=()=>!fx?"lieu":(S.fx.algo==="lieu"||S.fx.algo==="plaque"||S.fx.algo==="salle"?S.fx.algo:"vivante");
+  const vivante=()=>algoR()!=="lieu";
   function fxAttach(){
     if(fx||!ctx.__fx||typeof AudioWorkletNode==="undefined") return !!fx;
     try{
       const mk=(name,opt)=>new AudioWorkletNode(ctx,name,Object.assign({numberOfInputs:1,numberOfOutputs:1,outputChannelCount:[2],channelCount:2,channelCountMode:"explicit"},opt||{}));
       const vb=mk("bourdon-verb"), vbG=G(1); vb.connect(vbG); vbG.connect(wet);
+      /* plaque et salle de Dattorro (la salle est la même cuve, plus grande) */
+      const pl=mk("bourdon-plate",{processorOptions:{size:1}}), sa=mk("bourdon-plate",{processorOptions:{size:1.45}}), plG=G(1), saG=G(1); pl.connect(plG); plG.connect(wet); sa.connect(saG); saG.connect(wet);
       const gr=mk("bourdon-grain",{processorOptions:{seed:(seed^0x5EED6A)>>>0}}), grIn=G(1), grOut=G(0), grRev=G(0.6);
       grIn.connect(gr); gr.connect(grOut); grOut.connect(out); grOut.connect(grRev); grRev.connect(revIn);
-      fx={vb,vbG,gr,grOut,frozen:false,lVb:link(revIn,vb),src:{mel:[link(B.mel.it,grIn)],pad:[link(B.pad.it,grIn)],cycles:[link(B.loops.it,grIn),link(B.pend.it,grIn)]}};
+      fx={vb,vbG,pl,sa,plG,saG,lPl:link(revIn,pl),lSa:link(revIn,sa),gr,grOut,frozen:false,lVb:link(revIn,vb),src:{mel:[link(B.mel.it,grIn)],pad:[link(B.pad.it,grIn)],cycles:[link(B.loops.it,grIn),link(B.pend.it,grIn)]}};
     }catch(e){ fx=null; return false; }
     if(built) setLevels();
     return true;
@@ -327,6 +331,8 @@ function buildEngine(ctx, S, o){
       set(fx.vb,"decay",T); set(fx.vb,"damp",damp); set(fx.vb,"mod",S.fx.mod===undefined?0.5:S.fx.mod); set(fx.vb,"shimmer",S.fx.shim||0); set(fx.vb,"pre",rm.pre);
       /* niveau : même énergie que la réponse à convolution (mesuré sur la réponse impulsionnelle du réseau) */
       fx.vbG.gain.value=1/Math.sqrt(0.5*Math.pow(T,0.43)*Math.pow((1-0.78*damp)/0.61,1.35));
+      [fx.pl,fx.sa].forEach(nd=>{ set(nd,"decay",T); set(nd,"damp",damp); set(nd,"pre",rm.pre); });
+      fx.plG.gain.value=PLATE_G*Math.pow(T,-0.5); fx.saG.gain.value=HALL_G*Math.pow(T,-0.5);
       set(fx.gr,"dens",g.dens===undefined?0.45:g.dens); set(fx.gr,"size",g.size===undefined?0.5:g.size); set(fx.gr,"spread",g.spread===undefined?0.4:g.spread); set(fx.gr,"pitch",g.pitch===undefined?0.3:g.pitch);
       fx.grOut.gain.value=(g.mix||0)*2.2;
     }
@@ -344,7 +350,7 @@ function buildEngine(ctx, S, o){
     setLink(lWowIn,wow); setLink(lWowOut,wow); setLink(lWowBy,!wow);
     setLink(lHiss,S.fx.hiss>0.001);
     setLink(lRev,rev&&!vivante()); setLink(lDly,dly); setLink(lDout,dly);
-    if(fx){ setLink(fx.lVb,rev&&vivante()); const g=GR(), on=(g.mix||0)>0.001, src=g.src||"mel"; for(const k in fx.src) fx.src[k].forEach(l=>setLink(l,on&&(k===src||src==="tout"))); }
+    if(fx){ const al=algoR(); setLink(fx.lVb,rev&&al==="vivante"); setLink(fx.lPl,rev&&al==="plaque"); setLink(fx.lSa,rev&&al==="salle"); const g=GR(), on=(g.mix||0)>0.001, src=g.src||"mel"; for(const k in fx.src) fx.src[k].forEach(l=>setLink(l,on&&(k===src||src==="tout"))); }
     setLink(lCanon,S.canon.lvl>0.001);
     { const nt=natv(), wa=want("amb")&&mach(); NATS.forEach(k=>setLink(natL[k],wa&&(nt[k]||0)>0.001)); setLink(lBird,wa&&(nt.oiseaux||0)>0.001); }
     setLink(lMur,mach()&&S.amb.murmur>0.001); setLink(lFire,mach()&&S.amb.feu>0.001); setLink(lWind,mach()&&ventv()>0.001);

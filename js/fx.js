@@ -77,6 +77,59 @@ function fxWorkletBody(){
   }
   registerProcessor("bourdon-verb",Verb);
 
+  /* plaque de Dattorro (1997) : filtre de bande passante, quatre passe-tout de diffusion, puis une « cuve » à deux branches croisées
+     (passe-tout modulé, retard, amortissement, gain de décroissance, passe-tout, retard) ; la sortie est une somme de prises dans la cuve.
+     Longueurs d'origine à 29 761 Hz, mises à l'échelle ; « size » les allonge pour la salle. */
+  class Plate extends AudioWorkletProcessor{
+    static get parameterDescriptors(){ return [kr("decay",3,0.2,30),kr("damp",0.5,0,1),kr("pre",0,0,0.25)]; }
+    constructor(o){
+      super(); const sz=(o&&o.processorOptions&&o.processorOptions.size)||1, k=sampleRate/29761*sz, K=x=>Math.max(2,Math.round(x*k));
+      this.k=k; const mkL=n=>({b:new Float32Array(pow2(n+40)),n,w:0});
+      this.ap=[142,107,379,277].map(x=>mkL(K(x))); this.apG=[0.75,0.75,0.625,0.625];
+      this.mA=[mkL(K(672)+Math.ceil(16*k)),mkL(K(908)+Math.ceil(16*k))]; this.mN=[K(672),K(908)];
+      this.d1=[mkL(K(4453)),mkL(K(4217))]; this.a2=[mkL(K(1800)),mkL(K(2656))]; this.d2=[mkL(K(3720)),mkL(K(3163))];
+      this.loop=(672+4453+1800+3720+908+4217+2656+3163)/29761*sz*0.5;
+      this.lp=[0,0]; this.bw=0; this.ph=0; this.ex=16*k; this.fbk=[0,0];
+      this.pSize=pow2(Math.ceil(0.26*sampleRate)); this.pBuf=new Float32Array(this.pSize); this.pW=0;
+      const T=(a)=>Math.round(a*k); this.tL=[[1,0,T(266)],[1,0,T(2974)],[-1,1,T(1913)],[1,2,T(1996)],[-1,3,T(1990)],[-1,4,T(187)],[-1,5,T(1066)]];
+      this.tR=[[1,3,T(353)],[1,3,T(3627)],[-1,4,T(1228)],[1,5,T(2673)],[-1,0,T(2111)],[-1,1,T(335)],[-1,2,T(121)]];
+      this.quiet=1e9;
+    }
+    rd(L,d){ const m=L.b.length-1; return L.b[(L.w-d)&m]; }
+    wr(L,x){ const m=L.b.length-1; L.b[L.w]=x; L.w=(L.w+1)&m; }
+    process(inputs,outputs,P){
+      const inp=inputs[0], out=outputs[0], oL=out[0], oR=out[1]||out[0], n=oL.length, iL=inp[0], iR=inp[1]||inp[0];
+      if(!iL&&this.quiet>sampleRate*3) return true;
+      const g=Math.pow(10,-3*this.loop/Math.max(0.2,P.decay[0])), dmp=0.05+0.75*P.damp[0], pre=Math.min(this.pSize-2,Math.round(P.pre[0]*sampleRate)), pm=this.pSize-1;
+      const srcs=[this.d1[1],this.a2[1],this.d2[1],this.d1[0],this.a2[0],this.d2[0]];
+      let peak=0;
+      for(let s=0;s<n;s++){
+        let x=iL?(iL[s]+iR[s])*0.5:0;
+        this.pBuf[this.pW]=x; x=this.pBuf[(this.pW-pre)&pm]; this.pW=(this.pW+1)&pm;
+        this.bw+=(x-this.bw)*0.9995; x=this.bw;
+        for(let q=0;q<4;q++){ const L=this.ap[q], d=this.rd(L,L.n), y=d-this.apG[q]*x; this.wr(L,x+this.apG[q]*y); x=y; }
+        this.ph+=2*Math.PI*1/sampleRate; if(this.ph>6.2831853) this.ph-=6.2831853;
+        const nx=[0,0];
+        for(let b=0;b<2;b++){
+          let y=x+this.fbk[1-b];
+          /* passe-tout modulé (lecture interpolée) */
+          const L=this.mA[b], m=L.b.length-1, dl=this.mN[b]+this.ex*Math.sin(this.ph+b*1.7), di=dl|0, fr=dl-di;
+          const a0=L.b[(L.w-di)&m], a1=L.b[(L.w-di-1)&m], dv=a0+(a1-a0)*fr, z=dv+0.7*y; L.b[L.w]=y-0.7*z; L.w=(L.w+1)&m; y=z;
+          this.wr(this.d1[b],y); y=this.rd(this.d1[b],this.d1[b].n);
+          this.lp[b]+=(y-this.lp[b])*(1-dmp); y=this.lp[b]*g;
+          const A=this.a2[b], d2=this.rd(A,A.n), y2=d2+0.5*y; this.wr(A,y-0.5*y2); y=y2;
+          this.wr(this.d2[b],y); nx[b]=this.rd(this.d2[b],this.d2[b].n)*g;
+        }
+        this.fbk=nx;
+        let l=0,r=0; for(const [sg,i,d] of this.tL) l+=sg*this.rd(srcs[i],d); for(const [sg,i,d] of this.tR) r+=sg*this.rd(srcs[i],d);
+        l*=0.6; r*=0.6; oL[s]=l; if(oR!==oL) oR[s]=r; const m=l<0?-l:l; if(m>peak) peak=m;
+      }
+      if(iL||peak>1e-5) this.quiet=0; else this.quiet+=n;
+      return true;
+    }
+  }
+  registerProcessor("bourdon-plate",Plate);
+
   /* nuage de grains : l'entrée s'écrit dans une bande de 8 secondes, relue par petits grains fenêtrés,
      tirés dans le passé récent, parfois à l'octave ou à la quinte ; gelée, la bande ne s'écrit plus */
   class Grain extends AudioWorkletProcessor{

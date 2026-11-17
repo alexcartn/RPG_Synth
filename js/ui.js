@@ -293,7 +293,7 @@ const UI=[
    {k:"fx.size",type:"range",label:"Taille de la salle",min:0.5,max:9,step:0.1,fmt:v=>v.toFixed(1)+" s",reverb:true},
    {k:"fx.dark",type:"range",label:"Ombre (réverb sourde)",min:0,max:1,step:0.01,fmt:pct,reverb:true},
    {k:"fx.room",type:"select",label:"Acoustique du lieu",opts:[["gen","Générique"],["chapelle","Chapelle de pierre"],["salle","Salle de bois"],["grotte","Grotte"],["plaque","Plaque métallique"]],reverb:true},
-   {k:"fx.algo",type:"select",label:"Type de réverbération",opts:[["vivante","Vivante : la queue bouge et peut scintiller"],["lieu","Lieu : acoustique figée, avec ses premières réflexions"]]},
+   {k:"fx.algo",type:"select",label:"Type de réverbération",opts:[["vivante","Vivante : la queue bouge et peut scintiller"],["lieu","Lieu : acoustique figée, avec ses premières réflexions"],["plaque","Plaque : la plaque de studio (Dattorro), dense et brillante"],["salle","Salle : la même cuve en plus grand, plus ample"]]},
    {k:"fx.mod",type:"range",label:"Mouvement de la queue (réverb vivante)",min:0,max:1,step:0.01,fmt:pct},
    {k:"fx.shim",type:"range",label:"Scintillement : la queue remonte d'une octave",min:0,max:1,step:0.01,fmt:pct},
    {k:"fx.dly",type:"range",label:"Écho",min:0,max:1,step:0.01,fmt:pct},

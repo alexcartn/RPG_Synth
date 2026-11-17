@@ -79,11 +79,11 @@ setTimeout(async()=>{
  {const R=w.eval(`(()=>{ const o={}; const g=[...document.querySelectorAll('#jeuGest [data-g]')]; o.gest=g.length; o.dis=g.filter(b=>b.disabled).length;
    o.dur=g.map(b=>[0,1,2].map(a=>live.eng.gesture(b.dataset.g,a))); o.tipOn=!!document.querySelector('[data-tip]'); o.titres=document.querySelectorAll('[title]').length;
    o.lieu=MACH.find(m=>m[0]==='amb')[2]; o.amb=S.amb.lvl; o.cyberAmb=JSON.stringify(UNIVERS.find(u=>u.id==='espace').items[0][1].amb);
-   o.chipTip=document.querySelector('#affChips .aff-chip').dataset.tip||''; o.rnd=!!document.getElementById('seekRnd'); seekRandom(); o.rndSel=AFF.sel.size;
+   o.chipTip=document.querySelector('#affChips .aff-chip').dataset.tip||''; o.capFmt=document.getElementById('capFmt').options.length; o.rnd=!!document.getElementById('seekRnd'); seekRandom(); o.rndSel=AFF.sel.size;
    veilOpen(); o.veil=!document.getElementById('veil').hidden; return o; })()`);
   await new Promise(r=>setTimeout(r,200));
   const R2=w.eval(`(()=>{ const o={}; o.fit=VEIL.view.w>0; veilClose(); o.closed=document.getElementById('veil').hidden; return o; })()`);
-  const bad=[]; if(R.gest!==6||R.dis) bad.push('six gestes actifs'); if(R.dur.some(a=>a.some((x,i)=>!(x>0)||(i&&x<=a[i-1])))) bad.push('la durée du geste doit croître avec l\'ampleur'); if(!R.tipOn||R.titres>0) bad.push('title non converti en infobulle'); if(R.lieu!=='amb.lvl'||R.amb!==1) bad.push('fader du lieu'); if(!/murmur\":0/.test(R.cyberAmb)) bad.push('bruits de taverne dans l\'espace'); if(R.chipTip.length<30) bad.push('infobulle des émotions'); if(!R.rnd||R.rndSel<1) bad.push('au hasard'); if(!R.veil||!R2.closed) bad.push('veillée');
+  const bad=[]; if(R.gest!==6||R.dis) bad.push('six gestes actifs'); if(R.dur.some(a=>a.some((x,i)=>!(x>0)||(i&&x<=a[i-1])))) bad.push('la durée du geste doit croître avec l\'ampleur'); if(!R.tipOn||R.titres>0) bad.push('title non converti en infobulle'); if(R.lieu!=='amb.lvl'||R.amb!==1) bad.push('fader du lieu'); if(!/murmur\":0/.test(R.cyberAmb)) bad.push('bruits de taverne dans l\'espace'); if(R.chipTip.length<30) bad.push('infobulle des émotions'); if(!R.rnd||R.rndSel<1) bad.push('au hasard'); if(R.capFmt!==4) bad.push('formats de capture'); if(!R.veil||!R2.closed) bad.push('veillée');
   console.log('gestes',R.gest,'| infobulles | lieu',R.lieu,'| veillée ouverte puis fermée');
   if(bad.length){ console.log('ECHEC',bad); process.exit(1); }}
  d.dispatchEvent(new w.KeyboardEvent('keydown',{code:'KeyZ',key:'w',bubbles:true})); d.dispatchEvent(new w.KeyboardEvent('keydown',{code:'KeyA',key:'q',bubbles:true}));

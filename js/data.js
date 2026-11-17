@@ -87,7 +87,7 @@ const METERS = {
 const DEFAULT = {
   seed:1472, root:2, scales:["mixolydien","",""], custom:[1,0,1,0,1,1,0,1,0,1,1,0], sectionBars:16,
   temper:"egal", a4:440,
-  tempo:120, meter:"4/4", swing:0.1, tension:0.5, vol:1,
+  tempo:120, meter:"4/4", swing:0.1, tension:0.5, vol:1, norm:0,
   perc:{lvl:0.5, shaker:0.55, ghost:0.35, kit:"cadre"},
   drone:{lvl:0.8, timbre:"anche", bright:0.5, width:0.5, drift:0.5, glide:0.5},
   mel:{lvl:0.6, inst:"luth", dens:0.85, reg:0, span:2, leap:0.2, orn:0.15, deja:0, loop:2},

@@ -119,11 +119,13 @@ function buildEngine(ctx, S, o){
   const lWowIn=link(sat,wowD), lWowOut=link(wowD,veil), lWowBy=link(sat,veil);
   const volG=G(1); volG.connect(ctx.destination);
   const sleepG=G(1); sleepG.connect(volG);
-  if(o.noComp){ master.connect(sleepG); }
+  /* normalisation : chaque ambiance a été mesurée hors ligne (sonie pondérée), son gain la ramène au niveau commun */
+  const normG=G(1); normG.connect(sleepG);
+  if(o.noComp){ master.connect(normG); }
   else{
     const comp=ctx.createDynamicsCompressor();
     comp.threshold.value=-20; comp.ratio.value=3; comp.attack.value=0.02; comp.release.value=0.4;
-    master.connect(comp); comp.connect(sleepG);
+    master.connect(comp); comp.connect(normG);
   }
   /* extinction : tient le niveau jusqu'à tEnd-len puis descend en courbe douce jusqu'au silence en tEnd */
   const sleepV=x=>Math.pow(0.5+0.5*Math.cos(Math.PI*Math.max(0,Math.min(1,x))),2);
@@ -163,6 +165,12 @@ function buildEngine(ctx, S, o){
   const conv=ctx.createConvolver(); conv.buffer=makeIR(S.fx.size,S.fx.dark);
   const wet=G(1); conv.connect(wet); wet.connect(out);
   const revIn=G(1); const lRev=link(revIn,conv);
+  const revHP=ctx.createBiquadFilter(); revHP.type="highpass"; revHP.frequency.value=190; revHP.Q.value=0.6; revHP.connect(revIn);
+  /* petite pièce pour la percussion : une queue courte et claire, au lieu de la grande réverbération qui brouille les frappes */
+  const roomIR=(()=>{ const len=Math.floor(sr*0.7), ir=ctx.createBuffer(2,len,sr), rr=mulberry32((seed^0x2C1B3C6D)>>>0);
+    for(let c=0;c<2;c++){ const d=ir.getChannelData(c); let e=0; for(let i=0;i<len;i++){ const t=i/sr, v=(rr()*2-1)*Math.exp(-t*9.5)*(i<sr*0.004?i/(sr*0.004):1); d[i]=v; e+=v*v; } const n=1/Math.sqrt(e||1); for(let i=0;i<len;i++) d[i]*=n; }
+    return ir; })();
+  const room=ctx.createConvolver(); room.buffer=roomIR; const roomG=G(0.55); room.connect(roomG); roomG.connect(out);
 
   /* écho en ping-pong */
   const dIn=G(1), dl=ctx.createDelay(4), dr=ctx.createDelay(4), dfb=G(0.4), dtone=ctx.createBiquadFilter();
@@ -172,13 +180,23 @@ function buildEngine(ctx, S, o){
   dl.connect(pL); dr.connect(pR); pL.connect(dOut); pR.connect(dOut); const lDout=link(dOut,out);
 
   /* bus */
-  function bus(rev,dly){
-    const lvl=G(1), tm=G(1), gs=G(1), it=G(1), pn=PAN(0); lvl.connect(tm); tm.connect(gs); gs.connect(it); it.connect(pn); pn.connect(out);
-    const rs=G(rev); it.connect(rs); rs.connect(revIn);
+  function bus(rev,dly,eq){
+    const lvl=G(1), tm=G(1), gs=G(1), it=G(1), pn=PAN(0); lvl.connect(tm); tm.connect(gs);
+    /* égaliseur de la voix : un passe-haut pour laisser le grave au bourdon, une bosse ou un creux pour lui faire sa place */
+    let head=gs, hp=null, pk=null;
+    if(eq&&eq.hp){ hp=ctx.createBiquadFilter(); hp.type="highpass"; hp.frequency.value=eq.hp; hp.Q.value=0.6; head.connect(hp); head=hp; }
+    if(eq&&eq.pk){ pk=ctx.createBiquadFilter(); pk.type="peaking"; pk.frequency.value=eq.pk[0]; pk.gain.value=eq.pk[1]; pk.Q.value=eq.pk[2]||1; head.connect(pk); head=pk; }
+    head.connect(it); it.connect(pn); pn.connect(out);
+    const rs=G(rev); it.connect(rs); rs.connect(eq&&eq.room?room:revHP); if(eq&&eq.room){ const rl=G(eq.longRev||0); it.connect(rl); rl.connect(revHP); }
     if(dly){const ds=G(dly); it.connect(ds); ds.connect(dIn);}
-    return {in:lvl, lvl, tm, gs, it, pn};
+    return {in:lvl, lvl, tm, gs, it, pn, hp, eq:eq||{}};
   }
-  const B={drone:bus(0.45,0.1), mel:bus(0.9,1), pad:bus(0.8,0.6), perc:bus(0.2,0), amb:bus(0.3,0), loops:bus(0.9,0.8), pend:bus(0.9,0.7), play:bus(0.85,0.9), daw:bus(0.7,0.6)};
+  /* le grave est au bourdon ; la mélodie a un peu de présence, les nappes un creux dans le bas-médium pour ne pas l'empâter, la percussion sa petite pièce */
+  const B={drone:bus(0.45,0.1,{pk:[2600,-2,0.8]}), mel:bus(0.9,1,{hp:140,pk:[2800,2,0.9]}), pad:bus(0.8,0.6,{hp:170,pk:[380,-3,1]}), perc:bus(0.4,0,{hp:30,room:true,longRev:0.06}),
+    amb:bus(0.3,0,{hp:110}), loops:bus(0.9,0.8,{hp:190}), pend:bus(0.9,0.7,{hp:190}), play:bus(0.85,0.9,{hp:60}), daw:bus(0.7,0.6,{hp:40})};
+  /* une voix jouée à la basse garde son grave */
+  function eqSync(){ const lo=(n,inst)=>{ const h=B[n].hp; if(h) h.frequency.value=inst?35:B[n].eq.hp; };
+    lo("mel",S.mel.inst==="basse"||S.canon.inst==="basse"); lo("loops",S.loops.inst==="basse"); lo("pend",S.pend.inst==="basse"); }
   const canonG=G(0); const lCanon=link(canonG,B.mel.it);
   /* liens entre voix : chaque note de la mélodie ouvre le filtre des nappes, qui se referme ensuite */
   const padF=ctx.createBiquadFilter(); padF.type="lowpass"; padF.Q.value=0.9; padF.frequency.value=20000; padF.connect(B.pad.lvl); B.pad.in=padF;
@@ -270,7 +288,7 @@ function buildEngine(ctx, S, o){
     B.perc.lvl.gain.value=lv("perc",S.perc.lvl);
     B.amb.lvl.gain.value=lv("amb",S.amb.lvl===undefined?1:S.amb.lvl);
     B.play.lvl.gain.value=S.play?S.play.lvl:0.8;
-    volG.gain.value=S.vol===undefined?1:S.vol;
+    volG.gain.value=S.vol===undefined?1:S.vol; normG.gain.value=Math.pow(10,clamp(S.norm||0,-12,12)/20);
     { const nt=natv(), wa=want("amb");
       NATS.forEach(k=>{ if(wa&&mach()&&(nt[k]||0)>0.001) ensureNature(k); });
       natG.pluie.gain.value=1; natG.mer.gain.value=(nt.mer||0)*1.0; natG.nuit.gain.value=(nt.nuit||0)*2.4; natG.ruisseau.gain.value=(nt.ruisseau||0)*1.6;
@@ -297,7 +315,7 @@ function buildEngine(ctx, S, o){
     dOut.gain.value=S.fx.dly; dfb.gain.value=Math.min(0.9,S.fx.fb);
     dl.delayTime.value=E*S.fx.dlyDiv; dr.delayTime.value=E*S.fx.dlyDiv*1.0;
     sat.curve=satCurve(S.fx.sat);
-    dawSync(); rackSync(); if(typeof synPush==="function") synPush(ctx,S.syn);
+    eqSync(); dawSync(); rackSync(); if(typeof synPush==="function") synPush(ctx,S.syn);
     wowG1.gain.value=S.fx.wow*0.003; wowG2.gain.value=S.fx.wow*0.0003;
     veil.frequency.value=18000*Math.pow(2500/18000,S.fx.veil);
     hissG.gain.value=S.fx.hiss*0.03;
@@ -830,6 +848,30 @@ function buildEngine(ctx, S, o){
       tap:(t,v)=>{ noiseHit(t,v,2600,0.16,"bandpass",PB,0.7,0.012); membrane(t,v*0.35,210,0.1,0.3); },
       shaker:(t,v)=>{ metal(t,v*0.6,[1,1.42,1.73],5200,0.16,6000); noiseHit(t,v*0.6,9000,0.07,"highpass",PB); }}
   };
+  /* grilles propres à chaque batterie, case par croche : « avant/après » = sur la croche / sur la double croche qui suit.
+     K grosse frappe, k frappe grave légère, T frappe aiguë, t frappe aiguë légère, h remplissage (selon la densité), H remplissage toujours, g frappe fantôme (selon le réglage) */
+  const KPAT={
+    caisse:{ /* marche : grosse caisse aux temps forts, caisse claire aux temps 2 et 4, roulements */
+      "4/4":["Kh/","h/g","Th/","h/","kh/","h/g","Th/t","t/t"], "2/4":["Kh/","h/g","Th/","t/t"], "3/4":["Kh/","h/","Th/","h/g","Th/t","t/"],
+      "6/8":["Kh/","h/","t/g","Th/","h/","t/t"], "12/8":["K/","h/","t/","T/","h/","t/","k/","h/","t/","T/","h/","t/t"]},
+    electro:{ /* une grosse caisse par temps, claquement aux temps 2 et 4, charleston en croches et doubles croches */
+      "4/4":["KH/h","H/h","KTH/h","H/h","KH/h","H/h","KTH/h","H/hg"], "2/4":["KH/h","H/h","KTH/h","H/hg"], "3/4":["KH/h","H/h","TH/h","H/h","TH/h","H/hg"],
+      "6/8":["KH/","H/","H/h","KTH/","H/","H/h"], "7/8":["KH/h","H/h","KTH/h","H/","KH/h","TH/h","H/hg"], "12/8":["KH/","H/","H/","KTH/","H/","H/h","KH/","H/","H/","KTH/","H/","H/h"]},
+    darbouka:{ /* maqsoum (doum tek . tek doum . tek .), sama'i en 3/4, ayoub en 2/4 */
+      "4/4":["K/","T/","h/h","T/","K/","h/h","T/","h/t"], "2/4":["K/","h/T","K/","T/h"], "3/4":["K/","h/","T/","h/h","T/","h/t"],
+      "6/8":["K/","h/","T/","K/","T/","h/t"], "7/8":["K/","h/","T/","h/","K/","T/","h/t"], "12/8":["K/","h/","T/","h/","T/","h/","K/","h/","T/","h/","T/","t/t"]},
+    taiko:{ /* peu de frappes, très espacées, le bâton sur le fût entre deux coups */
+      "4/4":["K/","/","h/","/","k/","t/","T/","h/"], "2/4":["K/","h/","T/","/"], "3/4":["K/","/","h/","t/","T/","/"],
+      "6/8":["K/","/","h/","k/","t/","/"], "12/8":["K/","/","/","h/","/","/","k/","/","t/","T/","/","h/"]},
+    bastringue:{ /* « boum-tchac » du piano de saloon, gigue et valse */
+      "4/4":["K/","h/","T/","h/h","K/","h/","T/","h/h"], "2/4":["K/","h/","T/","h/h"], "3/4":["K/","h/","T/","h/","T/","h/"],
+      "6/8":["K/","h/","T/","k/","h/","T/"], "12/8":["K/","h/","T/","k/","h/","T/","K/","h/","T/","k/","h/","T/"]}
+  };
+  const kitPat=()=>{ const P=KPAT[S.perc.kit]; return P&&P[S.meter]&&P[S.meter].length===barE?P[S.meter]:null; };
+  const MD=METERS[S.meter].d||2; /* croches par temps */
+  /* humanisation (ms) : retard propre à chaque son, flottement aléatoire, et variation de la nuance */
+  const KHUM={cadre:{lay:{K:0,T:4,h:-2},jit:6,vj:0.1}, caisse:{lay:{K:0,T:3,h:0},jit:3,vj:0.06}, electro:{lay:{K:0,T:0,h:0},jit:0.5,vj:0.04},
+    darbouka:{lay:{K:0,T:-3,h:5},jit:5,vj:0.12}, taiko:{lay:{K:0,T:6,h:0},jit:8,vj:0.1}, bastringue:{lay:{K:0,T:9,h:-4},jit:7,vj:0.12}};
   const kit=()=>KITS[S.perc.kit]||KITS.cadre;
   const stomp=(t,v)=>kit().stomp(t,v), tap=(t,v)=>kit().tap(t,v), shaker=(t,v)=>kit().shaker(t,v);
 
@@ -1227,21 +1269,42 @@ function buildEngine(ctx, S, o){
     /* percussion */
     while(cur.perc<until){
       const k=cur.k%barE, sym=PAT[k], odd=(cur.k%2)===1;
-      const t=cur.perc+(odd?S.swing*E*0.5:0)+R.p()*0.006, bi=Math.floor(cur.k/barE), f1=R.p(), f2=R.p(), endBar=k>=barE-2, hasMel=M&&want("mel")&&S.mel.lvl>0.001, endPhr=bi>0&&(hasMel?phBars.has(bi+1):bi%4===3), endSec=((bi+1)*bar)%secLen()<1e-6;
+      const t=cur.perc+(odd?S.swing*E*0.5:0)+R.p()*(S.perc.kit==="electro"?0.0005:0.006), bi=Math.floor(cur.k/barE), f1=R.p(), f2=R.p(), endBar=k>=barE-2, hasMel=M&&want("mel")&&S.mel.lvl>0.001, endPhr=bi>0&&(hasMel?phBars.has(bi+1):bi%4===3), endSec=((bi+1)*bar)%secLen()<1e-6;
       if(endPhr&&k===barE-2) fillBars.push(bi);
       if(M&&want("perc")&&S.perc.lvl>0.001){
-        /* variations de forme : relance de fin de phrase, roulement de fin de section, frappe fantôme syncopée, creux qui revient */
-        if(sym==="S"&&k===0&&bi%4===0&&f1<0.7){ stomp(t,1); if(o.onNote) o.onNote(t,0,"stomp",0,1); }
+        const KP=kitPat(), H=KHUM[S.perc.kit]||KHUM.cadre;
+        /* accents : premier temps de la mesure, puis les temps, puis les contretemps ; un peu de hasard sur chaque frappe */
+        const acc=(slot,sub)=>(slot===0&&!sub?1.06:(slot%MD===0&&!sub?0.94:(sub?0.72:0.82)))*(1-H.vj+2*H.vj*R.p());
+        /* décalage humain : chaque son a son retard propre (la caisse claire traîne, le charleston pousse), plus un flottement */
+        const at=(tt,ch)=>tt+((H.lay[ch]||0)+(R.p()*2-1)*H.jit)/1000;
+        if(KP){
+          const sl=KP[k]||"/", [on,off]=sl.split("/"), sixt=E*0.5+(odd?0:S.swing*E*0.25), rest=S.perc.kit!=="electro"&&sym==="s"&&bi%8===4&&f1<0.5;
+          [[on,0],[off,1]].forEach(([str,sub])=>{
+            if(!str) return; const tb=t+(sub?sixt:0);
+            for(const ch of str){
+              if(ch==="K"){ if(rest) continue; const v=0.95*acc(k,sub); stomp(at(tb,"K"),v); if(o.onNote) o.onNote(tb,0,"stomp",0,v); }
+              else if(ch==="k"){ if(rest) continue; const v=0.62*acc(k,sub); stomp(at(tb,"K"),v); if(o.onNote) o.onNote(tb,0,"stomp",0,v); }
+              else if(ch==="T"){ const v=0.58*acc(k,sub); tap(at(tb,"T"),v); if(o.onNote) o.onNote(tb,0,"tap",0,v); }
+              else if(ch==="t"){ const v=0.42*acc(k,sub); tap(at(tb,"T"),v); if(o.onNote) o.onNote(tb,0,"tap",0,v); }
+              else if(ch==="h"||ch==="H"){ if(ch==="H"||R.p()<S.perc.shaker){ const v=(0.12+R.p()*0.06)*acc(k,sub)*1.15; shaker(at(tb,"h"),v); if(o.onNote) o.onNote(tb,0,"shk",0,v); } }
+              else if(ch==="g"){ if(R.p()<S.perc.ghost){ const v=0.16+0.08*R.p(); tap(at(tb,"T"),v); } }
+            }
+          });
+        }else{
+        /* tambour sur cadre : la grille de la mesure, avec ses variations de forme */
+        if(sym==="S"&&k===0&&bi%4===0&&f1<0.7){ stomp(at(t,"K"),1); if(o.onNote) o.onNote(t,0,"stomp",0,1); }
         else if(sym==="s"&&bi%8===4&&f1<0.5){ /* le deuxième temps tombe : un silence qui fait respirer */ }
-        else if(sym==="S"){ stomp(t,0.95); if(o.onNote) o.onNote(t,0,"stomp",0,0.95); } else if(sym==="s"){ stomp(t,0.6); if(o.onNote) o.onNote(t,0,"stomp",0,0.6); }
-        else if(sym==="T"){ const v=0.5+R.p()*0.15; tap(t,v); if(o.onNote) o.onNote(t,0,"tap",0,v); } else if(sym==="t"){ const v=0.4+R.p()*0.1; tap(t,v); if(o.onNote) o.onNote(t,0,"tap",0,v); }
+        else if(sym==="S"){ const v=0.95*acc(k,0); stomp(at(t,"K"),v); if(o.onNote) o.onNote(t,0,"stomp",0,v); } else if(sym==="s"){ const v=0.6*acc(k,0); stomp(at(t,"K"),v); if(o.onNote) o.onNote(t,0,"stomp",0,v); }
+        else if(sym==="T"){ const v=(0.5+R.p()*0.15)*acc(k,0); tap(at(t,"T"),v); if(o.onNote) o.onNote(t,0,"tap",0,v); } else if(sym==="t"){ const v=(0.4+R.p()*0.1)*acc(k,0); tap(at(t,"T"),v); if(o.onNote) o.onNote(t,0,"tap",0,v); }
         else{
-          if(R.p()<S.perc.shaker){ const v=0.1+R.p()*0.08; shaker(t,v); if(o.onNote) o.onNote(t,0,"shk",0,v); }
-          if(k===barE-3&&R.p()<S.perc.ghost) tap(t,0.2);
+          if(R.p()<S.perc.shaker){ const v=0.1+R.p()*0.08; shaker(at(t,"h"),v); if(o.onNote) o.onNote(t,0,"shk",0,v); }
+          if(k===barE-3&&R.p()<S.perc.ghost) tap(at(t,"T"),0.2);
         }
-        if(endPhr&&endBar&&f2<(endSec?0.95:0.6)){ const v=0.2+0.1*(k-(barE-2))+0.25*f1; tap(t+(endSec&&k===barE-1?E*0.5:0),v); if(o.onNote) o.onNote(t,0,"tap",0,v); }
-        if(!endPhr&&bi%2===1&&odd&&sym!=="S"&&sym!=="s"&&sym!=="T"&&sym!=="t"&&f2<S.perc.ghost*0.35){ tap(t,0.14+0.1*f1); }
-        if(arcRise(cur.perc,bar/2)&&odd){ const v=0.22+0.5*R.p(); tap(t,v); if(o.onNote) o.onNote(t,0,"tap",0,v); }
+        if(!endPhr&&bi%2===1&&odd&&sym!=="S"&&sym!=="s"&&sym!=="T"&&sym!=="t"&&f2<S.perc.ghost*0.35){ tap(at(t,"T"),0.14+0.1*f1); }
+        }
+        /* relance de fin de phrase, roulement de fin de section, montée vers une section plus forte */
+        if(endPhr&&endBar&&f2<(endSec?0.95:0.6)){ const v=0.2+0.1*(k-(barE-2))+0.25*f1; tap(at(t+(endSec&&k===barE-1?E*0.5:0),"T"),v); if(o.onNote) o.onNote(t,0,"tap",0,v); }
+        if(arcRise(cur.perc,bar/2)&&odd){ const v=0.22+0.5*R.p(); tap(at(t,"T"),v); if(o.onNote) o.onNote(t,0,"tap",0,v); }
       } else { R.p(); }
       cur.perc+=E; cur.k++;
     }

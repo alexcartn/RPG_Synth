@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bourdon : Studio</title>
+<meta name="description" content="Le studio de Bourdon : composer pas à pas une pièce de dungeon synth ou d'ambient. Gamme, accords, couches, mélodie, arrangement en vue Session, effets à la Ableton, export MP3. Un outil qui conseille, c'est toi qui décides.">
+<meta name="theme-color" content="#efe6d0">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="stylesheet" href="css/fonts.css">
+<link rel="stylesheet" href="css/studio.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand"><a class="back" href="index.html" title="Revenir à la machine générative">← La machine</a><h1>Studio</h1><input id="pName" class="pname" aria-label="Nom du projet" spellcheck="false"></div>
+  <div class="trans" role="group" aria-label="Transport">
+    <button class="tb play" id="bPlay" type="button" title="Jouer (Espace) : la scène choisie en vue Session, l'arrangement depuis le curseur en vue Arrangement">▶</button>
+    <button class="tb" id="bStop" type="button" title="Arrêter (Espace)">■</button>
+    <button class="tb rec" id="bRec" type="button" aria-pressed="false" title="Enregistrer l'arrangement : arme, puis lance clips et scènes en vue Session, tout est écrit dans l'arrangement (comme Ableton)">●</button>
+    <label class="fld">Tempo <input id="iTempo" type="number" min="30" max="220" step="1"></label>
+    <label class="fld">Mesure <select id="sMeter"><option>4/4</option><option>3/4</option><option>6/8</option><option>2/4</option></select></label>
+    <label class="fld" title="Quand un clip lancé démarre">Lancement <select id="sQuant"><option value="1">1 mesure</option><option value="2">2 mesures</option><option value="4">4 mesures</option><option value="-1">1 temps</option><option value="0">Aucun</option></select></label>
+    <output id="pos" class="pos" aria-live="off">1.1</output>
+  </div>
+  <nav class="views" aria-label="Vue">
+    <button type="button" data-v="session" aria-pressed="true">Session</button><button type="button" data-v="arr" aria-pressed="false">Arrangement</button>
+  </nav>
+  <div class="proj">
+    <button class="btn" id="bUndo" type="button" title="Annuler (Ctrl+Z)">↶</button><button class="btn" id="bRedo" type="button" title="Rétablir (Ctrl+Maj+Z)">↷</button>
+    <button class="btn" id="bProj" type="button">Projet</button>
+    <button class="btn main" id="bExport" type="button">Exporter en MP3</button>
+  </div>
+</header>
+
+<section class="gamme" id="gamme" aria-label="Gamme"></section>
+
+<div class="body">
+  <main class="main">
+    <section class="session" id="session" aria-label="Vue Session"></section>
+    <section class="arr" id="arrange" aria-label="Vue Arrangement" hidden></section>
+    <section class="detail" id="detail" aria-label="Détail"></section>
+  </main>
+  <aside class="conseils" id="conseils" aria-label="Conseils"></aside>
+</div>
+
+<dialog id="dlgProj" class="dlg">
+  <h2>Projet</h2>
+  <p class="hint">Le projet est enregistré tout seul dans ce navigateur. Pour le garder ailleurs, enregistre-le en fichier.</p>
+  <h3>Nouveau</h3>
+  <div class="row" id="tplRow">
+    <button class="btn" data-tpl="vide" type="button"><b>Page blanche</b><span>La gamme d'abord, puis tout à construire</span></button>
+    <button class="btn" data-tpl="dungeon" type="button"><b>Dungeon synth</b><span>Ré éolien : nappe, bourdon, arpège, timbales</span></button>
+    <button class="btn" data-tpl="dark" type="button"><b>Dark ambient</b><span>Mi phrygien : pédale, chœur, brume</span></button>
+  </div>
+  <h3>Fichier</h3>
+  <div class="row">
+    <button class="btn" id="bSaveFile" type="button">Enregistrer en fichier (.json)</button>
+    <label class="btn file">Ouvrir un fichier…<input id="iOpen" type="file" accept=".json,application/json" hidden></label>
+  </div>
+  <form method="dialog" class="row end"><button class="btn">Fermer</button></form>
+</dialog>
+
+<dialog id="dlgExport" class="dlg">
+  <h2>Exporter en MP3</h2>
+  <div id="expBody"></div>
+  <p class="hint" id="expNote" aria-live="polite"></p>
+  <div class="row end"><button class="btn" id="expClose" type="button">Fermer</button><button class="btn main" id="expGo" type="button">Exporter</button></div>
+</dialog>
+
+<div class="menu" id="menu" hidden role="menu"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="js/fx.js"></script>
+<script src="js/synth.js"></script>
+<script src="js/phys.js"></script>
+<script src="js/data.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/export.js"></script>
+<script src="js/studio/theorie.js"></script>
+<script src="js/studio/son.js"></script>
+<script src="js/studio/projet.js"></script>
+<script src="js/studio/ui.js"></script>
+</body>
+</html>

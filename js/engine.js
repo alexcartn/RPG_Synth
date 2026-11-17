@@ -1998,5 +1998,12 @@ function buildEngine(ctx, S, o){
   }
   const pendX=t=>Array.from({length:pendN()},(_,i)=>Math.cos(2*Math.PI*(PEND_N0+i)*(t-t0)/(S.pend.period*bar)));
   built=true; fxAttach();
-  return {pieceEnd:()=>pieceFade,fxAttach,grainFreeze,fxOn:()=>!!fx,start,schedule,setLevels,setReverb,stop,fadeOut,sleepFade,sleepClear,replan,freeze,reroll,gesture,play,synOn,dawOn,dawNote,rackSync,meter,tap:()=>volG,analyser:k=>k==="all"?anaAll:anaSyn,dawReplan,dawPos,pendX,tensNow:()=>tensAt(ctx.currentTime),adaptNow:()=>adaptE(ctx.currentTime),tensPos:()=>{ if(!curveOn()) return -1; const L=Math.max(30,S.curve.dur*60), x=(ctx.currentTime-t0)/L; return S.curve.mode==='loop'?((x%1)+1)%1:clamp(x,0,1); },events,out,master,secAt:t=>secOf(t),bar,E,t0f:()=>t0,chords:()=>chordTl.slice(),phraseBars:()=>[...phBars],fillBars:()=>fillBars.slice()};
+  /* banque de sons pour le Studio : les instruments, nappes et batteries de la machine, joués vers une destination donnée */
+  const bank={
+    inst:name=>instOf(name,"luth"),
+    pad:(timbre,t,len,f,dst,vol)=>{ const s=V.pad.node; V.pad.node=dst; try{ padVoice(t,len,f,timbre,vol||1); } finally{ V.pad.node=s; } },
+    perc:(k,part,t,v,dst)=>{ const s=PB; PB=dst; try{ (KITS[k]||KITS.cadre)[part](t,v); } finally{ PB=s; } },
+    kpat:KPAT, kits:Object.keys(KITS), noise:()=>wb
+  };
+  return {bank,pieceEnd:()=>pieceFade,fxAttach,grainFreeze,fxOn:()=>!!fx,start,schedule,setLevels,setReverb,stop,fadeOut,sleepFade,sleepClear,replan,freeze,reroll,gesture,play,synOn,dawOn,dawNote,rackSync,meter,tap:()=>volG,analyser:k=>k==="all"?anaAll:anaSyn,dawReplan,dawPos,pendX,tensNow:()=>tensAt(ctx.currentTime),adaptNow:()=>adaptE(ctx.currentTime),tensPos:()=>{ if(!curveOn()) return -1; const L=Math.max(30,S.curve.dur*60), x=(ctx.currentTime-t0)/L; return S.curve.mode==='loop'?((x%1)+1)%1:clamp(x,0,1); },events,out,master,secAt:t=>secOf(t),bar,E,t0f:()=>t0,chords:()=>chordTl.slice(),phraseBars:()=>[...phBars],fillBars:()=>fillBars.slice()};
 }

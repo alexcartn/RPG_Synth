@@ -36,7 +36,7 @@ jobs:
       - name: Assembler le site
         run: |
           mkdir _site
-          cp -r index.html manifest.webmanifest sw.js css js fonts icons _site/
+          cp -r index.html studio.html manifest.webmanifest sw.js css js fonts icons _site/
           rm -f _site/icons/*.svg
           sed -i "s/__VERSION__/${GITHUB_SHA::7}/" _site/sw.js
       - uses: actions/configure-pages@v5

@@ -5,9 +5,10 @@ const VERSION = "__VERSION__";
 const CACHE = "bourdon-" + VERSION;
 const EXT = "bourdon-ext";
 const SHELL = [
-  "./", "index.html", "manifest.webmanifest",
-  "css/fonts.css", "css/style.css",
+  "./", "index.html", "studio.html", "manifest.webmanifest",
+  "css/fonts.css", "css/style.css", "css/studio.css",
   "js/icones.js", "js/fx.js", "js/synth.js", "js/phys.js", "js/data.js", "js/engine.js", "js/viz.js", "js/ui.js", "js/table.js", "js/affects.js", "js/jeu.js", "js/atelier.js", "js/daw.js", "js/meteo.js", "js/export.js", "js/capture.js", "js/veillee.js", "js/accueil.js", "js/tip.js", "js/main.js", "js/pwa.js",
+  "js/studio/theorie.js", "js/studio/son.js", "js/studio/projet.js", "js/studio/ui.js",
   "fonts/Alegreya.woff2", "fonts/Alegreya-italic.woff2", "fonts/IMFellEnglish-400.woff2", "fonts/IMFellEnglish-400i.woff2",
   "fonts/IMFellEnglishSC-400.woff2", "fonts/UnifrakturCook-700.woff2",
   "icons/icon-192.png", "icons/icon-512.png", "icons/maskable-512.png", "icons/apple-touch-icon.png"

@@ -1042,3 +1042,23 @@ body.playing .veil-open{box-shadow:3px 3px 0 var(--rubric)}
 .vl-key .ic .a{fill:var(--rubric)}
 
 @media (max-width:640px){ .modes{flex-wrap:wrap; gap:var(--sp-xs) var(--sp-lg)} .modes .lnk{font-size:1.1rem} .help-open{margin-left:0} .veil-open{margin-left:auto} }
+
+/* ---------- sélecteur d'univers : douze touches séparées, la même famille que les gestes ---------- */
+.seek .seek-uni{display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:8px}
+.seek .seek-uni .lnk{position:relative; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; gap:7px; min-height:70px; padding:12px 6px 9px; border:1px solid var(--rule); border-bottom-width:1px; background:transparent; color:var(--ink); font:400 .78rem/1.15 var(--caps); letter-spacing:.1em; text-align:center; cursor:pointer; transition:background-color .12s var(--ease), color .12s var(--ease), border-color .12s var(--ease)}
+.seek .seek-uni .lnk::before{content:""; position:absolute; top:5px; right:5px; width:5px; height:5px; background:var(--rule)}
+.seek .seek-uni .lnk .ic{width:24px; height:24px; color:var(--ink-2)}
+.seek .seek-uni .lnk span{display:block; text-wrap:balance}
+.seek .seek-uni .lnk:hover,.seek .seek-uni .lnk:focus-visible{border-color:var(--ink); color:var(--ink); outline:none}
+.seek .seek-uni .lnk:hover .ic{color:var(--ink)}
+.seek .seek-uni .lnk[aria-current="true"]{background:var(--ink); border-color:var(--ink); color:var(--parch)}
+.seek .seek-uni .lnk[aria-current="true"]::before{background:var(--gold)}
+.seek .seek-uni .lnk[aria-current="true"] .ic{color:var(--parch)}
+.seek .seek-uni .lnk[aria-current="true"] .ic .a{fill:var(--gold)}
+/* le tirage au sort est une action, pas un univers : bordure en pointillés, à part */
+.seek .seek-uni .seek-rnd{margin:0; padding:12px 6px 9px; border:1px dashed var(--ink-2); color:var(--ink-2); font-size:.78rem}
+.seek .seek-uni .seek-rnd:hover{border-style:solid; color:var(--rubric)}
+@media (max-width:1000px){ .seek .seek-uni{grid-template-columns:repeat(4,minmax(0,1fr))} }
+@media (max-width:640px){ .seek .seek-uni{grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px} .seek .seek-uni .lnk{min-height:64px} }
+@media (prefers-reduced-motion:reduce){ .seek .seek-uni .lnk{transition:none} }
+.seek .seek-tag{margin-top:10px}

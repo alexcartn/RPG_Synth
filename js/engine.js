@@ -679,16 +679,42 @@ function buildEngine(ctx, S, o){
     x.connect(e); route(e,pan,dst); x.start(t); x.stop(Math.min(t+pb.dur,off+0.6)+0.05);
   };
   /* ---------- guitare : corde d'acier pincée près du chevalet, caisse de résonance en bois ---------- */
-  INST.guitare=(t,f,vel,len,dst,pan)=>{
+  INST.guitare=(t,f,vel,len,dst,pan)=>gtr(t,f,vel,dst,pan,0,true);
+  /* une corde de guitare ; stopAt>0 : la main l'étouffe à cet instant (accompagnement gratté) */
+  function gtr(t,f,vel,dst,pan,stopAt,noises){
     const pb=pluckBuf(f,vel,{id:"g",t60:3.4,bright:0.9,pos:0.09}), x=ctx.createBufferSource(); x.buffer=pb.buf;
     const b1=ctx.createBiquadFilter(), b2=ctx.createBiquadFilter(), hs=ctx.createBiquadFilter();
     b1.type="peaking"; b1.frequency.value=105; b1.gain.value=7; b1.Q.value=1.6;
     b2.type="peaking"; b2.frequency.value=230; b2.gain.value=4; b2.Q.value=1.4;
     hs.type="highshelf"; hs.frequency.value=3200; hs.gain.value=3;
     const e=G(vel*3.4); x.connect(b1); b1.connect(b2); b2.connect(hs); hs.connect(e); route(e,pan,dst);
-    x.start(t); x.stop(t+pb.dur+0.05);
+    let end=t+pb.dur; if(stopAt&&stopAt<end){ e.gain.setValueAtTime(vel*3.4,stopAt); e.gain.setTargetAtTime(0,stopAt,0.03); end=stopAt+0.2; }
+    x.start(t); x.stop(end+0.05);
     noiseHit(t,vel*0.1,4200,0.012,"bandpass",dst); /* le médiator */
-    if(t>0.1&&hz(t*5.71+f)<0.16) squeak(t,vel,dst);
+    if(noises&&t>0.1&&hz(t*5.71+f)<0.16) squeak(t,vel,dst);
+  }
+  /* ---------- sifflet : presque un sinus, un léger souffle, un vibrato qui s'installe et une petite glissade d'attaque ---------- */
+  INST.sifflet=(t,f,vel,len,dst,pan)=>{
+    const L=Math.max(0.15,len), x=ctx.createOscillator(), x2=ctx.createOscillator(), g2=G(0.06*bri(vel)), mix=G(1);
+    x.type="sine"; x2.type="sine"; x.frequency.setValueAtTime(f*0.94,t); x.frequency.exponentialRampToValueAtTime(f,t+0.07); x2.frequency.setValueAtTime(f*1.88,t); x2.frequency.exponentialRampToValueAtTime(f*2,t+0.07);
+    x.connect(mix); x2.connect(g2); g2.connect(mix);
+    const vib=ctx.createOscillator(), vg=G(0); vib.frequency.value=5.6; vib.connect(vg); vg.connect(x.detune); vg.connect(x2.detune); vg.gain.setValueAtTime(0,t); vg.gain.setValueAtTime(0,t+Math.min(0.35,L*0.4)); vg.gain.linearRampToValueAtTime(18,t+Math.min(0.9,L*0.9));
+    const e=envA(t,0.05,vel*0.9,0.12,L); mix.connect(e); route(e,pan,dst);
+    noiseHit(t,vel*0.12,Math.min(9000,f*3),Math.min(0.4,L),"bandpass",dst,3,0.03);
+    [x,x2,vib].forEach(o=>{ o.start(t); o.stop(t+L+0.2); });
+  };
+  /* ---------- harmonica : anche libre (onde carrée amincie), formant de la bouche, glissade par en dessous, trémolo de la main ---------- */
+  INST.harmonica=(t,f,vel,len,dst,pan)=>{
+    const L=Math.max(0.12,len), a=ctx.createOscillator(), b=ctx.createOscillator(), gb=G(-0.85), fl=ctx.createBiquadFilter(), fm=ctx.createBiquadFilter(), fm2=ctx.createBiquadFilter();
+    a.type="sawtooth"; b.type="sawtooth"; /* deux scies décalées : une impulsion étroite, nasillarde */
+    const bend=hz(t*2.3+f)<0.35?0.94:0.985; a.frequency.setValueAtTime(f*bend,t); a.frequency.exponentialRampToValueAtTime(f,t+0.09); b.frequency.setValueAtTime(f*bend,t); b.frequency.exponentialRampToValueAtTime(f,t+0.09); b.detune.value=1;
+    const d=ctx.createDelay(0.02); d.delayTime.value=0.3/f; a.connect(fl); b.connect(d); d.connect(gb); gb.connect(fl);
+    fl.type="lowpass"; fl.Q.value=0.8; fl.frequency.setValueAtTime(clamp(f*3+2600*vel*4,900,6500),t);
+    fm.type="peaking"; fm.frequency.value=1100; fm.gain.value=6; fm.Q.value=1.6; fm2.type="peaking"; fm2.frequency.value=2700; fm2.gain.value=4; fm2.Q.value=2;
+    const e=envA(t,0.03,vel*0.7,0.08,L), tr=ctx.createOscillator(), tg=G(0); tr.frequency.value=6.2; tr.connect(tg); tg.connect(e.gain); tg.gain.setValueAtTime(0,t); tg.gain.linearRampToValueAtTime(vel*0.18,t+Math.min(0.8,L));
+    fl.connect(fm); fm.connect(fm2); fm2.connect(e); route(e,pan,dst);
+    noiseHit(t,vel*0.15,1600,Math.min(0.3,L),"bandpass",dst,1.2,0.02);
+    [a,b,tr].forEach(o=>{ o.start(t); o.stop(t+L+0.15); });
   };
   /* ---------- basse : toujours ramenée dans le grave (40 à 160 Hz), scie et carré sous un filtre qui claque ---------- */
   INST.basse=(t,f,vel,len,dst,pan)=>{
@@ -823,6 +849,14 @@ function buildEngine(ctx, S, o){
 
   /* ---------- nappes ---------- */
   function padVoice(t,len,f,timbre,vol){
+    if(timbre==="grattee"){ /* chaque note de l'accord est une corde : coup vers le bas sur les temps, vers le haut sur la croche qui suit les temps pairs */
+      const beat=E*(METERS[S.meter].d||2), ord=clamp(Math.log2(f/82),0,4), pan=((Math.round(f*3)%9)/4-1)*0.4, v0=0.075*(vol||1);
+      for(let b=0,tb=t;tb<t+len-0.05;b++,tb+=beat){
+        const dn=tb+ord*0.011, acc=b%2===0?1:0.75; gtr(dn,f,v0*acc,V.pad.node,pan,tb+beat-0.02,false);
+        if(b%2===1&&tb+beat*0.5<t+len){ const up=tb+beat*0.5+(4-ord)*0.008; gtr(up,f,v0*0.5,V.pad.node,pan,tb+beat-0.02,false); }
+      }
+      return;
+    }
     if(timbre==="atelier"){ synN({t,f,vel:0.55,dur:len,dst:V.pad.node,pan:0,lite:o.lite,noise:wb}); return; }
     const a=Math.min(3,len*0.45), rel=Math.min(3.5,len*0.8), e=G(0);
     e.gain.setValueAtTime(0,t); e.gain.linearRampToValueAtTime(0.09*(vol||1),t+a); e.gain.setValueAtTime(0.09*(vol||1),t+len); e.gain.linearRampToValueAtTime(0,t+len+rel);

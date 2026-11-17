@@ -185,7 +185,7 @@ setInterval(()=>{ if(typeof atScaleSync==="function") atScaleSync(); if(live){ c
 
 /* ---------- construction des contrôles ---------- */
 const pct=v=>Math.round(v*100)+" %";
-const INST_OPTS=[["luth","Luth"],["harpe","Harpe"],["flute","Flûte"],["carillon","Carillon"],["orgue","Orgue positif"],["oud","Oud (corde pincée)"],["ney","Ney (flûte soufflée)"],["kalimba","Kalimba"],["bol","Bol chantant"],["verre","Cloches de verre"],["synthe","Synthé doux"],["archet","Archet (violon, viole)"],["cuivre","Cuivre doux"],["guitare","Guitare (acier)"],["piano","Piano de bastringue"],["accordeon","Accordéon musette"],["basse","Basse synthé (grave)"],["atelier","Synthé perso (Atelier)"]];
+const INST_OPTS=[["luth","Luth"],["harpe","Harpe"],["flute","Flûte"],["carillon","Carillon"],["orgue","Orgue positif"],["oud","Oud (corde pincée)"],["ney","Ney (flûte soufflée)"],["kalimba","Kalimba"],["bol","Bol chantant"],["verre","Cloches de verre"],["synthe","Synthé doux"],["archet","Archet (violon, viole)"],["cuivre","Cuivre doux"],["guitare","Guitare (acier)"],["piano","Piano de bastringue"],["accordeon","Accordéon musette"],["sifflet","Sifflet"],["harmonica","Harmonica"],["basse","Basse synthé (grave)"],["atelier","Synthé perso (Atelier)"]];
 const DRIFT_OPTS=[["none","Rien"],["filtre","Éclat du bourdon"],["reverb","Réverbération"],["densite","Densité de la mélodie"],["pan","Place de la mélodie (pan)"],["tension","Tension"],["voile","Voile (aigus)"],["grain","Nuage de grains"]];
 /* seconde cible d'une dérive : la même liste, dans le même sens puis à l'envers */
 const DRIFT2_OPTS=DRIFT_OPTS.concat(DRIFT_OPTS.slice(1).map(([k,l])=>["-"+k,l+", à l'envers"]));
@@ -260,7 +260,7 @@ const UI=[
    {k:"canon.shift",type:"select",label:"Transposition",opts:[["uni","Unisson"],["oct+","Octave au-dessus"],["oct-","Octave en dessous"],["q+","Quinte au-dessus"],["q-","Quinte en dessous"],["t+","Tierce au-dessus"],["contre","Contrepoint : tierces et sixtes en mouvement contraire"]]}]},
   {h:"Nappes", hf:"", items:[
    {k:"pad.lvl",type:"range",label:"Niveau",min:0,max:1,step:0.01,fmt:pct},
-   {k:"pad.timbre",type:"select",label:"Timbre",opts:[["choeur","Chœur"],["cordes","Cordes"],["orgue","Orgue"],["synthe","Synthé doux"],["verre","Verre"],["atelier","Synthé perso (Atelier)"]]},
+   {k:"pad.timbre",type:"select",label:"Timbre",opts:[["choeur","Chœur"],["cordes","Cordes"],["orgue","Orgue"],["synthe","Synthé doux"],["verre","Verre"],["grattee","Guitare grattée"],["atelier","Synthé perso (Atelier)"]]},
    {k:"pad.len",type:"range",label:"Durée d'un accord",min:1,max:8,step:1,fmt:v=>v+(v>1?" mesures":" mesure")},
    {k:"pad.motion",type:"range",label:"Mouvement harmonique",min:0,max:1,step:0.01,fmt:pct},
    {k:"pad.voices",type:"range",label:"Voix par accord",min:2,max:4,step:1,fmt:v=>v+" voix"},

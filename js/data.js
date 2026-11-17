@@ -229,7 +229,7 @@ const NATURE = [
     fx:{rev:0.5, size:5, dark:0.5, sat:0.03, wow:0.05, veil:0.5}, form:{shape:"arche", period:10, amount:0.3}, nature:{mer:0.75}}, "mer et vagues"],
   ["Silva", {car:{grav:0.5, aud:0.45, orn:0.55, sil:0.55, rep:0.5}, seed:909, root:4, scales:["dorien","",""], sectionBars:24, tempo:56, tension:0.4, vol:0.9,
     perc:{lvl:0}, drone:{lvl:0.3, timbre:"orgue", bright:0.3},
-    mel:{lvl:0.25, inst:"ney", dens:0.15, reg:1, span:2, leap:0.2, orn:0.2, deja:0.5, loop:3}, canon:{lvl:0},
+    mel:{lvl:0.25, inst:"flute", dens:0.15, reg:1, span:2, leap:0.2, orn:0.2, deja:0.5, loop:3}, canon:{lvl:0},
     pad:{lvl:0.2, timbre:"choeur", len:6, motion:0.3, voices:3}, amb:{vent:0.2},
     fx:{rev:0.5, size:3.5, dark:0.45, sat:0.04, wow:0.08, veil:0.35}, form:{shape:"constante"}, nature:{oiseaux:0.6, ruisseau:0.45}}, "forêt : oiseaux et ruisseau"],
   ["Nox", {car:{grav:0.75, aud:0.2, orn:0.25, sil:0.8, rep:0.65}, seed:303, root:9, scales:["eolien","",""], sectionBars:24, tempo:44, tension:0.3, vol:0.85,
@@ -263,13 +263,13 @@ const AVENTURE = [
 ];
 const PIRATES = [
   ["Portus", {car:{grav:0.3, aud:0.7, orn:0.6, sil:0.15, rep:0.7}, mus:{form:"rondeau", arc:"arche"}, seed:1717, root:2, scales:["mixolydien","dorien",""], tempo:132, meter:"6/8", swing:0,
-    perc:{lvl:0.65, shaker:0.6, ghost:0.35}, drone:{lvl:0.6, timbre:"anche"}, mel:{lvl:0.7, inst:"accordeon", dens:0.95, orn:0.35},
-    canon:{lvl:0.3, inst:"luth", delay:2, shift:"oct+"}, pad:{lvl:0.1, timbre:"orgue"}, amb:{murmur:0.55, clink:0.6, feu:0.1}, fx:{rev:0.28, size:2.4, room:"salle", wow:0.18}}, "taverne de port : chant de marins, rhum, chopes"],
+    perc:{lvl:0.65, shaker:0.6, ghost:0.35}, drone:{lvl:0.1, timbre:"choeur"}, mel:{lvl:0.7, inst:"accordeon", dens:0.95, orn:0.35},
+    canon:{lvl:0.3, inst:"archet", delay:2, shift:"oct+"}, pad:{lvl:0.15, timbre:"grattee", len:2}, amb:{murmur:0.55, clink:0.6, feu:0.1}, fx:{rev:0.28, size:2.4, room:"salle", wow:0.18}}, "taverne de port : chant de marins, rhum, chopes"],
   ["Navigium", {car:{grav:0.45, aud:0.45, orn:0.4, sil:0.45, rep:0.6}, mus:{form:"variations", arc:"arche"}, seed:6006, root:9, scales:["dorien","eolien",""], tempo:66, meter:"12/8", swing:0,
-    perc:{lvl:0.3, shaker:0.4, ghost:0.2}, drone:{lvl:0.65, timbre:"anche", drift:0.7}, mel:{lvl:0.55, inst:"archet", dens:0.5, span:2, orn:0.2},
+    perc:{lvl:0.3, shaker:0.4, ghost:0.2}, drone:{lvl:0.35, timbre:"choeur", drift:0.7}, mel:{lvl:0.55, inst:"archet", dens:0.5, span:2, orn:0.2},
     canon:{lvl:0.25, inst:"flute", delay:4, shift:"oct+"}, pad:{lvl:0.3, timbre:"choeur", len:4}, amb:{vent:0.25}, fx:{rev:0.5, size:4}, nature:{mer:0.6}}, "en mer : houle, vent dans les voiles, violon"],
   ["Tempestas", {car:{grav:0.75, aud:0.65, orn:0.3, sil:0.1, rep:0.6}, seed:8080, root:4, scales:["phrygien","dorien",""], tempo:118, meter:"6/8", swing:0, tension:0.85,
-    perc:{lvl:0.8, shaker:0.2, ghost:0.4}, drone:{lvl:0.9, timbre:"orgue", bright:0.5}, mel:{lvl:0.55, inst:"cuivre", dens:0.7, leap:0.4},
+    perc:{lvl:0.8, shaker:0.2, ghost:0.4, kit:"taiko"}, drone:{lvl:0.7, timbre:"pur", bright:0.5}, mel:{lvl:0.55, inst:"cuivre", dens:0.7, leap:0.4},
     canon:{lvl:0}, pad:{lvl:0.4, timbre:"cordes", len:2, motion:0.8}, amb:{vent:0.5}, fx:{rev:0.5, size:5, sat:0.3, wow:0.2}, nature:{mer:0.8, pluie:0.6}}, "tempête : pluie, mer déchaînée, cuivres"],
   ["Thesaurus", {car:{grav:0.4, aud:0.4, orn:0.5, sil:0.55, rep:0.5}, seed:2323, root:7, scales:["lydien","pentmaj",""], tempo:76, meter:"3/4", tension:0.4,
     perc:{lvl:0}, drone:{lvl:0.45, timbre:"pur", bright:0.4}, mel:{lvl:0.55, inst:"kalimba", dens:0.4, orn:0.2},
@@ -277,17 +277,17 @@ const PIRATES = [
 ];
 const NORDIQUE = [
   ["Skalda", {car:{grav:0.6, aud:0.4, orn:0.35, sil:0.5, rep:0.7}, mus:{form:"ostinato"}, seed:7120, root:2, scales:["dorien","pentmin",""], temper:"pyth", tempo:72, meter:"4/4", swing:0,
-    perc:{lvl:0.35, shaker:0, ghost:0.15}, drone:{lvl:0.85, timbre:"choeur", bright:0.3}, mel:{lvl:0.5, inst:"archet", dens:0.3, reg:0, orn:0.15},
+    perc:{lvl:0.35, shaker:0, ghost:0.15, kit:"cadre"}, drone:{lvl:0.85, timbre:"choeur", bright:0.3}, mel:{lvl:0.5, inst:"archet", dens:0.3, reg:0, orn:0.15},
     canon:{lvl:0.2, inst:"flute", delay:4, shift:"oct+"}, pad:{lvl:0.25, timbre:"cordes", len:4}, amb:{feu:0.5, murmur:0.25}, fx:{rev:0.45, size:3.5, room:"salle", dark:0.6}}, "veillée au feu : bourdon de chœur, violon"],
   ["Bellum", {car:{grav:0.85, aud:0.7, orn:0.2, sil:0.1, rep:0.8}, mus:{form:"passacaille"}, seed:9000, root:9, scales:["eolien","phrygien",""], tempo:100, meter:"4/4", swing:0, tension:0.8,
-    perc:{lvl:1, shaker:0, ghost:0.2}, drone:{lvl:0.9, timbre:"orgue", bright:0.4}, mel:{lvl:0.5, inst:"cuivre", dens:0.5, leap:0.25},
+    perc:{lvl:1, shaker:0, ghost:0.2}, drone:{lvl:0.9, timbre:"choeur", bright:0.4}, mel:{lvl:0.5, inst:"cuivre", dens:0.5, leap:0.25},
     canon:{lvl:0.3, inst:"cuivre", delay:2, shift:"q-"}, pad:{lvl:0.4, timbre:"choeur", len:2}, amb:{vent:0.2}, fx:{rev:0.4, size:3, sat:0.3, dark:0.6}}, "bataille : tambours de guerre, chant grave"],
   ["Fjordus", {car:{grav:0.65, aud:0.25, orn:0.25, sil:0.75, rep:0.6}, seed:4900, root:4, scales:["pentmin","eolien",""], tempo:48, meter:"4/4", tension:0.4,
-    perc:{lvl:0}, drone:{lvl:0.7, timbre:"choeur", bright:0.25, drift:0.7}, mel:{lvl:0.4, inst:"ney", dens:0.15, reg:1, leap:0.3},
+    perc:{lvl:0}, drone:{lvl:0.7, timbre:"choeur", bright:0.25, drift:0.7}, mel:{lvl:0.4, inst:"flute", dens:0.15, reg:1, leap:0.3},
     canon:{lvl:0}, pad:{lvl:0.35, timbre:"verre", len:8}, amb:{vent:0.5}, fx:{rev:0.65, size:7, dark:0.6, veil:0.5}, nature:{mer:0.3}}, "fjord dans la brume : vent, eau, flûte lointaine"],
   ["Runae", {car:{grav:0.7, aud:0.35, orn:0.2, sil:0.6, rep:0.8}, mus:{form:"ostinato"}, seed:1313, root:7, scales:["organum","pentmin",""], temper:"pyth", tempo:56, meter:"4/4", tension:0.5,
-    perc:{lvl:0.3, shaker:0, ghost:0.1}, drone:{lvl:0.65, timbre:"bol", bright:0.3}, mel:{lvl:0.35, inst:"bol", dens:0.2, deja:0.5},
-    canon:{lvl:0}, pad:{lvl:0.3, timbre:"choeur", len:6}, amb:{feu:0.2, vent:0.2}, fx:{rev:0.6, size:5, dark:0.6}, grain:{mix:0.3, dens:0.3, size:0.7, spread:0.6, pitch:0.2}}, "rituel runique : tambour, bol, voix sourdes"]
+    perc:{lvl:0.3, shaker:0, ghost:0.1, kit:"cadre"}, drone:{lvl:0.65, timbre:"choeur", bright:0.25}, mel:{lvl:0.4, inst:"harpe", dens:0.2, reg:0, deja:0.5},
+    canon:{lvl:0}, pad:{lvl:0.3, timbre:"choeur", len:6}, amb:{feu:0.2, vent:0.2}, fx:{rev:0.6, size:5, dark:0.6}, grain:{mix:0.3, dens:0.3, size:0.7, spread:0.6, pitch:0.2}}, "rituel runique : tambour sur cadre, lyre, voix sourdes"]
 ];
 const FEERIE = [
   ["Fata", {car:{grav:0.2, aud:0.45, orn:0.65, sil:0.4, rep:0.4}, seed:3003, root:0, scales:["lydien","pentmaj",""], tempo:84, meter:"3/4", tension:0.35,
@@ -318,19 +318,20 @@ const HORREUR = [
     canon:{lvl:0}, pad:{lvl:0.3, timbre:"choeur", len:8}, amb:{gouttes:0.6, vent:0.15}, fx:{rev:0.7, size:8, room:"grotte", dark:0.85, veil:0.7, hiss:0.1}}, "cachot humide : gouttes, écho de pierre"]
 ];
 const WESTERN = [
-  ["Desertum", {car:{grav:0.5, aud:0.25, orn:0.15, sil:0.85, rep:0.4}, seed:7777, root:4, scales:["mixolydien","pentmin",""], tempo:70, meter:"4/4", tension:0.4,
-    perc:{lvl:0.12, shaker:0, ghost:0.1}, drone:{lvl:0.35, timbre:"pur", bright:0.2}, mel:{lvl:0.6, inst:"guitare", dens:0.22, reg:1, leap:0.25, orn:0.1, deja:0.3},
-    canon:{lvl:0.18, inst:"ney", delay:4, shift:"oct+"}, pad:{lvl:0.08, timbre:"cordes", len:6}, amb:{vent:0.5},
-    fx:{rev:0.4, size:3, room:"plaque", dly:0.35, dlyDiv:1.5, fb:0.3, sat:0.25, wow:0.22, veil:0.15}}, "désert de l'Ouest : guitare claire, vent, sifflet"],
+  ["Desertum", {car:{grav:0.5, aud:0.25, orn:0.15, sil:0.85, rep:0.4}, seed:7777, root:4, scales:["dorien","pentmin",""], tempo:70, meter:"4/4", tension:0.4,
+    perc:{lvl:0.1, shaker:0, ghost:0.1}, drone:{lvl:0}, mel:{lvl:0.6, inst:"guitare", dens:0.22, reg:1, leap:0.25, orn:0.1, deja:0.3},
+    canon:{lvl:0.35, inst:"sifflet", delay:4, shift:"oct+"}, pad:{lvl:0.16, timbre:"grattee", len:4, voices:3}, amb:{vent:0.5},
+    fx:{rev:0.45, size:3.2, room:"plaque", dly:0.3, dlyDiv:3, fb:0.35, sat:0.2, wow:0.15, veil:0.1}}, "désert de l'Ouest : guitare claire, vent, sifflet"],
   ["Saloon", {car:{grav:0.2, aud:0.85, orn:0.6, sil:0.05, rep:0.5}, mus:{form:"rondeau"}, seed:1881, root:7, scales:["ionien","mixolydien",""], tempo:116, meter:"2/4", swing:0.32,
-    perc:{lvl:0.45, shaker:0.5, ghost:0.5}, drone:{lvl:0.1, timbre:"orgue"}, mel:{lvl:0.75, inst:"piano", dens:1, orn:0.35, leap:0.3},
-    canon:{lvl:0.3, inst:"piano", delay:1, shift:"oct-"}, pad:{lvl:0.05, timbre:"orgue"}, amb:{murmur:0.6, clink:0.7}, fx:{rev:0.2, size:1.6, room:"salle", sat:0.2, wow:0.2}}, "saloon : piano mécanique, chopes, bagarre en vue"],
-  ["Duellum", {car:{grav:0.6, aud:0.25, orn:0.1, sil:0.8, rep:0.4}, mus:{arc:"arche"}, seed:1127, root:9, scales:["phrygdom","pentmin",""], tempo:58, meter:"4/4", tension:0.8,
-    perc:{lvl:0.2, shaker:0, ghost:0.1}, drone:{lvl:0.6, timbre:"pur", bright:0.3}, mel:{lvl:0.5, inst:"ney", dens:0.12, reg:1, leap:0.3},
-    canon:{lvl:0}, pad:{lvl:0.25, timbre:"cordes"}, amb:{vent:0.2}, fx:{rev:0.4, size:3, sat:0.2}}, "duel à midi : un sifflet, le silence, le battement"],
-  ["Equitatus", {car:{grav:0.3, aud:0.7, orn:0.3, sil:0.2, rep:0.7}, mus:{form:"ostinato"}, seed:4400, root:2, scales:["mixolydien","dorien",""], tempo:144, meter:"6/8", swing:0,
-    perc:{lvl:0.8, shaker:0.5, ghost:0.5}, drone:{lvl:0.5, timbre:"anche"}, mel:{lvl:0.6, inst:"luth", dens:0.9, orn:0.2},
-    canon:{lvl:0.25, inst:"cuivre", delay:2, shift:"q+"}, pad:{lvl:0.2, timbre:"cordes"}, amb:{vent:0.15}, fx:{rev:0.3, size:2.5, sat:0.2}}, "chevauchée : galop, grand ciel"]
+    perc:{lvl:0.45, shaker:0.5, ghost:0.5}, drone:{lvl:0}, mel:{lvl:0.75, inst:"piano", dens:1, orn:0.35, leap:0.3},
+    canon:{lvl:0.3, inst:"piano", delay:1, shift:"oct-"}, pad:{lvl:0.12, timbre:"grattee", len:2}, amb:{murmur:0.6, clink:0.7}, fx:{rev:0.2, size:1.6, room:"salle", sat:0.2, wow:0.2}}, "saloon : piano mécanique, guitare, chopes, bagarre en vue"],
+  ["Duellum", {car:{grav:0.6, aud:0.25, orn:0.1, sil:0.8, rep:0.4}, mus:{arc:"arche"}, seed:1127, root:9, scales:["harm","phrygdom",""], tempo:58, meter:"4/4", tension:0.8,
+    perc:{lvl:0.22, shaker:0, ghost:0.1, kit:"taiko"}, drone:{lvl:0.08, timbre:"pur", bright:0.2}, mel:{lvl:0.6, inst:"sifflet", dens:0.14, reg:1, leap:0.35, orn:0.15},
+    canon:{lvl:0.3, inst:"guitare", delay:2, shift:"oct-"}, pad:{lvl:0.18, timbre:"cordes", len:6}, amb:{vent:0.25},
+    fx:{rev:0.55, size:4.5, room:"plaque", dly:0.35, dlyDiv:3, fb:0.4, sat:0.15}}, "duel à midi : un sifflet, une guitare, le battement"],
+  ["Equitatus", {car:{grav:0.3, aud:0.75, orn:0.3, sil:0.2, rep:0.7}, mus:{form:"ostinato"}, seed:4400, root:2, scales:["dorien","eolien",""], tempo:138, meter:"6/8", swing:0,
+    perc:{lvl:0.65, shaker:0.6, ghost:0.4}, drone:{lvl:0}, mel:{lvl:0.6, inst:"harmonica", dens:0.75, orn:0.2, leap:0.25},
+    canon:{lvl:0.3, inst:"cuivre", delay:2, shift:"oct-"}, pad:{lvl:0.3, timbre:"grattee", len:2, voices:3}, amb:{vent:0.15}, fx:{rev:0.3, size:2.5, room:"plaque", sat:0.2}}, "chevauchée : galop, guitare battue, harmonica, trompette"]
 ];
 const CYBER = [
   ["Urbs Neon", {car:{grav:0.5, aud:0.6, orn:0.2, sil:0.3, rep:0.9}, mus:{form:"ostinato"}, seed:2077, root:5, scales:["eolien","dorien",""], tempo:100, meter:"4/4", swing:0, tension:0.6,
@@ -373,9 +374,9 @@ const UNIVERS = [
 /* hors du Moyen Âge, un préréglage qui ne cite pas un bruit de lieu n'en veut pas : sans cela, murmure et tintements de taverne s'invitaient dans l'espace ou chez les pirates */
 UNIVERS.forEach(u=>{ if(u.id!=="medieval") u.items.forEach(it=>{ it[1].amb=Object.assign({murmur:0,clink:0,feu:0,vent:0,gouttes:0},it[1].amb||{}); }); });
 /* sonie : gain (dB) de chaque ambiance, mesuré hors ligne (BS.1770, 24 s, après le limiteur) pour viser -13 LUFS (-15 pour Calme) */
-const PRESET_NORM={"Taberna":-3.4,"Chorea":-3.3,"Crypta":-3.8,"Scriptorium":-8.1,"Turris":-4.2,"Tripudium":-2.6,"Pugna":-3.2,"Iter":-3.3,"Triumphus":-3.2,"Insidiae":-1.3,"Portus":-0.9,"Navigium":-5.6,"Tempestas":-4.5,"Thesaurus":-4.9,"Skalda":-3.8,"Bellum":-4.4,"Fjordus":-5.8,"Runae":-3.6,"Fata":-5.1,"Aula Fatarum":-5.3,"Sylva Magica":0.8,"Lullaby":2.3,"Larva":-2.5,"Domus Obscura":-7.0,"Sacrificium":-5.4,"Cella":-2.8,"Desertum":1.1,"Saloon":0.8,"Duellum":-5.0,"Equitatus":-1.4,"Urbs Neon":-2.5,"Machina":-0.3,"Datum":-3.2,"Imber Toxicus":-2.4,"Sidera":1.6,"Nebula":-1.9,"Abyssus":0.1,"Aegyptus":-2.2,"Eremus":-6.2,"Hortus":-5.2,"Bayati":-2.3,"Enharmonia":0.1,"Pluvia":-0.9,"Mare":-0.3,"Silva":-1.7,"Nox":1.3,"Somnus":0.6,"Meditatio":-3.5,"Labor":-3.1};
+const PRESET_NORM={"Taberna":-3.4,"Chorea":-3.3,"Crypta":-3.8,"Scriptorium":-8.1,"Turris":-4.2,"Tripudium":-2.6,"Pugna":-3.2,"Iter":-3.3,"Triumphus":-3.2,"Insidiae":-1.3,"Portus":0.3,"Navigium":-5.1,"Tempestas":-4.5,"Thesaurus":-4.9,"Skalda":-3.8,"Bellum":-4.2,"Fjordus":-6.1,"Runae":-2.7,"Fata":-5.1,"Aula Fatarum":-5.3,"Sylva Magica":0.8,"Lullaby":2.3,"Larva":-2.5,"Domus Obscura":-7.0,"Sacrificium":-5.4,"Cella":-2.8,"Desertum":4.2,"Saloon":0.5,"Duellum":-6.0,"Equitatus":-0.2,"Urbs Neon":-2.5,"Machina":-0.3,"Datum":-3.2,"Imber Toxicus":-2.4,"Sidera":1.6,"Nebula":-1.9,"Abyssus":0.1,"Aegyptus":-2.2,"Eremus":-6.2,"Hortus":-5.2,"Bayati":-2.3,"Enharmonia":0.1,"Pluvia":-0.9,"Mare":-0.3,"Silva":-2.2,"Nox":1.3,"Somnus":0.6,"Meditatio":-3.5,"Labor":-3.1};
 /* chaque univers a sa batterie ; un préréglage peut en citer une autre */
-const UNIV_KIT={medieval:"cadre", aventure:"caisse", pirates:"bastringue", nordique:"taiko", feerie:"cadre", horreur:"taiko", western:"bastringue", cyber:"electro", espace:"electro", orient:"darbouka", nature:"cadre", calme:"cadre"};
+const UNIV_KIT={medieval:"cadre", aventure:"caisse", pirates:"cadre", nordique:"taiko", feerie:"cadre", horreur:"taiko", western:"bastringue", cyber:"electro", espace:"electro", orient:"darbouka", nature:"cadre", calme:"cadre"};
 UNIVERS.forEach(u=>u.items.forEach(it=>{ const p=it[1]; p.perc=Object.assign({kit:UNIV_KIT[u.id]||"cadre"},p.perc||{}); if(p.norm===undefined) p.norm=PRESET_NORM[it[0]]||0; }));
 /* liste à plat des préréglages */
 const PRESETS = UNIVERS.flatMap(u=>u.items.map(([n,s,g])=>[n,s,g,u.id]));

@@ -49,3 +49,23 @@ function physBowed(sr,f,vel,dur,o){
   const sc=0.9/(pk||1); for(let i=0;i<n;i++) out[i]*=sc;
   return out;
 }
+/* anche : colonne d'air cylindrique excitée par une anche battante (modèle de la clarinette de Cook et Scavone) ;
+   la table d'anche est linéaire et écrêtée, la réflexion au bout du tube est un passe-bas ; le souffle porte un peu de bruit et un vibrato qui s'installe.
+   Sert à l'aulos (double flûte à anche) : un son de bois creux, pas un cuivre. */
+function physReed(sr,f,vel,dur,o){
+  o=o||{}; const n=Math.floor(sr*dur), out=new Float32Array(n), rnd=physRnd(Math.floor(f*97)*2246822519>>>0);
+  const D=Math.max(4,sr/f*0.5-1.5), bore=new PhysDL(D+4), att=Math.floor(sr*(o.att||0.05)), rel=Math.floor(sr*0.09);
+  const maxP=Math.max(0.62,Math.min(0.9,0.62+1.1*vel))*(o.pressure||1), noiseG=o.noise===undefined?0.18:o.noise, off=0.7, slope=o.slope||-0.3;
+  let x1=0, ph=0, pk=0, dcx=0, dcy=0;
+  for(let i=0;i<n;i++){
+    let env=i<att?i/att:1; if(i>n-rel) env*=(n-i)/rel;
+    ph+=2*Math.PI*5.3/sr; const vib=i>sr*0.3?0.02*Math.sin(ph):0;
+    const bp=maxP*env*(1+noiseG*(rnd()*2-1)*0.2+vib);
+    const bo=bore.get(D), fl=0.5*(bo+x1); x1=bo;
+    let pd=-0.95*fl-bp, rt=off+slope*pd; if(rt>1) rt=1; if(rt<-1) rt=-1;
+    bore.put(bp+pd*rt);
+    const dc=bo-dcx+0.995*dcy; dcx=bo; dcy=dc; out[i]=dc; const a=dc<0?-dc:dc; if(a>pk) pk=a;
+  }
+  const sc=0.9/(pk||1); for(let i=0;i<n;i++) out[i]*=sc;
+  return out;
+}

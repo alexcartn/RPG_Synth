@@ -21,6 +21,7 @@ function replanTarget(k,prev,now){
   if(k.startsWith("pad.")) return "pad";
   if(k.startsWith("loops.")) return "loops";
   if(k.startsWith("arp.")) return "arp";
+  if(k.startsWith("plain.")||k==="chant") return "plain";
   if(k.startsWith("pend.")) return "pend";
   if(k.startsWith("scales.")||k==="sectionBars"||k.startsWith("mus.")) return "all";
   return null;
@@ -250,6 +251,8 @@ const UI=[
    {k:"turing.rate",type:"select",label:"Pas du registre",opts:[[1,"Croche"],[2,"Noire"]],num:true}]},
   {h:"Mélodie", hf:"", items:[
    {k:"mel.inst",type:"select",label:"Instrument",opts:INST_OPTS},
+   {k:"plain.lvl",type:"range",label:"Plain-chant",min:0,max:1,step:0.01,fmt:pct,hint:"Une voix qui chante le vrai air grégorien du texte choisi (Dies irae, Kyrie…), syllabe par syllabe, avec des respirations entre les phrases."},
+   {k:"plain.reg",type:"range",label:"Registre du plain-chant",min:0,max:2,step:1,fmt:v=>["grave","médium","aigu"][v]},
    {k:"chant",type:"select",label:"Texte du chant",opts:[["kyrie","Kyrie eleison"],["alleluia","Alleluia"],["diesirae","Dies irae"],["sanctus","Sanctus"],["agnus","Agnus Dei"],["gloria","Gloria in excelsis"],["paian","Péan grec (Iè paian)"]],hint:"Les paroles que chante l'instrument « Chant », une syllabe par note."},
    {k:"mel.lpg",type:"range",label:"Porte passe-bas",min:0,max:1,step:0.01,fmt:pct,hint:"Sur les sons pincés et frappés (luth, harpe, oud, guitare, kalimba, carillon, verre, bol, piano) : le filtre se referme avec le son, qui devient boisé et rond. Vaut pour la mélodie, le canon, les boucles et les pendules."},
    {k:"mel.lvl",type:"range",label:"Niveau",min:0,max:1,step:0.01,fmt:pct},

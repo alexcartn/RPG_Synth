@@ -31,6 +31,12 @@ On arrive sur Conduire : un univers (Médiéval, Aventure, Pirates, Nordique, F�
 - Compression douce sur la mélodie et les nappes, et les nappes s'effacent un peu (-2 dB) à chaque note de la mélodie, qui reste devant.
 - Respirations (Composer, Forme) : dans la moitié des sections par défaut, une voix (nappes, percussion, boucles ou pendules) se retire au début de la section et revient à mi-section ou aux trois quarts, sur une mesure.
 
+## Anche physique, cor, plain-chant
+
+- Aulos en modèle physique : une colonne d'air excitée par une anche battante (modèle de la clarinette de Cook et Scavone), avec un peu de nasal ; un son de bois creux, plus rien d'une trompette de clavier.
+- Le « cuivre » devient un cor sombre et rond : harmoniques qui tombent vite (1/k^1,6), filtre qui ne s'ouvre qu'avec la nuance, attaque douce et prise par en dessous. Le cornu romain en hérite.
+- Plain-chant (Voix) : une voix qui chante le vrai air grégorien du texte choisi (Dies irae, Kyrie, Alleluia, Sanctus, Agnus Dei, Gloria, péan grec), syllabe par syllabe, avec des respirations entre les phrases et un long silence avant de reprendre. Crypta chante le Dies irae, Scriptorium l'Alleluia, Sacrificium l'Agnus Dei, Delphi le péan.
+
 ## Rituel ↔ Chanson, veillée ou pièce, thème, Antiquité, bêtes, chant, Varier
 
 - Rituel ↔ Chanson (curseur central de Conduire, au-dessus des boutons) : côté rituel, le bourdon est fort, les accords tiennent longtemps, les boucles et les pendules sont libres ; côté chanson, les accords avancent, l'arpège entre, la mélodie devient un thème qui revient, le bourdon n'est plus qu'une pédale. Chaque univers a son point de départ (Antiquité et Calme côté rituel, Dungeon synth et Far West côté chanson). Avec un plan de pièce, l'intro et la coda tirent vers le rituel, le thème et l'apogée vers la chanson.

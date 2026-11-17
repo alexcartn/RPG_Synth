@@ -134,8 +134,8 @@ const MEDIEVAL = [
     mel:{lvl:0.55, inst:"flute", dens:0.6, reg:1, span:1, leap:0.15, orn:0.25, deja:0.75, loop:2}, canon:{lvl:0}, perc:{lvl:0.3, shaker:0.25, ghost:0.2},
     amb:{murmur:0.35, clink:0.35, feu:0.4}, fx:{algo:"salle", room:"salle", rev:0.4, size:3, dark:0.45, wow:0.08, hiss:0.04, veil:0.15, sat:0.06}}, "taverne au coin du feu : luth, flûte, foule"],
   ["Chorea", {rc:0.75, car:{grav:0.35, aud:0.65, orn:0.8, sil:0.15, rep:0.7}, mus:{logic:"modal", harm:"idiome", form:"rondeau", arc:"arche"}, seed:218, root:4, scales:["dorien","",""], tempo:138, meter:"6/8", swing:0,
-    perc:{lvl:0.5, shaker:0.5, ghost:0.35}, drone:{lvl:0.15}, mel:{inst:"flute", deja:0.7, loop:2, dens:0.9, leap:0.3, orn:0.3, reg:1, span:1},
-    canon:{lvl:0}, pad:{lvl:0.3, timbre:"machine", len:1, voices:3, bass:0.75}, arp:{lvl:0.4, inst:"harpe", pat:"vaetvient", rate:1, reg:1, span:1}, amb:{murmur:0.3, clink:0.7, feu:0},
+    perc:{lvl:0.5, shaker:0.5, ghost:0.35}, drone:{lvl:0.15}, mel:{inst:"flute", deja:0.4, loop:2, dens:0.9, leap:0.3, orn:0.3, reg:1, span:1},
+    canon:{lvl:0}, pad:{lvl:0.3, timbre:"machine", len:2, voices:3, bass:0.75}, arp:{lvl:0.4, inst:"harpe", pat:"vaetvient", rate:1, reg:1, span:1}, amb:{murmur:0.3, clink:0.7, feu:0},
     fx:{rev:0.3, size:2.2, room:"salle", dly:0.18, dlyDiv:1.5, fb:0.35}}, "gigue, danse en rond"],
   ["Crypta", {rc:0.3, car:{grav:0.85, aud:0.2, orn:0.2, sil:0.8, rep:0.7}, mus:{form:"passacaille"}, seed:6660, root:2, scales:["dorien","eolien",""], tempo:52, meter:"4/4", swing:0, sectionBars:8,
     perc:{lvl:0}, drone:{lvl:0.7, timbre:"choeur", bright:0.3, width:0.7, drift:0.8, glide:0.7},
@@ -157,8 +157,8 @@ const MEDIEVAL = [
     pend:{lvl:0.3, count:7, period:20, inst:"harpe"},
     form:{shape:"vagues", period:4, amount:0.6}}, "tour du mage"],
   ["Tripudium", {rc:0.75, car:{grav:0.3, aud:0.7, orn:0.8, sil:0.1, rep:0.65}, mus:{logic:"modal", harm:"idiome", form:"rondeau", arc:"arche"}, seed:905, root:7, scales:["hexacorde","ionien",""], tempo:104, meter:"3/4", swing:0.15,
-    perc:{lvl:0.5, shaker:0.45, ghost:0.3}, drone:{lvl:0.15}, mel:{inst:"flute", dens:0.85, leap:0.15, orn:0.2, deja:0.7, loop:2},
-    canon:{lvl:0}, pad:{lvl:0.3, timbre:"machine", len:1, voices:3, bass:0.75}, arp:{lvl:0.4, inst:"luth", pat:"alberti", rate:1, reg:1, span:1}, amb:{murmur:0.4, clink:0.6, feu:0.1},
+    perc:{lvl:0.5, shaker:0.45, ghost:0.3}, drone:{lvl:0.15}, mel:{inst:"flute", dens:0.85, leap:0.15, orn:0.2, deja:0.4, loop:2},
+    canon:{lvl:0}, pad:{lvl:0.3, timbre:"machine", len:2, voices:3, bass:0.75}, arp:{lvl:0.4, inst:"luth", pat:"alberti", rate:1, reg:1, span:1}, amb:{murmur:0.4, clink:0.6, feu:0.1},
     fx:{rev:0.35, size:2.4, sat:0.12, wow:0.1, veil:0.25}}, "branle, danse à trois temps"]
 ];
 

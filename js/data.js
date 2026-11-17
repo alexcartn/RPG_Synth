@@ -329,9 +329,10 @@ const WESTERN = [
     perc:{lvl:0.22, shaker:0, ghost:0.1, kit:"taiko"}, drone:{lvl:0.08, timbre:"pur", bright:0.2}, mel:{lvl:0.6, inst:"sifflet", dens:0.14, reg:1, leap:0.35, orn:0.15},
     canon:{lvl:0.3, inst:"guitare", delay:2, shift:"oct-"}, pad:{lvl:0.18, timbre:"cordes", len:6}, amb:{vent:0.25},
     fx:{rev:0.55, size:4.5, room:"plaque", dly:0.35, dlyDiv:3, fb:0.4, sat:0.15}}, "duel à midi : un sifflet, une guitare, le battement"],
-  ["Equitatus", {car:{grav:0.3, aud:0.75, orn:0.3, sil:0.2, rep:0.7}, mus:{form:"ostinato"}, seed:4400, root:2, scales:["dorien","eolien",""], tempo:138, meter:"6/8", swing:0,
-    perc:{lvl:0.65, shaker:0.6, ghost:0.4}, drone:{lvl:0}, mel:{lvl:0.6, inst:"harmonica", dens:0.75, orn:0.2, leap:0.25},
-    canon:{lvl:0.3, inst:"cuivre", delay:2, shift:"oct-"}, pad:{lvl:0.3, timbre:"grattee", len:2, voices:3}, amb:{vent:0.15}, fx:{rev:0.3, size:2.5, room:"plaque", sat:0.2}}, "chevauchée : galop, guitare battue, harmonica, trompette"]
+  ["Equitatus", {car:{grav:0.3, aud:0.75, orn:0.25, sil:0.25, rep:0.7}, mus:{form:"rondeau", arc:"arche"}, seed:4400, root:2, scales:["mixolydien","ionien",""], tempo:116, meter:"6/8", swing:0,
+    perc:{lvl:0.55, shaker:0.35, ghost:0.3}, drone:{lvl:0}, mel:{lvl:0.62, inst:"cuivre", dens:0.45, reg:1, leap:0.4, orn:0.1, deja:0.6, loop:2},
+    canon:{lvl:0.22, inst:"sifflet", delay:4, shift:"oct+"}, pad:{lvl:0.3, timbre:"grattee", len:2, voices:3, bass:0.7}, amb:{vent:0.2},
+    fx:{rev:0.35, size:3.2, room:"plaque", dly:0.2, dlyDiv:3, fb:0.25, sat:0.15}}, "chevauchée : galop, guitare battue, trompette, grand ciel"]
 ];
 const CYBER = [
   ["Urbs Neon", {car:{grav:0.5, aud:0.6, orn:0.2, sil:0.3, rep:0.9}, mus:{form:"ostinato"}, seed:2077, root:5, scales:["eolien","dorien",""], tempo:100, meter:"4/4", swing:0, tension:0.6,
@@ -374,7 +375,7 @@ const UNIVERS = [
 /* hors du Moyen Âge, un préréglage qui ne cite pas un bruit de lieu n'en veut pas : sans cela, murmure et tintements de taverne s'invitaient dans l'espace ou chez les pirates */
 UNIVERS.forEach(u=>{ if(u.id!=="medieval") u.items.forEach(it=>{ it[1].amb=Object.assign({murmur:0,clink:0,feu:0,vent:0,gouttes:0},it[1].amb||{}); }); });
 /* sonie : gain (dB) de chaque ambiance, mesuré hors ligne (BS.1770, 24 s, après le limiteur) pour viser -13 LUFS (-15 pour Calme) */
-const PRESET_NORM={"Taberna":-3.4,"Chorea":-3.3,"Crypta":-3.8,"Scriptorium":-8.1,"Turris":-4.2,"Tripudium":-2.6,"Pugna":-3.2,"Iter":-3.3,"Triumphus":-3.2,"Insidiae":-1.3,"Portus":0.3,"Navigium":-5.1,"Tempestas":-4.5,"Thesaurus":-4.9,"Skalda":-3.8,"Bellum":-4.2,"Fjordus":-6.1,"Runae":-2.7,"Fata":-5.1,"Aula Fatarum":-5.3,"Sylva Magica":0.8,"Lullaby":2.3,"Larva":-2.5,"Domus Obscura":-7.0,"Sacrificium":-5.4,"Cella":-2.8,"Desertum":4.2,"Saloon":0.5,"Duellum":-6.0,"Equitatus":-0.2,"Urbs Neon":-2.5,"Machina":-0.3,"Datum":-3.2,"Imber Toxicus":-2.4,"Sidera":1.6,"Nebula":-1.9,"Abyssus":0.1,"Aegyptus":-2.2,"Eremus":-6.2,"Hortus":-5.2,"Bayati":-2.3,"Enharmonia":0.1,"Pluvia":-0.9,"Mare":-0.3,"Silva":-2.2,"Nox":1.3,"Somnus":0.6,"Meditatio":-3.5,"Labor":-3.1};
+const PRESET_NORM={"Taberna":-3.4,"Chorea":-3.3,"Crypta":-3.8,"Scriptorium":-8.1,"Turris":-4.2,"Tripudium":-2.6,"Pugna":-3.2,"Iter":-3.3,"Triumphus":-3.2,"Insidiae":-1.3,"Portus":0.3,"Navigium":-5.1,"Tempestas":-4.5,"Thesaurus":-4.9,"Skalda":-3.8,"Bellum":-4.2,"Fjordus":-6.1,"Runae":-2.7,"Fata":-5.1,"Aula Fatarum":-5.3,"Sylva Magica":0.8,"Lullaby":2.3,"Larva":-2.5,"Domus Obscura":-7.0,"Sacrificium":-5.4,"Cella":-2.8,"Desertum":4.2,"Saloon":0.5,"Duellum":-6.0,"Equitatus":-1.1,"Urbs Neon":-2.5,"Machina":-0.3,"Datum":-3.2,"Imber Toxicus":-2.4,"Sidera":1.6,"Nebula":-1.9,"Abyssus":0.1,"Aegyptus":-2.2,"Eremus":-6.2,"Hortus":-5.2,"Bayati":-2.3,"Enharmonia":0.1,"Pluvia":-0.9,"Mare":-0.3,"Silva":-2.2,"Nox":1.3,"Somnus":0.6,"Meditatio":-3.5,"Labor":-3.1};
 /* chaque univers a sa batterie ; un préréglage peut en citer une autre */
 const UNIV_KIT={medieval:"cadre", aventure:"caisse", pirates:"cadre", nordique:"taiko", feerie:"cadre", horreur:"taiko", western:"bastringue", cyber:"electro", espace:"electro", orient:"darbouka", nature:"cadre", calme:"cadre"};
 UNIVERS.forEach(u=>u.items.forEach(it=>{ const p=it[1]; p.perc=Object.assign({kit:UNIV_KIT[u.id]||"cadre"},p.perc||{}); if(p.norm===undefined) p.norm=PRESET_NORM[it[0]]||0; }));

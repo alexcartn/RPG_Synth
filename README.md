@@ -31,6 +31,13 @@ On arrive sur Conduire : un univers (Médiéval, Aventure, Pirates, Nordique, F�
 - Compression douce sur la mélodie et les nappes, et les nappes s'effacent un peu (-2 dB) à chaque note de la mélodie, qui reste devant.
 - Respirations (Composer, Forme) : dans la moitié des sections par défaut, une voix (nappes, percussion, boucles ou pendules) se retire au début de la section et revient à mi-section ou aux trois quarts, sur une mesure.
 
+## Nappes chœur et cordes
+
+- Chœur : quatre chanteurs (deux en mode Économe), chacun une scie légèrement fausse à sa manière, avec son propre vibrato (vitesse, ampleur, moment où il s'installe), placés en éventail, passés par les quatre formants d'une voyelle qui glisse au fil de la note (de « a » vers « o », ou de « o » vers « ou »), avec un peu de souffle.
+- Cordes : un pupitre de quatre instrumentistes (trois en mode Économe), chacun désaccordé de quelques centièmes, avec son vibrato et sa respiration d'archet, répartis dans l'espace, une bosse de caisse en bois vers 290 Hz, un creux nasal vers 1,25 kHz et le frottement d'archet à peine audible.
+- Niveaux alignés sur les anciennes nappes (à 0,4 dB près). Coût : environ deux fois celui des anciennes nappes. Le bourdon garde son chœur actuel.
+- Equitatus refait : trompette en mixolydien, sifflet en écho, guitare battue, galop en 6/8 (sabot-sabot-sabot), forme en rondeau et en arche.
+
 ## Cohérence des univers
 
 - Far West : plus de bourdon (c'est lui qui donnait un air médiéval). Trois sons propres : sifflet (presque un sinus, glissade d'attaque, vibrato qui s'installe), harmonica (anche libre nasillarde, note prise par en dessous, trémolo de la main) et guitare grattée en nappe (chaque note de l'accord est une corde, coups vers le bas sur les temps, vers le haut entre deux, étouffés au coup suivant). Desertum : guitare, sifflet en écho, guitare grattée. Duellum : sifflet sur mineur harmonique, guitare grave, battement de grand tambour. Equitatus : harmonica, trompette, guitare battue au galop. Saloon : piano et guitare.

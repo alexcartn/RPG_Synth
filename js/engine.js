@@ -862,7 +862,7 @@ function buildEngine(ctx, S, o){
     e.gain.setValueAtTime(0,t); e.gain.linearRampToValueAtTime(0.09*(vol||1),t+a); e.gain.setValueAtTime(0.09*(vol||1),t+len); e.gain.linearRampToValueAtTime(0,t+len+rel);
     route(e,((Math.round(f*3)%9)/4-1)*0.55,V.pad.node); /* nappes ouvertes : chaque hauteur a sa place dans l'espace */
     const end=t+len+rel+0.1, os=[];
-    const add=(type,fr,det,dst,gain)=>{const x=ctx.createOscillator(); x.type=type; x.frequency.value=fr; x.detune.value=det; if(gain!==undefined){const g=G(gain); x.connect(g); g.connect(dst);} else x.connect(dst); os.push(x); return x;};
+    const add=(type,fr,det,dst,gain)=>{const x=ctx.createOscillator(); x.type=type; x.frequency.value=fr; x.detune.value=det; if(gain!==undefined){const g=G(gain); x.connect(g); g.connect(dst);} else if(dst) x.connect(dst); os.push(x); return x;};
     if(timbre==="orgue"){ [[1,1],[2,0.45],[3,0.22],[4,0.12]].forEach(([m,a2])=>add("sine",f*m,0,e,a2*0.9)); }
     else if(timbre==="synthe"){
       const fl=ctx.createBiquadFilter(); fl.type="lowpass"; fl.frequency.value=1100; fl.Q.value=0.5; fl.connect(e);
@@ -874,17 +874,39 @@ function buildEngine(ctx, S, o){
       const tr=ctx.createOscillator(); tr.frequency.value=0.3+R.v()*0.3; const tg=G(0.25); tr.connect(tg); tg.connect(e.gain); os.push(tr);
     }
     else if(timbre==="cordes"){
-      const fl=ctx.createBiquadFilter(); fl.type="lowpass"; fl.frequency.value=1700; fl.Q.value=0.6; fl.connect(e);
-      add("sawtooth",f,-9,fl); add("sawtooth",f,9,fl);
-      const vb=ctx.createOscillator(); vb.frequency.value=4.6+R.v()*1.2; const vg=G(0); vb.connect(vg); os.forEach(x=>vg.connect(x.detune));
-      vg.gain.setValueAtTime(0,t); vg.gain.linearRampToValueAtTime(7,t+a+1); os.push(vb);
+      /* pupitre de cordes : plusieurs instrumentistes, chacun légèrement faux à sa manière, chacun avec son vibrato (vitesse, ampleur, moment où il s'installe), répartis dans l'espace ; une caisse de bois, l'archet qu'on entend à peine */
+      const base=R.v(), N=o.lite?3:4, sum=G(1), fl=ctx.createBiquadFilter(), wood=ctx.createBiquadFilter(), nasal=ctx.createBiquadFilter();
+      fl.type="lowpass"; fl.frequency.value=Math.min(5200,1500+f*2.2); fl.Q.value=0.5;
+      wood.type="peaking"; wood.frequency.value=290; wood.gain.value=3; wood.Q.value=1.1; nasal.type="peaking"; nasal.frequency.value=1250; nasal.gain.value=-3; nasal.Q.value=1.2;
+      sum.connect(wood); wood.connect(nasal); nasal.connect(fl); fl.connect(e);
+      for(let i=0;i<N;i++){
+        const h=k=>hz(base*97.3+i*13.7+k*3.1), det=(h(1)*2-1)*11, x=add("sawtooth",f,det,null), pn=PAN((i/(N-1)*2-1)*0.5), g=G(0.62/Math.sqrt(N)*1.6);
+        x.connect(g); g.connect(pn); pn.connect(sum);
+        const vb=ctx.createOscillator(), vg=G(0); vb.frequency.value=4.6+1.6*h(2); vb.connect(vg); vg.connect(x.detune); os.push(vb);
+        const on=t+Math.min(a,0.4+0.9*h(3)); vg.gain.setValueAtTime(0,t); vg.gain.setValueAtTime(0,on); vg.gain.linearRampToValueAtTime(5+7*h(4),on+0.8);
+        const sw=ctx.createOscillator(), sg=G(0.12); sw.frequency.value=0.13+0.2*h(5); sw.connect(sg); sg.connect(g.gain); os.push(sw); /* chaque archet respire à son rythme */
+      }
+      const ns=ctx.createBufferSource(); ns.buffer=wb; ns.loop=true; const nb=ctx.createBiquadFilter(); nb.type="bandpass"; nb.frequency.value=Math.min(6000,f*5); nb.Q.value=1.4; const ng=G(0.035);
+      ns.connect(nb); nb.connect(ng); ng.connect(e); os.push(ns);
     }else{
-      const bpA=ctx.createBiquadFilter(); bpA.type="bandpass"; bpA.frequency.value=650; bpA.Q.value=6;
-      const bpB=ctx.createBiquadFilter(); bpB.type="bandpass"; bpB.frequency.value=1150; bpB.Q.value=8;
-      const gA=G(0.8), gB=G(0.6), gD=G(0.22), lp=ctx.createBiquadFilter(); lp.type="lowpass"; lp.frequency.value=2200;
-      bpA.connect(gA); gA.connect(e); bpB.connect(gB); gB.connect(e); gD.connect(lp); lp.connect(e);
-      [-7,7].forEach(dt=>{const x=add("sawtooth",f,dt,bpA); x.connect(bpB); x.connect(gD);});
-      const lf=ctx.createOscillator(); lf.frequency.value=0.08+R.v()*0.07; const lg=G(150); lf.connect(lg); lg.connect(bpA.frequency); os.push(lf);
+      /* chœur : plusieurs chanteurs (une scie chacun, faux à leur manière, vibrato propre), passés par les formants d'une voyelle qui glisse lentement de « a » vers « o » puis « ou » ; un peu de souffle */
+      const base=R.v(), N=o.lite?2:4, src=G(1), out2=G(1), lp=ctx.createBiquadFilter(); lp.type="lowpass"; lp.frequency.value=4200; lp.Q.value=0.5; out2.connect(lp); lp.connect(e);
+      for(let i=0;i<N;i++){
+        const h=k=>hz(base*71.1+i*17.3+k*5.7), x=add("sawtooth",f,(h(1)*2-1)*13,null), g=G(1/Math.sqrt(N)), pn=PAN((i/Math.max(1,N-1)*2-1)*0.35);
+        x.connect(g); g.connect(pn); pn.connect(src);
+        const vb=ctx.createOscillator(), vg=G(0); vb.frequency.value=4.8+1.2*h(2); vb.connect(vg); vg.connect(x.detune); os.push(vb);
+        const on=t+Math.min(a,0.5+0.8*h(3)); vg.gain.setValueAtTime(0,t); vg.gain.setValueAtTime(0,on); vg.gain.linearRampToValueAtTime(6+8*h(4),on+1);
+      }
+      const ns=ctx.createBufferSource(); ns.buffer=wb; ns.loop=true; const ng=G(0.08); ns.connect(ng); ng.connect(src); os.push(ns);
+      /* formants (fréquence, gain, largeur) : a, o, ou ; la voyelle glisse au fil de la note */
+      const VOW=[[[730,1,90],[1090,0.5,110],[2440,0.25,140],[3300,0.12,200]], [[500,1,80],[850,0.45,100],[2600,0.18,140],[3300,0.08,200]], [[350,1,70],[700,0.35,90],[2450,0.12,140],[3300,0.06,200]]];
+      const v0=Math.floor(hz(base*31.7)*2), v1=Math.min(2,v0+1), mid=t+a+Math.max(0.5,(len-a)*0.6);
+      VOW[v0].forEach(([F,gn,bw],k)=>{
+        const bp=ctx.createBiquadFilter(), g=G(gn*1.8); bp.type="bandpass"; bp.frequency.setValueAtTime(F,t); bp.Q.value=F/bw;
+        bp.frequency.linearRampToValueAtTime(VOW[v0][k][0],t+a); bp.frequency.linearRampToValueAtTime(VOW[v1][k][0],mid);
+        g.gain.setValueAtTime(gn*1.8,t+a); g.gain.linearRampToValueAtTime(VOW[v1][k][1]*1.8,mid);
+        src.connect(bp); bp.connect(g); g.connect(out2);
+      });
     }
     os.forEach(x=>{x.start(t); x.stop(end);});
   }
@@ -966,7 +988,7 @@ function buildEngine(ctx, S, o){
       "6/8":["K/","/","h/","k/","t/","/"], "12/8":["K/","/","/","h/","/","/","k/","/","t/","T/","/","h/"]},
     bastringue:{ /* « boum-tchac » du piano de saloon, gigue et valse */
       "4/4":["K/","h/","T/","h/h","K/","h/","T/","h/h"], "2/4":["K/","h/","T/","h/h"], "3/4":["K/","h/","T/","h/","T/","h/"],
-      "6/8":["K/","h/","T/","k/","h/","T/"], "12/8":["K/","h/","T/","k/","h/","T/","K/","h/","T/","k/","h/","T/"]}
+      "6/8":["K/","t/t","T/","K/","t/t","T/"], "12/8":["K/","h/","T/","k/","h/","T/","K/","h/","T/","k/","h/","T/"]} /* 6/8 : le galop, sabot-sabot-sabot */
   };
   /* relances : [sur le dernier temps toutes les quatre mesures, roulement des deux derniers temps de la section] */
   const KFILL={caisse:["T/t","T/T"], electro:["TH/T","T/T"], darbouka:["T/t","T/T"], taiko:["T/","T/T"], bastringue:["t/t","T/t"]};

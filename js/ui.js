@@ -8,8 +8,8 @@ let live=null, timer=null, raf=0, lastFrame=0;
 function getP(path){ try{ return path.split(".").reduce((a,k)=>a[k],S); }catch(e){ return undefined; } }
 function setP(path,v){const ks=path.split("."); const last=ks.pop(); ks.reduce((a,k)=>a[k],S)[last]=v;}
 
-/* planification : 4 secondes d'avance quand la page est visible (réglages presque immédiats), 10 en arrière-plan */
-const lookahead=()=>document.hidden?10:4;
+/* planification : 4 secondes d'avance quand la page est visible (réglages presque immédiats), 30 en arrière-plan */
+const lookahead=()=>document.hidden?30:4; /* en arrière-plan, le téléphone réveille rarement la page : 30 s d'avance pour ne jamais manquer */
 function tickSchedule(){ if(live) live.eng.schedule(live.ctx.currentTime+lookahead()); }
 document.addEventListener("visibilitychange",tickSchedule);
 
@@ -49,15 +49,34 @@ function defaultQuality(){
 }
 function getQuality(){ try{ const q=localStorage.getItem("bourdon.quality"); if(q==="eco"||q==="high") return q; }catch(e){} return defaultQuality(); }
 const isEco=()=>getQuality()==="eco";
-function engineOpts(){ return {onNote:noteFlash, lite:isEco(), rolling:true}; }
+function engineOpts(dest){ return {onNote:noteFlash, lite:isEco(), rolling:true, dest:dest||(live&&live.out)||null}; }
+/* téléphone : le son passe par un vrai lecteur audio. Le système le traite alors comme une musique qui joue :
+   il continue écran éteint ou application en arrière-plan, avec les commandes sur l'écran verrouillé. */
+const MOBILE=(()=>{ try{ return matchMedia("(pointer:coarse)").matches; }catch(e){ return false; } })();
+function outRoute(ctx){
+  if(!MOBILE||!ctx.createMediaStreamDestination) return null;
+  const g=ctx.createGain(), d=ctx.createMediaStreamDestination(); g.connect(d);
+  let a=document.getElementById("bgAudio"); if(!a){ a=document.createElement("audio"); a.id="bgAudio"; a.setAttribute("playsinline",""); a.hidden=true; document.body.appendChild(a); }
+  a.srcObject=d.stream; const p=a.play();
+  if(p&&p.catch) p.catch(()=>{ try{ g.disconnect(); }catch(e){} g.connect(ctx.destination); }); /* refusé : sortie directe, comme avant */
+  return g;
+}
+function mediaSession(on){
+  const ms=navigator.mediaSession; if(!ms) return;
+  try{
+    if(on){ ms.metadata=new MediaMetadata({title:(typeof SCENE!=="undefined"&&SCENE.name)||"Bourdon",artist:"Bourdon",album:(typeof SCENE!=="undefined"&&SCENE.gloss)||"machine à ambiances",artwork:[{src:"icons/icon-512.png",sizes:"512x512",type:"image/png"}]});
+      ms.setActionHandler("pause",()=>{ if(live) stopLive(); }); ms.setActionHandler("stop",()=>{ if(live) stopLive(); }); ms.setActionHandler("play",()=>{ if(!live) startLive(); }); }
+    ms.playbackState=on?"playing":"paused";
+  }catch(e){}
+}
 
 function startLive(opt){
   S.seed=newSeed();
   const AC=window.AudioContext||window.webkitAudioContext;
   /* "playback" : tampons plus grands, moins de réveils du processeur, aucun besoin de latence ici */
   let ctx; try{ ctx=new AC({latencyHint:"playback"}); }catch(e){ ctx=new AC(); }
-  const eng=buildEngine(ctx,S,engineOpts());
-  live={ctx,eng,t0:ctx.currentTime+0.1,olds:[]};
+  const out=outRoute(ctx), eng=buildEngine(ctx,S,engineOpts(out));
+  live={ctx,eng,out,t0:ctx.currentTime+0.1,olds:[]}; mediaSession(true);
   /* réverbération vivante et grain : branchés dès que le worklet est chargé (quelques millisecondes) */
   if(typeof fxLoad==="function") fxLoad(ctx).then(ok=>{ if(ok&&live&&live.ctx===ctx) live.eng.fxAttach(); });
   vizClear();
@@ -70,7 +89,7 @@ function startLive(opt){
 }
 /* chaque note planifiée alimente la partition, et allume le cercle quand elle sonne */
 function noteFlash(t,off,kind,dur,vel,label){
-  if(!live) return;
+  if(!live||document.hidden) return; /* écran caché : aucun travail visuel */
   vizPush(t,off,kind,dur,vel,label);
   if(!PITCHED[kind]||kind==="pad") return;
   const ms=Math.max(0,(t-live.ctx.currentTime)*1000); setTimeout(()=>flashNote(off,kind),ms);
@@ -79,7 +98,8 @@ function stopLive(){
   if(!live) return;
   if(typeof CAP!=="undefined"&&CAP.on) capStop();
   clearInterval(timer);
-  const {ctx,eng,olds}=live; live=null;
+  const {ctx,eng,olds}=live; live=null; mediaSession(false);
+  { const a=document.getElementById("bgAudio"); if(a) setTimeout(()=>{ if(!live){ try{ a.pause(); a.srcObject=null; }catch(e){} } },1700); }
   olds.forEach(e=>e.stop(ctx.currentTime));
   eng.stop(ctx.currentTime);
   setTimeout(()=>{try{ctx.close();}catch(e){}},1600);
@@ -486,7 +506,7 @@ let SCENE={name:"",gloss:"",univ:""};
 function sceneOf(state){ const p=PRESETS.find(x=>x[1]===state); return p?{name:p[0],gloss:p[2],univ:p[3]}:null; }
 function loadScene(state,btn,fade,info){
   S=merge(clone(DEFAULT),clone(state)); normS(); S.seed=newSeed();
-  SCENE=info||sceneOf(state)||{name:"",gloss:"",univ:""};
+  SCENE=info||sceneOf(state)||{name:"",gloss:"",univ:""}; if(live) mediaSession(true);
   document.querySelectorAll("#presets .lnk,#scenes .lnk").forEach(x=>x.removeAttribute("aria-current"));
   if(btn) btn.setAttribute("aria-current","true");
   syncUI(); restartIfLive(fade||fadeSec());

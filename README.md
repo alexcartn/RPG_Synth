@@ -34,7 +34,16 @@ Une page à part, reliée par le lien « Studio » de la barre des modes. Ici ri
 
 ## La page d'accueil
 
-On arrive sur Conduire : un univers (Médiéval, Aventure, Pirates, Nordique, Féerie, Horreur, Far West, Cyberpunk, Espace, Orient, Nature, Calme, ou Au hasard) et ce qu'on cherche (quatorze émotions), le bouton Jouer, huit boutons (volume, tension, densité, bourdon, nappes, brume, nuage, chaleur), un pad XY et le cercle des hauteurs. Les réglages fins sont dans Composer, en neuf chapitres repliés. L'en-tête est réduit au titre, la légende de la partition n'apparaît qu'en lecture, l'extinction a rejoint « Séance » dans la marge.
+On arrive sur Conduire : un univers (Médiéval, Aventure, Pirates, Nordique, Féerie, Horreur, Cyberpunk, Espace, Orient, Nature, Calme, ou Au hasard) et ce qu'on cherche (quatorze émotions), le bouton Jouer, huit boutons (volume, tension, densité, bourdon, nappes, brume, nuage, chaleur), un pad XY et le cercle des hauteurs. Les réglages fins sont dans Composer, en neuf chapitres repliés. L'en-tête est réduit au titre, la légende de la partition n'apparaît qu'en lecture, l'extinction a rejoint « Séance » dans la marge.
+
+## Far West retiré
+
+L'univers Far West et ses ambiances (Desertum, Saloon, Duellum, Equitatus) sont retirés : la machine se recentre sur les ambiances planantes. Ses instruments (guitare, piano de bastringue, harmonica, sifflet) et sa batterie aux balais restent disponibles, notamment dans le Studio.
+
+## Sur téléphone
+
+- Arrière-plan : le son passe par un lecteur audio, que le système traite comme une musique en cours (écran éteint, autre application, commandes sur l'écran verrouillé) ; 30 secondes d'avance en arrière-plan ; plus aucun travail visuel quand l'écran n'est pas visible.
+- Veillée : la rosace se place sous le titre au lieu d'être recouverte ; titre plus petit et phrase de l'ambiance masquée sur les petits écrans.
 
 ## Conduire, recentré sur l'écoute planante
 
@@ -212,7 +221,7 @@ Troisième mode, Forger (interrupteur « Composer · Conduire · Forger » sous 
 
 ## Univers, timbres et extinction
 
-- Quarante-six préréglages en douze univers (ajoutés : Aventure, Pirates, Nordique, Féerie, Horreur, Far West, Cyberpunk, de quatre ambiances chacun), choisis sur la première page ou par un menu dans la marge. Les cinq premiers : Médiéval (Taberna, Chorea, Crypta, Scriptorium, Turris, Tripudium), Calme (Somnus pour dormir, Meditatio, Labor pour travailler), Espace (Sidera, Nebula, Abyssus), Orient et quarts de ton (Aegyptus, Eremus, Hortus, Bayati, Enharmonia), Nature (Pluvia, Mare, Silva, Nox). Chacun a une glose française. Ils sont réglés sur le papier et mesurés au niveau sonore, pas écoutés : les ajuster à l'oreille est normal.
+- Quarante-six préréglages en douze univers (ajoutés : Aventure, Pirates, Nordique, Féerie, Horreur, Cyberpunk, de quatre ambiances chacun), choisis sur la première page ou par un menu dans la marge. Les cinq premiers : Médiéval (Taberna, Chorea, Crypta, Scriptorium, Turris, Tripudium), Calme (Somnus pour dormir, Meditatio, Labor pour travailler), Espace (Sidera, Nebula, Abyssus), Orient et quarts de ton (Aegyptus, Eremus, Hortus, Bayati, Enharmonia), Nature (Pluvia, Mare, Silva, Nox). Chacun a une glose française. Ils sont réglés sur le papier et mesurés au niveau sonore, pas écoutés : les ajuster à l'oreille est normal.
 - Timbres ajoutés : oud (corde pincée), ney (flûte soufflée), kalimba, bol chantant, cloches de verre, synthé doux pour les voix ; synthé doux et verre pour les nappes ; sinus pur et bol chantant pour le bourdon.
 - Extinction progressive : dans 15 minutes à 2 heures, le niveau tient puis descend en courbe douce sur les 20 % finaux (entre 1 et 5 minutes), et la lecture s'arrête au silence. Le compte à rebours démarre à la mise en lecture.
 - Volume général (chapitre Spatium) : pour que les ambiances calmes restent calmes. L'export est toujours normalisé en crête.

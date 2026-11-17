@@ -328,23 +328,6 @@ const HORREUR = [
     perc:{lvl:0}, drone:{lvl:0.7, timbre:"bol", bright:0.15}, mel:{lvl:0.2, inst:"bol", dens:0.06, reg:0, deja:0.2},
     canon:{lvl:0}, pad:{lvl:0.3, timbre:"machine", len:8}, amb:{gouttes:0.6, vent:0.15}, fx:{rev:0.7, size:8, room:"grotte", dark:0.85, veil:0.7, hiss:0.1}}, "cachot humide : gouttes, écho de pierre"]
 ];
-const WESTERN = [
-  ["Desertum", {car:{grav:0.5, aud:0.25, orn:0.15, sil:0.85, rep:0.4}, seed:7777, root:4, scales:["dorien","pentmin",""], tempo:70, meter:"4/4", tension:0.4,
-    perc:{lvl:0.1, shaker:0, ghost:0.1}, drone:{lvl:0}, mel:{lvl:0.6, inst:"guitare", dens:0.22, reg:1, leap:0.25, orn:0.1, deja:0.3},
-    canon:{lvl:0.35, inst:"sifflet", delay:4, shift:"oct+"}, pad:{lvl:0.16, timbre:"grattee", len:4, voices:3}, amb:{vent:0.5},
-    fx:{rev:0.45, size:3.2, room:"plaque", algo:"plaque", dly:0.3, dlyDiv:3, fb:0.35, sat:0.2, wow:0.15, veil:0.1}}, "désert de l'Ouest : guitare claire, vent, sifflet"],
-  ["Saloon", {car:{grav:0.2, aud:0.85, orn:0.6, sil:0.05, rep:0.5}, mus:{form:"rondeau"}, seed:1881, root:7, scales:["ionien","mixolydien",""], tempo:116, meter:"2/4", swing:0.32,
-    perc:{lvl:0.45, shaker:0.5, ghost:0.5}, drone:{lvl:0}, mel:{lvl:0.75, inst:"piano", dens:1, orn:0.35, leap:0.3},
-    canon:{lvl:0.25, inst:"harmonica", delay:2, shift:"oct+"}, pad:{lvl:0.12, timbre:"grattee", len:2}, amb:{murmur:0.6, clink:0.7}, fx:{rev:0.2, size:1.6, room:"salle", sat:0.2, wow:0.2}}, "saloon : piano mécanique, harmonica, guitare, chopes, bagarre en vue"],
-  ["Duellum", {car:{grav:0.6, aud:0.25, orn:0.1, sil:0.8, rep:0.4}, mus:{arc:"arche"}, seed:1127, root:9, scales:["harm","phrygdom",""], tempo:58, meter:"4/4", tension:0.8,
-    perc:{lvl:0.22, shaker:0, ghost:0.1, kit:"taiko"}, drone:{lvl:0.08, timbre:"pur", bright:0.2}, mel:{lvl:0.6, inst:"sifflet", dens:0.14, reg:1, leap:0.35, orn:0.15},
-    canon:{lvl:0.3, inst:"guitare", delay:2, shift:"oct-"}, pad:{lvl:0.18, timbre:"cordes", len:6}, amb:{vent:0.25},
-    fx:{rev:0.55, size:4.5, room:"plaque", algo:"plaque", dly:0.35, dlyDiv:3, fb:0.4, sat:0.15}}, "duel à midi : un sifflet, une guitare, le battement"],
-  ["Equitatus", {car:{grav:0.3, aud:0.75, orn:0.25, sil:0.25, rep:0.7}, mus:{form:"rondeau", arc:"arche"}, seed:4400, root:2, scales:["mixolydien","ionien",""], tempo:116, meter:"6/8", swing:0,
-    perc:{lvl:0.55, shaker:0.35, ghost:0.3}, drone:{lvl:0}, mel:{lvl:0.62, inst:"cuivre", dens:0.45, reg:1, leap:0.4, orn:0.1, deja:0.6, loop:2},
-    canon:{lvl:0.22, inst:"sifflet", delay:4, shift:"oct+"}, pad:{lvl:0.3, timbre:"grattee", len:2, voices:3, bass:0.7}, amb:{vent:0.2},
-    fx:{rev:0.35, size:3.2, room:"plaque", algo:"plaque", dly:0.2, dlyDiv:3, fb:0.25, sat:0.15}}, "chevauchée : galop, guitare battue, trompette, grand ciel"]
-];
 const CYBER = [
   ["Urbs Neon", {car:{grav:0.5, aud:0.6, orn:0.2, sil:0.3, rep:0.9}, mus:{form:"ostinato"}, seed:2077, root:5, scales:["eolien","dorien",""], tempo:100, meter:"4/4", swing:0, tension:0.6,
     turing:{lock:0.95, len:2}, chance:{skip:0.1, ratchet:0.22, mutate:0.05, octave:0.1, rest:0.06},
@@ -449,7 +432,6 @@ const UNIVERS = [
   {id:"nordique", name:"Nordique", tag:"veillées au feu, tambours de guerre, fjords dans la brume", items:NORDIQUE},
   {id:"feerie", name:"Féerie", tag:"clairières, bals de fées, forêts enchantées, berceuses", items:FEERIE},
   {id:"horreur", name:"Horreur", tag:"fantômes, manoirs hantés, rituels, cachots", items:HORREUR},
-  {id:"western", name:"Far West", tag:"déserts, saloons, duels à midi, chevauchées", items:WESTERN},
   {id:"cyber", name:"Cyberpunk", tag:"villes néon, pluie acide, usines, serveurs", items:CYBER},
   {id:"espace", name:"Espace", tag:"étoiles, nébuleuses, gouffres", items:ESPACE},
   {id:"orient", name:"Orient et Égypte", tag:"oud, ney, déserts, quarts de ton", items:ORIENT},
@@ -461,7 +443,7 @@ UNIVERS.forEach(u=>{ if(u.id!=="medieval") u.items.forEach(it=>{ it[1].amb=Objec
 /* sonie : gain (dB) de chaque ambiance, mesuré hors ligne (BS.1770, 24 s, après le limiteur) pour viser -13 LUFS (-15 pour Calme) */
 const PRESET_NORM={"Taberna":-0.1,"Chorea":-5.0,"Crypta":-3.6,"Scriptorium":-7.9,"Turris":-4.0,"Tripudium":1.2,"Pugna":-4.8,"Iter":-5.4,"Triumphus":-5.0,"Insidiae":-0.5,"Portus":0.5,"Navigium":-4.9,"Tempestas":-5.2,"Thesaurus":-5.1,"Skalda":-3.7,"Bellum":-5.8,"Fjordus":-5.7,"Runae":-2.3,"Fata":-5.1,"Aula Fatarum":-6.1,"Sylva Magica":1.3,"Lullaby":2.2,"Larva":-2.7,"Domus Obscura":-5.7,"Sacrificium":-5.2,"Cella":-4.4,"Desertum":2.7,"Saloon":2.0,"Duellum":-6.1,"Equitatus":-5.9,"Urbs Neon":-2.8,"Machina":0.1,"Datum":-2.0,"Imber Toxicus":-3.6,"Sidera":2.8,"Nebula":-1.5,"Abyssus":-1.5,"Aegyptus":-2.4,"Eremus":-6.0,"Hortus":-5.3,"Bayati":-2.2,"Enharmonia":0.5,"Pluvia":-1.7,"Mare":-0.2,"Silva":-1.9,"Nox":-0.2,"Somnus":0.4,"Meditatio":-1.5,"Labor":-3.6,"Montagne":-5.2,"Hiems":-6.7,"Silva Antiqua":-6.4,"Agora":2.9,"Thermopylae":-1.9,"Odyssea":-0.9,"Hades":-3.3,"Custos":-7.4,"Castellum":-5.0,"Delphi":-2.0,"Sparta":-4.0,"Roma Triumphans":-1.7,"Carcer":-3.8,"Vacuum":-4.1,"Ruinae":-2.4,"Sanctum":-1.6,"Glacies":-3.1};
 /* chaque univers a sa batterie ; un préréglage peut en citer une autre */
-const UNIV_KIT={dark:"taiko", antique:"antique", dungeon:"taiko", medieval:"cadre", aventure:"caisse", pirates:"cadre", nordique:"taiko", feerie:"cadre", horreur:"taiko", western:"bastringue", cyber:"electro", espace:"electro", orient:"darbouka", nature:"cadre", calme:"cadre"};
+const UNIV_KIT={dark:"taiko", antique:"antique", dungeon:"taiko", medieval:"cadre", aventure:"caisse", pirates:"cadre", nordique:"taiko", feerie:"cadre", horreur:"taiko", cyber:"electro", espace:"electro", orient:"darbouka", nature:"cadre", calme:"cadre"};
 /* réglage fin, ambiance par ambiance : où elle se place entre rituel et chanson, ce qu'elle emprunte aux voix (arpège, plain-chant, voix), le tempérament de son époque, ses bêtes */
 const PRESET_TUNE={
   /* Dungeon synth : chansons, sauf l'hiver qui tient du rituel ; arpège génératif pour l'hiver, chevaux à l'écurie du château, orgue en Werckmeister */
@@ -482,8 +464,6 @@ const PRESET_TUNE={
   Lullaby:{rc:0.55, arp:{lvl:0.25, inst:"harpe", pat:"vaetvient", rate:1, reg:1, span:1}, nature:{nuit:0.2}},
   /* Horreur : le sacrifice est un rite */
   Sacrificium:{rc:0.2, scales:["eolien","phrygien",""]},
-  /* Far West : le duel est un thème qui revient, à la Morricone */
-  Duellum:{rc:0.6},
   /* Cyberpunk */
   "Urbs Neon":{rc:0.6}, Datum:{rc:0.45}, "Imber Toxicus":{rc:0.3},
   /* Orient : un étang de grenouilles au jardin zen */
@@ -499,7 +479,6 @@ const PRESET_TUNE={
 const Z={canon:{lvl:0}, arp:{lvl:0}, loops:{lvl:0}, pend:{lvl:0}};
 const AMBIANCE={
   Taberna:{g:"taverne la nuit, après la fête : le feu, quelques voix, un luth seul", o:{rc:0.3, tempo:56, meter:"3/4", mus:{form:"libre"}, mel:{lvl:0.5, inst:"luth", dens:0.2, reg:1, span:1, leap:0.15, deja:0.4}, drone:{lvl:0.15, timbre:"anche", bright:0.3}, pad:{lvl:0.18, timbre:"machine", len:4, bass:0.4}, perc:{lvl:0}, amb:{murmur:0.15, clink:0.1, feu:0.55}, fx:{algo:"salle", rev:0.4, size:3, dark:0.55, wow:0.06}}},
-  Saloon:{g:"saloon désert à l'aube : le vent, un piano lointain", o:{rc:0.3, tempo:60, meter:"4/4", swing:0, mus:{form:"libre"}, mel:{lvl:0.5, inst:"piano", dens:0.15, reg:1, span:1, leap:0.15}, drone:{lvl:0}, pad:{lvl:0.12, timbre:"cordes", len:4, bass:0.4}, perc:{lvl:0}, amb:{murmur:0, clink:0.05, vent:0.4}, nature:{chevaux:0.08}, fx:{algo:"plaque", rev:0.45, size:3.5, dark:0.5, veil:0.3, wow:0.15, sat:0.08}}},
   Portus:{g:"le port la nuit : les vagues contre le quai, un accordéon au loin", o:{rc:0.3, tempo:60, meter:"6/8", mus:{form:"libre"}, mel:{lvl:0.45, inst:"accordeon", dens:0.2, reg:1, span:1, leap:0.15}, drone:{lvl:0.2, timbre:"choeur"}, pad:{lvl:0.15, timbre:"choeur", len:4}, perc:{lvl:0}, nature:{mer:0.5, mouettes:0.1}, amb:{murmur:0.1, clink:0.1, feu:0.1, vent:0.2}, fx:{algo:"vivante", rev:0.5, size:4, dark:0.5}}},
   Chorea:{g:"le bal est fini : la salle vide, une flûte qui se souvient de la danse", o:{rc:0.3, tempo:60, meter:"6/8", mus:{form:"libre"}, mel:{lvl:0.5, inst:"flute", dens:0.2, reg:1, span:1, leap:0.15}, drone:{lvl:0.2, timbre:"anche", bright:0.3}, pad:{lvl:0.2, timbre:"machine", len:4}, perc:{lvl:0}, amb:{murmur:0.05, clink:0, feu:0.3}, fx:{algo:"salle", rev:0.5, size:4, dark:0.5}}},
   Tripudium:{g:"la place du village au crépuscule : un luth, les cloches au loin", o:{rc:0.3, tempo:58, meter:"3/4", mus:{form:"libre"}, mel:{lvl:0.5, inst:"luth", dens:0.2, reg:1, span:1, leap:0.15}, drone:{lvl:0.15, timbre:"anche"}, pad:{lvl:0.2, timbre:"machine", len:4}, loops:{lvl:0.15, count:3, inst:"carillon", speed:1.6}, perc:{lvl:0}, amb:{murmur:0.1, clink:0, feu:0, vent:0.2}, nature:{oiseaux:0.15}, fx:{algo:"salle", rev:0.45, size:4}}},
@@ -508,7 +487,6 @@ const AMBIANCE={
   Iter:{g:"la route au soir : le vent, une flûte, les chevaux qui marchent", o:{rc:0.35, tempo:60, mus:{form:"libre"}, mel:{lvl:0.45, inst:"flute", dens:0.25, reg:1, span:1, leap:0.15}, arp:{lvl:0.2, inst:"luth", pat:"auto"}, drone:{lvl:0.3, timbre:"anche", bright:0.3}, pad:{lvl:0.15, timbre:"cordes", len:4}, perc:{lvl:0.12, kit:"cadre", shaker:0, ghost:0}, nature:{chevaux:0.15, oiseaux:0.1}, amb:{vent:0.35}, fx:{rev:0.45, size:4}}},
   Tempestas:{g:"après la tempête : la houle qui retombe, le bateau qui grince", o:{rc:0.25, tempo:50, mus:{form:"libre"}, mel:{lvl:0.45, inst:"archet", dens:0.15, reg:0, span:1, leap:0.15}, drone:{lvl:0.45, timbre:"pur", bright:0.3}, pad:{lvl:0.3, timbre:"cordes", len:6}, perc:{lvl:0}, nature:{mer:0.7, pluie:0.25, mouettes:0.05}, amb:{vent:0.45}, fx:{rev:0.55, size:6, dark:0.6}}},
   Bellum:{g:"la veille de la bataille : les feux de camp, des tambours au loin, un chant grave", o:{rc:0.25, tempo:56, mus:{form:"libre"}, mel:{lvl:0.4, inst:"cuivre", dens:0.12, reg:0, span:1, leap:0.15}, drone:{lvl:0.6, timbre:"choeur"}, pad:{lvl:0.35, timbre:"choeur", len:4}, perc:{lvl:0.25, kit:"taiko", shaker:0, ghost:0}, amb:{feu:0.4, murmur:0.1, vent:0.25}, nature:{chevaux:0.12, loup:0.05}, fx:{rev:0.55, size:5, dark:0.6}}},
-  Equitatus:{g:"chevauchée au crépuscule : la plaine, le vent, un sifflet au loin", o:{rc:0.3, tempo:66, meter:"3/4", mus:{form:"libre"}, mel:{lvl:0.45, inst:"sifflet", dens:0.18, reg:1, span:1, leap:0.15}, drone:{lvl:0.15, timbre:"pur"}, pad:{lvl:0.15, timbre:"cordes", len:4}, perc:{lvl:0}, nature:{chevaux:0.2}, amb:{vent:0.45}, fx:{algo:"plaque", rev:0.45, size:4, dly:0.2, dlyDiv:3, fb:0.3}}},
   "Aula Fatarum":{g:"le bal des fées s'éteint : des carillons, une flûte, la rosée", o:{rc:0.3, tempo:60, mus:{form:"libre"}, mel:{lvl:0.45, inst:"flute", dens:0.2, reg:1, span:1, leap:0.15}, arp:{lvl:0.2, inst:"harpe", pat:"auto"}, loops:{lvl:0.15, count:3, inst:"carillon", speed:1.6}, drone:{lvl:0.2, timbre:"orgue"}, pad:{lvl:0.25, timbre:"vecteur", len:4}, perc:{lvl:0}, amb:{murmur:0}, nature:{nuit:0.2, ruisseau:0.15}, fx:{rev:0.55, size:5, shim:0.25}}},
   Sparta:{g:"Sparte la nuit : le camp, un aulos solitaire, les braises", o:{rc:0.2, tempo:54, meter:"4/4", mus:{form:"libre"}, mel:{lvl:0.45, inst:"aulos", dens:0.18, reg:1, span:1, leap:0.15}, drone:{lvl:0.45, timbre:"aulos"}, pad:{lvl:0.2, timbre:"choeur", len:4}, perc:{lvl:0.15, shaker:0, ghost:0}, amb:{feu:0.35, vent:0.25}, fx:{rev:0.45, size:4, dark:0.5}}},
   "Roma Triumphans":{g:"Rome la nuit : le forum désert, une fontaine, l'hydraulis au loin", o:{rc:0.25, tempo:54, mus:{form:"libre"}, mel:{lvl:0.4, inst:"hydraulis", dens:0.15, reg:1, span:1, leap:0.15}, drone:{lvl:0.25, timbre:"orgue"}, pad:{lvl:0.25, timbre:"orgue", len:6}, perc:{lvl:0}, amb:{murmur:0.08}, nature:{ruisseau:0.25}, fx:{algo:"salle", rev:0.55, size:5}}},
@@ -520,11 +498,11 @@ const AMBIANCE={
 /* les bêtes de chaque ambiance */
 const PRESET_BEASTS={Nox:{grenouilles:0.4, hibou:0.35}, Pluvia:{grenouilles:0.3}, Silva:{corbeaux:0.12}, Mare:{mouettes:0.3}, "Domus Obscura":{corbeaux:0.2, loup:0.12}, Crypta:{corbeaux:0.1},
   Larva:{hibou:0.2}, Fjordus:{loup:0.2}, Skalda:{loup:0.12}, Bellum:{chevaux:0.2}, Hiems:{loup:0.2}, "Silva Antiqua":{hibou:0.15}, Iter:{chevaux:0.15}, Insidiae:{corbeaux:0.15, hibou:0.15},
-  Desertum:{chevaux:0.15}, Equitatus:{chevaux:0.3}, Saloon:{chevaux:0.1}, Duellum:{corbeaux:0.15}, Portus:{mouettes:0.4}, Navigium:{mouettes:0.2}, Thesaurus:{mouettes:0.3},
+  Portus:{mouettes:0.4}, Navigium:{mouettes:0.2}, Thesaurus:{mouettes:0.3},
   Thermopylae:{chevaux:0.12}, Odyssea:{mouettes:0.3}, Montagne:{loup:0.08}, Custos:{corbeaux:0.1}};
 const UNIV_EUCL={cyber:0.5, orient:0.35};
 /* point de départ sur l'axe rituel ↔ chanson : les musiques de bourdon d'un côté, les chansons de l'autre */
-const UNIV_RC={dark:0.05, antique:0.15, calme:0.15, espace:0.2, horreur:0.25, nature:0.25, orient:0.4, nordique:0.45, medieval:0.5, feerie:0.5, cyber:0.55, aventure:0.6, pirates:0.7, western:0.75, dungeon:0.8};
+const UNIV_RC={dark:0.05, antique:0.15, calme:0.15, espace:0.2, horreur:0.25, nature:0.25, orient:0.4, nordique:0.45, medieval:0.5, feerie:0.5, cyber:0.55, aventure:0.6, pirates:0.7, dungeon:0.8};
 UNIVERS.forEach(u=>u.items.forEach(it=>{ const p=it[1]; p.perc=Object.assign({kit:UNIV_KIT[u.id]||"cadre", eucl:UNIV_EUCL[u.id]||0},p.perc||{}); if(p.norm===undefined) p.norm=PRESET_NORM[it[0]]||0; if(p.rc===undefined) p.rc=UNIV_RC[u.id]===undefined?0.5:UNIV_RC[u.id]; if(PRESET_BEASTS[it[0]]) p.nature=Object.assign({},p.nature||{},PRESET_BEASTS[it[0]]); if(PRESET_TUNE[it[0]]) merge(p,clone(PRESET_TUNE[it[0]]));
   const AV=AMBIANCE[it[0]]; if(AV){ if(!AV.o.canon&&!(it[0]==="Urbs Neon"||it[0]==="Machina"||it[0]==="Castellum")) merge(p,clone(Z)); merge(p,clone(AV.o)); it[2]=AV.g; } }));
 /* équilibre mesuré (sonie pondérée, rendu hors ligne) : le lieu ramené à 14 dB sous la musique, le bourdon baissé de 3 dB là où il étouffait la mélodie ; norm compense la sonie */

@@ -44,7 +44,6 @@ const ICONS={
   nordique:'<path d="M8 3v18M8 8l9 4-9 4"/><rect class="a" x="18" y="10.8" width="2.4" height="2.4"/>',
   feerie:'<path d="M12 2l2.6 7.4L22 12l-7.4 2.6L12 22l-2.6-7.4L2 12l7.4-2.6z"/><rect class="a" x="10.8" y="10.8" width="2.4" height="2.4"/>',
   horreur:'<path d="M5 11a7 7 0 0 1 14 0v3.5l-2 1V20H7v-4.5l-2-1z"/><path d="M10 20v-3M12 20v-3M14 20v-3"/><rect class="a" x="8" y="10" width="2.6" height="3"/><rect class="a" x="13.4" y="10" width="2.6" height="3"/>',
-  western:'<path d="M12 3l2.6 5.4 5.9.9-4.3 4.1 1 5.9L12 16.5l-5.2 2.8 1-5.9L3.5 9.3l5.9-.9z"/><rect class="a" x="10.8" y="9.8" width="2.4" height="2.4"/>',
   cyber:'<rect x="6" y="6" width="12" height="12"/><path d="M9 3v3M15 3v3M9 18v3M15 18v3M3 9h3M3 15h3M18 9h3M18 15h3"/><rect class="a" x="10" y="10" width="4" height="4"/>',
   espace:'<circle cx="12" cy="12" r="5"/><ellipse cx="12" cy="12" rx="10" ry="3.4" transform="rotate(-20 12 12)"/><rect class="a" x="18.5" y="3.5" width="2.6" height="2.6"/>',
   orient:'<path d="M16 4a8 8 0 1 0 0 16 6.5 6.5 0 0 1 0-16z"/><rect class="a" x="17.5" y="9" width="3" height="3"/>',

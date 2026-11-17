@@ -123,7 +123,7 @@ function buildEngine(ctx, S, o){
   const master=G(0);
   out.connect(sat); const voixEQ=ctx.createBiquadFilter(); voixEQ.type="peaking"; voixEQ.frequency.value=1900; voixEQ.Q.value=0.8; voixEQ.gain.value=0; veil.connect(voixEQ); voixEQ.connect(master);
   const lWowIn=link(sat,wowD), lWowOut=link(wowD,veil), lWowBy=link(sat,veil);
-  const volG=G(1); volG.connect(ctx.destination);
+  const volG=G(1); volG.connect(o.dest||ctx.destination); /* téléphone : la sortie passe par un lecteur audio (arrière-plan) */
   const sleepG=G(1); sleepG.connect(volG);
   /* normalisation : chaque ambiance a été mesurée hors ligne (sonie pondérée), son gain la ramène au niveau commun */
   const normG=G(1);

@@ -22,7 +22,10 @@ function vRad(o,R){ const V=VEIL.view, span=Math.max(12,V.hi-V.lo), u=Math.max(0
 function veilRose(now,an){
   const cv=$("veilRose"); if(!cv) return; const {w:W,h:H,d}=veilSize(cv), c=cv.getContext("2d"), C=veilC();
   c.setTransform(d,0,0,d,0,0); c.clearRect(0,0,W,H);
-  const narrow=W<700, cx=W/2, cy=narrow?H*0.56:H/2, lab=Math.max(11,Math.min(15,Math.min(W,H)/40))*2.8, R=Math.max(40,Math.min(W/2-lab,H*(narrow?0.36:0.42)));
+  const narrow=W<700, cx=W/2, lab=Math.max(11,Math.min(15,Math.min(W,H)/40))*2.8;
+  /* téléphone : le titre est en haut de l'écran, la rosace se place dessous au lieu d'être recouverte */
+  let top=0; if(narrow){ const ti=document.querySelector(".vl-head .vl-title"), cr=cv.getBoundingClientRect(); if(ti){ const tr=ti.getBoundingClientRect(); if(tr.height) top=Math.max(0,Math.min(H*0.55,tr.bottom-cr.top+6)); } }
+  const avail=H-top, cy=narrow?top+avail/2:H/2, R=Math.max(36,Math.min(W/2-lab,narrow?avail/2-lab*0.75:H*0.42));
   const iv=ivOf(S,typeof curScaleKey==="function"?curScaleKey():S.scales[0]);
   /* niveau d'ensemble, lissé : fait respirer le bourdon */
   let wave=null;

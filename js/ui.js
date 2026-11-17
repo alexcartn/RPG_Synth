@@ -313,7 +313,8 @@ const UI=[
   {items:[
    {k:"form.shape",type:"select",label:"Forme",opts:[["constante","Constante"],["arche","Arche"],["vagues","Vagues"],["escalier","Escalier"]]},
    {k:"form.period",type:"range",label:"Période",min:1,max:10,step:0.5,fmt:v=>v+" min"},
-   {k:"form.amount",type:"range",label:"Amplitude",min:0,max:1,step:0.01,fmt:pct}]},
+   {k:"form.amount",type:"range",label:"Amplitude",min:0,max:1,step:0.01,fmt:pct},
+   {k:"form.breath",type:"range",label:"Respirations",min:0,max:1,step:0.01,fmt:pct,hint:"Part des sections où une voix (nappes, percussion, boucles ou pendules) se retire puis revient à mi-section, pour que l'ambiance ne paraisse jamais plate."}]},
   {h:"Tension", hf:"courbe de tension", items:[
    {k:"curve.mode",type:"select",label:"Courbe",opts:[["off","Désactivée"],["loop","Répétée"],["once","Une fois, puis elle tient"]]},
    {k:"curve.dur",type:"range",label:"Durée de la courbe",min:1,max:20,step:1,fmt:v=>v+(v>1?" minutes":" minute")}], node:()=>curveEditor()},

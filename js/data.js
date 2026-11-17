@@ -87,7 +87,7 @@ const METERS = {
 const DEFAULT = {
   seed:1472, root:2, scales:["mixolydien","",""], custom:[1,0,1,0,1,1,0,1,0,1,1,0], sectionBars:16,
   temper:"egal", a4:440,
-  tempo:120, meter:"4/4", swing:0.1, tension:0.5, vol:1,
+  tempo:120, meter:"4/4", swing:0.1, tension:0.5, vol:1, norm:0,
   perc:{lvl:0.5, shaker:0.55, ghost:0.35, kit:"cadre"},
   drone:{lvl:0.8, timbre:"anche", bright:0.5, width:0.5, drift:0.5, glide:0.5},
   mel:{lvl:0.6, inst:"luth", dens:0.85, reg:0, span:2, leap:0.2, orn:0.15, deja:0, loop:2},
@@ -97,7 +97,7 @@ const DEFAULT = {
   pend:{lvl:0, count:6, period:24, inst:"carillon"},
   amb:{lvl:1, murmur:0.35, clink:0.5, feu:0.15, vent:0, gouttes:0},
   fx:{rev:0.4, size:2.6, dark:0.5, room:"gen", algo:"vivante", mod:0.5, shim:0, dly:0, dlyDiv:1.5, fb:0.4, sat:0.15, wow:0.12, veil:0.3, hiss:0},
-  form:{shape:"constante", period:4, amount:0.5},
+  form:{shape:"constante", period:4, amount:0.5, breath:0.5},
   wx:{place:null, d:null, t:0},
   mach:true,
   daw:{sel:0, grid:1, rec:-1, arp:{on:false, mode:"up", rate:0.5, oct:2, gate:0.7}, mix:{mute:{}, solo:{}, pan:{}}, tracks:[

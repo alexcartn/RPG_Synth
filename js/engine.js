@@ -268,7 +268,7 @@ function buildEngine(ctx, S, o){
     canonG.gain.value=lv("mel",S.canon.lvl);
     B.pad.lvl.gain.value=lv("pad",S.pad.lvl);
     B.perc.lvl.gain.value=lv("perc",S.perc.lvl);
-    B.amb.lvl.gain.value=lv("amb",1);
+    B.amb.lvl.gain.value=lv("amb",S.amb.lvl===undefined?1:S.amb.lvl);
     B.play.lvl.gain.value=S.play?S.play.lvl:0.8;
     volG.gain.value=S.vol===undefined?1:S.vol;
     { const nt=natv(), wa=want("amb");
@@ -1266,27 +1266,47 @@ function buildEngine(ctx, S, o){
     }
   }
 
-  /* gestes musicaux : suspense, révélation, danger, posés sur la prochaine noire */
-  function gesture(name){
-    if(!started) return;
-    const now=ctx.currentTime, tq=t0+Math.ceil((now+0.15-t0)/(2*E))*(2*E), iv=ivOf(S,secOf(tq).key), n=iv.length;
+  /* gestes musicaux, posés sur la prochaine noire : suspense, révélation, danger, poursuite, triomphe, apaisement.
+     amp (0 discret, 1 plein, 2 immense) règle la durée, la force et la densité ; renvoie la durée en secondes (0 si rien n'est parti) */
+  function gesture(name,amp){
+    if(!started) return 0;
+    const A=[0.6,1,1.7][amp===undefined||amp===null?1:Math.max(0,Math.min(2,Math.round(amp)))];
+    const now=ctx.currentTime, tq=t0+Math.ceil((now+0.15-t0)/(2*E))*(2*E), iv=ivOf(S,secOf(tq).key), n=iv.length, big=A>1.3;
     const ramp=(g,v,t,tc)=>{ g.cancelScheduledValues(Math.max(now,t-0.001)); g.setTargetAtTime(v,t,tc); };
     const back=(names,t)=>names.forEach(k=>ramp(B[k].gs.gain,1,t,0.7));
-    const fn=instOf(S.mel.inst,"luth"), note=(t,off,v,len)=>{ fn(t,freq(off),v,len,B.play.in,0); if(o.onNote) o.onNote(t,off,"play",len,v); };
+    const mk=fn=>(t,off,v,len)=>{ fn(t,freq(off),v,len,B.play.in,0); if(o.onNote) o.onNote(t,off,"play",len,v); };
+    const note=mk(instOf(S.mel.inst,"luth")), brass=mk(instOf("cuivre","luth"));
+    const chord=(t,len,offs)=>offs.forEach(x=>padVoice(t,len,freq(x),S.pad.timbre));
+    const deg=k=>degOff(iv,k);
+    let len=0;
     if(name==="suspense"){
-      const len=3*bar, dom=Math.round(n*4/7)%n; ramp(B.mel.gs.gain,0,now,0.2); ramp(B.perc.gs.gain,0.15,now,0.4); ramp(B.pad.gs.gain,1.5,tq,1.2); ramp(B.drone.gs.gain,1.4,tq,1.2);
-      [degOff(iv,dom),degOff(iv,dom+2),degOff(iv,dom+4)].forEach(x=>padVoice(tq,len,freq(x+12),S.pad.timbre));
+      len=bar*(1+2*A); const dom=Math.round(n*4/7)%n; ramp(B.mel.gs.gain,0,now,0.2); ramp(B.perc.gs.gain,0.15,now,0.4); ramp(B.pad.gs.gain,1+0.5*A,tq,1.2); ramp(B.drone.gs.gain,1+0.4*A,tq,1.2);
+      chord(tq,len,[deg(dom)+12,deg(dom+2)+12,deg(dom+4)+12].concat(big?[deg(dom+6)+12,deg(dom)+24]:[]));
       back(["mel","perc","pad","drone"],tq+len);
     }else if(name==="revelation"){
-      const len=3*bar; ramp(B.pad.gs.gain,1.35,tq,0.6); ramp(B.mel.gs.gain,1.15,tq,0.6);
-      [0,4,7,11,16].forEach(x=>padVoice(tq,len,freq(x+12),S.pad.timbre));
-      for(let i=0;i<6;i++) note(tq+i*E*0.5,degOff(iv,i)+12,0.2-0.01*i,E*3);
-      note(tq+3*E,degOff(iv,7)+12,0.22,E*8); back(["pad","mel"],tq+len);
+      len=bar*(1+2*A); ramp(B.pad.gs.gain,1+0.35*A,tq,0.6); ramp(B.mel.gs.gain,1+0.15*A,tq,0.6);
+      chord(tq,len,[0,4,7,11,16].map(x=>x+12).concat(big?[19+12,23+12]:[]));
+      const run=Math.round(4+2*A); for(let i=0;i<run;i++) note(tq+i*E*0.5,deg(i)+12,0.2-0.008*i,E*3);
+      note(tq+run*E*0.5,deg(run+1)+12,0.22,E*(big?12:8)); back(["pad","mel"],tq+len);
     }else if(name==="danger"){
-      const len=4*bar; ramp(B.perc.gs.gain,1.9,tq,0.3); ramp(B.drone.gs.gain,1.5,tq,0.4); ramp(B.mel.gs.gain,0.4,tq,0.3);
-      for(let k=0;k<8;k++){ const t=tq+k*E; note(t,k%2?-6:-12,0.3-0.015*k,E*1.6); if(k%2===0) note(t+E*0.5,-12+(k%4===0?0:1),0.16,E); }
+      len=bar*(2+2*A); ramp(B.perc.gs.gain,1+0.9*A,tq,0.3); ramp(B.drone.gs.gain,1+0.5*A,tq,0.4); ramp(B.mel.gs.gain,0.4,tq,0.3);
+      const m=Math.round(8*A); for(let k=0;k<m;k++){ const t=tq+k*E; note(t,k%2?-6:-12,0.3-0.012*k,E*1.6); if(k%2===0) note(t+E*0.5,-12+(k%4===0?0:1),0.16,E); }
       back(["perc","drone","mel"],tq+len);
-    }
+    }else if(name==="poursuite"){
+      len=bar*(1+2*A); ramp(B.perc.gs.gain,1+1.1*A,tq,0.25); ramp(B.drone.gs.gain,1+0.3*A,tq,0.4); ramp(B.mel.gs.gain,0.6,tq,0.3);
+      const pat=[0,0,2,0,0,4,0,2], m=Math.floor(len/E)-1; for(let k=0;k<m;k++){ const acc=k%4===0; note(tq+k*E,deg(pat[k%8])-(big?24:12),acc?0.3:0.2,E*0.55); if(big&&acc) note(tq+k*E,deg(pat[k%8])-12,0.16,E*0.5); }
+      back(["perc","drone","mel"],tq+len);
+    }else if(name==="triomphe"){
+      len=bar*(2+A); ramp(B.perc.gs.gain,1+0.6*A,tq,0.3); ramp(B.pad.gs.gain,1+0.4*A,tq,0.5); ramp(B.mel.gs.gain,0.5,tq,0.3);
+      const seq=[0,2,4,7,4,7,9]; seq.forEach((d,i)=>brass(tq+i*E*0.5,deg(d)+12,0.26-0.01*i,E*0.8)); const tf=tq+seq.length*E*0.5;
+      chord(tf,len-seq.length*E*0.5,[deg(0)+12,deg(2)+12,deg(4)+12,deg(0)+24].concat(big?[deg(4)+24]:[])); brass(tf,deg(7)+12,0.28,E*(big?10:6)); if(big) brass(tf,deg(0)+12,0.2,E*10);
+      back(["perc","pad","mel"],tq+len);
+    }else if(name==="apaisement"){
+      len=bar*(2+2*A); ramp(B.perc.gs.gain,0.05,now,0.5); ramp(B.mel.gs.gain,0.35,now,0.5); ramp(B.pad.gs.gain,1+0.3*A,tq,1.4); ramp(B.drone.gs.gain,1+0.2*A,tq,1.4);
+      chord(tq,len,[deg(0),deg(4),deg(0)+12,deg(2)+12]); note(tq+bar,deg(0)+12,0.12,E*10);
+      back(["perc","mel","pad","drone"],tq+len);
+    }else return 0;
+    return len;
   }
   /* figer : la dernière phrase et le dernier accord tournent en boucle jusqu'à ce qu'on relâche */
   function freeze(on){

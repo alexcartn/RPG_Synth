@@ -861,28 +861,70 @@ body.armed .knob[data-dst]{cursor:copy}
 #atLfo.drawable{cursor:crosshair; touch-action:none}
 
 /* ---------- première page : un univers, ce qu'on cherche ---------- */
-.seek{display:flex; flex-direction:column; gap:var(--sp-xs); max-width:1000px}
-.seek-row{display:flex; align-items:baseline; gap:var(--sp-md)}
-.seek-l{flex:none; width:6.6em; font:400 .8rem/1 var(--caps); letter-spacing:.1em; color:var(--ink-2)}
+.seek{display:flex; flex-direction:column; gap:var(--sp-md); max-width:1000px}
+.seek-row{display:grid; grid-template-columns:8.2em minmax(0,1fr); align-items:baseline; gap:0 var(--sp-md)}
+.seek-l{font:400 .8rem/1 var(--caps); letter-spacing:.1em; color:var(--ink-2); white-space:nowrap}
+.seek-l i{font:italic 400 1.05rem/1 var(--display); color:var(--rubric); letter-spacing:0; margin-right:.55em; display:inline-block; min-width:1.5em}
+.seek-c{min-width:0}
 .seek-uni{display:flex; flex-wrap:wrap; gap:var(--sp-xs) var(--sp-lg)}
 .seek .lnk{color:var(--ink)} .seek .lnk:hover, .seek .lnk[aria-current="true"]{color:var(--rubric)}
-.seek-uni .lnk{font-size:1.2rem}
-.seek-row .aff-chips{flex:1 1 0; min-width:0; gap:var(--sp-xs) var(--sp-sm)}
+.seek-uni .lnk{font-size:1.15rem}
+.seek-uni .seek-rnd{font-size:1rem; color:var(--ink-2); margin-left:var(--sp-sm); padding-left:var(--sp-lg); border-left:1px solid var(--rule)}
+.seek-tag{margin:2px 0 0; font:italic 400 .98rem/1.35 var(--body); color:var(--ink-2)}
+.seek .aff-chips{gap:var(--sp-xs) var(--sp-sm)}
 .seek .aff-chip{font-size:.95rem; padding:5px 10px}
-.seek .aff-res{grid-template-columns:repeat(auto-fit,minmax(168px,1fr)); gap:0 var(--sp-md); margin-left:calc(6.6em + var(--sp-md))}
-.seek .aff-res .hint{grid-column:1/-1; margin:0}
+.seek .aff-res{grid-template-columns:repeat(auto-fit,minmax(168px,1fr)); gap:0 var(--sp-md)}
+.seek .aff-res .hint{grid-column:1/-1; margin:0; font-size:.95rem; color:var(--ink-2)}
 .seek .aff-opt{padding:5px 0 4px}
 .seek .aff-opt .n{font-size:1.08rem}
 .seek .aff-opt .t{font-size:.82rem}
 .aff-opt .b{font:italic 400 .82rem/1.2 var(--body); color:var(--ink-2)}
 .aff-opt[aria-current="true"]{border-top-color:var(--rubric)}
 .aff-opt[aria-current="true"] .n{color:var(--rubric)}
-.seek .aff-now{margin:var(--sp-xs) 0 0 calc(6.6em + var(--sp-md)); font-size:.9rem; line-height:1.4}
+.seek .aff-now{margin:var(--sp-xs) 0 0; font-size:.9rem; line-height:1.4; padding-top:var(--sp-xs); border-top:1px dotted var(--rule)}
 .seek .aff-now strong{font-size:1.05rem}
 .seek .aff-now em{display:inline; margin-left:.5em; font-size:.88rem}
-.seek details.fin{margin:0 0 0 calc(6.6em + var(--sp-md))}
+.seek-more{display:flex; flex-wrap:wrap; gap:0 var(--sp-xl); margin-left:calc(8.2em + var(--sp-md))}
+.seek details.fin{margin:0}
+.seek details.fin[open]{flex:1 1 100%}
 .seek details.fin summary{font-size:.95rem}
 .seek-named{display:flex; flex-direction:column; gap:var(--sp-sm); padding-top:var(--sp-sm)}
 .seek-named .row{display:flex; flex-wrap:wrap; gap:var(--sp-xs) var(--sp-xl)}
 .seek-named .lnk{font-size:1.15rem}
-@media (max-width:640px){ .seek-row{flex-direction:column; align-items:flex-start; gap:var(--sp-xs)} .seek .aff-res,.seek .aff-now,.seek details.fin{margin-left:0} }
+@media (max-width:640px){ .seek-row{grid-template-columns:minmax(0,1fr); gap:var(--sp-xs)} .seek-more{margin-left:0} }
+
+/* ---------- infobulles ---------- */
+.tip{position:fixed; z-index:200; max-width:min(300px,calc(100vw - 24px)); padding:7px 11px 8px; background:var(--ink); color:var(--parch); font:400 .92rem/1.35 var(--body); border:1px solid var(--gold); pointer-events:none; opacity:0; transform:translateY(3px); transition:opacity .12s var(--ease), transform .12s var(--ease)}
+.tip.on{opacity:1; transform:none}
+.tip b{display:block; font:400 .78rem/1.2 var(--caps); letter-spacing:.1em; color:var(--gold); margin-bottom:2px; font-weight:400}
+@media (prefers-reduced-motion:reduce){ .tip{transition:none; transform:none} }
+
+/* ---------- gestes : six boutons et l'ampleur ---------- */
+.jeu-gest{flex:1 1 100%; flex-wrap:wrap; align-items:center; row-gap:var(--sp-sm); margin-left:0; padding-left:0; border-left:0}
+.jeu-gest .btn.tgl{padding:8px 12px; font-size:.95rem}
+.jeu-gest .btn.tgl::before{content:none}
+.jeu-gest .btn[aria-pressed="true"]{background:var(--rubric); color:var(--parch); border-color:var(--rubric)}
+.jeu-amp{display:inline-flex; align-items:baseline; gap:var(--sp-md); margin-left:var(--sp-sm)}
+.jeu-amp .lnk{font-size:1.02rem; color:var(--ink-2)}
+.jeu-amp .lnk[aria-current="true"]{color:var(--rubric)}
+
+/* ---------- veillée : la machine en grand, à la chandelle ---------- */
+.score{position:relative}
+.score-big{position:absolute; top:6px; right:8px; z-index:2; font-size:.95rem; color:var(--ink-2); background:var(--parch-2); padding:2px 8px}
+.score-big:hover{color:var(--rubric)}
+body.veiling{overflow:hidden}
+.veil{--glow:.3; position:fixed; inset:0; z-index:150; display:flex; flex-direction:column; gap:var(--sp-md); padding:var(--sp-xl) var(--sp-2xl) var(--sp-xl);
+  color:#efe3c8; background:radial-gradient(ellipse 80% 70% at 50% 45%, oklch(0.27 0.045 55 / var(--glow)), transparent 70%), oklch(0.16 0.02 55); cursor:default}
+.veil[hidden]{display:none}
+.veil.idle{cursor:none}
+.veil-top{display:flex; justify-content:space-between; align-items:baseline; gap:var(--sp-xl); flex-wrap:wrap; transition:opacity .6s var(--ease)}
+.veil.idle .veil-act{opacity:0; pointer-events:none}
+.veil-act{display:flex; gap:var(--sp-xl); transition:opacity .6s var(--ease)}
+.veil .lnk{color:#b3a182; font-size:1.1rem} .veil .lnk:hover,.veil .lnk:focus-visible{color:#f0c566}
+.veil-id{display:flex; flex-direction:column; gap:2px; min-width:0}
+.veil-key{font:italic 400 clamp(1.6rem,3.4vw,2.6rem)/1.1 var(--display); color:#ec6a4a}
+.veil-aff{font:italic 400 1.05rem/1.3 var(--body); color:#b3a182; letter-spacing:.02em}
+.veil-score{flex:1 1 auto; min-height:0; width:100%; display:block; border-top:1px solid #4a3d2e; border-bottom:1px solid #4a3d2e}
+.veil-low{flex:0 0 clamp(120px,22vh,220px); display:grid; grid-template-columns:minmax(0,1.3fr) minmax(0,.8fr) minmax(0,1.3fr); gap:var(--sp-xl)}
+.veil-low canvas{width:100%; height:100%; display:block; min-height:0}
+@media (max-width:760px){ .veil{padding:var(--sp-lg)} .veil-low{grid-template-columns:minmax(0,1fr) minmax(0,.7fr); flex-basis:110px} #veilSpec{display:none} }

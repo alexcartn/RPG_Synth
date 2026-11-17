@@ -51,6 +51,8 @@ const AFF_KEY=[
   {maj:["magnifique, chaleureux",{majestueux:.8,héroïque:.6}], min:["obscur, terrible",{tragique:.8,inquiétant:.7}]},
   {maj:["dur, éclatant, étrange",{étrange:.6,joyeux:.5}], min:["solitaire, mélancolique",{mélancolique:.9,nostalgique:.5}]}
 ];
+/* ce que chaque émotion veut dire à la table : sert d'infobulle */
+const EMO_TIP={mystérieux:"Ce qu'on ne comprend pas encore : une porte entrouverte, un secret.",fataliste:"Rien ne sera évité : le destin est en marche.",héroïque:"On se redresse et on avance : audace, bannières, courage.",mélancolique:"Une tristesse douce, qu'on garde près de soi.",joyeux:"Fête, rires, chopes levées.",féerique:"Émerveillement, magie légère, un monde qui scintille.",inquiétant:"Quelque chose cloche, sans qu'on sache quoi.",majestueux:"Grandeur, solennité, une salle de trône.",nostalgique:"Le souvenir d'un temps ou d'un lieu perdu.",serein:"Calme, paix, rien ne presse.",tragique:"Le deuil, la perte, le drame qui éclate.",étrange:"Hors des repères : onirique, déroutant, non humain.",sauvage:"Instinct, danse brute, nature sans maître.",sacré:"Chant d'église, rite, recueillement."};
 const AFF={sel:new Set(), open:false};
 const affQuality=iv=>iv.indexOf(4)>=0?"maj":"min";
 /* ce que dégage une couleur : phrase de la gamme, phrase de la tonalité, et le poids de chaque affect (65 % gamme, 35 % tonalité) */
@@ -85,20 +87,28 @@ const AFF_MAQAM=["rast","bayati","saba","enharm"];
 const AFF_AROUSAL={mystérieux:.5,fataliste:.6,héroïque:.65,mélancolique:.35,joyeux:.55,féerique:.4,inquiétant:.8,majestueux:.6,nostalgique:.3,serein:.2,tragique:.75,étrange:.6,sauvage:.75,sacré:.3};
 const seekUni=()=>{ try{ const v=localStorage.getItem("bourdon.univers"); if(UNIVERS.some(x=>x.id===v)) return v; }catch(e){} return "medieval"; };
 /* propositions : les meilleures gammes pour les affects choisis, chacune sur le préréglage de l'univers qui lui ressemble le plus */
+/* agitation d'un préréglage (0 calme, 1 tendu), d'après sa tension, sa percussion et son tempo */
+const presetArousal=o=>{ const t=o.tension===undefined?0.5:o.tension, pl=(o.perc&&o.perc.lvl!==undefined)?o.perc.lvl:DEFAULT.perc.lvl, tp=((o.tempo||DEFAULT.tempo)-40)/110; return Math.max(0,Math.min(1,0.45*t+0.3*pl+0.25*tp)); };
+const selArousal=sel=>sel.reduce((t,e)=>t+(AFF_AROUSAL[e]===undefined?0.5:AFF_AROUSAL[e]),0)/sel.length;
 function affPropose(uid,sel){
   const u=UNIVERS.find(x=>x.id===uid)||UNIVERS[0], items=u.items, allow=k=>uid==="orient"||AFF_MAQAM.indexOf(k)<0;
   const baseOf=it=>{ const o=it[1]; return {k:(o.scales&&o.scales[0])||DEFAULT.scales[0], r:o.root!==undefined?o.root:DEFAULT.root}; };
   const score=(k,r)=>{ const a=affOf(k,r); return sel.reduce((t,e)=>t+a.w(e),0)/sel.length; };
   const used=new Set(), out=[];
   affSuggest(sel,allow,5).forEach(sg=>{
-    let best=null; items.forEach(it=>{ if(used.has(it[0])) return; const b=baseOf(it), s=(b.k===sg.key?2:0)+score(b.k,b.r); if(!best||s>best.s) best={it,s}; });
+    let best=null; items.forEach(it=>{ if(used.has(it[0])) return; const b=baseOf(it), s=(b.k===sg.key?2:0)+score(b.k,b.r)+2.5*(1-Math.abs(presetArousal(it[1])-selArousal(sel))); if(!best||s>best.s) best={it,s}; });
     if(!best) best={it:items[0],s:0}; used.add(best.it[0]); out.push({preset:best.it,key:sg.key,root:sg.root,score:sg.score});
   });
   return out;
 }
 function affStart(pr){
   const over=clone(pr.preset[1]); over.scales=[pr.key,"",""]; over.root=pr.root;
-  const sel=[...AFF.sel]; if(sel.length) over.tension=Math.round(Math.max(0.1,Math.min(0.9,sel.reduce((t,e)=>t+(AFF_AROUSAL[e]===undefined?0.5:AFF_AROUSAL[e]),0)/sel.length))*100)/100;
+  const sel=[...AFF.sel];
+  /* l'ambiance prise comme base est ramenée vers l'agitation voulue : percussion et densité suivent, sans toucher au tempo ni à la mesure */
+  if(sel.length){ const a=selArousal(sel), k=0.5+a, cl=v=>Math.round(Math.min(1,v)*100)/100;
+    if(over.perc&&over.perc.lvl>0) over.perc.lvl=cl(over.perc.lvl*Math.min(1.3,k));
+    if(over.mel&&over.mel.dens!==undefined) over.mel.dens=cl(over.mel.dens*(0.7+0.6*a)); }
+  if(sel.length) over.tension=Math.round(Math.max(0.1,Math.min(0.9,sel.reduce((t,e)=>t+(AFF_AROUSAL[e]===undefined?0.5:AFF_AROUSAL[e]),0)/sel.length))*100)/100;
   loadScene(over,null);
   const g=$("presetGloss"); if(g) g.textContent="";
   document.querySelectorAll("#presets .lnk").forEach(x=>x.removeAttribute("aria-current"));
@@ -106,30 +116,37 @@ function affStart(pr){
 function affResults(auto){
   const host=$("affRes"); if(!host) return; host.innerHTML="";
   const sel=[...AFF.sel];
-  if(!sel.length){ host.appendChild(Object.assign(document.createElement("p"),{className:"hint",textContent:"Choisis une ou plusieurs émotions : la gamme, la tonalité et la tension s'ajustent, sur la base de l'univers."})); return; }
+  if(!sel.length){ host.appendChild(Object.assign(document.createElement("p"),{className:"hint",textContent:"Facultatif : une ou plusieurs émotions règlent la gamme, la tonalité et la tension. Sans choix, on part de la première ambiance de l'univers."})); return; }
   const res=affPropose(seekUni(),sel); AFF.props=res;
   res.forEach((r,i)=>{
     const b=document.createElement("button"); b.type="button"; b.className="aff-opt";
     const nm=SC[r.key].n.replace(/\s*\(.*\)/,""), top=affTop(r.key,r.root,3);
     b.innerHTML='<span class="n">'+nm+" en "+NOTES[r.root]+'</span><span class="t">'+top.join(" · ")+'</span><span class="b">sur l\'ambiance '+r.preset[0]+'</span><span class="s" aria-hidden="true"><i style="width:'+Math.round(Math.min(1,r.score)*100)+'%"></i></span>';
-    b.setAttribute("aria-label","Partir de "+nm+" en "+NOTES[r.root]+", ambiance "+r.preset[0]); if(i===0) b.setAttribute("aria-current","true");
+    b.setAttribute("aria-label","Partir de "+nm+" en "+NOTES[r.root]+", ambiance "+r.preset[0]); b.title="Jouer "+nm+" en "+NOTES[r.root]+" sur l'ambiance "+r.preset[0]+" : "+r.preset[2]+"."; if(i===0) b.setAttribute("aria-current","true");
     b.onclick=()=>{ host.querySelectorAll(".aff-opt").forEach(x=>x.removeAttribute("aria-current")); b.setAttribute("aria-current","true"); affStart(r); };
     host.appendChild(b);
   });
   if(auto&&res.length) affStart(res[0]);
 }
+function chipsSync(){ document.querySelectorAll("#affChips .aff-chip").forEach(b=>b.setAttribute("aria-pressed",AFF.sel.has(b.textContent)?"true":"false")); }
 function seekToggle(e){
   if(AFF.sel.has(e)) AFF.sel.delete(e); else AFF.sel.add(e);
-  document.querySelectorAll("#affChips .aff-chip").forEach(b=>b.setAttribute("aria-pressed",AFF.sel.has(b.textContent)?"true":"false"));
-  affResults(true);
+  chipsSync(); affResults(true);
 }
+function seekTag(){ const u=UNIVERS.find(x=>x.id===seekUni())||UNIVERS[0], t=$("seekTag"); if(t) t.textContent=u.tag||""; }
 function seekUniverse(id){
   if(!UNIVERS.some(x=>x.id===id)) return;
   try{ localStorage.setItem("bourdon.univers",id); }catch(e){}
   const sel=$("univers"); if(sel){ sel.value=id; } if(typeof drawPresetRow==="function") drawPresetRow();
   document.querySelectorAll("#seekUni .lnk").forEach(b=>{ if(b.dataset.id===id) b.setAttribute("aria-current","true"); else b.removeAttribute("aria-current"); });
-  seekNamed();
+  seekNamed(); seekTag();
   if(AFF.sel.size) affResults(true); else{ affResults(false); const u=UNIVERS.find(x=>x.id===id); if(u&&u.items.length) loadScene(u.items[0][1],null); }
+}
+/* au hasard : un univers et une ou deux émotions, pour se laisser surprendre */
+function seekRandom(){
+  const pick=a=>a[Math.floor(Math.random()*a.length)], u=pick(UNIVERS);
+  AFF.sel.clear(); const n=1+(Math.random()<0.5?1:0); while(AFF.sel.size<n) AFF.sel.add(pick(EMOTIONS));
+  chipsSync(); seekUniverse(u.id);
 }
 /* les ambiances nommées de l'univers choisi, pour qui sait ce qu'il veut */
 function seekNamed(){
@@ -139,16 +156,20 @@ function seekNamed(){
 }
 function seekBuild(){
   const host=$("seekBox"); if(!host) return;
-  host.innerHTML='<div class="seek-row"><span class="seek-l">Univers</span><span class="seek-uni" id="seekUni" role="group" aria-label="Univers"></span></div>'+
-    '<div class="seek-row"><span class="seek-l">Je cherche</span><div class="aff-chips" id="affChips" role="group" aria-label="Émotions"></div></div>'+
-    '<div class="aff-res" id="affRes"></div><p class="aff-now" id="affNow" aria-live="polite"></p>'+
-    '<details class="fin"><summary>Ambiances nommées de l\'univers</summary><div class="seek-named"><div class="row" id="seekPresets"></div><p class="hint" id="seekGloss"></p></div></details>'+
-    '<details class="fin"><summary>La table des affects en entier</summary><div class="aff-tables">'+affTable()+'</div></details>';
+  host.innerHTML='<div class="seek-row"><span class="seek-l"><i>I</i>Univers</span><div class="seek-c"><div class="seek-uni" id="seekUni" role="group" aria-label="Univers"></div><p class="seek-tag" id="seekTag"></p></div></div>'+
+    '<div class="seek-row"><span class="seek-l"><i>II</i>Je cherche</span><div class="seek-c"><div class="aff-chips" id="affChips" role="group" aria-label="Émotions"></div></div></div>'+
+    '<div class="seek-row"><span class="seek-l"><i>III</i>Je pars de</span><div class="seek-c"><div class="aff-res" id="affRes"></div><p class="aff-now" id="affNow" aria-live="polite"></p></div></div>'+
+    '<div class="seek-more"><details class="fin"><summary>Ambiances nommées de l\'univers</summary><div class="seek-named"><div class="row" id="seekPresets"></div><p class="hint" id="seekGloss"></p></div></details>'+
+    '<details class="fin"><summary>La table des affects en entier</summary><div class="aff-tables">'+affTable()+'</div></details></div>';
   const uni=host.querySelector("#seekUni"), cur=seekUni();
-  UNIVERS.forEach(u=>{ const b=document.createElement("button"); b.type="button"; b.className="lnk"; b.dataset.id=u.id; b.textContent=u.name.replace(/\s*:.*|,.*/,""); b.title=u.name; if(u.id===cur) b.setAttribute("aria-current","true"); b.onclick=()=>seekUniverse(u.id); uni.appendChild(b); });
+  UNIVERS.forEach(u=>{ const b=document.createElement("button"); b.type="button"; b.className="lnk"; b.dataset.id=u.id; b.textContent=u.name; b.title=u.tag; if(u.id===cur) b.setAttribute("aria-current","true"); b.onclick=()=>seekUniverse(u.id); uni.appendChild(b); });
+  { const r=document.createElement("button"); r.type="button"; r.className="lnk seek-rnd"; r.id="seekRnd"; r.textContent="Au hasard"; r.title="Un univers et une ou deux émotions tirés au sort : pour se laisser surprendre"; r.onclick=seekRandom; uni.appendChild(r); }
   const chips=host.querySelector("#affChips");
-  EMOTIONS.forEach(e=>{ const b=document.createElement("button"); b.type="button"; b.className="aff-chip"; b.textContent=e; b.setAttribute("aria-pressed","false"); b.onclick=()=>seekToggle(e); chips.appendChild(b); });
-  seekNamed(); affResults(false); affUpdate();
+  const scName=k=>SC[k].n.replace(/\s*\(.*\)/,"").toLowerCase();
+  EMOTIONS.forEach(e=>{ const b=document.createElement("button"); b.type="button"; b.className="aff-chip"; b.textContent=e; b.setAttribute("aria-pressed","false");
+    const best=Object.keys(AFF_SC).filter(k=>k!=="libre"&&SC[k]).sort((x,y)=>(AFF_SC[y][1][e]||0)-(AFF_SC[x][1][e]||0)).slice(0,3).map(scName).join(", ");
+    b.title=EMO_TIP[e]+" Gammes qui le portent le mieux : "+best+"."; b.onclick=()=>seekToggle(e); chips.appendChild(b); });
+  seekNamed(); seekTag(); affResults(false); affUpdate();
 }
 function affTable(){
   let h='<table class="aff-table"><caption>Gammes</caption><thead><tr><th>Gamme</th><th>Ce qu\'elle dégage</th><th>Affects dominants</th></tr></thead><tbody>';

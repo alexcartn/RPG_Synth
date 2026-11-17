@@ -2,20 +2,20 @@
 /* ============================================================
    MODE JEU : un panneau de boutons, un pad XY, le cercle et le clavier pour jouer par-dessus la machine
    ============================================================ */
-const JEU={on:false, frozen:false, xy:{x:"dens",y:"brume"}, seen:{}};
+const JEU={on:false, frozen:false, amp:1, xy:{x:"dens",y:"brume"}, seen:{}};
 
 /* chaque bouton agit sur un ou deux réglages existants ; replan = voix à replanifier, zero = voix qui s'allume ou s'éteint */
 const KNOBS=[
-  {id:"vol",label:"Volume",get:()=>S.vol,set:v=>{S.vol=v;},keys:["vol"]},
-  {id:"tension",label:"Tension",get:()=>S.tension,set:v=>{S.tension=v; releaseCurve();},keys:["tension"],fmt:v=>tensionWord(v)},
-  {id:"dens",label:"Densité",get:()=>S.mel.dens,set:v=>{S.mel.dens=v;},keys:["mel.dens"],replan:"mel"},
-  {id:"bourdon",label:"Bourdon",get:()=>S.drone.lvl,set:v=>{S.drone.lvl=v;},keys:["drone.lvl"]},
-  {id:"nappes",label:"Nappes",get:()=>S.pad.lvl,set:v=>{S.pad.lvl=v;},keys:["pad.lvl"],zero:"pad"},
-  {id:"brume",label:"Brume",get:()=>S.fx.rev,set:v=>{S.fx.rev=v;},keys:["fx.rev"]},
-  {id:"nuage",label:"Nuage",get:()=>(S.grain&&S.grain.mix)||0,set:v=>{S.grain.mix=v;},keys:["grain.mix"]},
-  {id:"canon",label:"Canon",get:()=>S.canon.lvl,set:v=>{S.canon.lvl=v;},keys:["canon.lvl"],zero:"mel",noKnob:true},
-  {id:"chaleur",label:"Chaleur",get:()=>Math.min(1,S.fx.sat/0.6),set:v=>{S.fx.sat=v*0.6; S.fx.wow=0.04+v*0.36;},keys:["fx.sat","fx.wow"]},
-  {id:"echo",label:"Écho",get:()=>S.fx.dly,set:v=>{S.fx.dly=v;},keys:["fx.dly"],noKnob:true}
+  {id:"vol",label:"Volume",tip:"Volume général de la sortie.",get:()=>S.vol,set:v=>{S.vol=v;},keys:["vol"]},
+  {id:"tension",label:"Tension",tip:"Monte : plus de nervosité, de dissonance et de percussion. Descend : tout se détend.",get:()=>S.tension,set:v=>{S.tension=v; releaseCurve();},keys:["tension"],fmt:v=>tensionWord(v)},
+  {id:"dens",label:"Densité",tip:"Nombre de notes de la mélodie : peu pour un chant épars, beaucoup pour une danse.",get:()=>S.mel.dens,set:v=>{S.mel.dens=v;},keys:["mel.dens"],replan:"mel"},
+  {id:"bourdon",label:"Bourdon",tip:"Le son continu et grave sur la tonique, qui tient toute la pièce.",get:()=>S.drone.lvl,set:v=>{S.drone.lvl=v;},keys:["drone.lvl"]},
+  {id:"nappes",label:"Nappes",tip:"Les accords tenus en arrière-plan.",get:()=>S.pad.lvl,set:v=>{S.pad.lvl=v;},keys:["pad.lvl"],zero:"pad"},
+  {id:"brume",label:"Brume",tip:"Réverbération : l'espace autour des sons, de la chambre à la cathédrale.",get:()=>S.fx.rev,set:v=>{S.fx.rev=v;},keys:["fx.rev"]},
+  {id:"nuage",label:"Nuage",tip:"Nuage de grains : la mélodie hachée en poussières de son qui flottent.",get:()=>(S.grain&&S.grain.mix)||0,set:v=>{S.grain.mix=v;},keys:["grain.mix"]},
+  {id:"canon",label:"Canon",tip:"Une seconde voix qui reprend la mélodie en décalé.",get:()=>S.canon.lvl,set:v=>{S.canon.lvl=v;},keys:["canon.lvl"],zero:"mel",noKnob:true},
+  {id:"chaleur",label:"Chaleur",tip:"Saturation et léger tremblé, comme une vieille bande magnétique.",get:()=>Math.min(1,S.fx.sat/0.6),set:v=>{S.fx.sat=v*0.6; S.fx.wow=0.04+v*0.36;},keys:["fx.sat","fx.wow"]},
+  {id:"echo",label:"Écho",tip:"Répétitions qui s'éteignent.",get:()=>S.fx.dly,set:v=>{S.fx.dly=v;},keys:["fx.dly"],noKnob:true}
 ];
 const KNOB=Object.fromEntries(KNOBS.map(k=>[k.id,k]));
 const knobText=(k,v)=>k.fmt?k.fmt(v):Math.round(v*100)+" %";
@@ -49,7 +49,7 @@ function paintKnob(el,spec){
 }
 function makeKnob(spec){
   const el=document.createElement("div"); el.className="knob"; el.setAttribute("role","slider"); el.tabIndex=0;
-  el.setAttribute("aria-label",spec.label); el.setAttribute("aria-valuemin","0"); el.setAttribute("aria-valuemax","100");
+  el.setAttribute("aria-label",spec.label); if(spec.tip) el.dataset.tip=spec.tip+" Glisse vers le haut ou le bas, molette ou flèches du clavier."; el.setAttribute("aria-valuemin","0"); el.setAttribute("aria-valuemax","100");
   let ticks=""; for(let i=0;i<=10;i++){ const a=A0+(A1-A0)*i/10, [x0,y0]=pol(34,a), [x1,y1]=pol(i%5===0?39:37,a); ticks+='<line x1="'+x0.toFixed(1)+'" y1="'+y0.toFixed(1)+'" x2="'+x1.toFixed(1)+'" y2="'+y1.toFixed(1)+'"/>'; }
   el.innerHTML='<svg viewBox="0 0 80 80" aria-hidden="true"><g class="tk">'+ticks+'</g><path class="trk" d="'+arcPath(30,A0,A1)+'"/><path class="val" d=""/><circle class="cap" cx="40" cy="40" r="20"/><line class="ndl" x1="40" y1="40" x2="40" y2="24"/></svg><span class="kl">'+spec.label+'</span><output class="kv"></output>';
   let dragging=false, y0=0, v0=0, ring=null;
@@ -123,9 +123,11 @@ function jeuState(){
   const h=$("jeuHint"); if(!h) return;
   h.textContent=live?"Touches Z, A et Q : trois rangées de la gamme, du grave à l'aigu. Ou touche le cercle. Le canon reprend ce que tu joues.":"Choisis un univers et ce que tu cherches, lance la lecture, puis tourne les boutons. Tous les réglages sont dans Composer.";
   { const g=$("jeuGel"); if(g){ g.disabled=!live; if(!live){ JEU.gel=false; g.setAttribute("aria-pressed","false"); } } }
-  const f=$("jeuFreeze"), rr=$("jeuReroll"); if(f) f.disabled=!live; if(rr) rr.disabled=!live; ["jeuSus","jeuRev","jeuDan"].forEach(id=>{ const b=$(id); if(b) b.disabled=!live; });
+  const f=$("jeuFreeze"), rr=$("jeuReroll"); if(f) f.disabled=!live; if(rr) rr.disabled=!live; document.querySelectorAll("#jeuGest [data-g]").forEach(b=>{ b.disabled=!live; if(!live) b.setAttribute("aria-pressed","false"); });
   if(!live){ JEU.frozen=false; if(f) f.setAttribute("aria-pressed","false"); }
 }
+/* ampleur des gestes : discret, plein, immense */
+function jeuAmpUI(){ document.querySelectorAll("#jeuAmp .lnk").forEach(b=>{ if(+b.dataset.amp===JEU.amp) b.setAttribute("aria-current","true"); else b.removeAttribute("aria-current"); }); }
 function jeuReset(){ JEU.frozen=false; const f=$("jeuFreeze"); if(f) f.setAttribute("aria-pressed","false"); JEU.gel=false; const g=$("jeuGel"); if(g) g.setAttribute("aria-pressed","false"); }
 function jeuSync(){
   if(!JEU.on) return;
@@ -167,7 +169,8 @@ function buildJeu(){
     if(on&&S.grain.mix<0.05){ applyKnob(KNOB.nuage,0.5,true); jeuSync(); }
     JEU.gel=live.eng.grainFreeze(on); $("jeuGel").setAttribute("aria-pressed",JEU.gel?"true":"false");
   };
-  $("jeuSus").onclick=()=>{ if(live) live.eng.gesture("suspense"); }; $("jeuRev").onclick=()=>{ if(live) live.eng.gesture("revelation"); }; $("jeuDan").onclick=()=>{ if(live) live.eng.gesture("danger"); };
+  document.querySelectorAll("#jeuAmp .lnk").forEach(b=>{ b.onclick=()=>{ JEU.amp=+b.dataset.amp; jeuAmpUI(); }; }); jeuAmpUI();
+  document.querySelectorAll("#jeuGest [data-g]").forEach(b=>{ b.onclick=()=>{ if(!live) return; const d=live.eng.gesture(b.dataset.g,JEU.amp); if(d>0){ b.setAttribute("aria-pressed","true"); clearTimeout(b._t); b._t=setTimeout(()=>b.setAttribute("aria-pressed","false"),d*1000); } }; });
   document.addEventListener("keydown",jeuKeys);
   JEU.mixSig=""; jeuState();
 }

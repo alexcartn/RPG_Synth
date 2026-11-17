@@ -25,6 +25,7 @@
   </header>
 
   <figure class="score" id="score">
+    <button class="lnk score-big" id="veilBtn" type="button" title="Veillée : la partition, l'oscilloscope, le cercle et le spectre en grand, pour regarder la machine tourner en fond. Plein écran possible.">Veillée</button>
     <canvas id="scoreCv" role="img" aria-label="Partition qui défile : notes déjà jouées à gauche, notes à venir à droite"></canvas>
     <figcaption class="legend" aria-hidden="true"><span class="k mel">mélodie</span><span class="k canon">canon</span><span class="k pad">nappes</span><span class="k loop">boucles</span><span class="k pend">pendules</span><span class="k perc">percussion</span></figcaption>
   </figure>
@@ -47,8 +48,16 @@
       <div class="jeu-actions">
         <button class="btn" id="jeuFreeze" type="button" aria-pressed="false" disabled>Figer</button>
         <button class="btn" id="jeuReroll" type="button" disabled>Autre phrase</button>
-        <span class="jeu-gest" role="group" aria-label="Gestes musicaux"><button class="btn" id="jeuSus" type="button" disabled title="La mélodie se tait, une nappe monte sur la dominante">Suspense</button><button class="btn" id="jeuRev" type="button" disabled title="L'accord s'ouvre, une montée claire">Révélation</button><button class="btn" id="jeuDan" type="button" disabled title="Motif de triton, percussion et bourdon qui montent">Danger</button></span>
         <button class="btn" id="jeuGel" type="button" aria-pressed="false" disabled title="Le nuage de grains garde ce qu'il vient d'entendre et le fait tourner">Geler le nuage</button>
+        <span class="jeu-gest" id="jeuGest" role="group" aria-label="Gestes musicaux">
+          <button class="btn" data-g="suspense" type="button" disabled title="Suspense : la mélodie se tait, une nappe monte sur la dominante. Pour une porte qui s'entrouvre.">Suspense</button>
+          <button class="btn" data-g="revelation" type="button" disabled title="Révélation : l'accord s'ouvre, une montée claire. Pour le coffre, le secret, le lever de soleil.">Révélation</button>
+          <button class="btn" data-g="danger" type="button" disabled title="Danger : motif de triton grave, percussion et bourdon qui montent. Pour l'embuscade, le monstre.">Danger</button>
+          <button class="btn" data-g="poursuite" type="button" disabled title="Poursuite : un ostinato rapide et une percussion qui galope. Pour la fuite, le combat qui s'emballe.">Poursuite</button>
+          <button class="btn" data-g="triomphe" type="button" disabled title="Triomphe : fanfare de cuivres et accord plein. Pour la victoire, l'entrée du héros.">Triomphe</button>
+          <button class="btn" data-g="apaisement" type="button" disabled title="Apaisement : tout redescend, la percussion s'éteint, une nappe large revient. Pour la fin du combat, la veillée.">Apaisement</button>
+          <span class="jeu-amp" id="jeuAmp" role="group" aria-label="Ampleur des gestes" title="Ampleur du geste : discret, plein ou immense. Plus c'est grand, plus c'est long, fort et dense."><span class="seek-l">Ampleur</span><button class="lnk" data-amp="0" type="button">discret</button><button class="lnk" data-amp="1" type="button">plein</button><button class="lnk" data-amp="2" type="button">immense</button></span>
+        </span>
       </div>
       <p class="hint" id="jeuHint"></p>
     </div>
@@ -114,6 +123,18 @@
     </aside>
   </div>
 </div>
+<div class="veil" id="veil" hidden role="dialog" aria-modal="true" aria-label="Veillée : vue agrandie de la machine">
+  <div class="veil-top">
+    <div class="veil-id"><span class="veil-key" id="veilKey"></span><span class="veil-aff" id="veilAff"></span></div>
+    <div class="veil-act"><button class="lnk" id="veilPlay" type="button">Jouer</button><button class="lnk" id="veilFs" type="button">Plein écran</button><button class="lnk" id="veilClose" type="button">Fermer</button></div>
+  </div>
+  <canvas class="veil-score" id="veilCv" role="img" aria-label="Partition qui défile, en grand"></canvas>
+  <div class="veil-low">
+    <canvas id="veilScope" role="img" aria-label="Oscilloscope"></canvas>
+    <canvas id="veilRing" role="img" aria-label="Cercle des notes de la gamme"></canvas>
+    <canvas id="veilSpec" role="img" aria-label="Spectre"></canvas>
+  </div>
+</div>
 <div class="dock"><button class="seal" id="play2" aria-pressed="false">Jouer</button><div class="dockT ctl"><div class="l"><label for="tension2">Tension</label><output id="tension2o"></output></div><input type="range" id="tension2" min="0" max="1" step="0.01" value="0.5"></div></div>
 
 <script src="js/fx.js"></script>
@@ -131,6 +152,8 @@
 <script src="js/meteo.js"></script>
 <script src="js/export.js"></script>
 <script src="js/capture.js"></script>
+<script src="js/veillee.js"></script>
+<script src="js/tip.js"></script>
 <script src="js/main.js"></script>
 <script src="js/pwa.js"></script>
 </body>

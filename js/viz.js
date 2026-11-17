@@ -2,51 +2,54 @@
 /* ============================================================
    PARTITION QUI DÉFILE : ce qui a été joué à gauche, ce qui va venir à droite
    ============================================================ */
-const VIZ={ev:[], lo:12, hi:48, cols:null, dpr:1, w:0, h:0, last:0};
+const VIZ={ev:[], lo:12, hi:48, cols:null, dpr:1, w:0, h:0, last:0, id:"scoreCv", k:1};
+/* palette de la veillée : la même partition, à la chandelle */
+const VIZ_NIGHT={ink:"#efe3c8", ink2:"#b3a182", rub:"#ec6a4a", gold:"#f0c566", verd:"#7cc4aa", rule:"#6b5944", bg:"transparent"};
 const VIZ_PAST=7, VIZ_FUTURE=9;
 const PITCHED={mel:1,canon:1,pad:1,loop:1,pend:1,play:1};
 
 function vizPush(t,off,kind,dur,vel,label){ VIZ.ev.push({t,off,kind,dur:dur||0,vel:vel||0.2,label}); }
 function vizClear(){ VIZ.ev.length=0; }
 
-function vizFit(){
-  const cv=$("scoreCv"); if(!cv) return;
+function vizFit(V){
+  V=V||VIZ; const cv=$(V.id); if(!cv) return;
   const r=cv.getBoundingClientRect(), dpr=Math.min(2,window.devicePixelRatio||1);
-  VIZ.w=Math.max(10,Math.round(r.width)); VIZ.h=Math.max(10,Math.round(r.height)); VIZ.dpr=dpr;
-  cv.width=Math.round(VIZ.w*dpr); cv.height=Math.round(VIZ.h*dpr);
+  V.w=Math.max(10,Math.round(r.width)); V.h=Math.max(10,Math.round(r.height)); V.dpr=dpr;
+  cv.width=Math.round(V.w*dpr); cv.height=Math.round(V.h*dpr);
   const cs=getComputedStyle(document.documentElement), v=n=>cs.getPropertyValue(n).trim();
-  VIZ.cols={ink:v("--ink")||"#3a2e22", ink2:v("--ink-2")||"#6b5a46", rub:v("--rubric")||"#a3301c", gold:"oklch(0.62 0.12 78)", verd:"oklch(0.52 0.09 175)", rule:v("--rule")||"#b8a888", bg:v("--parch-2")||"#e8dcc2"};
-  vizDraw(null);
+  V.cols=V.night?VIZ_NIGHT:{ink:v("--ink")||"#3a2e22", ink2:v("--ink-2")||"#6b5a46", rub:v("--rubric")||"#a3301c", gold:"oklch(0.62 0.12 78)", verd:"oklch(0.52 0.09 175)", rule:v("--rule")||"#b8a888", bg:v("--parch-2")||"#e8dcc2"};
+  vizDraw(V.last_now===undefined?null:V.last_now,V.last_eng,V);
 }
 
 /* now: temps audio courant, eng: moteur en cours (ou null pour la partition vide) */
-function vizDraw(now,eng){
-  const cv=$("scoreCv"); if(!cv||!VIZ.cols) return;
-  const c=cv.getContext("2d"), W=VIZ.w, H=VIZ.h, C=VIZ.cols;
-  c.setTransform(VIZ.dpr,0,0,VIZ.dpr,0,0); c.clearRect(0,0,W,H);
-  const top=20, bot=26, ph=H-top-bot, x0=W*VIZ_PAST/(VIZ_PAST+VIZ_FUTURE), pps=W/(VIZ_PAST+VIZ_FUTURE);
+function vizDraw(now,eng,V){
+  V=V||VIZ; const cv=$(V.id); if(!cv||!V.cols) return;
+  V.last_now=now; V.last_eng=eng;
+  const c=cv.getContext("2d"), W=V.w, H=V.h, C=V.cols, k=V.k||1, F=n=>"italic "+Math.round(n*k)+"px \"Alegreya\", Georgia, serif";
+  c.setTransform(V.dpr,0,0,V.dpr,0,0); c.clearRect(0,0,W,H);
+  const top=20*k, bot=26*k, ph=H-top-bot, x0=W*VIZ_PAST/(VIZ_PAST+VIZ_FUTURE), pps=W/(VIZ_PAST+VIZ_FUTURE);
   const live=now!==null&&eng;
   /* étendue des hauteurs : suit ce qui est visible, avec un lissage */
   if(live){
     let mn=1e9, mx=-1e9;
     for(const e of VIZ.ev){ if(!PITCHED[e.kind]||e.t+e.dur<now-VIZ_PAST||e.t>now+VIZ_FUTURE) continue; if(e.off<mn)mn=e.off; if(e.off>mx)mx=e.off; }
-    if(mx>=mn){ mn-=3; mx+=3; if(mx-mn<24){const m=(mx+mn)/2; mn=m-12; mx=m+12;} VIZ.lo+=(mn-VIZ.lo)*0.04; VIZ.hi+=(mx-VIZ.hi)*0.04; }
+    if(mx>=mn){ mn-=3; mx+=3; if(mx-mn<24){const m=(mx+mn)/2; mn=m-12; mx=m+12;} V.lo+=(mn-V.lo)*0.04; V.hi+=(mx-V.hi)*0.04; }
   }
-  const yOf=o=>top+(1-(o-VIZ.lo)/(VIZ.hi-VIZ.lo))*ph;
+  const yOf=o=>top+(1-(o-V.lo)/(V.hi-V.lo))*ph;
   /* lignes de tonique (portée) */
   c.lineWidth=1; c.strokeStyle=C.rule; c.globalAlpha=live?0.55:0.8; c.setLineDash([2,4]);
-  for(let o=Math.ceil(VIZ.lo/12)*12;o<=VIZ.hi;o+=12){ const y=Math.round(yOf(o))+0.5; c.beginPath(); c.moveTo(0,y); c.lineTo(W,y); c.stroke(); }
+  for(let o=Math.ceil(V.lo/12)*12;o<=V.hi;o+=12){ const y=Math.round(yOf(o))+0.5; c.beginPath(); c.moveTo(0,y); c.lineTo(W,y); c.stroke(); }
   c.setLineDash([]); c.globalAlpha=1;
   if(live){ /* nom de la tonique sur ses lignes */
-    c.fillStyle=C.ink2; c.globalAlpha=0.75; c.font='italic 11px "Alegreya", Georgia, serif'; c.textAlign="left";
-    for(let o=Math.ceil(VIZ.lo/12)*12;o<=VIZ.hi;o+=12) c.fillText(NOTES[S.root],4,Math.round(yOf(o))-3);
+    c.fillStyle=C.ink2; c.globalAlpha=0.75; c.font=F(11); c.textAlign="left";
+    for(let o=Math.ceil(V.lo/12)*12;o<=V.hi;o+=12) c.fillText(NOTES[S.root],4,Math.round(yOf(o))-3);
     c.globalAlpha=1;
   }
   /* bourdon : double filet en bas */
   c.strokeStyle=C.ink2; c.globalAlpha=0.5; c.beginPath(); c.moveTo(0,H-bot+6.5); c.lineTo(W,H-bot+6.5); c.moveTo(0,H-bot+9.5); c.lineTo(W,H-bot+9.5); c.stroke(); c.globalAlpha=1;
-  c.font='italic 11px "Alegreya", Georgia, serif'; c.textBaseline="alphabetic";
+  c.font=F(11); c.textBaseline="alphabetic";
   if(!live){
-    c.fillStyle=C.ink2; c.textAlign="center"; c.font='italic 15px "Alegreya", Georgia, serif';
+    c.fillStyle=C.ink2; c.textAlign="center"; c.font=F(15);
     const msg="Lance la lecture : la partition défile ici, les notes à venir arrivent par la droite.";
     if(c.measureText(msg).width<W-24) c.fillText(msg,W/2,H/2+4);
     else{ c.fillText("Lance la lecture :",W/2,H/2-8); c.fillText("la partition défile ici,",W/2,H/2+10); c.fillText("les notes à venir arrivent par la droite.",W/2,H/2+28); }
@@ -65,7 +68,7 @@ function vizDraw(now,eng){
     c.fillStyle=C.rub; c.fillText((SC[key]||SC.mixolydien).n.toLowerCase()+(sec.role?" · "+sec.role:""),x+4,13);
   }
   /* notes */
-  const bh=Math.max(4,Math.min(9,ph/(VIZ.hi-VIZ.lo)*1.6));
+  const bh=Math.max(4*k,Math.min(9*k,ph/(V.hi-V.lo)*1.6));
   VIZ.ev=VIZ.ev.filter(e=>e.t+e.dur>now-VIZ_PAST-1);
   for(const e of VIZ.ev){
     if(e.t>now+VIZ_FUTURE) continue;
@@ -87,7 +90,7 @@ function vizDraw(now,eng){
   }
   c.globalAlpha=1;
   /* légende du sens de défilement */
-  c.fillStyle=C.ink2; c.globalAlpha=0.6; c.font='italic 11px "Alegreya", Georgia, serif'; c.textAlign="right"; c.fillText("à venir",W-6,H-bot-4);
+  c.fillStyle=C.ink2; c.globalAlpha=0.6; c.font=F(11); c.textAlign="right"; c.fillText("à venir",W-6,H-bot-4);
   c.textAlign="left"; c.fillText("déjà joué",Math.max(30,x0-70),H-bot-4); c.globalAlpha=1;
   /* tête de lecture */
   c.strokeStyle=C.gold; c.lineWidth=1.5; c.beginPath(); c.moveTo(Math.round(x0)+0.5,top-6); c.lineTo(Math.round(x0)+0.5,H-bot+11); c.stroke();

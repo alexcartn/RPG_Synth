@@ -116,7 +116,7 @@ const DEFAULT = {
     {id:3,name:"Piste 3",inst:"flute",vol:0.8,pan:0.2,mute:false,solo:false,bars:4,notes:[]}]},
   syn:clone(SYN_DEFAULT),
   mus:{logic:"modal", model:"physique", form:"libre", color:"off", harm:"idiome", arc:"aucun", crit:0.6, mode:"veillee"},
-  rc:0.5, chant:"kyrie", tune:"", plain:{lvl:0, reg:1, slow:1.5},
+  rc:0.5, chant:"kyrie", plain:{lvl:0, reg:1, slow:1.5},
   car:{grav:0.5, aud:0.5, orn:0.5, sil:0.5, rep:0.5},
   chance:{skip:0.08, ratchet:0.07, mutate:0.12, octave:0.05, rest:0.08},
   turing:{lock:0.85, len:2, rate:1},
@@ -128,32 +128,11 @@ const DEFAULT = {
   nature:{pluie:0, mer:0, nuit:0, ruisseau:0, oiseaux:0, grenouilles:0, hibou:0, loup:0, corbeaux:0, chevaux:0, mouettes:0},
   curve:{mode:"off", dur:6, pts:Array.from({length:96},()=>0.5)}
 };
-/* ============================================================
-   AIRS DU DOMAINE PUBLIC : la mélodie joue un vrai air au lieu d'inventer ses notes.
-   notes : « demi-tons au-dessus de la tonique : durée en croches » (r = silence) ; accords : un par mesure, fondamentale en demi-tons et m (mineur) ou M (majeur).
-   ============================================================ */
-const TUNES={
-  susanna:{n:"Oh! Susanna (Stephen Foster, 1848)", meter:"2/4", notes:
-    "r:2 0:1 2:1 | 4:1 7:1 7:1 9:1 | 7:1 4:1 0:1 2:1 | 4:1 4:1 2:1 0:1 | 2:2 0:1 2:1 | 4:1 7:1 7:1 9:1 | 7:1 4:1 0:1 2:1 | 4:1 4:1 2:1 2:1 | 0:4 | 5:2 5:2 | 9:2 9:2 | 9:1 7:1 7:1 4:1 | 0:1 2:3 | 4:1 7:1 7:1 9:1 | 7:1 4:1 0:1 2:1 | 4:1 4:1 2:1 2:1 | 0:4",
-    chords:"0M 0M 0M 0M 7M 0M 0M 7M 0M 5M 5M 0M 7M 0M 0M 7M 0M"},
-  sailor:{n:"Drunken Sailor (chant de marins)", meter:"4/4", notes:
-    "7:2 7:1 7:1 7:2 7:1 7:1 | 7:2 0:2 3:2 7:2 | 5:2 5:1 5:1 5:2 5:1 5:1 | 5:2 -2:2 2:2 5:2 | 7:2 7:1 7:1 7:2 7:1 7:1 | 7:2 9:2 10:2 12:2 | 10:2 7:2 5:2 2:2 | 0:4 0:4",
-    chords:"0m 0m 10M 10M 0m 0m 10M 0m"},
-  greensleeves:{n:"Greensleeves (Angleterre, XVIᵉ siècle)", meter:"6/8", notes:
-    "r:5 0:1 | 3:2 5:1 7:1.5 8:0.5 7:1 | 5:2 2:1 -2:1.5 0:0.5 2:1 | 3:2 0:1 0:1.5 -1:0.5 0:1 | 2:2 -1:1 -5:2 0:1 | 3:2 5:1 7:1.5 8:0.5 7:1 | 5:2 2:1 -2:1.5 0:0.5 2:1 | 3:1.5 2:0.5 0:1 -1:1.5 -3:0.5 -1:1 | 0:3 0:2 r:1",
-    chords:"0m 0m 10M 0m 7M 0m 10M 7M 0m"},
-  clementine:{n:"Oh My Darling, Clementine (chanson de l'Ouest)", meter:"3/4", notes:
-    "r:4 0:1 0:1 | 0:4 -5:2 | 4:1 4:1 4:2 0:2 | 0:1 4:1 7:3 7:1 | 5:1 4:1 2:4 | 2:1 4:1 5:3 5:1 | 4:1 2:1 4:2 0:2 | 0:1 4:1 2:3 -5:1 | -1:1 2:1 0:4",
-    chords:"0M 0M 0M 0M 7M 7M 0M 7M 0M"},
-  diesirae:{n:"Dies irae (plain-chant)", meter:"4/4", notes:
-    "3:2 2:2 3:2 0:2 | 2:2 -2:2 0:2 0:2 | 3:2 3:2 5:2 3:2 | 2:2 0:2 2:2 0:2 | r:8",
-    chords:"0m 10M 0m 0m 0m"}
-};
 const MEDIEVAL = [
-  ["Taberna", {tune:"greensleeves", rc:0.7, mus:{form:"rondeau"}, car:{grav:0.4, aud:0.5, orn:0.4, sil:0.2, rep:0.8}, seed:1213, root:9, scales:["eolien","dorien",""], tempo:112, meter:"6/8", swing:0, tension:0.45,
-    drone:{lvl:0}, pad:{lvl:0.3, timbre:"cordes", len:1, voices:3, bass:0.7}, arp:{lvl:0.4, inst:"luth", pat:"vaetvient", rate:1, reg:1, span:1},
-    mel:{lvl:0.62, inst:"flute", reg:1, dens:0.6}, canon:{lvl:0.25, inst:"archet", delay:1, shift:"oct-"}, perc:{lvl:0.2, shaker:0.15, ghost:0.1},
-    amb:{murmur:0.3, clink:0.25, feu:0.4}, fx:{algo:"salle", room:"salle", rev:0.35, size:2.8, dark:0.45, wow:0.06, sat:0.05}}, "taverne au coin du feu : Greensleeves à la flûte, luth, violon"],
+  ["Taberna", {rc:0.7, mus:{logic:"modal", harm:"idiome", form:"rondeau", arc:"arche"}, car:{grav:0.4, aud:0.55, orn:0.4, sil:0.25, rep:0.85}, seed:1213, root:2, scales:["dorien","mixolydien",""], tempo:92, meter:"3/4", swing:0, tension:0.45, sectionBars:16,
+    drone:{lvl:0.12, timbre:"anche", bright:0.35}, pad:{lvl:0.35, timbre:"machine", len:2, motion:0.6, voices:3, bass:0.75, stag:0.2}, arp:{lvl:0.45, inst:"luth", pat:"vaetvient", rate:1, reg:1, span:1},
+    mel:{lvl:0.55, inst:"flute", dens:0.6, reg:1, span:1, leap:0.15, orn:0.25, deja:0.75, loop:2}, canon:{lvl:0}, perc:{lvl:0.3, shaker:0.25, ghost:0.2},
+    amb:{murmur:0.35, clink:0.35, feu:0.4}, fx:{algo:"salle", room:"salle", rev:0.4, size:3, dark:0.45, wow:0.08, hiss:0.04, veil:0.15, sat:0.06}}, "taverne au coin du feu : luth, flûte, foule"],
   ["Chorea", {rc:0.75, car:{grav:0.35, aud:0.65, orn:0.8, sil:0.15, rep:0.7}, mus:{logic:"modal", harm:"idiome", form:"rondeau", arc:"arche"}, seed:218, root:4, scales:["dorien","",""], tempo:138, meter:"6/8", swing:0,
     perc:{lvl:0.5, shaker:0.5, ghost:0.35}, drone:{lvl:0.15}, mel:{inst:"flute", deja:0.4, loop:2, dens:0.9, leap:0.3, orn:0.3, reg:1, span:1},
     canon:{lvl:0}, pad:{lvl:0.3, timbre:"machine", len:2, voices:3, bass:0.75}, arp:{lvl:0.4, inst:"harpe", pat:"vaetvient", rate:1, reg:1, span:1}, amb:{murmur:0.3, clink:0.7, feu:0},
@@ -297,9 +276,9 @@ const AVENTURE = [
     canon:{lvl:0}, pad:{lvl:0.3, timbre:"choeur", motion:0.5}, amb:{vent:0.2, gouttes:0.1}, fx:{rev:0.5, size:4, dark:0.7, veil:0.5}}, "embuscade, infiltration : on retient son souffle"]
 ];
 const PIRATES = [
-  ["Portus", {tune:"sailor", rc:0.75, mus:{form:"rondeau"}, car:{grav:0.3, aud:0.7, orn:0.4, sil:0.1, rep:0.8}, seed:1717, root:2, scales:["dorien","eolien",""], tempo:128, meter:"4/4", swing:0,
-    perc:{lvl:0.5, shaker:0.35, ghost:0.3}, drone:{lvl:0}, mel:{lvl:0.7, inst:"accordeon", reg:1, dens:0.8}, canon:{lvl:0.3, inst:"archet", delay:1, shift:"oct-"},
-    pad:{lvl:0.25, timbre:"grattee", len:1, bass:0.8}, arp:{lvl:0}, amb:{murmur:0.4, clink:0.35, feu:0.15}, fx:{algo:"lieu", rev:0.25, size:2, room:"salle", wow:0.1}}, "taverne de port : Drunken Sailor à l'accordéon, violon, chopes"],
+  ["Portus", {car:{grav:0.3, aud:0.7, orn:0.6, sil:0.15, rep:0.7}, mus:{form:"rondeau", arc:"arche"}, seed:1717, root:2, scales:["mixolydien","dorien",""], tempo:132, meter:"6/8", swing:0,
+    perc:{lvl:0.65, shaker:0.6, ghost:0.35}, drone:{lvl:0.1, timbre:"choeur"}, mel:{lvl:0.7, inst:"accordeon", dens:0.95, orn:0.35},
+    canon:{lvl:0.3, inst:"archet", delay:2, shift:"oct+"}, pad:{lvl:0.15, timbre:"grattee", len:2}, amb:{murmur:0.55, clink:0.6, feu:0.1}, fx:{rev:0.28, size:2.4, room:"salle", wow:0.18}}, "taverne de port : chant de marins, rhum, chopes"],
   ["Navigium", {rc:0.4, car:{grav:0.45, aud:0.45, orn:0.4, sil:0.45, rep:0.6}, mus:{form:"variations", arc:"arche"}, seed:6006, root:9, scales:["dorien","eolien",""], tempo:66, meter:"12/8", swing:0,
     perc:{lvl:0.3, shaker:0.4, ghost:0.2}, drone:{lvl:0.35, timbre:"choeur", drift:0.7}, mel:{lvl:0.55, inst:"archet", dens:0.5, span:2, orn:0.2},
     canon:{lvl:0.25, inst:"flute", delay:4, shift:"oct+"}, pad:{lvl:0.3, timbre:"choeur", len:4}, amb:{vent:0.25}, fx:{rev:0.5, size:4}, nature:{mer:0.6}}, "en mer : houle, vent dans les voiles, violon"],
@@ -353,12 +332,13 @@ const HORREUR = [
     canon:{lvl:0}, pad:{lvl:0.3, timbre:"machine", len:8}, amb:{gouttes:0.6, vent:0.15}, fx:{rev:0.7, size:8, room:"grotte", dark:0.85, veil:0.7, hiss:0.1}}, "cachot humide : gouttes, écho de pierre"]
 ];
 const WESTERN = [
-  ["Desertum", {tune:"clementine", rc:0.7, car:{grav:0.5, aud:0.3, orn:0.2, sil:0.5, rep:0.8}, seed:7777, root:4, scales:["ionien","mixolydien",""], tempo:88, meter:"3/4", tension:0.35,
-    perc:{lvl:0}, drone:{lvl:0}, mel:{lvl:0.62, inst:"guitare", reg:1, dens:0.6}, canon:{lvl:0.3, inst:"sifflet", delay:1, shift:"oct+"},
-    pad:{lvl:0.2, timbre:"grattee", len:1, bass:0.7}, arp:{lvl:0}, amb:{vent:0.35}, fx:{algo:"plaque", rev:0.35, size:3, room:"plaque", dly:0.2, dlyDiv:3, fb:0.25, sat:0.1, wow:0.1}}, "feu de camp dans le désert : Clementine à la guitare, sifflet"],
-  ["Saloon", {tune:"susanna", rc:0.75, mus:{form:"rondeau"}, car:{grav:0.2, aud:0.6, orn:0.4, sil:0.1, rep:0.8}, seed:1881, root:7, scales:["ionien","mixolydien",""], tempo:104, meter:"2/4", swing:0.2,
-    perc:{lvl:0.35, shaker:0.3, ghost:0.2}, drone:{lvl:0}, mel:{lvl:0.72, inst:"piano", reg:1, dens:0.8}, canon:{lvl:0.25, inst:"harmonica", delay:1, shift:"oct+"},
-    pad:{lvl:0.28, timbre:"grattee", len:1, bass:0.8}, arp:{lvl:0}, amb:{murmur:0.3, clink:0.25}, fx:{algo:"lieu", rev:0.2, size:1.6, room:"salle", sat:0.12, wow:0.12}}, "saloon : Oh! Susanna au piano, guitare, harmonica"],
+  ["Desertum", {car:{grav:0.5, aud:0.25, orn:0.15, sil:0.85, rep:0.4}, seed:7777, root:4, scales:["dorien","pentmin",""], tempo:70, meter:"4/4", tension:0.4,
+    perc:{lvl:0.1, shaker:0, ghost:0.1}, drone:{lvl:0}, mel:{lvl:0.6, inst:"guitare", dens:0.22, reg:1, leap:0.25, orn:0.1, deja:0.3},
+    canon:{lvl:0.35, inst:"sifflet", delay:4, shift:"oct+"}, pad:{lvl:0.16, timbre:"grattee", len:4, voices:3}, amb:{vent:0.5},
+    fx:{rev:0.45, size:3.2, room:"plaque", algo:"plaque", dly:0.3, dlyDiv:3, fb:0.35, sat:0.2, wow:0.15, veil:0.1}}, "désert de l'Ouest : guitare claire, vent, sifflet"],
+  ["Saloon", {car:{grav:0.2, aud:0.85, orn:0.6, sil:0.05, rep:0.5}, mus:{form:"rondeau"}, seed:1881, root:7, scales:["ionien","mixolydien",""], tempo:116, meter:"2/4", swing:0.32,
+    perc:{lvl:0.45, shaker:0.5, ghost:0.5}, drone:{lvl:0}, mel:{lvl:0.75, inst:"piano", dens:1, orn:0.35, leap:0.3},
+    canon:{lvl:0.25, inst:"harmonica", delay:2, shift:"oct+"}, pad:{lvl:0.12, timbre:"grattee", len:2}, amb:{murmur:0.6, clink:0.7}, fx:{rev:0.2, size:1.6, room:"salle", sat:0.2, wow:0.2}}, "saloon : piano mécanique, harmonica, guitare, chopes, bagarre en vue"],
   ["Duellum", {car:{grav:0.6, aud:0.25, orn:0.1, sil:0.8, rep:0.4}, mus:{arc:"arche"}, seed:1127, root:9, scales:["harm","phrygdom",""], tempo:58, meter:"4/4", tension:0.8,
     perc:{lvl:0.22, shaker:0, ghost:0.1, kit:"taiko"}, drone:{lvl:0.08, timbre:"pur", bright:0.2}, mel:{lvl:0.6, inst:"sifflet", dens:0.14, reg:1, leap:0.35, orn:0.15},
     canon:{lvl:0.3, inst:"guitare", delay:2, shift:"oct-"}, pad:{lvl:0.18, timbre:"cordes", len:6}, amb:{vent:0.25},

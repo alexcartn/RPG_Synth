@@ -51,7 +51,7 @@ function veilRose(now,an){
   }
   /* le bourdon : un foyer qui respire au centre */
   { const r0=R*(0.12+0.1*VEIL.lev), g=c.createRadialGradient(cx,cy,0,cx,cy,r0*2.2);
-    g.addColorStop(0,C.rub); g.addColorStop(1,"rgba(0,0,0,0)"); c.globalCompositeOperation="lighter"; c.globalAlpha=0.18+0.45*VEIL.lev; c.fillStyle=g; c.beginPath(); c.arc(cx,cy,r0*2.2,0,Math.PI*2); c.fill(); c.globalCompositeOperation="source-over";
+    if(g){ g.addColorStop(0,C.rub); g.addColorStop(1,"rgba(0,0,0,0)"); } c.globalCompositeOperation="lighter"; c.globalAlpha=0.18+0.45*VEIL.lev; c.fillStyle=g||C.rub; c.beginPath(); c.arc(cx,cy,r0*2.2,0,Math.PI*2); c.fill(); c.globalCompositeOperation="source-over";
     c.globalAlpha=0.9; c.fillStyle=C.ink; c.font='400 '+Math.round(fs*1.5)+'px "IM Fell English SC", Georgia, serif'; c.fillText(NOTES[S.root],cx,cy+1); }
   if(now===null){ c.globalAlpha=1; return; }
   const ev=VIZ.ev, mel=[];
@@ -77,7 +77,7 @@ function veilRose(now,an){
   for(let i=1;i<pts.length;i++){ const p=pts[i-1], q=pts[i]; c.globalAlpha=0.45*Math.max(0,1-q.age/9); c.beginPath(); c.moveTo(p.x,p.y); c.lineTo(q.x,q.y); c.stroke(); }
   for(const p of pts){
     const f=Math.max(0,1-p.age/9), sounding=p.age<=Math.max(p.e.dur,0.25)+0.15, v=Math.min(1,p.e.vel*4);
-    if(sounding){ const hr=R*0.05*(1+v)*(1+0.4*Math.max(0,1-p.age*3)), g=c.createRadialGradient(p.x,p.y,0,p.x,p.y,hr); g.addColorStop(0,C.rub); g.addColorStop(1,"rgba(0,0,0,0)"); c.globalCompositeOperation="lighter"; c.globalAlpha=0.65; c.fillStyle=g; c.beginPath(); c.arc(p.x,p.y,hr,0,Math.PI*2); c.fill(); c.globalCompositeOperation="source-over"; }
+    if(sounding){ const hr=R*0.05*(1+v)*(1+0.4*Math.max(0,1-p.age*3)), g=c.createRadialGradient(p.x,p.y,0,p.x,p.y,hr); if(g){ g.addColorStop(0,C.rub); g.addColorStop(1,"rgba(0,0,0,0)"); } c.globalCompositeOperation="lighter"; c.globalAlpha=0.65; c.fillStyle=g||C.rub; c.beginPath(); c.arc(p.x,p.y,hr,0,Math.PI*2); c.fill(); c.globalCompositeOperation="source-over"; }
     c.globalAlpha=0.25+0.75*f; c.fillStyle=sounding?C.ink:C.rub; c.beginPath(); c.arc(p.x,p.y,1.8+2.4*f*(0.5+v),0,Math.PI*2); c.fill();
   }
   c.globalAlpha=1;

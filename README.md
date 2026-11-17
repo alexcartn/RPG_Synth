@@ -31,6 +31,18 @@ On arrive sur Conduire : un univers (Médiéval, Aventure, Pirates, Nordique, F�
 - Compression douce sur la mélodie et les nappes, et les nappes s'effacent un peu (-2 dB) à chaque note de la mélodie, qui reste devant.
 - Respirations (Composer, Forme) : dans la moitié des sections par défaut, une voix (nappes, percussion, boucles ou pendules) se retire au début de la section et revient à mi-section ou aux trois quarts, sur une mesure.
 
+## Voix, machine à cordes, orgues, rythmes euclidiens, porte passe-bas, tempéraments
+
+- Moteur de voix : la source est la dérivée d'une impulsion glottale de Rosenberg (ouverture en cosinus, fermeture rapide), dont la série de Fourier est calculée une fois ; deux sources, tendue et soufflée. Elle passe par les cinq formants d'une voyelle (a, o, ou, é), pris dans la tessiture de la note (basse, ténor, alto, soprano) ; le premier formant monte avec la note quand elle le dépasse, comme chez les sopranos. Souffle filtré par les mêmes formants.
+  - Instrument « Voix (vocalise) » : la voyelle glisse au fil de la note, la note est prise par en dessous, le vibrato s'installe, la hauteur dérive un peu, la source est soufflée dans les nuances douces. Utilisée en écho grave dans Fjordus et Sacrificium.
+  - La nappe chœur et le bourdon chœur passent sur ce moteur (le bourdon chante un « o » qui respire vers le « a »).
+- Machine à cordes (nappe et bourdon, « Machine à cordes ») : registres 16', 8' et 4' accordés pile, voix brillante, et l'effet d'ensemble qui fait tout : trois lignes à retard balancées par un LFO lent (0,63 Hz) et un rapide (5,9 Hz), décalés d'un tiers de tour, à gauche, au centre, à droite. Le son des vieilles machines à cordes du dungeon synth. Skalda et Turris s'en servent.
+- Orgues : l'orgue positif (instrument), la nappe orgue et le bourdon orgue sont construits par jeux de tuyaux (bourdon bouché, principal, flûte ; plein-jeu avec nasard et fourniture), avec le chuintement d'attaque et un peu de vent ; le bourdon a deux rangs en voix céleste. Nouvel orgue à roues (instrument et nappe) : tirettes 88 8800 000, clic de touche, percussion, cabine rotative lente.
+- Rythme euclidien (Rythme, réglages de la percussion) : une couche de frappes légères réparties au plus juste sur les doubles croches de la mesure ; nombre et décalage tirés à chaque section. Par défaut dans Cyberpunk (50 %) et Orient (35 %).
+- Porte passe-bas (Mélodie) : sur les sons pincés et frappés, le filtre se referme avec le son, boisé et rond, à la manière d'une vactrol. Lullaby, Labor et Thesaurus l'utilisent sur la kalimba.
+- Tempéraments Werckmeister III et Kirnberger III : définis depuis do, ils donnent à chaque tonalité sa couleur. Domus Obscura, l'orgue du manoir, est en Werckmeister.
+- Niveaux : chaque nouveau timbre est aligné sur celui qu'il remplace ou côtoie (voix sur flûte, orgues sur les anciens, machine sur les cordes), puis toutes les ambiances ont été re-mesurées.
+
 ## Nappes chœur et cordes
 
 - Chœur : quatre chanteurs (deux en mode Économe), chacun une scie légèrement fausse à sa manière, avec son propre vibrato (vitesse, ampleur, moment où il s'installe), placés en éventail, passés par les quatre formants d'une voyelle qui glisse au fil de la note (de « a » vers « o », ou de « o » vers « ou »), avec un peu de souffle.

@@ -62,8 +62,15 @@ const RAT = {
   pyth:[1,256/243,9/8,32/27,81/64,4/3,729/512,3/2,128/81,27/16,16/9,243/128],
   meso:[1,1.04490,1.11803,1.19628,1.25,1.33748,1.39754,1.49535,1.5625,1.67185,1.78885,1.86920]
 };
+/* tempéraments de clavier : écarts en cents depuis do ; comme sur un orgue accordé ainsi, chaque tonalité a sa couleur */
+const WELL={
+  werck:[0,90.225,192.18,294.135,390.225,498.045,588.27,696.09,792.18,888.27,996.09,1092.18],
+  kirn:[0,90.225,193.157,294.135,386.314,498.045,590.224,696.578,792.18,889.735,996.09,1088.269]
+};
 function mkFreq(S){
-  const rootMidi=36+S.root, rootF=S.a4*Math.pow(2,(rootMidi-69)/12), r=RAT[S.temper]||RAT.egal;
+  const rootMidi=36+S.root, rootF=S.a4*Math.pow(2,(rootMidi-69)/12), r=RAT[S.temper]||RAT.egal, W=WELL[S.temper];
+  if(W){ const cents=x=>{ const a=S.root+x, o=Math.floor(a/12), p=a-12*o; return W[p]+1200*o-W[S.root]; };
+    return off=>{ const lo=Math.floor(off), fr=off-lo; let c=cents(lo); if(fr>1e-9) c+=(cents(lo+1)-c)*fr; return rootF*Math.pow(2,c/1200); }; }
   return off=>{
     const oct=Math.floor(off/12), pc=off-12*oct, lo=Math.floor(pc), fr=pc-lo; let ratio=r[lo];
     if(fr>1e-9){ const hi=lo===11?2:r[lo+1]; ratio*=Math.pow(hi/ratio,fr); }
@@ -88,9 +95,9 @@ const DEFAULT = {
   seed:1472, root:2, scales:["mixolydien","",""], custom:[1,0,1,0,1,1,0,1,0,1,1,0], sectionBars:16,
   temper:"egal", a4:440,
   tempo:120, meter:"4/4", swing:0.1, tension:0.5, vol:1, norm:0,
-  perc:{lvl:0.5, shaker:0.55, ghost:0.35, kit:"cadre"},
+  perc:{lvl:0.5, shaker:0.55, ghost:0.35, kit:"cadre", eucl:0},
   drone:{lvl:0.8, timbre:"anche", bright:0.5, width:0.5, drift:0.5, glide:0.5},
-  mel:{lvl:0.6, inst:"luth", dens:0.85, reg:0, span:2, leap:0.2, orn:0.15, deja:0, loop:2},
+  mel:{lvl:0.6, inst:"luth", lpg:0, dens:0.85, reg:0, span:2, leap:0.2, orn:0.15, deja:0, loop:2},
   canon:{lvl:0, inst:"harpe", delay:2, shift:"oct+"},
   pad:{lvl:0.22, timbre:"cordes", len:2, motion:0.5, voices:3, deja:0, loop:2, stag:0.5, bass:0.5},
   loops:{lvl:0, count:3, inst:"carillon", speed:1},
@@ -138,7 +145,7 @@ const MEDIEVAL = [
   ["Turris", {mus:{arc:"arche"}, car:{grav:0.5, aud:0.5, orn:0.5, sil:0.45, rep:0.45}, seed:77, root:1, scales:["dblharm","lydidom",""], tempo:60, meter:"7/8", swing:0, sectionBars:12,
     perc:{lvl:0.25, shaker:0.3, ghost:0.1}, drone:{lvl:0.85, timbre:"choeur", bright:0.45, width:0.6, drift:0.7, glide:0.6},
     mel:{inst:"harpe", dens:0.5, reg:1, span:2, leap:0.4, orn:0.2}, canon:{lvl:0.35, inst:"carillon", delay:2, shift:"q+"},
-    pad:{lvl:0.45, timbre:"cordes", len:2, motion:0.8, voices:4}, amb:{murmur:0, clink:0, feu:0.1, vent:0.2, gouttes:0.15},
+    pad:{lvl:0.45, timbre:"machine", len:2, motion:0.8, voices:4}, amb:{murmur:0, clink:0, feu:0.1, vent:0.2, gouttes:0.15},
     fx:{rev:0.7, size:5, dark:0.45, dly:0.3, dlyDiv:1.5, fb:0.45, sat:0.25, wow:0.25, veil:0.4, hiss:0.08},
     pend:{lvl:0.3, count:7, period:20, inst:"harpe"},
     form:{shape:"vagues", period:4, amount:0.6}}, "tour du mage"],
@@ -164,7 +171,7 @@ const CALME = [
     loops:{lvl:0.25, count:4, inst:"bol", speed:1.3}}, "méditation, bols et nappes de verre"],
   ["Labor", {car:{grav:0.55, aud:0.4, orn:0.3, sil:0.5, rep:0.7}, mus:{form:"ostinato"}, seed:2020, root:9, scales:["dorien","",""], sectionBars:32, tempo:68, tension:0.35,
     perc:{lvl:0}, drone:{lvl:0.55, timbre:"orgue", bright:0.3, width:0.3, drift:0.3, glide:0.2},
-    mel:{lvl:0.3, inst:"kalimba", dens:0.35, reg:1, span:2, leap:0.1, orn:0, deja:0.92, loop:3}, canon:{lvl:0},
+    mel:{lvl:0.3, inst:"kalimba", lpg:0.6, dens:0.35, reg:1, span:2, leap:0.1, orn:0, deja:0.92, loop:3}, canon:{lvl:0},
     pad:{lvl:0.3, timbre:"synthe", len:4, motion:0.3, voices:3, deja:0.8, loop:4}, amb:{murmur:0.18, clink:0, feu:0, vent:0, gouttes:0},
     fx:{rev:0.5, size:3.5, dark:0.5, sat:0.05, wow:0.05, veil:0.4, hiss:0}, form:{shape:"constante"}}, "travail et concentration, motifs répétitifs"]
 ];
@@ -272,19 +279,19 @@ const PIRATES = [
     perc:{lvl:0.8, shaker:0.2, ghost:0.4, kit:"taiko"}, drone:{lvl:0.7, timbre:"pur", bright:0.5}, mel:{lvl:0.55, inst:"cuivre", dens:0.7, leap:0.4},
     canon:{lvl:0}, pad:{lvl:0.4, timbre:"cordes", len:2, motion:0.8}, amb:{vent:0.5}, fx:{rev:0.5, size:5, sat:0.3, wow:0.2}, nature:{mer:0.8, pluie:0.6}}, "tempête : pluie, mer déchaînée, cuivres"],
   ["Thesaurus", {car:{grav:0.4, aud:0.4, orn:0.5, sil:0.55, rep:0.5}, seed:2323, root:7, scales:["lydien","pentmaj",""], tempo:76, meter:"3/4", tension:0.4,
-    perc:{lvl:0}, drone:{lvl:0.45, timbre:"pur", bright:0.4}, mel:{lvl:0.55, inst:"kalimba", dens:0.4, orn:0.2},
+    perc:{lvl:0}, drone:{lvl:0.45, timbre:"pur", bright:0.4}, mel:{lvl:0.55, inst:"kalimba", lpg:0.4, dens:0.4, orn:0.2},
     canon:{lvl:0.25, inst:"harpe", delay:3, shift:"q+"}, pad:{lvl:0.28, timbre:"verre"}, amb:{vent:0.08}, fx:{rev:0.55, size:4}, nature:{mer:0.35, oiseaux:0.4}}, "île au trésor : plage, mystère, oiseaux"]
 ];
 const NORDIQUE = [
   ["Skalda", {car:{grav:0.6, aud:0.4, orn:0.35, sil:0.5, rep:0.7}, mus:{form:"ostinato"}, seed:7120, root:2, scales:["dorien","pentmin",""], temper:"pyth", tempo:72, meter:"4/4", swing:0,
     perc:{lvl:0.35, shaker:0, ghost:0.15, kit:"cadre"}, drone:{lvl:0.85, timbre:"choeur", bright:0.3}, mel:{lvl:0.5, inst:"archet", dens:0.3, reg:0, orn:0.15},
-    canon:{lvl:0.2, inst:"flute", delay:4, shift:"oct+"}, pad:{lvl:0.25, timbre:"cordes", len:4}, amb:{feu:0.5, murmur:0.25}, fx:{rev:0.45, size:3.5, room:"salle", dark:0.6}}, "veillée au feu : bourdon de chœur, violon"],
+    canon:{lvl:0.2, inst:"flute", delay:4, shift:"oct+"}, pad:{lvl:0.28, timbre:"machine", len:4}, amb:{feu:0.5, murmur:0.25}, fx:{rev:0.45, size:3.5, room:"salle", dark:0.6}}, "veillée au feu : bourdon de chœur, violon"],
   ["Bellum", {car:{grav:0.85, aud:0.7, orn:0.2, sil:0.1, rep:0.8}, mus:{form:"passacaille"}, seed:9000, root:9, scales:["eolien","phrygien",""], tempo:100, meter:"4/4", swing:0, tension:0.8,
     perc:{lvl:1, shaker:0, ghost:0.2}, drone:{lvl:0.9, timbre:"choeur", bright:0.4}, mel:{lvl:0.5, inst:"cuivre", dens:0.5, leap:0.25},
     canon:{lvl:0.3, inst:"cuivre", delay:2, shift:"q-"}, pad:{lvl:0.4, timbre:"choeur", len:2}, amb:{vent:0.2}, fx:{rev:0.4, size:3, sat:0.3, dark:0.6}}, "bataille : tambours de guerre, chant grave"],
   ["Fjordus", {car:{grav:0.65, aud:0.25, orn:0.25, sil:0.75, rep:0.6}, seed:4900, root:4, scales:["pentmin","eolien",""], tempo:48, meter:"4/4", tension:0.4,
     perc:{lvl:0}, drone:{lvl:0.7, timbre:"choeur", bright:0.25, drift:0.7}, mel:{lvl:0.4, inst:"flute", dens:0.15, reg:1, leap:0.3},
-    canon:{lvl:0}, pad:{lvl:0.35, timbre:"verre", len:8}, amb:{vent:0.5}, fx:{rev:0.65, size:7, dark:0.6, veil:0.5}, nature:{mer:0.3}}, "fjord dans la brume : vent, eau, flûte lointaine"],
+    canon:{lvl:0.22, inst:"voix", delay:4, shift:"oct-"}, pad:{lvl:0.35, timbre:"verre", len:8}, amb:{vent:0.5}, fx:{rev:0.65, size:7, dark:0.6, veil:0.5}, nature:{mer:0.3}}, "fjord dans la brume : vent, eau, flûte lointaine"],
   ["Runae", {car:{grav:0.7, aud:0.35, orn:0.2, sil:0.6, rep:0.8}, mus:{form:"ostinato"}, seed:1313, root:7, scales:["organum","pentmin",""], temper:"pyth", tempo:56, meter:"4/4", tension:0.5,
     perc:{lvl:0.3, shaker:0, ghost:0.1, kit:"cadre"}, drone:{lvl:0.65, timbre:"choeur", bright:0.25}, mel:{lvl:0.4, inst:"harpe", dens:0.2, reg:0, deja:0.5},
     canon:{lvl:0}, pad:{lvl:0.3, timbre:"choeur", len:6}, amb:{feu:0.2, vent:0.2}, fx:{rev:0.6, size:5, dark:0.6}, grain:{mix:0.3, dens:0.3, size:0.7, spread:0.6, pitch:0.2}}, "rituel runique : tambour sur cadre, lyre, voix sourdes"]
@@ -300,19 +307,19 @@ const FEERIE = [
     perc:{lvl:0}, drone:{lvl:0.5, timbre:"choeur", bright:0.4, drift:0.7}, mel:{lvl:0.4, inst:"carillon", dens:0.2, leap:0.35, reg:1},
     canon:{lvl:0.2, inst:"verre", delay:3, shift:"q+"}, pad:{lvl:0.35, timbre:"choeur", motion:0.7}, amb:{}, fx:{rev:0.6, size:5, shim:0.2, mod:0.6}, grain:{mix:0.3, dens:0.4, size:0.6, spread:0.7, pitch:0.3}, nature:{nuit:0.4, ruisseau:0.3}}, "forêt enchantée : nuit, ruisseau, grains de lumière"],
   ["Lullaby", {car:{grav:0.3, aud:0.2, orn:0.2, sil:0.7, rep:0.8}, mus:{form:"ostinato"}, seed:606, root:5, scales:["pentmaj","ionien",""], tempo:58, meter:"3/4", tension:0.25, vol:0.7,
-    perc:{lvl:0}, drone:{lvl:0.35, timbre:"bol", bright:0.2}, mel:{lvl:0.4, inst:"kalimba", dens:0.35, deja:0.8, loop:2},
+    perc:{lvl:0}, drone:{lvl:0.35, timbre:"bol", bright:0.2}, mel:{lvl:0.4, inst:"kalimba", lpg:0.5, dens:0.35, deja:0.8, loop:2},
     canon:{lvl:0}, pad:{lvl:0.3, timbre:"synthe", len:6}, amb:{}, fx:{rev:0.5, size:4, dark:0.6}}, "berceuse : kalimba et nappes douces"]
 ];
 const HORREUR = [
   ["Larva", {car:{grav:0.9, aud:0.15, orn:0.1, sil:0.85, rep:0.3}, seed:1313, root:1, scales:["locrien","phrygien",""], tempo:48, meter:"4/4", tension:0.7,
     perc:{lvl:0}, drone:{lvl:0.8, timbre:"pur", bright:0.15, drift:0.8}, mel:{lvl:0.25, inst:"carillon", dens:0.08, leap:0.5, reg:2, deja:0.1},
     canon:{lvl:0}, pad:{lvl:0.45, timbre:"atelier", len:8, motion:0.7}, syn:SYN_P.souffle, amb:{vent:0.3, gouttes:0.35}, fx:{rev:0.7, size:9, dark:0.85, sat:0.3, wow:0.45, veil:0.8, hiss:0.25}, grain:{mix:0.3, dens:0.3, size:0.8, spread:0.7, pitch:0.7}}, "fantôme : un carillon dans le vide"],
-  ["Domus Obscura", {car:{grav:0.8, aud:0.25, orn:0.3, sil:0.7, rep:0.6}, mus:{form:"passacaille"}, seed:666, root:6, scales:["dorien4","eolien",""], tempo:54, meter:"3/4", tension:0.6,
+  ["Domus Obscura", {temper:"werck", car:{grav:0.8, aud:0.25, orn:0.3, sil:0.7, rep:0.6}, mus:{form:"passacaille"}, seed:666, root:6, scales:["dorien4","eolien",""], tempo:54, meter:"3/4", tension:0.6,
     perc:{lvl:0}, drone:{lvl:0.75, timbre:"orgue", bright:0.2}, mel:{lvl:0.4, inst:"orgue", dens:0.2, leap:0.25},
     canon:{lvl:0.2, inst:"orgue", delay:3, shift:"t+"}, pad:{lvl:0.3, timbre:"orgue", len:6}, amb:{vent:0.25}, fx:{rev:0.65, size:6, room:"chapelle", dark:0.75, veil:0.6}, nature:{nuit:0.3, pluie:0.3}}, "manoir hanté : orgue lointain, pluie à la fenêtre"],
   ["Sacrificium", {car:{grav:0.85, aud:0.5, orn:0.15, sil:0.5, rep:0.8}, mus:{form:"ostinato"}, seed:2013, root:2, scales:["phrygien","dblharm",""], tempo:64, meter:"4/4", tension:0.7,
     perc:{lvl:0.5, shaker:0, ghost:0.1}, drone:{lvl:0.85, timbre:"choeur", bright:0.3}, mel:{lvl:0.4, inst:"archet", dens:0.3, leap:0.35, orn:0.1},
-    canon:{lvl:0.3, inst:"archet", delay:3, shift:"t+"}, pad:{lvl:0.35, timbre:"choeur", len:4}, amb:{feu:0.15}, fx:{rev:0.6, size:6, dark:0.8, sat:0.2, veil:0.6}}, "rituel : tambour lent, archet, chœur sourd"],
+    canon:{lvl:0.3, inst:"voix", delay:3, shift:"oct-"}, pad:{lvl:0.35, timbre:"choeur", len:4}, amb:{feu:0.15}, fx:{rev:0.6, size:6, dark:0.8, sat:0.2, veil:0.6}}, "rituel : tambour lent, archet, chœur sourd"],
   ["Cella", {car:{grav:0.8, aud:0.2, orn:0.15, sil:0.8, rep:0.5}, seed:99, root:4, scales:["phrygien","locrien",""], tempo:40, meter:"4/4", tension:0.55,
     perc:{lvl:0}, drone:{lvl:0.7, timbre:"bol", bright:0.15}, mel:{lvl:0.2, inst:"bol", dens:0.06, reg:0, deja:0.2},
     canon:{lvl:0}, pad:{lvl:0.3, timbre:"choeur", len:8}, amb:{gouttes:0.6, vent:0.15}, fx:{rev:0.7, size:8, room:"grotte", dark:0.85, veil:0.7, hiss:0.1}}, "cachot humide : gouttes, écho de pierre"]
@@ -378,7 +385,8 @@ UNIVERS.forEach(u=>{ if(u.id!=="medieval") u.items.forEach(it=>{ it[1].amb=Objec
 const PRESET_NORM={"Taberna":-3.4,"Chorea":-3.3,"Crypta":-3.8,"Scriptorium":-8.1,"Turris":-4.2,"Tripudium":-2.6,"Pugna":-3.2,"Iter":-3.3,"Triumphus":-3.2,"Insidiae":-1.3,"Portus":0.3,"Navigium":-5.1,"Tempestas":-4.5,"Thesaurus":-4.9,"Skalda":-3.8,"Bellum":-4.2,"Fjordus":-6.1,"Runae":-2.7,"Fata":-5.1,"Aula Fatarum":-5.3,"Sylva Magica":0.8,"Lullaby":2.3,"Larva":-2.5,"Domus Obscura":-7.0,"Sacrificium":-5.4,"Cella":-2.8,"Desertum":4.2,"Saloon":0.5,"Duellum":-6.0,"Equitatus":-1.1,"Urbs Neon":-2.5,"Machina":-0.3,"Datum":-3.2,"Imber Toxicus":-2.4,"Sidera":1.6,"Nebula":-1.9,"Abyssus":0.1,"Aegyptus":-2.2,"Eremus":-6.2,"Hortus":-5.2,"Bayati":-2.3,"Enharmonia":0.1,"Pluvia":-0.9,"Mare":-0.3,"Silva":-2.2,"Nox":1.3,"Somnus":0.6,"Meditatio":-3.5,"Labor":-3.1};
 /* chaque univers a sa batterie ; un préréglage peut en citer une autre */
 const UNIV_KIT={medieval:"cadre", aventure:"caisse", pirates:"cadre", nordique:"taiko", feerie:"cadre", horreur:"taiko", western:"bastringue", cyber:"electro", espace:"electro", orient:"darbouka", nature:"cadre", calme:"cadre"};
-UNIVERS.forEach(u=>u.items.forEach(it=>{ const p=it[1]; p.perc=Object.assign({kit:UNIV_KIT[u.id]||"cadre"},p.perc||{}); if(p.norm===undefined) p.norm=PRESET_NORM[it[0]]||0; }));
+const UNIV_EUCL={cyber:0.5, orient:0.35};
+UNIVERS.forEach(u=>u.items.forEach(it=>{ const p=it[1]; p.perc=Object.assign({kit:UNIV_KIT[u.id]||"cadre", eucl:UNIV_EUCL[u.id]||0},p.perc||{}); if(p.norm===undefined) p.norm=PRESET_NORM[it[0]]||0; }));
 /* liste à plat des préréglages */
 const PRESETS = UNIVERS.flatMap(u=>u.items.map(([n,s,g])=>[n,s,g,u.id]));
 function clone(o){return JSON.parse(JSON.stringify(o));}

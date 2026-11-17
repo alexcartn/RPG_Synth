@@ -6,11 +6,11 @@
    ============================================================ */
 const ACC={key:"bourdon.accueil", on:false, tour:false, step:0, card:null};
 const ACC_STEPS=[
-  {sel:"#seekUni", t:"Univers", x:"Choisis le décor de la scène : taverne, crypte, combat, pirates, cyberpunk. « Au hasard » en tire un pour toi."},
+  {sel:"#seekUni", t:"Univers", x:"Choisis l'univers de la pièce : médiéval, pirates, cyberpunk, espace, nature. « Au hasard » en tire un pour toi."},
   {sel:"#affChips", t:"Je cherche", x:"Une ou plusieurs émotions règlent la gamme, la tonalité et la tension. C'est facultatif : sans choix, on part de la première ambiance de l'univers."},
   {sel:"#play3", t:"Jouer", x:"Lance la lecture. Chaque fois, la pièce est nouvelle : rien n'est enregistré, tout est composé sur le moment."},
   {sel:"#knobs", t:"Les boutons", x:"Tourne-les en direct : tension, densité, bourdon, brume. Glisse vers le haut ou le bas, ou utilise la molette et les flèches du clavier."},
-  {sel:"#jeuGest", t:"Les gestes", x:"Suspense, Révélation, Danger, Poursuite, Triomphe, Apaisement : un geste musical pour souligner un moment de la partie. L'ampleur règle sa force."},
+  {sel:"#jeuGest", t:"Les gestes", x:"Suspense, Révélation, Danger, Poursuite, Triomphe, Apaisement : un geste musical pour infléchir la pièce en direct. L'ampleur règle sa force."},
   {sel:"#modes", t:"Aller plus loin", x:"Composer : tous les réglages, et Capturer pour garder une prise en WAV, MP3 ou MIDI. Forger : ton propre synthé. Arranger : des pistes par-dessus la machine. Veillée : la machine en grand, à regarder en fond."}
 ];
 const accSeen=()=>{ try{ return localStorage.getItem(ACC.key)==="1"; }catch(e){ return false; } };

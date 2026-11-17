@@ -1,7 +1,7 @@
 {
   "name": "Bourdon : machina modalis",
   "short_name": "Bourdon",
-  "description": "Ambiances modales pour dungeon synth et tavernes, synthétisées dans le navigateur.",
+  "description": "Machine à ambiances génératives : composition modale sans fin, synthétisée dans le navigateur.",
   "lang": "fr",
   "start_url": "./",
   "scope": "./",

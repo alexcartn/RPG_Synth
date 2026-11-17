@@ -1,6 +1,6 @@
 # Bourdon
 
-Machine à ambiances modales pour dungeon synth et ambiances de taverne. Une page statique, sans build ni dépendance : tout l'audio est synthétisé dans le navigateur (Web Audio), rien n'est joué à partir de samples. Chaque lecture tire une pièce nouvelle : le hasard est voulu, et un bouton de capture garde les prises qui plaisent.
+Machine à ambiances génératives : une composition modale qui se joue et se renouvelle sans fin (dungeon synth, taverne, espace, nature, cyberpunk…). Une page statique, sans build ni dépendance : tout l'audio est synthétisé dans le navigateur (Web Audio), rien n'est joué à partir de samples. Chaque lecture tire une pièce nouvelle : le hasard est voulu, et un bouton de capture garde les prises qui plaisent.
 
 Usage prévu : composer hors ligne. On règle, on écoute, puis on rend en WAV (mix, boucle sans couture, stems) et en MIDI pour retravailler dans un logiciel de musique.
 

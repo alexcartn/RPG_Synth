@@ -20,6 +20,7 @@ function replanTarget(k,prev,now){
   if(k.startsWith("mel.")||k.startsWith("canon.")||k.startsWith("car.")||k.startsWith("chance.")||k.startsWith("turing.")) return "mel";
   if(k.startsWith("pad.")) return "pad";
   if(k.startsWith("loops.")) return "loops";
+  if(k.startsWith("arp.")) return "arp";
   if(k.startsWith("pend.")) return "pend";
   if(k.startsWith("scales.")||k==="sectionBars"||k.startsWith("mus.")) return "all";
   return null;
@@ -268,6 +269,13 @@ const UI=[
    {k:"pad.voices",type:"range",label:"Voix par accord",min:2,max:4,step:1,fmt:v=>v+" voix"},
    {k:"pad.stag",type:"range",label:"Entrées décalées",min:0,max:1,step:0.01,fmt:pct},
    {k:"pad.bass",type:"range",label:"Basse",min:0,max:1,step:0.01,fmt:pct}]},
+  {fin:"Arpège", items:[
+   {k:"arp.lvl",type:"range",label:"Arpège",min:0,max:1,step:0.01,fmt:pct,hint:"L'accord en cours, égrené note à note : l'accompagnement typique du dungeon synth et des musiques de jeu."},
+   {k:"arp.inst",type:"select",label:"Instrument de l'arpège",opts:INST_OPTS},
+   {k:"arp.pat",type:"select",label:"Motif",opts:[["vaetvient","Va-et-vient"],["montant","Montant"],["alberti","Alberti (grave, aigu, milieu, aigu)"]]},
+   {k:"arp.rate",type:"select",num:true,label:"Vitesse",opts:[["0.5","Noires"],["1","Croches"],["2","Doubles croches"]]},
+   {k:"arp.reg",type:"range",label:"Registre de l'arpège",min:0,max:2,step:1,fmt:v=>["grave","médium","aigu"][v]},
+   {k:"arp.span",type:"range",label:"Étendue de l'arpège",min:1,max:2,step:1,fmt:v=>v+" octave"+(v>1?"s":"")}]},
   {fin:"Mémoire : déjà-vu de la mélodie et des nappes", items:[
    {k:"mel.deja",type:"range",label:"Mélodie : retour du passé",min:0,max:1,step:0.01,fmt:v=>v<0.01?"jamais":pct(v)},
    {k:"mel.loop",type:"range",label:"Mélodie : longueur de la boucle",min:1,max:8,step:1,fmt:v=>v+(v>1?" phrases":" phrase")},

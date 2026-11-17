@@ -182,7 +182,7 @@ async function doExport(){
     await addAudio(base+(loop?"_boucle":""),mix.L,mix.R,mix.sr,0.891/(peakOf(mix.L,mix.R)||1));
     if(midi){ files.push({name:base+".mid", data:midiFile(mix.events,Sx)}); }
     if(stems){
-      const groups=[["drone","bourdon"],["mel","melodie_canon"],["pad","nappes"],["perc","percussion"],["amb","lieu"]];
+      const groups=[["drone","bourdon"],["mel","melodie_canon"],["pad","nappes"],["arp","arpege"],["perc","percussion"],["amb","lieu"]];
       if(Sx.loops.lvl>0.001) groups.push(["loops","boucles"]);
       if(Sx.pend.lvl>0.001) groups.push(["pend","pendules"]);
       if(Sx.daw&&Sx.daw.tracks.some(t=>t.notes.length)) groups.push(["daw","pistes"]);

@@ -209,7 +209,7 @@ function buildEngine(ctx, S, o){
   }
   /* le grave est au bourdon ; la mélodie a un peu de présence, les nappes un creux dans le bas-médium pour ne pas l'empâter, la percussion sa petite pièce */
   const B={drone:bus(0.45,0.1,{pk:[2600,-2,0.8],ens:true,mono:true}), mel:bus(0.9,1,{hp:140,pk:[2800,2,0.9],comp:[-26,2.5,3]}), pad:bus(0.8,0.6,{hp:170,pk:[380,-3,1],comp:[-30,2,2],ens:true}), perc:bus(0.4,0,{hp:30,room:true,longRev:0.06}),
-    amb:bus(0.3,0,{hp:110}), loops:bus(0.9,0.8,{hp:190}), pend:bus(0.9,0.7,{hp:190}), play:bus(0.85,0.9,{hp:60}), daw:bus(0.7,0.6,{hp:40})};
+    amb:bus(0.3,0,{hp:110}), loops:bus(0.9,0.8,{hp:190}), arp:bus(0.8,0.45,{hp:110}), pend:bus(0.9,0.7,{hp:190}), play:bus(0.85,0.9,{hp:60}), daw:bus(0.7,0.6,{hp:40})};
   /* une voix jouée à la basse garde son grave */
   function eqSync(){ const lo=(n,inst)=>{ const h=B[n].hp; if(h) h.frequency.value=inst?35:B[n].eq.hp; };
     lo("mel",S.mel.inst==="basse"||S.canon.inst==="basse"); lo("loops",S.loops.inst==="basse"); lo("pend",S.pend.inst==="basse");
@@ -288,7 +288,7 @@ function buildEngine(ctx, S, o){
     m.an.getFloatTimeDomainData(m.buf); let pk=0; for(let i=0;i<m.buf.length;i++){ const a=Math.abs(m.buf[i]); if(a>pk) pk=a; } return pk;
   }
   const newGen=name=>{ const v=V[name], g=G(1); g.connect(v.dst); v.node=g; };
-  [["mel",B.mel.in],["canon",canonG],["pad",B.pad.in],["loops",B.loops.in],["pend",B.pend.in]].forEach(([n,d])=>{ V[n]={dst:d,node:null}; newGen(n); });
+  [["mel",B.mel.in],["canon",canonG],["pad",B.pad.in],["loops",B.loops.in],["pend",B.pend.in],["arp",B.arp.in]].forEach(([n,d])=>{ V[n]={dst:d,node:null}; newGen(n); });
   const murG=G(0), fireG=G(0), windG=G(0), dripG=G(0);
   const lMur=link(murG,B.amb.in), lFire=link(fireG,B.amb.in), lWind=link(windG,B.amb.in); dripG.connect(B.amb.in);
   /* sons de nature : chaque lit n'est construit que s'il est utilisé, et débranché quand il retombe à zéro */
@@ -320,7 +320,7 @@ function buildEngine(ctx, S, o){
       const m=tensMul((tens()-0.5)*2), now=ctx.currentTime||0;
       [["perc",m.perc],["pad",m.pad],["drone",m.drone],["amb",m.amb]].forEach(([n,v])=>{ const g=B[n].tm.gain; if(g.cancelScheduledValues) g.cancelScheduledValues(now); g.value=v; });
     }
-    B.loops.lvl.gain.value=lv("loops",S.loops.lvl);
+    B.loops.lvl.gain.value=lv("loops",S.loops.lvl); B.arp.lvl.gain.value=lv("arp",(S.arp&&S.arp.lvl)||0);
     B.pend.lvl.gain.value=lv("pend",S.pend.lvl);
     murG.gain.value=S.amb.murmur; fireG.gain.value=S.amb.feu*1.2; windG.gain.value=ventv()*0.9; dripG.gain.value=S.amb.gouttes*0.8;
     wet.gain.value=S.fx.rev*2;
@@ -1436,7 +1436,7 @@ function buildEngine(ctx, S, o){
   }
 
   /* ---------- ordonnanceur ---------- */
-  const cur={mel:0,drone:0,clink:0,perc:0,k:0,pad:0,int:0,fire:0,wind:0,drip:0,bird:0,sec:1};
+  const cur={mel:0,drone:0,clink:0,perc:0,k:0,pad:0,int:0,fire:0,wind:0,drip:0,bird:0,sec:1,arp:0,aj:0};
   const phBars=new Set(), fillBars=[], melOn=[]; let loopsL=[], pendK=[], lastPh=null, lastD=null, frozen=null;
   const lastOff={v:null};
   function rec(tr,t,off,dur,vel,tag){ if(o.record||o.rolling) events.push(tag?{tr,t,off,dur,vel,tag}:{tr,t,off,dur,vel}); }
@@ -1603,6 +1603,22 @@ function buildEngine(ctx, S, o){
       } else { R.p(); }
       cur.perc+=E; cur.k++;
     }
+    /* arpège : l'accord en cours, égrené note à note (montant, va-et-vient, Alberti), sur le registre choisi ; le pilier de l'accompagnement en dungeon synth */
+    { const A=S.arp||{lvl:0};
+      if(!(M&&want("arp")&&A.lvl>0.001)){ if(cur.arp<until) cur.arp=t0+Math.ceil((until-t0)/E)*E; }
+      else while(cur.arp<until){
+        const rt=Number(A.rate)||1, st=E*(rt===2?0.5:rt===0.5?2:1), tt=cur.arp, ch=chordAt(tt+0.001), pcs=chordPcs(ch), base=12*((A.reg===undefined?1:A.reg)), top=base+12*(A.span||1)+7, tones=[];
+        for(let x=base;x<=top;x+=0.5){ const pc=((x%12)+12)%12; if(pcs.some(p=>Math.abs(p-pc)<0.01)) tones.push(x); }
+        if(tones.length){
+          const sinceChord=Math.max(0,Math.round((tt-ch.t)/st)), pat=A.pat||"vaetvient";
+          let seq=tones; if(pat==="vaetvient") seq=tones.concat(tones.slice(1,-1).reverse()); else if(pat==="alberti"){ const n=tones.length; seq=[tones[0],tones[Math.min(n-1,2)],tones[Math.min(n-1,1)],tones[Math.min(n-1,2)]]; }
+          const off=seq[sinceChord%seq.length], beat=Math.round((tt-t0)/E)%(MD*1)===0, vel=(beat?0.19:0.14)*(0.9+0.2*hz(tt*3.7)), len=st*(A.inst==="harpe"||A.inst==="luth"||A.inst==="kalimba"?3:1.4);
+          instOf(A.inst||"harpe","harpe")(sw(tt),freq(off),vel,len,V.arp.node,((cur.aj++%2)?0.3:-0.3));
+          if(o.onNote) o.onNote(sw(tt),off,"loop",len,vel);
+        }
+        cur.arp+=st;
+      }
+    }
     /* nappes */
     ensureChords(until);
     for(const ch of chordTl){
@@ -1693,7 +1709,7 @@ function buildEngine(ctx, S, o){
     starts.forEach(s=>s.start(t));
     master.gain.setValueAtTime(0,t); master.gain.linearRampToValueAtTime(1,t+fadeIn);
     if(fadeOutAt){ master.gain.setValueAtTime(1,t+fadeOutAt-7); master.gain.linearRampToValueAtTime(0,t+fadeOutAt-0.2); }
-    cur.perc=t+bar*Math.ceil(4/bar); cur.k=0; cur.mel=t+bar*Math.ceil(7/bar); cur.pad=t; cur.int=t; cur.sec=1; chordEnd=t;
+    cur.perc=t+bar*Math.ceil(4/bar); cur.k=0; cur.mel=t+bar*Math.ceil(7/bar); cur.pad=t; cur.int=t; cur.sec=1; cur.arp=t+bar; cur.aj=0; chordEnd=t;
     cur.drone=t+25+R.d()*20; cur.clink=t+10; cur.fire=t; cur.wind=t; cur.drip=t+4; cur.bird=t+3; started=true;
     bands.forEach(b=>b.cur=t);
     initLoops(t);
@@ -1720,6 +1736,7 @@ function buildEngine(ctx, S, o){
     if(all||what==="mel"){ kill("mel"); kill("canon"); padRest(now); cur.mel=t0+Math.ceil((now+0.04-t0)/E)*E; }
     if(all||what==="pad"){ kill("pad",0.15); while(chordTl.length&&chordTl[chordTl.length-1].t>=now) chordTl.pop(); chordEnd=now+0.04; }
     if(all||what==="loops"){ kill("loops",0.05); initLoops(now); }
+    if(all||what==="arp"){ kill("arp",0.05); cur.arp=t0+Math.ceil((now+0.05-t0)/E)*E; }
     if(all) dawReplan();
     if(all||what==="pend"){
       kill("pend",0.05); const T=Math.max(1,S.pend.period*bar);

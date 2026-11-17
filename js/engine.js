@@ -319,7 +319,8 @@ function buildEngine(ctx, S, o){
     volG.gain.value=S.vol===undefined?1:S.vol; voixEQ.gain.value=-6*clamp((S.fx&&S.fx.voix)||0,0,1); if(texSet) texSet(); normG.gain.value=Math.pow(10,clamp(S.norm||0,-12,12)/20);
     { const nt=natv(), wa=want("amb");
       NATS.forEach(k=>{ if(wa&&mach()&&(nt[k]||0)>0.001) ensureNature(k); });
-      natG.pluie.gain.value=1; natG.mer.gain.value=(nt.mer||0)*1.0; natG.nuit.gain.value=(nt.nuit||0)*2.4; natG.ruisseau.gain.value=(nt.ruisseau||0)*1.6;
+      /* le lieu reste un fond : les sources continues (pluie, mer, ruisseau, nuit, feu) sont calées au niveau du murmure et du vent, 15 à 20 dB sous la musique */
+      natG.pluie.gain.value=0.3; natG.mer.gain.value=(nt.mer||0)*0.3; natG.nuit.gain.value=(nt.nuit||0)*1.2; natG.ruisseau.gain.value=(nt.ruisseau||0)*0.55;
       if(natB.pluie){ const r=nt.pluie||0; natB.pluie.bg.gain.value=0.22*Math.pow(r,0.7); natB.pluie.ag.gain.value=0.28*r; natB.pluie.bg2.gain.value=0.5*r*r; }
       birdG.gain.value=(nt.oiseaux||0)*0.9; }
     if(!dynTens()){ /* curseur : valeur fixe ; courbe ou adaptation : le planificateur automatise ces gains */
@@ -328,7 +329,7 @@ function buildEngine(ctx, S, o){
     }
     B.loops.lvl.gain.value=lv("loops",S.loops.lvl); B.arp.lvl.gain.value=lv("arp",(S.arp&&S.arp.lvl)||0); B.plain.lvl.gain.value=lv("plain",(S.plain&&S.plain.lvl)||0);
     B.pend.lvl.gain.value=lv("pend",S.pend.lvl);
-    murG.gain.value=S.amb.murmur; fireG.gain.value=S.amb.feu*1.2; windG.gain.value=ventv()*0.9; dripG.gain.value=S.amb.gouttes*0.8;
+    murG.gain.value=S.amb.murmur; fireG.gain.value=S.amb.feu*0.4; windG.gain.value=ventv()*0.9; dripG.gain.value=S.amb.gouttes*0.8;
     wet.gain.value=S.fx.rev*2;
     if(padC!==padClosed()) padRest(ctx.currentTime||0);
     if(fx){

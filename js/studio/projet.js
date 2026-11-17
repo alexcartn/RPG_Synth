@@ -72,9 +72,16 @@ const PJ=(()=>{
   const harmTrack=P=>P.tracks.find(t=>t.kind==="harm");
   /* la progression à suivre pour un clip généré : celle qu'on lui donne (en lecture), sinon celle de sa scène, sinon la première */
   function harmFor(P,row){ const h=harmTrack(P); if(!h) return null; return h.clips[row]||h.clips.find(Boolean)||null; }
+  /* cache par clip, invalidé à chaque modification du projet (bump) : la lecture ne recalcule plus rien */
+  let ver=0; const fast=new WeakMap();
+  const bump=()=>{ ver++; };
   function clipData(P,tr,clip,harm){
+    if(!clip) return {notes:[],len:TH.bb(P.meter)};
+    const hit=fast.get(clip); if(hit&&hit.ver===ver&&hit.harm===harm&&hit.P===P) return hit.d;
+    const d=clipData0(P,tr,clip,harm); fast.set(clip,{ver,harm,P,d}); return d;
+  }
+  function clipData0(P,tr,clip,harm){
     const B=TH.bb(P.meter);
-    if(!clip) return {notes:[],len:B};
     if(tr.kind==="harm"){ const ch=clip.chords||[]; const len=TH.progLen(ch,P.meter);
       const k="h|"+JSON.stringify(ch)+P.key+P.mode+P.meter;
       if(!memo.has(k)){ const out=[]; TH.timeline(ch,P.meter).forEach(({ch:c,s,d})=>{ const lo=48+P.key; TH.tones(c,TH.MODES[P.mode].iv).forEach((p,i)=>out.push({s,d,p:lo+p+(i===0?-12:0),v:0.6})); }); memo.set(k,out); }
@@ -110,5 +117,5 @@ const PJ=(()=>{
     let pos=((b0-anchor)%L+L)%L; const span=b1-b0;
     D.notes.forEach(n=>{ if(n.s>=L-1e-9) return; let x=n.s-pos; if(x<-1e-9) x+=L; if(x<span-1e-9&&x>=-1e-9) emit(n,b0+x); });
   }
-  return {nid,ROLE,newTrack,dev,blank,template,stepsPerBar,drumClip,fixDrum,clipData,harmFor,harmTrack,sceneBars,arrFromScenes,arrLen,collect,ctxOf,parse,LANES_DEF};
+  return {bump,nid,ROLE,newTrack,dev,blank,template,stepsPerBar,drumClip,fixDrum,clipData,harmFor,harmTrack,sceneBars,arrFromScenes,arrLen,collect,ctxOf,parse,LANES_DEF};
 })();

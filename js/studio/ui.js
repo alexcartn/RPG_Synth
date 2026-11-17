@@ -21,9 +21,9 @@
 
   /* ---------- persistance et annulation ---------- */
   function load(){ try{ const s=localStorage.getItem(KEY); if(!s) return null; const p=JSON.parse(s); return p&&p.tracks?p:null; }catch(e){ return null; } }
-  let saveT=0; function save(){ clearTimeout(saveT); saveT=setTimeout(()=>{ try{ P.sel={t:UI.t,r:UI.r}; localStorage.setItem(KEY,JSON.stringify(P)); }catch(e){} },300); }
+  let saveT=0; function save(){ PJ.bump(); clearTimeout(saveT); saveT=setTimeout(()=>{ try{ P.sel={t:UI.t,r:UI.r}; localStorage.setItem(KEY,JSON.stringify(P)); }catch(e){} },300); }
   function snap(){ undo.push(JSON.stringify(P)); if(undo.length>80) undo.shift(); redo.length=0; undoUI(); }
-  function swapTo(json){ P=JSON.parse(json); if(graph){ graph.setP(P); graph.sync(); } UI.t=Math.min(UI.t,P.tracks.length-1); UI.r=Math.min(UI.r,P.scenes.length-1); renderAll(); save(); }
+  function swapTo(json){ PJ.bump(); P=JSON.parse(json); if(graph){ graph.setP(P); graph.sync(); } UI.t=Math.min(UI.t,P.tracks.length-1); UI.r=Math.min(UI.r,P.scenes.length-1); renderAll(); save(); }
   function doUndo(){ if(!undo.length) return; redo.push(JSON.stringify(P)); swapTo(undo.pop()); undoUI(); }
   function doRedo(){ if(!redo.length) return; undo.push(JSON.stringify(P)); swapTo(redo.pop()); undoUI(); }
   function undoUI(){ $("bUndo").disabled=!undo.length; $("bRedo").disabled=!redo.length; }
@@ -334,9 +334,9 @@
     pane.appendChild(bar);
     const lane=el("canvas"); lane.style.display="block"; lane.setAttribute("aria-hidden","true"); pane.appendChild(lane);
     const wrap=el("div","rollwrap"), cv=el("canvas"); cv.setAttribute("role","img"); cv.setAttribute("aria-label","Piano roll : clic pour poser une note, glisser pour la déplacer, bord droit pour l'allonger, clic droit ou Maj+clic pour l'effacer");
-    wrap.appendChild(cv); pane.appendChild(wrap);
+    const ph=el("div","rollph"); wrap.appendChild(cv); wrap.appendChild(ph); pane.appendChild(wrap);
     pane.appendChild(el("p","hint","Clic : poser · glisser : déplacer · bord droit : allonger · clic droit ou Maj+clic : effacer · Ctrl+clic : choisir plusieurs · Suppr, flèches. Clavier : Z X C V… (grave), A S D F… , Q W E R… (aigu) ; Page ↑/↓ change d'octave. Les rangées teintées sont les notes de l'accord en cours."));
-    UI.roll={cv,wrap,t,c,h,lane};
+    UI.roll={cv,wrap,t,c,h,lane,ph};
     requestAnimationFrame(()=>{ drawRoll(); const rows=rollRows(); const mid=rows.findIndex(p=>p<=60+P.key+7); if(mid>0) wrap.scrollTop=Math.max(0,(mid-8)*RH); });
     bindRoll(cv);
   }
@@ -369,8 +369,6 @@
     /* notes */
     R.c.notes.forEach(n=>{ const i=rows.indexOf(n.p); if(i<0) return; const x=KW+n.s*ppb, y=CH+i*RH; g.globalAlpha=0.45+0.55*n.v; g.fillStyle=R.t.color; g.fillRect(x+1,y+1,Math.max(3,n.d*ppb-2),RH-2); g.globalAlpha=1;
       if(UI.selNotes.has(n)){ g.strokeStyle=col("--ink"); g.lineWidth=2; g.strokeRect(x+1,y+1,Math.max(3,n.d*ppb-2),RH-2); g.lineWidth=1; } });
-    /* tête de lecture */
-    if(TR&&TR.X.playing){ const ps=TR.pos(R.t); if(ps&&ps.row===UI.r){ const x=KW+ps.f*L*ppb; g.fillStyle=col("--rubric"); g.fillRect(x,0,2,H); } }
   }
   function bindRoll(cv){
     let drag=null;
@@ -663,18 +661,27 @@
     TR.launchScene(r); renderTopState(); }
 
   /* ============================================================ BOUCLE D'AFFICHAGE ============================================================ */
-  function frame(){
+  let lastF=0, idle=false;
+  function frame(ts){
     requestAnimationFrame(frame);
-    if(!TR) return;
-    const B=TH.bb(P.meter), b=TR.beatNow(); $("pos").textContent=TR.X.playing?(Math.floor(b/B)+1)+"."+(Math.floor(b%B)+1):"—";
-    P.tracks.forEach(t=>{ const s=TR.X.slots[t.id], ps=TR.pos(t);
-      t.clips.forEach((c,r)=>{ const cell=UI.cells[t.id+"|"+r]; if(!cell) return; const pl=TR.X.playing&&s&&s.row===r&&TR.X.mode==="session", pd=s&&s.pend!==undefined&&s.pend.row===r;
-        cell.cl.classList.toggle("play",!!pl); cell.cl.classList.toggle("pend",!!pd); cell.bar.style.width=pl&&ps?(ps.f*100).toFixed(1)+"%":"0"; }); });
-    const mt=(id,a)=>{ const c=UI.cells["mix|"+id]; if(!c) return; const v=graph.level(a), h=Math.min(1,Math.pow(v,0.5)); c.mi.style.height=(h*100).toFixed(0)+"%"; c.mi.classList.toggle("hot",v>0.98); };
+    if(!TR||ts-lastF<33) return; lastF=ts;
+    if(!TR.X.playing){ if(idle) return; idle=true; $("pos").textContent="—";
+      Object.values(UI.cells).forEach(c=>{ if(c.cl){ c.cl.classList.remove("play"); c.bar.style.width="0"; } if(c.mi) c.mi.style.height="0"; });
+      P.tracks.forEach(t=>{ const s=TR.X.slots[t.id]; t.clips.forEach((c,r)=>{ const cell=UI.cells[t.id+"|"+r]; if(cell) cell.cl.classList.toggle("pend",!!(s&&s.pend!==undefined&&s.pend.row===r)); }); });
+      if(UI.arrPh) UI.arrPh.ph.style.display="none"; if(UI.roll&&UI.roll.ph) UI.roll.ph.style.display="none"; return; }
+    idle=false;
+    const B=TH.bb(P.meter), b=TR.beatNow(); $("pos").textContent=(Math.floor(b/B)+1)+"."+(Math.floor(b%B)+1);
+    const pos={}; P.tracks.forEach(t=>pos[t.id]=TR.pos(t));
+    P.tracks.forEach(t=>{ const s=TR.X.slots[t.id], ps=pos[t.id];
+      t.clips.forEach((c,r)=>{ const cell=UI.cells[t.id+"|"+r]; if(!cell) return; const pl=s&&s.row===r&&TR.X.mode==="session", pd=s&&s.pend!==undefined&&s.pend.row===r;
+        if(cell.pl!==pl){ cell.cl.classList.toggle("play",!!pl); cell.pl=pl; } if(cell.pd!==pd){ cell.cl.classList.toggle("pend",!!pd); cell.pd=pd; }
+        const w=pl&&ps?(ps.f*100).toFixed(0)+"%":"0"; if(cell.w!==w){ cell.bar.style.width=w; cell.w=w; } }); });
+    const mt=(id,a)=>{ const c=UI.cells["mix|"+id]; if(!c) return; const v=graph.level(a), h=(Math.min(1,Math.pow(v,0.5))*100).toFixed(0)+"%"; if(c.h!==h){ c.mi.style.height=h; c.h=h; } const hot=v>0.98; if(c.hot!==hot){ c.mi.classList.toggle("hot",hot); c.hot=hot; } };
     P.tracks.forEach((t,i)=>mt("t"+i,graph.trackNode(t).ana)); graph.R.forEach((r,i)=>mt("r"+i,r.ana)); mt("m",graph.M.ana);
-    if(UI.arrPh&&UI.view==="arr"){ const on=TR.X.playing&&TR.X.mode==="arr"; UI.arrPh.ph.style.display=on?"block":"none"; if(on) UI.arrPh.ph.style.left=(120+b/B*UI.arrPh.ppb)+"px"; }
-    if(UI.tab==="clip"&&TR.X.playing){ const c=curClip(), t=curT(); if(c&&c.type==="notes"&&UI.roll) drawRoll();
-      if(UI.seq&&UI.seq.c===c){ const ps=TR.pos(t); const n=UI.seq.btns[0]?UI.seq.btns[0].length:0; const k=ps&&ps.row===UI.r?Math.floor(ps.f*n):-1; UI.seq.btns.forEach(bl=>bl.forEach((x,i)=>x.classList.toggle("now",i===k))); } }
+    if(UI.arrPh&&UI.view==="arr"){ const on=TR.X.mode==="arr"; UI.arrPh.ph.style.display=on?"block":"none"; if(on) UI.arrPh.ph.style.left=(120+b/B*UI.arrPh.ppb)+"px"; }
+    if(UI.tab==="clip"){ const c=curClip(), t=curT(), ps=t&&pos[t.id];
+      if(c&&c.type==="notes"&&UI.roll&&UI.roll.ph){ const on=ps&&ps.row===UI.r; UI.roll.ph.style.display=on?"block":"none"; if(on){ const G=rollGeom(); UI.roll.ph.style.left=(KW+ps.f*G.L*G.ppb)+"px"; UI.roll.ph.style.height=UI.roll.cv.style.height; } }
+      if(UI.seq&&UI.seq.c===c){ const n=UI.seq.btns[0]?UI.seq.btns[0].length:0, k=ps&&ps.row===UI.r?Math.floor(ps.f*n):-1; if(UI.seq.k!==k){ UI.seq.btns.forEach(bl=>{ if(bl[UI.seq.k]) bl[UI.seq.k].classList.remove("now"); if(bl[k]) bl[k].classList.add("now"); }); UI.seq.k=k; } } }
   }
 
   /* ============================================================ BRANCHEMENTS ============================================================ */

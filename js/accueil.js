@@ -1,7 +1,7 @@
 "use strict";
 /* ============================================================
    ACCUEIL ET VISITE GUIDÉE : au premier lancement, un écran qui dit ce qu'est Bourdon,
-   puis, si on le veut, six bulles posées sur la vraie interface. Mémorisé dans le navigateur ;
+   puis, si on le veut, sept bulles posées sur la vraie interface. Mémorisé dans le navigateur ;
    le lien « Aide » les rouvre à tout moment.
    ============================================================ */
 const ACC={key:"bourdon.accueil", on:false, tour:false, step:0, card:null};
@@ -11,6 +11,7 @@ const ACC_STEPS=[
   {sel:"#play3", t:"Jouer", x:"Lance la lecture. Chaque fois, la pièce est nouvelle : rien n'est enregistré, tout est composé sur le moment."},
   {sel:"#knobs", t:"Les boutons", x:"Tourne-les en direct : tension, densité, bourdon, brume. Glisse vers le haut ou le bas, ou utilise la molette et les flèches du clavier."},
   {sel:"#jeuGest", t:"Les gestes", x:"Suspense, Révélation, Danger, Poursuite, Triomphe, Apaisement : un geste musical pour infléchir la pièce en direct. L'ampleur règle sa force."},
+  {sel:"#studioLnk", t:"Studio", x:"Pour composer toi-même au lieu de laisser la machine décider : tu choisis la gamme, poses tes accords, empiles nappe, bourdon et arpège, écris ta mélodie, puis arranges et exportes en MP3. Le studio te conseille à chaque étape, à la manière d'Ableton (vue Session, effets en chaîne)."},
   {sel:"#modes", t:"Aller plus loin", x:"Composer : tous les réglages, et Capturer pour garder une prise en WAV, MP3 ou MIDI. Forger : ton propre synthé. Arranger : des pistes par-dessus la machine. Veillée : la machine en grand, à regarder en fond."}
 ];
 const accSeen=()=>{ try{ return localStorage.getItem(ACC.key)==="1"; }catch(e){ return false; } };
@@ -48,7 +49,7 @@ function tourStart(){
 }
 function tourShow(i){
   ACC.step=Math.max(0,Math.min(ACC_STEPS.length-1,i)); const s=ACC_STEPS[ACC.step];
-  $("tourN").textContent=["I","II","III","IV","V","VI"][ACC.step]+" / VI"; $("tourT").textContent=s.t; $("tourX").textContent=s.x;
+  $("tourN").textContent=["I","II","III","IV","V","VI","VII","VIII"][ACC.step]+" / "+["I","II","III","IV","V","VI","VII","VIII"][ACC_STEPS.length-1]; $("tourT").textContent=s.t; $("tourX").textContent=s.x;
   $("tourPrev").disabled=ACC.step===0; $("tourNext").textContent=ACC.step===ACC_STEPS.length-1?"Terminer":"Suivant";
   const el=document.querySelector(s.sel); if(el&&el.scrollIntoView) el.scrollIntoView({block:"center",behavior:accReduced()?"auto":"smooth"});
   tourPlace(); setTimeout(tourPlace,320); $("tourNext").focus({preventScroll:true});

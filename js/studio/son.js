@@ -154,7 +154,7 @@ const SON=(()=>{
     function retempo(){ sync(); }
     function preview(t,p,v,dur){ const n={p,v:v||0.7,d:dur||1}; note(t,n,ctx.currentTime+0.01,60/P.tempo,t?trackNode(t).gen:prev); }
     function previewInst(inst,p,v,dur){ note({kind:"mel",inst},{p,v:v||0.7,d:dur||1},ctx.currentTime+0.01,60/P.tempo,prev); }
-    const level=a=>{ if(!a) return 0; const b=new Float32Array(a.fftSize); a.getFloatTimeDomainData(b); let m=0; for(let i=0;i<b.length;i++){ const x=Math.abs(b[i]); if(x>m) m=x; } return m; };
+    const level=a=>{ if(!a) return 0; const b=a._buf||(a._buf=new Float32Array(a.fftSize)); a.getFloatTimeDomainData(b); let m=0; for(let i=0;i<b.length;i++){ const x=Math.abs(b[i]); if(x>m) m=x; } return m; };
     return {ctx,P,bank,sync,soft,note,cut,retempo,preview,previewInst,trackNode,level,M,R,eng,setP(np){ P=np; this.P=np; }};
   }
 

@@ -177,6 +177,7 @@ h3{font-size:1.05rem; color:var(--rubric)}
 /* piano roll */
 .rollwrap{border:1px solid var(--rule); max-height:380px; overflow:auto; background:var(--cell); position:relative}
 .rollwrap canvas{display:block; touch-action:none}
+.rollph{position:absolute; top:0; width:2px; background:var(--rubric); pointer-events:none; display:none}
 
 /* séquenceur de batterie */
 .seq{display:grid; gap:4px; overflow-x:auto; padding-bottom:4px}

@@ -966,6 +966,8 @@ body.playing .veil-open{box-shadow:3px 3px 0 var(--rubric)}
 /* ---------- accueil et visite guidée : planche d'instrument, litanie en trois plaques ---------- */
 .help-open{margin-left:auto; align-self:center; font-size:1.05rem; color:var(--ink-2)}
 .help-open + .veil-open{margin-left:var(--sp-lg)}
+.studio-open{text-decoration:none}
+.studio-open + .veil-open{margin-left:var(--sp-md)}
 .welcome{position:fixed; inset:0; z-index:180; display:flex; align-items:center; justify-content:center; padding:var(--sp-xl); overflow-y:auto; background:var(--parch)}
 .welcome[hidden]{display:none}
 .wl-in{width:min(1000px,100%); margin:auto}
@@ -1046,7 +1048,7 @@ body.playing .veil-open{box-shadow:3px 3px 0 var(--rubric)}
 .vl-key .ic{width:18px; height:18px}
 .vl-key .ic .a{fill:var(--rubric)}
 
-@media (max-width:640px){ .modes{flex-wrap:wrap; gap:var(--sp-xs) var(--sp-lg)} .modes .lnk{font-size:1.1rem} .help-open{margin-left:0} .veil-open{margin-left:auto} }
+@media (max-width:640px){ .modes{flex-wrap:wrap; gap:var(--sp-xs) var(--sp-lg)} .modes .lnk{font-size:1.1rem} .help-open{margin-left:0} .veil-open{margin-left:auto} .studio-open + .veil-open{margin-left:var(--sp-sm)} }
 
 /* ---------- sélecteur d'univers : douze touches séparées, la même famille que les gestes ---------- */
 .seek .seek-uni{display:grid; grid-template-columns:repeat(8,minmax(0,1fr)); gap:8px}

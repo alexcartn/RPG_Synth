@@ -97,7 +97,7 @@ const DEFAULT = {
   pend:{lvl:0, count:6, period:24, inst:"carillon"},
   amb:{lvl:1, murmur:0.35, clink:0.5, feu:0.15, vent:0, gouttes:0},
   fx:{rev:0.4, size:2.6, dark:0.5, room:"gen", algo:"vivante", mod:0.5, shim:0, dly:0, dlyDiv:1.5, fb:0.4, sat:0.15, wow:0.12, veil:0.3, hiss:0},
-  form:{shape:"constante", period:4, amount:0.5},
+  form:{shape:"constante", period:4, amount:0.5, breath:0.5},
   wx:{place:null, d:null, t:0},
   mach:true,
   daw:{sel:0, grid:1, rec:-1, arp:{on:false, mode:"up", rate:0.5, oct:2, gate:0.7}, mix:{mute:{}, solo:{}, pan:{}}, tracks:[

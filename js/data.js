@@ -110,10 +110,7 @@ const DEFAULT = {
   form:{shape:"constante", period:4, amount:0.5, breath:0.5},
   wx:{place:null, d:null, t:0},
   mach:true,
-  daw:{sel:0, grid:1, rec:-1, arp:{on:false, mode:"up", rate:0.5, oct:2, gate:0.7}, mix:{mute:{}, solo:{}, pan:{}}, tracks:[
-    {id:1,name:"Piste 1",inst:"atelier",vol:0.8,pan:0,mute:false,solo:false,bars:2,notes:[]},
-    {id:2,name:"Piste 2",inst:"luth",vol:0.8,pan:-0.2,mute:false,solo:false,bars:2,notes:[]},
-    {id:3,name:"Piste 3",inst:"flute",vol:0.8,pan:0.2,mute:false,solo:false,bars:4,notes:[]}]},
+  daw:{sel:0, grid:1, rec:-1, arp:{on:false, mode:"up", rate:0.5, oct:2, gate:0.7}, mix:{mute:{}, solo:{}, pan:{}}, tracks:[]},
   syn:clone(SYN_DEFAULT),
   mus:{logic:"modal", model:"physique", form:"libre", color:"off", harm:"idiome", arc:"aucun", crit:0.6, mode:"veillee"},
   rc:0.5, tex:{lvl:1, sub:0, mid:0, air:0}, chant:"kyrie", plain:{lvl:0, reg:1, slow:1.5},
@@ -537,7 +534,7 @@ function merge(a,b){for(const k in b){ if(b[k]&&typeof b[k]==="object"&&!Array.i
 let S = clone(DEFAULT);
 
 /* d'anciennes scènes n'ont que quatre emplacements de modulation : on complète jusqu'à huit */
-function normS(){ if(Array.isArray(S.drift)) S.drift.forEach(w=>{ if(w&&w.t2===undefined) w.t2="none"; }); if(S.syn&&S.syn.mod){ const dm=SYN_DEFAULT.mod; while(S.syn.mod.length<8) S.syn.mod.push({...dm[S.syn.mod.length]}); } return S; }
+function normS(){ if(S.daw) S.daw.tracks=[]; /* plus de pistes d'Arranger : le Studio les remplace */ if(Array.isArray(S.drift)) S.drift.forEach(w=>{ if(w&&w.t2===undefined) w.t2="none"; }); if(S.syn&&S.syn.mod){ const dm=SYN_DEFAULT.mod; while(S.syn.mod.length<8) S.syn.mod.push({...dm[S.syn.mod.length]}); } return S; }
 
 /* chaque lecture, chaque rendu : une pièce nouvelle (la graine reste interne, pour garder les stems alignés) */
 const newSeed=()=>1+Math.floor(Math.random()*4294967000);

@@ -166,7 +166,7 @@
     const bs=el("div","btns");
     const tb=(txt,k,cls,title)=>{ const b=el("button",cls,txt); b.type="button"; b.title=title; b.setAttribute("aria-pressed",o[k]?"true":"false"); b.onclick=()=>edit(()=>{ o[k]=!o[k]; if(k==="arm"&&o[k]) P.tracks.forEach(x=>{ if(x!==o) x.arm=false; }); },"session"); bs.appendChild(b); };
     if(isT||id[0]==="r") tb("M","mute","m","Sourdine");
-    if(isT){ tb("S","solo","s","Solo"); if(o.kind==="mel") tb("●","arm","a","Armer : en lecture, ce que tu joues au clavier s'écrit dans le clip « Notes » qui tourne sur cette piste"); }
+    if(isT){ tb("S","solo","s","Solo"); if(o.kind!=="harm") tb("●","arm","a","Armer : le clavier (ordinateur, écran, MIDI) joue cette piste, quelle que soit la piste choisie ; ● Clip enregistre dedans"); }
     m.appendChild(bs);
     const fd=el("div","fad"), r=el("input"); r.type="range"; r.min=-48; r.max=6; r.step=0.5; r.value=o.vol; r.setAttribute("aria-label","Volume "+(o.name||"master"));
     const mt=el("div","meter"), mi=el("i"); mt.appendChild(mi); const db=el("span","db",(o.vol>0?"+":"")+(+o.vol).toFixed(1));
@@ -198,6 +198,7 @@
       items.push({t:"Copier",f:()=>{ UI.clip={kind:t.kind,json:JSON.stringify(c)}; toast("Clip copié."); }});
       if(UI.clip&&UI.clip.kind===t.kind) items.push({t:"Coller (remplacer)",f:()=>edit(()=>{ t.clips[r]=JSON.parse(UI.clip.json); },"all")});
       if(c.type==="gen") items.push({t:"Figer en notes (pour retoucher)",f:()=>freeze(i,r)});
+      if(t.kind!=="harm"||!t.mute) items.push({t:"Exporter le clip en MIDI",f:()=>exportClipMidi(i,r)});
       items.push({t:"Supprimer",f:()=>edit(()=>{ t.clips[r]=null; },"all")});
     }
     menu(x,y,items);
@@ -222,6 +223,7 @@
 
   /* ============================================================ DÉTAIL ============================================================ */
   function renderDetail(){
+    if(typeof renderKbState==="function") try{ renderKbState(); }catch(e){}
     const host=$("detail"); host.innerHTML="";
     const tabs=el("div","tabs"); [["clip","Clip"],["piste","Appareils"]].forEach(([k,n])=>{ const b=el("button","",n); b.type="button"; b.setAttribute("role","tab"); b.setAttribute("aria-selected",UI.tab===k?"true":"false"); b.onclick=()=>{ UI.tab=k; renderDetail(); }; tabs.appendChild(b); });
     const t=curT(), who=UI.focus==="master"?"Master":UI.focus.startsWith("ret")?P.ret[+UI.focus[3]].name:(t?t.name:"")+(UI.tab==="clip"?" · "+(P.scenes[UI.r]?P.scenes[UI.r].name:""):"");
@@ -330,12 +332,12 @@
     const vel=el("input"); vel.type="range"; vel.min=0.1; vel.max=1; vel.step=0.05; vel.value=0.8; vel.setAttribute("aria-label","Nuance des notes choisies"); vel.title="Nuance des notes choisies";
     vel.addEventListener("pointerdown",snap); vel.oninput=()=>{ pick(c,true).forEach(n=>n.v=+vel.value); drawRoll(); save(); };
     bar.appendChild(lab("Nuance ",vel));
-    const h=harmOf(UI.r); bar.appendChild(el("span","hint",(t.arm?"Armée : joue au clavier pendant la lecture, ça s'écrit. ":"")+(h?"Accords en fond : « "+esc(h.name||"")+" ».":"")));
+    const h=harmOf(UI.r); bar.appendChild(el("span","hint",(t.arm?"Armée : le clavier joue cette piste ; ● Clip pour enregistrer. ":"")+(h?"Accords en fond : « "+esc(h.name||"")+" ».":"")));
     pane.appendChild(bar);
     const lane=el("canvas"); lane.style.display="block"; lane.setAttribute("aria-hidden","true"); pane.appendChild(lane);
     const wrap=el("div","rollwrap"), cv=el("canvas"); cv.setAttribute("role","img"); cv.setAttribute("aria-label","Piano roll : clic pour poser une note, glisser pour la déplacer, bord droit pour l'allonger, clic droit ou Maj+clic pour l'effacer");
     const ph=el("div","rollph"); wrap.appendChild(cv); wrap.appendChild(ph); pane.appendChild(wrap);
-    pane.appendChild(el("p","hint","Clic : poser · glisser : déplacer · bord droit : allonger · clic droit ou Maj+clic : effacer · Ctrl+clic : choisir plusieurs · Suppr, flèches. Clavier : Z X C V… (grave), A S D F… , Q W E R… (aigu) ; Page ↑/↓ change d'octave. Les rangées teintées sont les notes de l'accord en cours."));
+    pane.appendChild(el("p","hint","Clic : poser · glisser : déplacer · bord droit : allonger · clic droit ou Maj+clic : effacer · Ctrl+clic : choisir plusieurs · Suppr, flèches. Joue avec le clavier en bas (ordinateur, souris ou MIDI) ; ● Clip enregistre, Capturer garde ce que tu viens de jouer. Les rangées teintées sont les notes de l'accord en cours."));
     UI.roll={cv,wrap,t,c,h,lane,ph};
     requestAnimationFrame(()=>{ drawRoll(); const rows=rollRows(); const mid=rows.findIndex(p=>p<=60+P.key+7); if(mid>0) wrap.scrollTop=Math.max(0,(mid-8)*RH); });
     bindRoll(cv);
@@ -593,6 +595,10 @@
     return {roles,lowCount:low,arpOct,melOct,insRev}; }
 
   /* ============================================================ EXPORT ============================================================ */
+  const fname=()=>(P.name||"studio").replace(/[^\w\- àâäéèêëîïôöùûüç]/gi,"").trim()||"studio";
+  function download(data,name,type){ const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([data],{type})); a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),20000); }
+  function exportClipMidi(i,r){ const t=P.tracks[i], c=t.clips[r], D=PJ.clipData(P,t,c,harmOf(r)); if(!D.notes.length){ toast("Clip vide."); return; }
+    download(SON.midiBytes(P,[{t,notes:D.notes.map(n=>({b:n.s,d:n.d,p:n.p,v:n.v}))}]),fname()+" - "+(c.name||t.name)+".mid","audio/midi"); toast("Clip exporté en MIDI."); }
   function openExport(){
     const d=$("dlgExport"), b=$("expBody"), len=PJ.arrLen(P.arr), B=TH.bb(P.meter); b.innerHTML="";
     const src=sel([...(len?[["arr","L'arrangement ("+len+" mesures)"]]:[]),["sc1","Les scènes dans l'ordre, chacune une fois"],["sc2","Les scènes dans l'ordre, chacune deux fois"]],len?"arr":"sc2",()=>{},"Source");
@@ -600,9 +606,12 @@
     b.append(lab("Ce qu'on exporte ",src),document.createElement("br"),lab("Qualité ",q));
     const pg=el("div","prog-bar","<i></i>"); b.appendChild(pg); $("expNote").textContent="Le rendu se fait hors temps réel, puis l'encodeur MP3 se charge (une connexion est nécessaire la première fois).";
     $("expGo").disabled=false;
+    const srcP=()=>{ const Pr=JSON.parse(JSON.stringify(P)); if(src.value!=="arr"){ const rows=P.scenes.map((s,r)=>r).filter(r=>P.tracks.some(t=>t.clips[r])); Pr.arr=PJ.arrFromScenes(Pr,rows,src.value==="sc1"?1:2); } return Pr; };
+    $("expMidi").onclick=()=>{ const Pr=srcP(); if(!PJ.arrLen(Pr.arr)){ $("expNote").textContent="Rien à exporter : crée au moins un clip."; return; }
+      const ev=SON.events(Pr), list=Pr.tracks.filter(t=>ev.has(t)&&!(t.kind==="harm"&&t.mute)).map(t=>({t,notes:ev.get(t)}));
+      download(SON.midiBytes(Pr,list),fname()+".mid","audio/midi"); $("expNote").textContent="MIDI exporté : "+list.length+" pistes, "+list.reduce((a,x)=>a+x.notes.length,0)+" notes. À ouvrir dans Ableton (glisser le fichier dans la vue Arrangement)."; };
     $("expGo").onclick=async()=>{
-      $("expGo").disabled=true; const Pr=JSON.parse(JSON.stringify(P));
-      if(src.value!=="arr"){ const rows=P.scenes.map((s,r)=>r).filter(r=>P.tracks.some(t=>t.clips[r])); Pr.arr=PJ.arrFromScenes(Pr,rows,src.value==="sc1"?1:2); }
+      $("expGo").disabled=true; const Pr=srcP();
       if(!PJ.arrLen(Pr.arr)){ $("expNote").textContent="Rien à exporter : crée au moins un clip."; $("expGo").disabled=false; return; }
       try{
         const fill=pg.querySelector("i"); $("expNote").textContent="Rendu en cours…";
@@ -617,11 +626,132 @@
     d.showModal();
   }
 
-  /* ============================================================ CLAVIER ============================================================ */
+  /* ============================================================ INSTRUMENT : jouer au clavier, à l'écran ou au MIDI ============================================================
+     Une seule entrée pour tout : on(id, hauteur, nuance) et off(id). Les notes tiennent tant que la touche est enfoncée.
+     Elles vont à la piste armée, sinon à la piste choisie. On peut enregistrer dans un clip (●  Clip) ou capturer après coup. */
+  const KB={mode:"gamme", vel:0.8, chord:false, sustain:false, quant:true, recBars:4, rec:false, held:new Map(), sus:new Set(), buf:[], midi:null, midiNames:[], open:true, keys:new Map(), ct:""};
+  try{ const s=JSON.parse(localStorage.getItem("bourdon.studio.kb")||"{}"); Object.assign(KB,{mode:s.mode||KB.mode,chord:!!s.chord,quant:s.quant!==false,open:s.open!==false,recBars:s.recBars||4}); }catch(e){}
+  const kbSave=()=>{ try{ localStorage.setItem("bourdon.studio.kb",JSON.stringify({mode:KB.mode,chord:KB.chord,quant:KB.quant,open:KB.open,recBars:KB.recBars})); }catch(e){} };
   const ROWS=[["KeyZ","KeyX","KeyC","KeyV","KeyB","KeyN","KeyM","Comma","Period","Slash"],["KeyA","KeyS","KeyD","KeyF","KeyG","KeyH","KeyJ","KeyK","KeyL","Semicolon"],["KeyQ","KeyW","KeyE","KeyR","KeyT","KeyY","KeyU","KeyI","KeyO","KeyP"]];
-  const held=new Map();
-  function keyPitch(code){ const iv=TH.MODES[P.mode].iv; for(let r=0;r<3;r++){ const k=ROWS[r].indexOf(code); if(k>=0){ const deg=k+r*7; return 12*(4+UI.kbOct)+P.key+iv[deg%7]+12*Math.floor(deg/7); } } return null; }
+  /* disposition d'Ableton : A W S E D F T G Y H U J K O L P (repérées par position, donc valables en AZERTY) */
+  const CHROM={KeyA:0,KeyW:1,KeyS:2,KeyE:3,KeyD:4,KeyF:5,KeyT:6,KeyG:7,KeyY:8,KeyH:9,KeyU:10,KeyJ:11,KeyK:12,KeyO:13,KeyL:14,KeyP:15,Semicolon:16};
+  function keyPitch(code){
+    if(KB.mode==="chroma"){ const k=CHROM[code]; return k===undefined?null:12*(4+UI.kbOct)+k; }
+    const iv=TH.MODES[P.mode].iv; for(let r=0;r<3;r++){ const k=ROWS[r].indexOf(code); if(k>=0){ const deg=k+r*7; return 12*(4+UI.kbOct)+P.key+iv[deg%7]+12*Math.floor(deg/7); } } return null; }
   const typing=e=>{ const tg=e.target; return tg&&(tg.tagName==="INPUT"&&tg.type!=="range"||tg.tagName==="SELECT"||tg.tagName==="TEXTAREA"||tg.isContentEditable); };
+  const playT=()=>P.tracks.find(t=>t.arm)||curT()||P.tracks[0];
+  /* accord d'une touche : la triade de la gamme bâtie sur la note jouée */
+  function chordOf(p){ const iv=TH.MODES[P.mode].iv, rel=((p-P.key)%12+12)%12, d=iv.indexOf(rel); if(d<0) return [p,p+4,p+7]; const up=k=>{ const dd=d+k; return p+iv[dd%7]+12*Math.floor(dd/7)-rel; }; return [p,up(2),up(4)]; }
+  function on(id,p,v){
+    if(KB.held.has(id)) off(id,true);
+    audio(); const t=playT(); if(!t) return; v=v===undefined?KB.vel:v;
+    const ps=KB.chord&&t.kind!=="drums"?chordOf(p):[p];
+    const hs=ps.map(q=>graph.noteOn(t,q,v*(ps.length>1?0.8:1)));
+    const b=TR.X.playing?TR.beatNow():null, now=ctx.currentTime;
+    KB.held.set(id,{t,ps,hs,v,b,now}); KB.sus.delete(id); keyLight();
+  }
+  function off(id,force){
+    const h=KB.held.get(id); if(!h) return;
+    if(KB.sustain&&!force){ KB.sus.add(id); return; }
+    KB.held.delete(id); KB.sus.delete(id); h.hs.forEach(x=>x.off()); keyLight();
+    const b1=TR&&TR.X.playing?TR.beatNow():null, dur=(ctx.currentTime-h.now)/(60/P.tempo);
+    h.ps.forEach(q=>{ KB.buf.push({t:h.t.id,p:q,v:h.v,b:h.b,d:Math.max(0.05,dur),at:h.now}); }); if(KB.buf.length>400) KB.buf.splice(0,KB.buf.length-400);
+    if(KB.rec&&h.b!==null&&b1!==null) h.ps.forEach(q=>recInto(h.t,q,h.v,h.b,b1-h.b));
+  }
+  function sustain(onn){ KB.sustain=onn; if(!onn) [...KB.sus].forEach(id=>off(id,true)); renderKbState(); }
+  /* écrire une note dans le clip qui tourne sur la piste (notes ou batterie) */
+  function recInto(t,p,v,b0,d){
+    const st=TR.slot(t.id); if(st.row===null) return; const c=t.clips[st.row]; if(!c) return;
+    const B=TH.bb(P.meter), g=UI.grid;
+    if(t.kind==="drums"){ PJ.fixDrum(t,c,P.meter); const per=PJ.stepsPerBar(P.meter), L=c.bars*per, stp=B/per, li=((p%12)+12)%12; if(li>=t.lanes.length) return; let i=Math.round((((b0-st.anchor)/stp)%L+L)%L)%L; c.steps[li][i]=Math.max(c.steps[li][i],v); save(); if(UI.seq&&UI.seq.c===c) renderDetail(); return; }
+    if(c.type!=="notes") return;
+    const L=c.bars*B; let s=(((b0-st.anchor)%L)+L)%L; if(KB.quant){ s=Math.round(s/g)*g; if(s>=L) s-=L; d=Math.max(g,Math.round(d/g)*g); } else d=Math.max(0.05,d);
+    c.notes.push({s,d:Math.min(d,L-s),p,v}); save(); if(UI.roll&&UI.roll.c===c) drawRoll(); clearTimeout(recInto.t); recInto.t=setTimeout(renderConseils,600);
+  }
+  /* ● Clip : arme la piste, crée un clip « Notes » dans la case choisie s'il le faut, le lance et enregistre par-dessus */
+  function recClip(){
+    if(KB.rec){ KB.rec=false; renderKbState(); toast("Enregistrement arrêté. Ctrl+Z annule la prise."); renderDetail(); return; }
+    const i=P.tracks.indexOf(playT()), t=P.tracks[i]; if(!t||t.kind==="harm"){ toast("Choisis une piste Mélodie, Nappe… ou Percussion pour enregistrer."); return; }
+    let r=UI.r; const ok=c=>!c||(t.kind==="drums"?true:c.type==="notes");
+    if(!ok(t.clips[r])){ r=t.clips.findIndex((c,k)=>!c); if(r<0){ P.scenes.push({name:"Scène "+(P.scenes.length+1)}); P.tracks.forEach(x=>x.clips.push(null)); r=P.scenes.length-1; } }
+    edit(()=>{ P.tracks.forEach(x=>x.arm=x===t); if(!t.clips[r]) t.clips[r]=t.kind==="drums"?PJ.drumClip(t,Math.min(4,KB.recBars),P.meter):{name:"Prise",type:"notes",bars:KB.recBars,notes:[]}; UI.t=i; UI.r=r; UI.focus="clip"; UI.tab="clip"; },"all");
+    audio(); KB.rec=true; TR.launch(t.id,r); renderKbState(); toast("Enregistrement : joue, la boucle tourne et chaque passage s'ajoute. ● Clip pour arrêter.");
+  }
+  /* Capturer : ce que tu viens de jouer librement devient un clip (comme « Capture MIDI » d'Ableton) */
+  function capture(){
+    const t=playT(); if(!t||t.kind==="harm"){ toast("Choisis la piste sur laquelle tu as joué."); return; }
+    const mine=KB.buf.filter(n=>n.t===t.id); if(!mine.length){ toast("Rien à capturer : joue d'abord quelque chose sur cette piste."); return; }
+    /* la dernière phrase : on remonte tant que les silences font moins de deux mesures */
+    const B=TH.bb(P.meter), spb=60/P.tempo; let k=mine.length-1; while(k>0&&mine[k].at-(mine[k-1].at+mine[k-1].d*spb)<2*B*spb) k--;
+    const ph=mine.slice(k), withBeat=ph.every(n=>n.b!==null);
+    const t0=withBeat?Math.floor(ph[0].b/B)*B:0, a0=ph[0].at, g=KB.quant?UI.grid:0;
+    let notes=ph.map(n=>{ let s=withBeat?n.b-t0:(n.at-a0)/spb, d=n.d; if(g){ s=Math.round(s/g)*g; d=Math.max(g,Math.round(d/g)*g); } return {s:Math.max(0,s),d,p:n.p,v:n.v}; });
+    const span=Math.max(...notes.map(n=>n.s+n.d)); let bars=[1,2,4,8,16].find(x=>x*B>=span-1e-6)||16;
+    notes=notes.filter(n=>n.s<bars*B).map(n=>({...n,d:Math.min(n.d,bars*B-n.s)}));
+    const i=P.tracks.indexOf(t); let r=t.clips[UI.r]?t.clips.findIndex(c=>!c):UI.r;
+    edit(()=>{ if(r<0){ P.scenes.push({name:"Scène "+(P.scenes.length+1)}); P.tracks.forEach(x=>x.clips.push(null)); r=P.scenes.length-1; }
+      if(t.kind==="drums"){ const c=PJ.drumClip(t,Math.min(4,bars),P.meter), per=PJ.stepsPerBar(P.meter), stp=B/per; notes.forEach(n=>{ const li=((n.p%12)+12)%12, si=Math.round(n.s/stp); if(li<t.lanes.length&&si<c.steps[li].length) c.steps[li][si]=Math.max(c.steps[li][si],n.v); }); c.name="Capture"; t.clips[r]=c; }
+      else t.clips[r]={name:"Capture",type:"notes",bars,notes};
+      UI.t=i; UI.r=r; UI.focus="clip"; UI.tab="clip"; },"all");
+    KB.buf=KB.buf.filter(n=>n.t!==t.id); toast("Capturé : "+notes.length+" notes sur "+bars+" mesure"+(bars>1?"s":"")+", dans « "+P.scenes[r].name+" ».");
+  }
+  /* MIDI : un vrai clavier, avec la nuance et la pédale de maintien */
+  async function midiConnect(){
+    if(!navigator.requestMIDIAccess){ toast("Ce navigateur ne gère pas le MIDI : Chrome, Edge ou Opera le permettent."); return; }
+    try{ const acc=await navigator.requestMIDIAccess(); KB.midi=acc;
+      const bind=()=>{ KB.midiNames=[]; acc.inputs.forEach(inp=>{ inp.onmidimessage=onMidi; KB.midiNames.push(inp.name); }); renderKbState(); };
+      acc.onstatechange=bind; bind(); toast(KB.midiNames.length?"MIDI : "+KB.midiNames.join(", "):"MIDI autorisé, mais aucun clavier branché.");
+    }catch(e){ toast("Accès MIDI refusé."); }
+  }
+  function onMidi(e){ const [st,d1,d2]=e.data, c=st&0xf0;
+    if(c===0x90&&d2>0) on("m"+d1,d1,0.15+0.85*d2/127); else if(c===0x80||(c===0x90&&d2===0)) off("m"+d1);
+    else if(c===0xB0&&d1===64) sustain(d2>=64); }
+  /* ---------- le clavier à l'écran ---------- */
+  const KLO=()=>12*(3+UI.kbOct), KN=37;
+  function renderKb(){
+    const host=$("kb"); if(!host) return; host.innerHTML=""; host.classList.toggle("shut",!KB.open);
+    const bar=el("div","kbbar"), tg=btn(KB.open?"▾ Clavier":"▸ Clavier",()=>{ KB.open=!KB.open; kbSave(); renderKb(); },"sm"); bar.appendChild(tg);
+    const t=playT(); const kt=el("span","kbt"); kt.id="kbT"; bar.appendChild(kt);
+    const md=btn(KB.mode==="gamme"?"Gamme":"Chromatique",()=>{ KB.mode=KB.mode==="gamme"?"chroma":"gamme"; kbSave(); renderKb(); },"sm","Clavier d'ordinateur : notes de la gamme sur trois rangées (Z…, A…, Q…), ou chromatique comme Ableton (A W S E D F T G Y H U J K)"); bar.appendChild(md);
+    const ch=btn("Accord d'une touche",()=>{ KB.chord=!KB.chord; kbSave(); renderKbState(); },"sm","Chaque touche joue la triade de la gamme bâtie sur elle"); ch.id="kbChord"; bar.appendChild(ch);
+    bar.appendChild(btn("Oct −",()=>{ UI.kbOct=clamp(UI.kbOct-1,-3,3); renderKb(); },"sm","Page ↓")); bar.appendChild(el("span","kbo",String(4+UI.kbOct))); bar.appendChild(btn("Oct +",()=>{ UI.kbOct=clamp(UI.kbOct+1,-3,3); renderKb(); },"sm","Page ↑"));
+    const vel=el("input"); vel.type="range"; vel.min=0.2; vel.max=1; vel.step=0.05; vel.value=KB.vel; vel.oninput=()=>KB.vel=+vel.value; vel.setAttribute("aria-label","Nuance"); bar.appendChild(lab("Nuance ",vel));
+    const sb=btn("Maintien",()=>sustain(!KB.sustain),"sm","Pédale de maintien (aussi la pédale d'un clavier MIDI)"); sb.id="kbSus"; bar.appendChild(sb);
+    bar.appendChild(el("span","sep"));
+    const rb=btn("● Clip",recClip,"sm rec","Enregistre dans un clip Notes de la case choisie (créé s'il le faut), en boucle, par-dessus"); rb.id="kbRec"; bar.appendChild(rb);
+    bar.appendChild(sel([[1,"1 mes."],[2,"2 mes."],[4,"4 mes."],[8,"8 mes."]],KB.recBars,v=>{ KB.recBars=+v; kbSave(); },"Longueur du clip enregistré"));
+    bar.appendChild(btn("Capturer",capture,"sm","Ce que tu viens de jouer librement, même sans enregistrer, devient un clip"));
+    const qb=btn("Quantifier",()=>{ KB.quant=!KB.quant; kbSave(); renderKbState(); },"sm","Aligner les notes enregistrées sur la grille du piano roll"); qb.id="kbQ"; bar.appendChild(qb);
+    const mb=btn("Métronome",()=>{ audio(); TR.X.metro=!TR.X.metro; renderKbState(); },"sm"); mb.id="kbMetro"; bar.appendChild(mb);
+    const mi=btn("MIDI",midiConnect,"sm","Brancher un clavier MIDI (Chrome, Edge)"); mi.id="kbMidi"; bar.appendChild(mi);
+    host.appendChild(bar);
+    if(!KB.open){ renderKbState(); return; }
+    const pn=el("div","piano"), whites=[], lo=KLO(); KB.keys.clear();
+    for(let p=lo;p<lo+KN;p++){ if([1,3,6,8,10].indexOf(p%12)<0) whites.push(p); }
+    const ww=100/whites.length, iv=TH.MODES[P.mode].iv, M=TH.MODES[P.mode];
+    for(let p=lo;p<lo+KN;p++){
+      const blk=[1,3,6,8,10].indexOf(p%12)>=0, k=el("button","pk"+(blk?" blk":"")), rel=((p-P.key)%12+12)%12; k.type="button"; k.tabIndex=-1;
+      if(TH.inScale(iv,rel)) k.classList.add("sc"); if(rel===0) k.classList.add("ton"); if(rel===M.car) k.classList.add("car");
+      k.setAttribute("aria-label",TH.nomMidi(p));
+      if(blk){ const wi=whites.filter(x=>x<p).length; k.style.left=(wi*ww-ww*0.3)+"%"; k.style.width=(ww*0.6)+"%"; } else { const wi=whites.indexOf(p); k.style.left=(wi*ww)+"%"; k.style.width=ww+"%"; if(p%12===0) k.innerHTML="<span>"+esc(TH.nomMidi(p))+"</span>"; }
+      const id="s"+p; k.addEventListener("pointerdown",e=>{ e.preventDefault(); k.setPointerCapture(e.pointerId); const r=k.getBoundingClientRect(); on(id+"_"+e.pointerId,p,0.3+0.7*clamp((e.clientY-r.top)/r.height,0,1)); });
+      const up=e=>off(id+"_"+e.pointerId); k.addEventListener("pointerup",up); k.addEventListener("pointercancel",up);
+      pn.appendChild(k); KB.keys.set(p,k);
+    }
+    host.appendChild(pn);
+    host.appendChild(el("p","hint",t&&t.kind==="drums"?"Percussion : Do, Do♯, Ré… jouent les voies dans l'ordre (Grave, Frappe, Remplissage…).":"Plus bas sur la touche = plus fort. Points : notes de la gamme (rouge : tonique, contour rouge : note caractéristique) ; vert : notes de l'accord qui tourne."));
+    renderKbState(); KB.ct=""; keyLight();
+  }
+  function renderKbState(){ const kt=$("kbT"), pt=playT(); if(kt) kt.textContent=pt?"→ "+pt.name+(pt.arm?" (armée)":""):""; const s=(id,on)=>{ const b=$(id); if(b) b.setAttribute("aria-pressed",on?"true":"false"); };
+    s("kbChord",KB.chord); s("kbSus",KB.sustain); s("kbRec",KB.rec); s("kbQ",KB.quant); s("kbMetro",TR&&TR.X.metro); const m=$("kbMidi"); if(m){ m.textContent=KB.midiNames.length?"MIDI : "+KB.midiNames[0]:"MIDI"; s("kbMidi",KB.midiNames.length>0); } }
+  function keyLight(){ const down=new Set(); KB.held.forEach(h=>h.ps.forEach(q=>down.add(q))); KB.keys.forEach((k,p)=>k.classList.toggle("on",down.has(p))); }
+  /* notes de l'accord qui tourne (ou de l'accord choisi dans l'éditeur) */
+  function chordNow(){ const h=PJ.harmTrack(P); if(!h) return null; let c=null, f=0;
+    if(TR&&TR.X.playing){ const ps=TR.pos(h); if(ps){ c=h.clips[ps.row]; f=ps.f; } }
+    if(!c){ c=h.clips[UI.r]||h.clips.find(Boolean); if(!c) return null; const k=UI.chordSel>=0?UI.chordSel:0, ch=c.chords[k]; return ch?TH.tones(ch,TH.MODES[P.mode].iv):null; }
+    const L=TH.progLen(c.chords,P.meter), x=f*L, seg=TH.timeline(c.chords,P.meter).find(s=>x>=s.s&&x<s.s+s.d); return seg?TH.tones(seg.ch,TH.MODES[P.mode].iv):null; }
+  function chordLight(){ const T=chordNow(), sig=T?T.join(","):""; if(sig===KB.ct) return; KB.ct=sig; const pcs=T?T.map(x=>((x+P.key)%12+12)%12):[]; KB.keys.forEach((k,p)=>k.classList.toggle("ct",pcs.indexOf(((p%12)+12)%12)>=0)); }
+
   document.addEventListener("keydown",e=>{
     if(typing(e)||$("dlgProj").open||$("dlgExport").open) return;
     if((e.ctrlKey||e.metaKey)&&e.code==="KeyZ"){ e.preventDefault(); e.shiftKey?doRedo():doUndo(); return; }
@@ -629,7 +759,10 @@
     if(e.ctrlKey||e.metaKey||e.altKey) return;
     if(e.code==="Space"){ e.preventDefault(); togglePlay(); return; }
     if(e.code==="Escape"){ hideMenu(); return; }
-    if(e.code==="PageUp"||e.code==="PageDown"){ e.preventDefault(); UI.kbOct=clamp(UI.kbOct+(e.code==="PageUp"?1:-1),-2,2); toast("Clavier : octave "+(4+UI.kbOct)); return; }
+    if(e.code==="PageUp"||e.code==="PageDown"){ e.preventDefault(); UI.kbOct=clamp(UI.kbOct+(e.code==="PageUp"?1:-1),-3,3); renderKb(); toast("Clavier : octave "+(4+UI.kbOct)); return; }
+    if(KB.mode==="chroma"&&(e.code==="KeyZ"||e.code==="KeyX")){ e.preventDefault(); UI.kbOct=clamp(UI.kbOct+(e.code==="KeyX"?1:-1),-3,3); renderKb(); return; }
+    if(KB.mode==="chroma"&&(e.code==="KeyC"||e.code==="KeyV")){ e.preventDefault(); KB.vel=clamp(KB.vel+(e.code==="KeyV"?0.1:-0.1),0.2,1); renderKb(); toast("Nuance "+Math.round(KB.vel*100)+" %"); return; }
+    if(e.code==="Tab"&&!e.shiftKey&&document.activeElement===document.body){ e.preventDefault(); sustain(!KB.sustain); return; }
     if(e.code==="Delete"||e.code==="Backspace"){
       if(UI.view==="arr"&&UI.arrSel){ e.preventDefault(); delSeg(); return; }
       const c=curClip(); if(UI.roll&&c&&c.type==="notes"&&UI.selNotes.size){ e.preventDefault(); edit(()=>{ c.notes=c.notes.filter(n=>!UI.selNotes.has(n)); UI.selNotes.clear(); },"detail conseils"); return; }
@@ -639,17 +772,11 @@
       if(e.code==="ArrowUp"||e.code==="ArrowDown"){ const d=e.code==="ArrowUp"?1:-1; snap(); [...UI.selNotes].forEach(n=>{ const iv=TH.MODES[P.mode].iv; let p=n.p; if(e.shiftKey) p+=12*d; else do{ p+=d; } while(!TH.inScale(iv,p-P.key)&&Math.abs(p-n.p)<12); n.p=p; }); }
       else { snap(); const d=(e.code==="ArrowRight"?1:-1)*UI.grid, L=c.bars*TH.bb(P.meter); [...UI.selNotes].forEach(n=>n.s=clamp(n.s+d,0,L-n.d)); }
       drawRoll(); save(); return; } }
-    if(e.repeat) return;
-    const p=keyPitch(e.code); if(p===null) return; e.preventDefault();
-    const t=curT(); if(!t||t.kind!=="mel") { audio(); graph.previewInst({k:"inst",name:"harpe"},p,0.7,1); return; }
-    audio(); graph.preview(t,p,0.75,0.9); held.set(e.code,{p,b:TR&&TR.X.playing?TR.beatNow():null});
+    if(e.repeat){ if(keyPitch(e.code)!==null) e.preventDefault(); return; }
+    const p=keyPitch(e.code); if(p===null) return; e.preventDefault(); on("k"+e.code,p);
   });
-  document.addEventListener("keyup",e=>{ const h=held.get(e.code); if(!h) return; held.delete(e.code); recNote(h); });
-  function recNote(h){
-    const t=P.tracks.find(x=>x.arm); if(!t||!TR||!TR.X.playing||h.b===null) return; const st=TR.slot(t.id); if(st.row===null) return; const c=t.clips[st.row]; if(!c||c.type!=="notes") return;
-    const L=c.bars*TH.bb(P.meter), now=TR.beatNow(), g=UI.grid; let s=(((h.b-st.anchor)%L)+L)%L; s=Math.round(s/g)*g; if(s>=L) s-=L; const d=Math.max(g,Math.round((now-h.b)/g)*g);
-    snap(); c.notes.push({s,d:Math.min(d,L-s),p:h.p,v:0.8}); save(); if(UI.roll&&UI.roll.c===c) drawRoll(); clearTimeout(recNote.t); recNote.t=setTimeout(renderConseils,600);
-  }
+  document.addEventListener("keyup",e=>{ if(KB.held.has("k"+e.code)) off("k"+e.code); });
+  window.addEventListener("blur",()=>{ [...KB.held.keys()].forEach(id=>off(id,true)); });
   function togglePlay(){ audio(); if(TR.X.playing){ TR.stop(); renderTopState(); return; }
     if(UI.view==="arr"){ if(PJ.arrLen(P.arr)) TR.playArr(UI.arrCur); else toast("L'arrangement est vide : passe en vue Session pour jouer tes scènes."); renderTopState(); return; }
     /* la scène choisie si elle a des clips, sinon la première qui en a */
@@ -664,7 +791,7 @@
   let lastF=0, idle=false;
   function frame(ts){
     requestAnimationFrame(frame);
-    if(!TR||ts-lastF<33) return; lastF=ts;
+    if(!TR||ts-lastF<33) return; lastF=ts; if(KB.open) chordLight();
     if(!TR.X.playing){ if(idle) return; idle=true; $("pos").textContent="—";
       Object.values(UI.cells).forEach(c=>{ if(c.cl){ c.cl.classList.remove("play"); c.bar.style.width="0"; } if(c.mi) c.mi.style.height="0"; });
       P.tracks.forEach(t=>{ const s=TR.X.slots[t.id]; t.clips.forEach((c,r)=>{ const cell=UI.cells[t.id+"|"+r]; if(cell) cell.cl.classList.toggle("pend",!!(s&&s.pend!==undefined&&s.pend.row===r)); }); });
@@ -685,7 +812,7 @@
   }
 
   /* ============================================================ BRANCHEMENTS ============================================================ */
-  function renderAll(){ renderTop(); renderGamme(); renderSession(); renderDetail(); renderArr(); renderConseils(); }
+  function renderAll(){ renderTop(); renderGamme(); renderSession(); renderDetail(); renderArr(); renderConseils(); renderKb(); }
   $("bPlay").onclick=()=>{ audio(); if(TR.X.playing) return; togglePlay(); };
   $("dlgProj").addEventListener("close",()=>{ if(!localStorage.getItem(KEY)) save(); });
   $("bStop").onclick=()=>{ if(TR) TR.stop(); renderTopState(); };

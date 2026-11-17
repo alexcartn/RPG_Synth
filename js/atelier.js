@@ -600,12 +600,13 @@ function atelierSync(){
 
 /* ---------- modes : réglages, jeu, atelier ---------- */
 function setMode(m){
+  if(m==="daw") m="jeu"; /* le mode Arranger a été retiré : le Studio le remplace */
   const old=MODE; MODE=m;
   const jeu=m==="jeu", at=m==="atelier", dw=m==="daw";
   JEU.on=jeu; document.body.classList.toggle("jeu",jeu); document.body.classList.toggle("atelier",at); document.body.classList.toggle("daw",dw);
   $("jeu").hidden=!jeu; if($("atelier")) $("atelier").hidden=!at; if($("daw")) $("daw").hidden=!dw;
   const rw=document.querySelector(".ringwrap"); if(rw) (jeu?$("ringSlot"):document.querySelector(".marge")).appendChild(rw);
-  $("reglBtn").setAttribute("aria-pressed",(!jeu&&!at&&!dw)?"true":"false"); $("dawBtn").setAttribute("aria-pressed",dw?"true":"false");
+  $("reglBtn").setAttribute("aria-pressed",(!jeu&&!at&&!dw)?"true":"false"); if($("dawBtn")) $("dawBtn").setAttribute("aria-pressed",dw?"true":"false");
   $("jeuBtn").setAttribute("aria-pressed",jeu?"true":"false");
   $("atelierBtn").setAttribute("aria-pressed",at?"true":"false");
   const mh=$("modeHint"); if(mh) mh.textContent=jeu?"Conduire : la machine joue, tu la pilotes en direct avec des boutons, un pad, le cercle des hauteurs et des gestes musicaux.":dw?"Arranger : des pistes qui bouclent par-dessus la machine, écrites au piano roll ou enregistrées au clavier, avec un mixeur pour tout équilibrer.":at?"Forger : tu construis ton synthé et tu le joues au clavier, dans la gamme du thème, avec ou sans la machine.":"Composer : tout ce qui fait la pièce, chapitre par chapitre. Ouvre un chapitre pour le régler.";
@@ -620,5 +621,5 @@ function setMode(m){
 function restoreMode(){
   /* première visite : on arrive sur Conduire (une ambiance, Jouer, quelques boutons) */
   let m="jeu"; try{ m=localStorage.getItem("bourdon.mode2")||"jeu"; }catch(e){}
-  if(m==="jeu"||m==="atelier"||m==="daw"||m==="reglage") MODE=m;
+  if(m==="jeu"||m==="atelier"||m==="reglage") MODE=m;
 }

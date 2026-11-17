@@ -160,19 +160,8 @@ setTimeout(async()=>{
  w.eval('capStart()'); w.eval('CAP.node&&CAP.node.onaudioprocess&&CAP.node.onaudioprocess({inputBuffer:{getChannelData:()=>new Float32Array(4096)}})'); console.log('capture : en cours',w.eval('CAP.on'),'| octets',w.eval('CAP.chunks.length')); w.eval('if(!URL.createObjectURL){ URL.createObjectURL=()=>"blob:x"; URL.revokeObjectURL=()=>{}; }'); w.eval('capStop()'); console.log('capture : arrêtée',w.eval('!CAP.on'),'| graine différente à chaque lecture',w.eval('(()=>{ const a=newSeed(), b=newSeed(); return a!==b; })()'));
  // météo : mappage et effet sur l'énergie
  console.log('météo :',JSON.stringify(w.eval('wxMap({weather_code:63,rain:1.6,cloud_cover:95,wind_speed_10m:32,is_day:0,temperature_2m:9})')),'|',w.eval('wxText(wxMap({weather_code:95,rain:0,cloud_cover:100,wind_speed_10m:10,is_day:1,temperature_2m:20}))'));
- // DAW : mode, mixeur, enregistrement, piano roll
- d.getElementById('dawBtn').click(); await new Promise(r=>setTimeout(r,100));
- console.log('daw : mode',w.eval('MODE'),'| lignes',d.querySelectorAll('#dawHeads .dw-h').length,'| touches',d.querySelectorAll('#piano .pk').length);
- w.eval('S.daw.tracks[0].notes.push({s:0,off:12,d:1,v:0.7},{s:2,off:14,d:2,v:0.7})'); w.eval('live.eng.dawReplan(S.daw.tracks[0].id)');
- w.eval('S.daw.mix.mute.perc=true; live.eng.setLevels(); S.daw.tracks[1].solo=true; live.eng.setLevels(); S.daw.tracks[1].solo=false; S.daw.mix.mute.perc=false; live.eng.setLevels()');
- w.eval('DW.rec=true; dawSnap(S.daw.tracks[0])'); w.eval('atOn("t1",3)'); await new Promise(r=>setTimeout(r,300)); w.eval('atOff("t1")');
- console.log('daw : notes enregistrées',w.eval('S.daw.tracks[0].notes.length'),'| annuler',d.getElementById('dawUndo').disabled);
- w.eval('dawRecStop()');
- w.eval('S.daw.arp.on=true; S.daw.arp.mode="updown"; atOn("a1",0); atOn("a2",2); atOn("a3",4)'); console.log('arp : touches tenues',w.eval('arpHeld().length'),'| séquence',w.eval('arpSeq().join(",")'));
- await new Promise(r=>setTimeout(r,400)); w.eval('atOff("a1"); atOff("a2"); atOff("a3"); S.daw.arp.on=false');
- d.getElementById('dawTabSeq').click(); w.eval('S.daw.tracks[0].notes=[]; seqRandom()'); console.log('séquenceur : notes au hasard',w.eval('S.daw.tracks[0].notes.length>0'),'| décalage',w.eval('(seqShift(),S.daw.tracks[0].notes.length>0)'));
- d.getElementById('dawTabRoll').click();
- w.eval('dawUndo()'); console.log('daw : après annulation',w.eval('S.daw.tracks[0].notes.length'));
+ // Arranger retiré : plus de bouton ni de pistes
+ console.log('arranger retiré',!d.getElementById('dawBtn')&&w.eval('S.daw.tracks.length')===0);
  d.getElementById('reglBtn').click();
  // courbe de tension
  [...d.querySelectorAll('.curvetools .lnk')][2].click(); await new Promise(r=>setTimeout(r,300));

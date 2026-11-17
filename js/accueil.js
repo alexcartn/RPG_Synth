@@ -12,7 +12,7 @@ const ACC_STEPS=[
   {sel:"#knobs", t:"Les boutons", x:"Tourne-les en direct : tension, densité, bourdon, brume. Glisse vers le haut ou le bas, ou utilise la molette et les flèches du clavier."},
   {sel:"#jeuGest", t:"Les gestes", x:"Suspense, Révélation, Danger, Poursuite, Triomphe, Apaisement : un geste musical pour infléchir la pièce en direct. L'ampleur règle sa force."},
   {sel:"#studioLnk", t:"Studio", x:"Pour composer toi-même au lieu de laisser la machine décider : tu choisis la gamme, poses tes accords, empiles nappe, bourdon et arpège, écris ta mélodie, puis arranges et exportes en MP3. Le studio te conseille à chaque étape, à la manière d'Ableton (vue Session, effets en chaîne)."},
-  {sel:"#modes", t:"Aller plus loin", x:"Composer : tous les réglages, et Capturer pour garder une prise en WAV, MP3 ou MIDI. Forger : ton propre synthé. Arranger : des pistes par-dessus la machine. Veillée : la machine en grand, à regarder en fond."}
+  {sel:"#modes", t:"Aller plus loin", x:"Composer : tous les réglages, et Capturer pour garder une prise en WAV, MP3 ou MIDI. Forger : ton propre synthé. Veillée : la machine en grand, à regarder en fond."}
 ];
 const accSeen=()=>{ try{ return localStorage.getItem(ACC.key)==="1"; }catch(e){ return false; } };
 const accMark=()=>{ try{ localStorage.setItem(ACC.key,"1"); }catch(e){} };

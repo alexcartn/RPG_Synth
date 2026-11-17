@@ -28,7 +28,7 @@
   <div class="proj">
     <button class="btn" id="bUndo" type="button" title="Annuler (Ctrl+Z)">↶</button><button class="btn" id="bRedo" type="button" title="Rétablir (Ctrl+Maj+Z)">↷</button>
     <button class="btn" id="bProj" type="button">Projet</button>
-    <button class="btn main" id="bExport" type="button">Exporter en MP3</button>
+    <button class="btn main" id="bExport" type="button">Exporter</button>
   </div>
 </header>
 
@@ -39,6 +39,7 @@
     <section class="session" id="session" aria-label="Vue Session"></section>
     <section class="arr" id="arrange" aria-label="Vue Arrangement" hidden></section>
     <section class="detail" id="detail" aria-label="Détail"></section>
+    <section class="kb" id="kb" aria-label="Clavier : jouer"></section>
   </main>
   <aside class="conseils" id="conseils" aria-label="Conseils"></aside>
 </div>
@@ -61,10 +62,10 @@
 </dialog>
 
 <dialog id="dlgExport" class="dlg">
-  <h2>Exporter en MP3</h2>
+  <h2>Exporter</h2>
   <div id="expBody"></div>
   <p class="hint" id="expNote" aria-live="polite"></p>
-  <div class="row end"><button class="btn" id="expClose" type="button">Fermer</button><button class="btn main" id="expGo" type="button">Exporter</button></div>
+  <div class="row end"><button class="btn" id="expClose" type="button">Fermer</button><button class="btn" id="expMidi" type="button">Exporter en MIDI (.mid)</button><button class="btn main" id="expGo" type="button">Exporter en MP3</button></div>
 </dialog>
 
 <div class="menu" id="menu" hidden role="menu"></div>

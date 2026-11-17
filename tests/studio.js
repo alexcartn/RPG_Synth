@@ -39,7 +39,7 @@ class Ctx{constructor(){this.sampleRate=44100;this.currentTime=0;this.destinatio
  createConvolver(){return new Node()}createOscillator(){return new Node()}createConstantSource(){return new Node()}createPeriodicWave(){return {}}createBiquadFilter(){return new Node()}createBufferSource(){return new Node()}createStereoPanner(){return new Node()}close(){}}
 let notes=0;
 class Off extends Ctx{constructor(c,l,sr){super();this.sampleRate=sr;this._c=c;this._l=l}startRendering(){const b=this.createBuffer(this._c,this._l,this.sampleRate);b.getChannelData(0)[100]=.3;return Promise.resolve(b)}}
-const dom=new JSDOM(html,{runScripts:'dangerously',virtualConsole:vc,pretendToBeVisual:true,url:'http://localhost/studio.html',beforeParse(w){w.AudioContext=Ctx;w.OfflineAudioContext=Off;
+const dom=new JSDOM(html,{runScripts:'dangerously',virtualConsole:vc,pretendToBeVisual:true,url:'http://localhost/studio.html',beforeParse(w){w.TextEncoder=TextEncoder;w.AudioContext=Ctx;w.OfflineAudioContext=Off;
   w.HTMLDialogElement&&(w.HTMLDialogElement.prototype.showModal=function(){this.open=true});w.HTMLDialogElement&&(w.HTMLDialogElement.prototype.close=function(){this.open=false});
   w.HTMLCanvasElement.prototype.getContext=()=>new Proxy({},{get:(t,k)=>k==='measureText'?()=>({width:0}):()=>{},set:()=>true});}});
 const w=dom.window,d=w.document;
@@ -60,6 +60,11 @@ setTimeout(async()=>{
     S.TR.X.rec=true; S.TR.launchScene(1); for(let i=0;i<40;i++){ S.graph.ctx.currentTime+=0.25; await new Promise(r=>setTimeout(r,30)); }
     ok(n>20,'la scène joue des notes ('+n+')');
     S.TR.stop(); ok(w.eval('PJ').arrLen(S.P.arr)>0,"l'arrangement est enregistré depuis la Session");
+    /* instrument : notes tenues, export MIDI */
+    const h=S.graph.noteOn(S.P.tracks[1],62,0.8); h.off(); const hs=S.graph.noteOn(S.P.tracks[5],0,0.8); hs.off();
+    const ev=w.eval('SON').events(S.P), list=[...ev.keys()].map(t=>({t,notes:ev.get(t)})); const mid=w.eval('SON').midiBytes(S.P,list);
+    ok(mid.length>100&&String.fromCharCode(...mid.slice(0,4))==='MThd','fichier MIDI ('+mid.length+' octets, '+list.length+' pistes)');
+    ok(!!d.querySelector('#kb .piano .pk'),'clavier à l\'écran');
     /* rendu hors ligne */
     const r=await w.eval('SON').render(JSON.parse(JSON.stringify(S.P))); ok(r.L.length>44100,'rendu hors ligne');
   }catch(e){ fail++; console.error(e); }

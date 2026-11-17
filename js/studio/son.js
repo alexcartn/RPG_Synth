@@ -151,11 +151,25 @@ const SON=(()=>{
     /* couper ce qui sonne encore sur une piste (changement de clip, arrêt) */
     function cut(t,time){ const n=trackNode(t), old=n.gen; old.gain.setTargetAtTime(0,time,0.06); if(typeof synDrop==="function") synDrop(ctx,old,time+0.5);
       n.gen=G(1); n.gen.connect(n.head); setTimeout(()=>{ try{ old.disconnect(); }catch(e){} },Math.max(0,(time-ctx.currentTime)*1000)+1500); }
+    /* jeu en direct : une note tenue tant que la touche l'est (synthé : vraie tenue ; nappes et instruments : longue note fermée au relâchement) */
+    const SUS={flute:1,ney:1,archet:1,orgue:1,voix:1,accordeon:1,cuivre:1,aulos:1,hydraulis:1,harmonica:1,sifflet:1,synthe:1,roues:1,syrinx:1,cornu:1,chant:1,basse:1};
+    function noteOn(t,p,v){
+      const now=ctx.currentTime+0.004, n=trackNode(t);
+      if(t.kind==="drums"){ const l=t.lanes[((p%12)+12)%12]; if(l) bank.perc(l.kit,l.part,now,clamp(v*(l.lvl===undefined?1:l.lvl),0,1.2),n.gen); return {off(){}}; }
+      const I=t.inst||{k:"inst",name:"luth"}, f=midiHz(p);
+      if(I.k==="syn"&&I.patch){ const h=synthNote(ctx,I.patch,{t:now,f,vel:v,dur:null,dst:n.gen,pan:0,lite:false,noise}); return {off(){ h.release(ctx.currentTime); }}; }
+      const g=G(1); g.connect(n.gen);
+      const fin=tc=>{ const x=ctx.currentTime; g.gain.cancelScheduledValues(x); g.gain.setValueAtTime(g.gain.value,x); g.gain.setTargetAtTime(0,x,tc); setTimeout(()=>{ try{ g.disconnect(); }catch(e){} },tc*12000); };
+      if(I.k==="pad"){ bank.pad(I.name,now,12,f,g,v*1.3); return {off(){ fin(0.3); }}; }
+      const sus=SUS[I.name]; bank.inst(I.name)(now,f,v,sus?6:3,g,0); return {off(){ fin(sus?0.07:0.25); }};
+    }
+    /* métronome : un clic, plus aigu sur le premier temps */
+    function click(time,acc){ const o=ctx.createOscillator(), g=G(0); o.frequency.value=acc?1760:1180; o.connect(g); g.connect(M.fader); g.gain.setValueAtTime(0,time); g.gain.linearRampToValueAtTime(acc?0.35:0.22,time+0.001); g.gain.exponentialRampToValueAtTime(0.0001,time+0.05); o.start(time); o.stop(time+0.06); }
     function retempo(){ sync(); }
     function preview(t,p,v,dur){ const n={p,v:v||0.7,d:dur||1}; note(t,n,ctx.currentTime+0.01,60/P.tempo,t?trackNode(t).gen:prev); }
     function previewInst(inst,p,v,dur){ note({kind:"mel",inst},{p,v:v||0.7,d:dur||1},ctx.currentTime+0.01,60/P.tempo,prev); }
     const level=a=>{ if(!a) return 0; const b=a._buf||(a._buf=new Float32Array(a.fftSize)); a.getFloatTimeDomainData(b); let m=0; for(let i=0;i<b.length;i++){ const x=Math.abs(b[i]); if(x>m) m=x; } return m; };
-    return {ctx,P,bank,sync,soft,note,cut,retempo,preview,previewInst,trackNode,level,M,R,eng,setP(np){ P=np; this.P=np; }};
+    return {ctx,P,bank,sync,soft,note,noteOn,click,cut,retempo,preview,previewInst,trackNode,level,M,R,eng,setP(np){ P=np; this.P=np; }};
   }
 
   /* ---------- transport (vue Session et Arrangement) ---------- */
@@ -203,6 +217,7 @@ const SON=(()=>{
         if(X.mode==="session") P.tracks.forEach(t=>{ const s=slot(t.id); if(s.pend!==undefined&&s.pend.at<=b+1e-6){ const was=s.row; s.row=s.pend.row; s.anchor=b; s.pend=undefined; if(was!==null) graph.cut(t,timeOf(b)); recChange(t.id,s.row,b); cb.state(); } });
         if(X.mode==="arr"){ const end=PJ.arrLen(P.arr)*B(); if(b>=end){ if(!X.ending){ X.ending=true; setTimeout(()=>{ if(X.ending) stop(); },Math.max(0,(timeOf(b)-ctx.currentTime)*1000+2500)); } break; }
           P.tracks.forEach(t=>{ const st=stateAt(P,t,b), prevSt=stateAt(P,t,b-STEP); if(prevSt&&(!st||st.seg!==prevSt.seg)&&Math.abs(b%B())<1e-6) graph.cut(t,timeOf(b)); }); }
+        if(X.metro&&Math.abs(b-Math.round(b))<1e-6) graph.click(timeOf(b),Math.round(b)%B()===0);
         P.tracks.forEach(t=>{ const st=stateAt(P,t,b); if(!st) return; PJ.collect(P,t,st,b,b+STEP,(n,nb)=>{ graph.note(t,n,timeOf(nb),spb()); if(cb.note) cb.note(t,n,timeOf(nb)); }); });
         X.next+=STEP;
       }
@@ -238,5 +253,29 @@ const SON=(()=>{
     const L=buf.getChannelData(0), Rr=buf.getChannelData(1); let pk=0; for(let i=0;i<L.length;i++){ const a=Math.abs(L[i]), c=Math.abs(Rr[i]); if(a>pk) pk=a; if(c>pk) pk=c; }
     return {L,R:Rr,sr,peak:pk};
   }
-  return {DEV,DEV_ORDER,SYNC,makeGraph,Transport,render,dB,midiHz,impulse};
+  /* les notes jouées par l'arrangement, piste par piste (en temps) : pour l'export MIDI */
+  function events(P){
+    const B=TH.bb(P.meter), end=PJ.arrLen(P.arr)*B, out=new Map();
+    const inSeg=(l,b)=>(l||[]).find(s=>b>=s.at*B-1e-6&&b<(s.at+s.len)*B-1e-6);
+    for(let b=0;b<end-1e-9;b+=STEP) P.tracks.forEach(t=>{ const seg=inSeg(P.arr.segs[t.id],b); if(!seg) return; const h=PJ.harmTrack(P), hs=h&&inSeg(P.arr.segs[h.id],b);
+      const st={row:seg.row,anchor:seg.at*B,harm:hs?h.clips[hs.row]:PJ.harmFor(P,seg.row),hAnchor:hs?hs.at*B:undefined}, segEnd=(seg.at+seg.len)*B;
+      PJ.collect(P,t,st,b,b+STEP,(n,nb)=>{ if(!out.has(t)) out.set(t,[]); out.get(t).push({b:nb,d:Math.min(n.d,segEnd-nb),p:n.p,v:n.v}); }); });
+    return out;
+  }
+  /* fichier MIDI standard (format 1, 480 tic par noire) : une piste par piste du studio, la batterie sur le canal 10 */
+  function midiBytes(P,tracks){
+    const PPQ=480, vlq=n=>{ const b=[n&0x7f]; n>>=7; while(n>0){ b.unshift((n&0x7f)|0x80); n>>=7; } return b; }, txt=s=>[...new TextEncoder().encode(s)];
+    const chunk=(id,data)=>[...txt(id),(data.length>>>24)&255,(data.length>>>16)&255,(data.length>>>8)&255,data.length&255,...data];
+    const [num,den]=P.meter.split("/").map(Number), us=Math.round(60000000/P.tempo);
+    const head=[0,0xFF,0x51,3,(us>>16)&255,(us>>8)&255,us&255, 0,0xFF,0x58,4,num,Math.log2(den),24,8, 0,0xFF,0x03,...vlq(txt(P.name||"Studio").length),...txt(P.name||"Studio"), 0,0xFF,0x2F,0];
+    const GM={stomp:36,tap:38,shaker:42}; let ch=0;
+    const trks=tracks.map(({t,notes})=>{ const drum=t.kind==="drums"; let c=9; if(!drum){ c=ch%15; if(c>=9) c++; ch++; } const ev=[];
+      notes.forEach(n=>{ const p=drum?(GM[(t.lanes[n.p]||{}).part]||37+n.p):Math.max(0,Math.min(127,Math.round(n.p))), v=Math.max(1,Math.min(127,Math.round(n.v*110))), a=Math.round(n.b*PPQ), e=Math.max(a+1,Math.round((n.b+n.d)*PPQ));
+        ev.push([a,1,[0x90|c,p,v]],[e,0,[0x80|c,p,0]]); });
+      ev.sort((x,y)=>x[0]-y[0]||x[1]-y[1]); const nm=txt(t.name||"Piste"); const data=[0,0xFF,0x03,...vlq(nm.length),...nm]; let last=0;
+      ev.forEach(([tk,,m])=>{ data.push(...vlq(tk-last),...m); last=tk; }); data.push(0,0xFF,0x2F,0); return chunk("MTrk",data); });
+    const hdr=chunk("MThd",[0,1,0,trks.length+1,(PPQ>>8)&255,PPQ&255]);
+    return new Uint8Array([...hdr,...chunk("MTrk",head),...trks.flat()]);
+  }
+  return {DEV,DEV_ORDER,SYNC,makeGraph,Transport,render,events,midiBytes,dB,midiHz,impulse};
 })();

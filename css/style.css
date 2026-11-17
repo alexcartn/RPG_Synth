@@ -909,8 +909,6 @@ body.armed .knob[data-dst]{cursor:copy}
 .jeu-amp .lnk[aria-current="true"]{color:var(--rubric)}
 
 /* ---------- veillée : panneau d'instrument sur parchemin ---------- */
-.score-big{position:absolute; top:6px; right:8px; z-index:2; font-size:.95rem; color:var(--ink-2); background:var(--parch-2); padding:2px 8px}
-.score-big:hover{color:var(--rubric)}
 body.veiling{overflow:hidden}
 .veil{position:fixed; inset:0; z-index:150; display:flex; flex-direction:column; gap:var(--sp-md); padding:var(--sp-lg) var(--sp-xl); background:var(--parch); color:var(--ink); cursor:default}
 .veil[hidden]{display:none}
@@ -955,3 +953,12 @@ body.veiling{overflow:hidden}
 .veil.night{--parch:oklch(0.2 0.022 58); --parch-2:oklch(0.245 0.026 58); --ink:oklch(0.9 0.035 88); --ink-2:oklch(0.72 0.045 80); --rule:oklch(0.42 0.035 68); --rubric:oklch(0.72 0.15 38); --verd:oklch(0.74 0.1 175); --gold-d:oklch(0.8 0.12 84)}
 .veil.night .vl-brand b{color:var(--rubric)}
 @media (prefers-reduced-motion:reduce){ .vl-keys,.vl-key{transition:none} }
+
+/* bouton Veillée : une touche à part, au bout de la barre des modes */
+.veil-open{margin-left:auto; align-self:center; display:inline-flex; align-items:center; gap:var(--sp-sm); padding:8px 14px 7px; background:var(--ink); color:var(--parch); border:1px solid var(--ink); border-radius:0; font:400 .95rem/1 var(--caps); letter-spacing:.14em; cursor:pointer; box-shadow:3px 3px 0 var(--rubric); transition:transform .12s var(--ease), box-shadow .12s var(--ease), background-color .12s var(--ease)}
+.veil-open svg{width:20px; height:20px; fill:none; stroke:currentColor; stroke-width:1.5}
+.veil-open:hover,.veil-open:focus-visible{background:var(--rubric); border-color:var(--rubric); box-shadow:3px 3px 0 var(--ink); transform:translate(-1px,-1px); outline:none}
+.veil-open:active{transform:translate(2px,2px); box-shadow:0 0 0 var(--rubric)}
+body.playing .veil-open{box-shadow:3px 3px 0 var(--rubric)}
+@media (max-width:640px){ .veil-open span{display:none} .veil-open{padding:8px 10px} }
+@media (prefers-reduced-motion:reduce){ .veil-open{transition:none} .veil-open:hover,.veil-open:focus-visible,.veil-open:active{transform:none} }

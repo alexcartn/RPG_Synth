@@ -25,7 +25,6 @@
   </header>
 
   <figure class="score" id="score">
-    <button class="lnk score-big" id="veilBtn" type="button" title="Veillée : la partition, l'oscilloscope, le cercle et le spectre en grand, pour regarder la machine tourner en fond. Plein écran possible.">Veillée</button>
     <canvas id="scoreCv" role="img" aria-label="Partition qui défile : notes déjà jouées à gauche, notes à venir à droite"></canvas>
     <figcaption class="legend" aria-hidden="true"><span class="k mel">mélodie</span><span class="k canon">canon</span><span class="k pad">nappes</span><span class="k loop">boucles</span><span class="k pend">pendules</span><span class="k perc">percussion</span></figcaption>
   </figure>
@@ -35,6 +34,7 @@
     <button class="lnk" id="reglBtn" type="button" aria-pressed="false" title="Tous les réglages de la pièce, chapitre par chapitre">Composer</button>
     <button class="lnk" id="atelierBtn" type="button" aria-pressed="false" title="Construire son propre synthé et le jouer au clavier">Forger</button>
     <button class="lnk" id="dawBtn" type="button" aria-pressed="false" title="Des pistes qui bouclent par-dessus la machine, avec un mixeur">Arranger</button>
+    <button class="veil-open" id="veilBtn" type="button" title="Veillée : la partition, l'oscilloscope, le cadran et le spectre en grand, à regarder pendant que la machine tourne. Plein écran et palette de nuit possibles."><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2 10s3-5.5 8-5.5S18 10 18 10s-3 5.5-8 5.5S2 10 2 10z"/><circle cx="10" cy="10" r="2.4"/></svg><span>Veillée</span></button>
   </nav>
 
   <nav class="toc" id="toc" aria-label="Chapitres"></nav>

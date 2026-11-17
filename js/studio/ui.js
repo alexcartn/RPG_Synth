@@ -114,7 +114,7 @@
   /* ============================================================ SESSION ============================================================ */
   function renderSession(){
     const host=$("session"); host.innerHTML=""; UI.cells={};
-    const N=P.tracks.length, grid=el("div","grid"); grid.style.gridTemplateColumns="repeat("+N+",var(--colw)) 34px var(--colw) var(--colw) 160px";
+    const N=P.tracks.length, grid=el("div","grid"); grid.style.gridTemplateColumns="repeat("+N+",var(--colw)) 34px var(--colw) var(--colw) var(--mcolw)";
     /* en-têtes */
     P.tracks.forEach((t,i)=>{ const h=el("div","hd"+(UI.t===i&&UI.focus==="piste"?" sel":""),"<span>"+esc(t.name)+"</span>"); h.style.setProperty("--c",t.color); h.title="Clic : la chaîne d'appareils de la piste. Clic droit : renommer, dupliquer, supprimer.";
       const x=el("button","x","⋯"); x.type="button"; x.setAttribute("aria-label","Menu de la piste "+t.name); x.onclick=e=>{ e.stopPropagation(); trackMenu(i,e.clientX,e.clientY); }; h.appendChild(x);
@@ -675,8 +675,8 @@
      Une seule entrée pour tout : on(id, hauteur, nuance) et off(id). Les notes tiennent tant que la touche est enfoncée.
      Elles vont à la piste armée, sinon à la piste choisie. On peut enregistrer dans un clip (●  Clip) ou capturer après coup. */
   const KB={mode:"gamme", vel:0.8, chord:false, sustain:false, quant:true, recBars:4, rec:false, held:new Map(), sus:new Set(), buf:[], midi:null, midiNames:[], open:true, keys:new Map(), ct:""};
-  try{ const s=JSON.parse(localStorage.getItem("bourdon.studio.kb")||"{}"); Object.assign(KB,{mode:s.mode||KB.mode,chord:!!s.chord,quant:s.quant!==false,open:s.open!==false,recBars:s.recBars||4}); }catch(e){}
-  const kbSave=()=>{ try{ localStorage.setItem("bourdon.studio.kb",JSON.stringify({mode:KB.mode,chord:KB.chord,quant:KB.quant,open:KB.open,recBars:KB.recBars})); }catch(e){} };
+  try{ const s=JSON.parse(localStorage.getItem("bourdon.studio.kb")||"{}"); Object.assign(KB,{surf:s.surf||"",mode:s.mode||KB.mode,chord:!!s.chord,quant:s.quant!==false,open:s.open!==false,recBars:s.recBars||4}); }catch(e){}
+  const kbSave=()=>{ try{ localStorage.setItem("bourdon.studio.kb",JSON.stringify({surf:KB.surf,mode:KB.mode,chord:KB.chord,quant:KB.quant,open:KB.open,recBars:KB.recBars})); }catch(e){} };
   const ROWS=[["KeyZ","KeyX","KeyC","KeyV","KeyB","KeyN","KeyM","Comma","Period","Slash"],["KeyA","KeyS","KeyD","KeyF","KeyG","KeyH","KeyJ","KeyK","KeyL","Semicolon"],["KeyQ","KeyW","KeyE","KeyR","KeyT","KeyY","KeyU","KeyI","KeyO","KeyP"]];
   /* disposition d'Ableton : A W S E D F T G Y H U J K O L P (repérées par position, donc valables en AZERTY) */
   const CHROM={KeyA:0,KeyW:1,KeyS:2,KeyE:3,KeyD:4,KeyF:5,KeyT:6,KeyG:7,KeyY:8,KeyH:9,KeyU:10,KeyJ:11,KeyK:12,KeyO:13,KeyL:14,KeyP:15,Semicolon:16};
@@ -687,11 +687,11 @@
   const playT=()=>P.tracks.find(t=>t.arm)||curT()||P.tracks[0];
   /* accord d'une touche : la triade de la gamme bâtie sur la note jouée */
   function chordOf(p){ const iv=TH.MODES[P.mode].iv, rel=((p-P.key)%12+12)%12, d=iv.indexOf(rel); if(d<0) return [p,p+4,p+7]; const up=k=>{ const dd=d+k; return p+iv[dd%7]+12*Math.floor(dd/7)-rel; }; return [p,up(2),up(4)]; }
-  function on(id,p,v){
+  function on(id,p,v,force){
     if(KB.held.has(id)) off(id,true);
     audio(); const t=playT(); if(!t) return; v=v===undefined?KB.vel:v;
     /* raw : ce qui est joué (enregistré tel quel) ; ps : ce qui sonne, après les effets MIDI de la piste */
-    const raw=KB.chord&&t.kind!=="drums"?chordOf(p):[p], ps=t.kind==="drums"?raw:[...new Set(raw.flatMap(q=>PJ.fxPitches(P,t,q)))];
+    const raw=Array.isArray(force)&&t.kind!=="drums"?force:KB.chord&&t.kind!=="drums"?chordOf(p):[p], ps=t.kind==="drums"?raw:[...new Set(raw.flatMap(q=>PJ.fxPitches(P,t,q)))];
     const b=TR.X.playing?TR.beatNow():null, now=ctx.currentTime, ar=arpOf(t);
     if(ar){ KB.held.set(id,{t,raw,ps,hs:[],v,b,now,arp:true}); ARP.order.push(...raw.map(q=>({id,p:q,v}))); arpStart(t,ar); KB.sus.delete(id); keyLight(); return; }
     const hs=ps.map(q=>graph.noteOn(t,q,v*(ps.length>1?0.8:1)));
@@ -774,49 +774,78 @@
     else if(c===0xB0&&d1===64) sustain(d2>=64); }
   /* ---------- le clavier à l'écran ---------- */
   const KLO=()=>12*(3+UI.kbOct), KN=37;
+  /* ---------- surfaces de jeu : piano, pads (tactile, gamme seule), accords ---------- */
+  const COARSE=(()=>{ try{ return matchMedia("(pointer:coarse)").matches; }catch(e){ return false; } })();
+  if(!KB.surf) KB.surf=COARSE?"pads":"piano";
+  /* un doigt qui glisse d'une touche à l'autre joue la suivante (comme sur un pad Push) */
+  function surface(host){
+    const fingers=new Map();
+    const under=e=>{ const x=document.elementFromPoint(e.clientX,e.clientY); return x&&x.closest?x.closest("[data-pk]"):null; };
+    const velOf=(k,e)=>{ const r=k.getBoundingClientRect(); return 0.3+0.7*clamp((e.clientY-r.top)/r.height,0,1); };
+    const press=(k,e)=>{ const id="t"+e.pointerId+"_"+k.dataset.pk; fingers.set(e.pointerId,{k,id}); const ch=k.dataset.ch?JSON.parse(k.dataset.ch):null; on(id,+k.dataset.p,velOf(k,e),ch); if(k.classList.contains("cpad")) k.classList.add("on"); };
+    const release=pid=>{ const f=fingers.get(pid); if(!f) return; fingers.delete(pid); off(f.id); if(f.k.classList.contains("cpad")) f.k.classList.remove("on"); };
+    host.addEventListener("pointerdown",e=>{ const k=under(e); if(!k) return; e.preventDefault(); try{ host.setPointerCapture(e.pointerId); }catch(x){} press(k,e); });
+    host.addEventListener("pointermove",e=>{ const f=fingers.get(e.pointerId); if(!f) return; const k=under(e); if(k&&k!==f.k){ release(e.pointerId); press(k,e); } });
+    ["pointerup","pointercancel","lostpointercapture"].forEach(ev=>host.addEventListener(ev,e=>release(e.pointerId)));
+    host.addEventListener("contextmenu",e=>e.preventDefault());
+  }
   function renderKb(){
-    const host=$("kb"); if(!host) return; host.innerHTML=""; host.classList.toggle("shut",!KB.open);
-    const bar=el("div","kbbar"), tg=btn(KB.open?"▾ Clavier":"▸ Clavier",()=>{ KB.open=!KB.open; kbSave(); renderKb(); },"sm"); bar.appendChild(tg);
+    const host=$("kb"); if(!host) return; host.innerHTML=""; host.classList.toggle("shut",!KB.open); KB.keys.clear();
+    if(!KB.open){ const b=btn("▴ Clavier",()=>{ KB.open=true; kbSave(); renderKb(); },"pill","Ouvrir le clavier pour jouer"); host.appendChild(b); renderKbState(); return; }
+    const bar=el("div","kbbar"), tg=btn("▾",()=>{ KB.open=false; kbSave(); renderKb(); },"sm","Replier le clavier"); tg.setAttribute("aria-label","Replier le clavier"); bar.appendChild(tg);
     const t=playT(); const kt=el("span","kbt"); kt.id="kbT"; bar.appendChild(kt);
-    const md=btn(KB.mode==="gamme"?"Gamme":"Chromatique",()=>{ KB.mode=KB.mode==="gamme"?"chroma":"gamme"; kbSave(); renderKb(); },"sm","Clavier d'ordinateur : notes de la gamme sur trois rangées (Z…, A…, Q…), ou chromatique comme Ableton (A W S E D F T G Y H U J K)"); bar.appendChild(md);
-    const ch=btn("Accord d'une touche",()=>{ KB.chord=!KB.chord; kbSave(); renderKbState(); },"sm","Chaque touche joue la triade de la gamme bâtie sur elle"); ch.id="kbChord"; bar.appendChild(ch);
+    const sf=el("span","seg3"); [["pads","Pads"],["accords","Accords"],["piano","Piano"]].forEach(([k,n])=>{ const b=btn(n,()=>{ KB.surf=k; kbSave(); renderKb(); },"sm"); b.setAttribute("aria-pressed",KB.surf===k?"true":"false"); sf.appendChild(b); }); bar.appendChild(sf);
     bar.appendChild(btn("Oct −",()=>{ UI.kbOct=clamp(UI.kbOct-1,-3,3); renderKb(); },"sm","Page ↓")); bar.appendChild(el("span","kbo",String(4+UI.kbOct))); bar.appendChild(btn("Oct +",()=>{ UI.kbOct=clamp(UI.kbOct+1,-3,3); renderKb(); },"sm","Page ↑"));
-    const vel=el("input"); vel.type="range"; vel.min=0.2; vel.max=1; vel.step=0.05; vel.value=KB.vel; vel.oninput=()=>KB.vel=+vel.value; vel.setAttribute("aria-label","Nuance"); bar.appendChild(lab("Nuance ",vel));
     const sb=btn("Maintien",()=>sustain(!KB.sustain),"sm","Pédale de maintien (aussi la pédale d'un clavier MIDI)"); sb.id="kbSus"; bar.appendChild(sb);
-    bar.appendChild(el("span","sep"));
     const rb=btn("● Clip",recClip,"sm rec","Enregistre dans un clip Notes de la case choisie (créé s'il le faut), en boucle, par-dessus"); rb.id="kbRec"; bar.appendChild(rb);
-    bar.appendChild(sel([[1,"1 mes."],[2,"2 mes."],[4,"4 mes."],[8,"8 mes."]],KB.recBars,v=>{ KB.recBars=+v; kbSave(); },"Longueur du clip enregistré"));
     bar.appendChild(btn("Capturer",capture,"sm","Ce que tu viens de jouer librement, même sans enregistrer, devient un clip"));
+    bar.appendChild(el("span","sep"));
+    const ch=btn("Accord d'une touche",()=>{ KB.chord=!KB.chord; kbSave(); renderKbState(); },"sm","Chaque touche joue la triade de la gamme bâtie sur elle"); ch.id="kbChord"; bar.appendChild(ch);
+    const md=btn(KB.mode==="gamme"?"Ordinateur : gamme":"Ordinateur : chromatique",()=>{ KB.mode=KB.mode==="gamme"?"chroma":"gamme"; kbSave(); renderKb(); },"sm","Clavier d'ordinateur : notes de la gamme sur trois rangées (Z…, A…, Q…), ou chromatique comme Ableton (A W S E D F T G Y H U J K)"); bar.appendChild(md);
+    const vel=el("input"); vel.type="range"; vel.min=0.2; vel.max=1; vel.step=0.05; vel.value=KB.vel; vel.oninput=()=>KB.vel=+vel.value; vel.setAttribute("aria-label","Nuance"); bar.appendChild(lab("Nuance ",vel));
+    bar.appendChild(sel([[1,"1 mes."],[2,"2 mes."],[4,"4 mes."],[8,"8 mes."]],KB.recBars,v=>{ KB.recBars=+v; kbSave(); },"Longueur du clip enregistré"));
     const qb=btn("Quantifier",()=>{ KB.quant=!KB.quant; kbSave(); renderKbState(); },"sm","Aligner les notes enregistrées sur la grille du piano roll"); qb.id="kbQ"; bar.appendChild(qb);
     const mb=btn("Métronome",()=>{ audio(); TR.X.metro=!TR.X.metro; renderKbState(); },"sm"); mb.id="kbMetro"; bar.appendChild(mb);
     const mi=btn("MIDI",midiConnect,"sm","Brancher un clavier MIDI (Chrome, Edge)"); mi.id="kbMidi"; bar.appendChild(mi);
     host.appendChild(bar);
-    if(!KB.open){ renderKbState(); return; }
-    const pn=el("div","piano"), whites=[], lo=KLO(); KB.keys.clear();
-    for(let p=lo;p<lo+KN;p++){ if([1,3,6,8,10].indexOf(p%12)<0) whites.push(p); }
-    const ww=100/whites.length, iv=TH.MODES[P.mode].iv, M=TH.MODES[P.mode];
-    for(let p=lo;p<lo+KN;p++){
-      const blk=[1,3,6,8,10].indexOf(p%12)>=0, k=el("button","pk"+(blk?" blk":"")), rel=((p-P.key)%12+12)%12; k.type="button"; k.tabIndex=-1;
-      if(TH.inScale(iv,rel)) k.classList.add("sc"); if(rel===0) k.classList.add("ton"); if(rel===M.car) k.classList.add("car");
-      k.setAttribute("aria-label",TH.nomMidi(p));
-      if(blk){ const wi=whites.filter(x=>x<p).length; k.style.left=(wi*ww-ww*0.3)+"%"; k.style.width=(ww*0.6)+"%"; } else { const wi=whites.indexOf(p); k.style.left=(wi*ww)+"%"; k.style.width=ww+"%"; if(p%12===0) k.innerHTML="<span>"+esc(TH.nomMidi(p))+"</span>"; }
-      const id="s"+p; k.addEventListener("pointerdown",e=>{ e.preventDefault(); k.setPointerCapture(e.pointerId); const r=k.getBoundingClientRect(); on(id+"_"+e.pointerId,p,0.3+0.7*clamp((e.clientY-r.top)/r.height,0,1)); });
-      const up=e=>off(id+"_"+e.pointerId); k.addEventListener("pointerup",up); k.addEventListener("pointercancel",up);
-      pn.appendChild(k); KB.keys.set(p,k);
+    const iv=TH.MODES[P.mode].iv, M=TH.MODES[P.mode], mark=(k,p)=>{ const rel=((p-P.key)%12+12)%12; if(TH.inScale(iv,rel)) k.classList.add("sc"); if(rel===0) k.classList.add("ton"); if(rel===M.car) k.classList.add("car"); };
+    let surf, hint;
+    if(t&&t.kind==="drums"){
+      surf=el("div","pads drum"); t.lanes.forEach((ln,i)=>{ const k=el("div","pad"); k.dataset.pk="l"+i; k.dataset.p=i; k.innerHTML="<b>"+esc(ln.n)+"</b><i>"+esc((KITS.find(x=>x[0]===ln.kit)||["",""])[1])+"</i>"; surf.appendChild(k); KB.keys.set(i,k); });
+      hint="Une touche par voie de la batterie. Plus bas sur la touche = plus fort.";
+    } else if(KB.surf==="accords"){
+      surf=el("div","pads chords"); const lo=12*(4+UI.kbOct)+P.key;
+      TH.diatonic(iv).forEach((d,i)=>{ const cc={r:d.r,q:d.q,x:"",b:1}, ps=TH.tones(cc,iv).map(x=>lo+x); const k=el("div","pad cpad"+(d.r===0?" ton":"")+(TH.hasCar(cc,P.mode)?" car":"")); k.dataset.pk="c"+i; k.dataset.p=ps[0]; k.dataset.ch=JSON.stringify(ps);
+        k.innerHTML="<b>"+esc(TH.roman(cc))+"</b><i>"+esc(TH.chordName(cc,P.key))+"</i>"; surf.appendChild(k); });
+      hint="Les sept accords de la gamme. Tiens-en un, glisse vers le suivant : la progression se joue d'un doigt.";
+    } else if(KB.surf==="pads"){
+      surf=el("div","pads notes"); const lo=12*(4+UI.kbOct)+P.key, rows=4, cols=COARSE&&innerWidth<600?4:7;
+      /* une rangée par octave-ish : chaque rangée monte de « cols » degrés, la plus grave en bas */
+      for(let r=rows-1;r>=0;r--) for(let c=0;c<cols;c++){ const deg=r*(cols===7?7:3)+c, p=lo+iv[deg%7]+12*Math.floor(deg/7); const k=el("div","pad"); k.dataset.pk="n"+r+"_"+c; k.dataset.p=p; mark(k,p);
+        k.innerHTML="<b>"+esc(TH.nomNote(p))+"</b><i>"+(Math.floor(p/12)-1)+"</i>"; surf.appendChild(k); if(!KB.keys.has(p)) KB.keys.set(p,k); else (KB.keys.get(p).dup=KB.keys.get(p).dup||[]).push(k); }
+      surf.style.gridTemplateColumns="repeat("+cols+",1fr)";
+      hint="Uniquement les notes de la gamme : aucune fausse note. Le grave est en bas. Glisse le doigt pour enchaîner les notes ; vert : notes de l'accord qui tourne.";
+    } else {
+      surf=el("div","piano"); const whites=[], lo=KLO(), n=COARSE&&innerWidth<600?20:KN;
+      for(let p=lo;p<lo+n;p++){ if([1,3,6,8,10].indexOf(p%12)<0) whites.push(p); }
+      const ww=100/whites.length;
+      for(let p=lo;p<lo+n;p++){ const blk=[1,3,6,8,10].indexOf(p%12)>=0, k=el("div","pk"+(blk?" blk":"")); k.dataset.pk="p"+p; k.dataset.p=p; mark(k,p); k.setAttribute("aria-label",TH.nomMidi(p));
+        if(blk){ const wi=whites.filter(x=>x<p).length; k.style.left=(wi*ww-ww*0.3)+"%"; k.style.width=(ww*0.6)+"%"; } else { const wi=whites.indexOf(p); k.style.left=(wi*ww)+"%"; k.style.width=ww+"%"; if(p%12===0) k.innerHTML="<span>"+esc(TH.nomMidi(p))+"</span>"; }
+        surf.appendChild(k); KB.keys.set(p,k); }
+      hint="Plus bas sur la touche = plus fort. Points : notes de la gamme (rouge : tonique, contour : note caractéristique) ; vert : notes de l'accord qui tourne.";
     }
-    host.appendChild(pn);
-    host.appendChild(el("p","hint",t&&t.kind==="drums"?"Percussion : Do, Do♯, Ré… jouent les voies dans l'ordre (Grave, Frappe, Remplissage…).":"Plus bas sur la touche = plus fort. Points : notes de la gamme (rouge : tonique, contour rouge : note caractéristique) ; vert : notes de l'accord qui tourne."));
+    surface(surf); host.appendChild(surf); host.appendChild(el("p","hint",hint));
     renderKbState(); KB.ct=""; keyLight();
   }
   function renderKbState(){ const kt=$("kbT"), pt=playT(); if(kt) kt.textContent=pt?"→ "+pt.name+(pt.arm?" (armée)":""):""; const s=(id,on)=>{ const b=$(id); if(b) b.setAttribute("aria-pressed",on?"true":"false"); };
     s("kbChord",KB.chord); s("kbSus",KB.sustain); s("kbRec",KB.rec); s("kbQ",KB.quant); s("kbMetro",TR&&TR.X.metro); const m=$("kbMidi"); if(m){ m.textContent=KB.midiNames.length?"MIDI : "+KB.midiNames[0]:"MIDI"; s("kbMidi",KB.midiNames.length>0); } }
-  function keyLight(){ const down=new Set(); KB.held.forEach(h=>h.ps.forEach(q=>down.add(q))); KB.keys.forEach((k,p)=>k.classList.toggle("on",down.has(p))); }
+  function keyLight(){ const down=new Set(); KB.held.forEach(h=>h.ps.forEach(q=>down.add(q))); KB.keys.forEach((k,p)=>{ const o=down.has(p); k.classList.toggle("on",o); (k.dup||[]).forEach(x=>x.classList.toggle("on",o)); }); }
   /* notes de l'accord qui tourne (ou de l'accord choisi dans l'éditeur) */
   function chordNow(){ const h=PJ.harmTrack(P); if(!h) return null; let c=null, f=0;
     if(TR&&TR.X.playing){ const ps=TR.pos(h); if(ps){ c=h.clips[ps.row]; f=ps.f; } }
     if(!c){ c=h.clips[UI.r]||h.clips.find(Boolean); if(!c) return null; const k=UI.chordSel>=0?UI.chordSel:0, ch=c.chords[k]; return ch?TH.tones(ch,TH.MODES[P.mode].iv):null; }
     const L=TH.progLen(c.chords,P.meter), x=f*L, seg=TH.timeline(c.chords,P.meter).find(s=>x>=s.s&&x<s.s+s.d); return seg?TH.tones(seg.ch,TH.MODES[P.mode].iv):null; }
-  function chordLight(){ const T=chordNow(), sig=T?T.join(","):""; if(sig===KB.ct) return; KB.ct=sig; const pcs=T?T.map(x=>((x+P.key)%12+12)%12):[]; KB.keys.forEach((k,p)=>k.classList.toggle("ct",pcs.indexOf(((p%12)+12)%12)>=0)); }
+  function chordLight(){ const T=chordNow(), sig=T?T.join(","):""; if(sig===KB.ct) return; KB.ct=sig; const pcs=T?T.map(x=>((x+P.key)%12+12)%12):[]; KB.keys.forEach((k,p)=>{ const o=pcs.indexOf(((p%12)+12)%12)>=0; k.classList.toggle("ct",o); (k.dup||[]).forEach(x=>x.classList.toggle("ct",o)); }); }
 
   document.addEventListener("keydown",e=>{
     if(typing(e)||$("dlgProj").open||$("dlgExport").open) return;

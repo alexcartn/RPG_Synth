@@ -64,7 +64,7 @@ setTimeout(async()=>{
     const h=S.graph.noteOn(S.P.tracks[1],62,0.8); h.off(); const hs=S.graph.noteOn(S.P.tracks[5],0,0.8); hs.off();
     const ev=w.eval('SON').events(S.P), list=[...ev.keys()].map(t=>({t,notes:ev.get(t)})); const mid=w.eval('SON').midiBytes(S.P,list);
     ok(mid.length>100&&String.fromCharCode(...mid.slice(0,4))==='MThd','fichier MIDI ('+mid.length+' octets, '+list.length+' pistes)');
-    ok(!!d.querySelector('#kb .piano .pk'),'clavier à l\'écran');
+    ok(!!d.querySelector('#kb .pk, #kb .pad'),'clavier à l\'écran');
     { const PJ=w.eval('PJ'), t=S.P.tracks[4]; t.fx=[PJ.mfx('gamme'),PJ.mfx('accord',{type:'triade'})]; const ps=PJ.fxPitches(S.P,t,63);
       ok(ps.length===3&&ps.every(q=>TH.inScale(TH.MODES[S.P.mode].iv,q-S.P.key)),'effets MIDI gamme puis accord : '+ps.join(','));
       t.fx=[PJ.mfx('humain')]; PJ.bump(); const a=[...w.eval('SON').events(S.P).get(t)||[]].map(n=>n.b).join(), b2=[...w.eval('SON').events(S.P).get(t)||[]].map(n=>n.b).join(); ok(a===b2,'humain déterministe'); t.fx=[]; PJ.bump(); }

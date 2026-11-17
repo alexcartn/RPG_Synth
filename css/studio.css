@@ -18,7 +18,7 @@
   --display: "IM Fell English", "Iowan Old Style", Georgia, serif;
   --caps: "IM Fell English SC", "IM Fell English", Georgia, serif;
   --body: "Alegreya", "Iowan Old Style", Georgia, serif;
-  --colw: 120px;
+  --colw: 120px; --mcolw: 160px;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
@@ -289,3 +289,29 @@ h3{font-size:1.05rem; color:var(--rubric)}
 .dev.mfx .dh{background:var(--cell)}
 .mfxadd{border-color:var(--ink-3)}
 .loopr{position:absolute; top:0; height:22px; background:color-mix(in oklch,var(--gold) 45%,transparent); border-left:2px solid var(--gold); border-right:2px solid var(--gold); pointer-events:none; z-index:4}
+/* ---------- surfaces tactiles ---------- */
+.kb.shut{background:none; border:0; box-shadow:none; padding:0 12px 10px; display:flex; justify-content:flex-end; pointer-events:none}
+.kb.shut .pill{pointer-events:auto; border-radius:999px; padding:8px 16px; background:var(--ink); color:var(--parch); border-color:var(--ink); box-shadow:0 3px 10px oklch(0.2 0.02 60 / .25)}
+.seg3{display:inline-flex; border:1px solid var(--rule); border-radius:3px; overflow:hidden}
+.seg3 .btn{border:0; border-radius:0}
+.pads{display:grid; gap:6px; margin-top:8px; user-select:none; touch-action:none; -webkit-user-select:none}
+.pads.chords{grid-template-columns:repeat(7,1fr)}
+.pads.drum{grid-template-columns:repeat(auto-fit,minmax(90px,1fr))}
+.pad{position:relative; min-height:56px; border:1px solid var(--rule); border-radius:6px; background:var(--cell); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; cursor:pointer; -webkit-tap-highlight-color:transparent}
+.pad b{font:600 1.05rem var(--display)} .pad i{font-size:.75em; color:var(--ink-3); font-style:normal}
+.pad.ton{border-color:var(--rubric); border-width:2px}
+.pad.car{box-shadow:inset 0 0 0 2px color-mix(in oklch,var(--rubric) 45%,transparent)}
+.pad.ct{background:color-mix(in oklch,var(--ok) 22%,var(--cell))}
+.pad.on{background:var(--gold)!important; border-color:var(--rubric); transform:scale(.97)}
+.pads.chords .pad{min-height:76px}
+.pk{-webkit-tap-highlight-color:transparent; cursor:pointer}
+@media (max-width:640px){
+  .kbbar{flex-wrap:nowrap; overflow-x:auto; padding-bottom:4px; scrollbar-width:thin}
+  .kbbar > *{flex:none}
+  .pad{min-height:50px}
+  .pads.chords{grid-template-columns:repeat(4,1fr)}
+  .pads.chords .pad{min-height:64px}
+  .kb{padding:6px 10px 8px}
+}
+@media (prefers-reduced-motion:reduce){ .pad.on{transform:none} }
+@media (max-width:640px){ :root{--colw:104px; --mcolw:112px} .scn span{font-size:.8em} }

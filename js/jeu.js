@@ -110,7 +110,7 @@ function jeuPlayRing(p){
   jeuPlayOff(S.play.oct+deg);
 }
 function jeuKeys(e){
-  if(!JEU.on||e.repeat||e.ctrlKey||e.metaKey||e.altKey) return;
+  if(!(JEU.on||(typeof VEIL!=="undefined"&&VEIL.on))||e.repeat||e.ctrlKey||e.metaKey||e.altKey) return;
   const t=e.target, tg=t&&t.tagName;
   if(tg==="SELECT"||tg==="TEXTAREA"||(tg==="INPUT"&&t.type!=="range"&&t.type!=="checkbox")) return;
   for(let r=0;r<3;r++){

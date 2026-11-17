@@ -123,7 +123,9 @@ function dawTimeEvents(){
 }
 /* le mixeur : un faders vertical par voix et par piste, avec vumètre */
 function dawMixerDraw(){
-  ["dawMixer","jeuMixer","veilMixer"].forEach(id=>{ const h=$(id); if(h) dawMixerFill(h,id==="dawMixer"); });
+  /* un curseur en cours de glissement ne doit jamais être remplacé sous le doigt, d'où qu'on redessine (autre mode, boucle d'images) */
+  const ae=document.activeElement, held=ae&&ae.tagName==="INPUT"&&ae.type==="range";
+  ["dawMixer","jeuMixer","veilMixer"].forEach(id=>{ const h=$(id); if(h&&!(held&&h.contains(ae))) dawMixerFill(h,id==="dawMixer"); });
 }
 function dawMixerFill(host,inDaw){
   host.innerHTML=""; const D=S.daw;

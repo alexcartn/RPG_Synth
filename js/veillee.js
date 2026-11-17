@@ -119,7 +119,7 @@ function veilFrame(ts){
   if(((typeof isEco==="function"&&isEco())||(window.matchMedia&&matchMedia("(prefers-reduced-motion:reduce)").matches))&&ts-VEIL.last<66) return; VEIL.last=ts;
   const now=live?live.ctx.currentTime:null, eng=live?live.eng:null, an=eng?eng.analyser("all"):null;
   vizDraw(now,eng,VEIL.view); veilRose(now,an); veilMixFrame();
-  if((++VEIL.n)%6===0){ veilInfo(now,eng); const b=$("veilPlay"); if(b){ const sp=b.querySelector("span"), t=live?"Arrêter":"Jouer"; if(sp&&sp.textContent!==t) sp.textContent=t; b.classList.toggle("on",!!live); const ip=b.querySelector(".ip"), is=b.querySelector(".is"); if(ip) ip.style.display=live?"none":""; if(is) is.style.display=live?"":"none"; } }
+  if((++VEIL.n)%6===0){ veilInfo(now,eng); veilSyncControls(); const b=$("veilPlay"); if(b){ const sp=b.querySelector("span"), t=live?"Arrêter":"Jouer"; if(sp&&sp.textContent!==t) sp.textContent=t; b.classList.toggle("on",!!live); const ip=b.querySelector(".ip"), is=b.querySelector(".is"); if(ip) ip.style.display=live?"none":""; if(is) is.style.display=live?"":"none"; } }
 }
 function veilWake(){
   const v=$("veil"); if(!v) return; v.classList.remove("idle"); clearTimeout(VEIL.idle);
@@ -145,18 +145,52 @@ function veilFs(){
   const v=$("veil"); if(!v) return;
   try{ if(document.fullscreenElement) document.exitFullscreen(); else if(v.requestFullscreen) v.requestFullscreen(); }catch(e){}
 }
+/* volume général, ton jeu (instrument, registre, niveau), capture : les mêmes réglages que dans Conduire */
+function veilBuildControls(){
+  const vol=$("vlVol"); if(vol){ vol.value=S.vol; vol.oninput=()=>{ applyKnob(KNOB.vol,+vol.value,false); }; vol.onchange=()=>{ applyKnob(KNOB.vol,+vol.value,true); }; }
+  const pc=$("vlPlayCtl");
+  if(pc){
+    const row=(label,el)=>{ const l=document.createElement("label"); l.className="vl-f"; const t=document.createElement("span"); t.textContent=label; l.appendChild(t); l.appendChild(el); return l; };
+    const inst=dawSel([["","Comme la mélodie"]].concat(INST_OPTS),S.play.inst||"","Instrument de ton jeu",v=>dawParam("play.inst",v)); inst.id="vlPlayInst";
+    const oct=dawSel([[12,"Grave"],[24,"Médium"],[36,"Aigu"],[48,"Très aigu"]],S.play.oct,"Registre",v=>dawParam("play.oct",parseInt(v,10))); oct.id="vlPlayOct";
+    const lvl=dawRange(S.play.lvl,0,1,0.01,"Niveau de ton jeu",v=>dawParam("play.lvl",v)); lvl.id="vlPlayLvl";
+    pc.appendChild(row("Instrument",inst)); pc.appendChild(row("Registre",oct)); pc.appendChild(row("Niveau",lvl));
+  }
+  const cc=$("vlCapCtl");
+  if(cc){
+    const sel=document.createElement("select"); sel.id="vlCapFmt"; sel.setAttribute("aria-label","Format de la capture");
+    CAP_FMT.forEach(([v,l])=>{ const o=document.createElement("option"); o.value=v; o.textContent=l; sel.appendChild(o); }); sel.value=capFmt();
+    sel.onchange=()=>{ try{ localStorage.setItem("bourdon.capfmt",sel.value); }catch(e){} const m=$("capFmt"); if(m) m.value=sel.value; };
+    const l=document.createElement("label"); l.className="vl-f"; const t=document.createElement("span"); t.textContent="Format"; l.appendChild(t); l.appendChild(sel); cc.appendChild(l);
+  }
+  const cap=$("veilCap"); if(cap) cap.onclick=()=>{ if(CAP.on) capStop(); else if(live) capStart(); };
+}
+/* ce qui change tout seul pendant la veillée : volume, ton jeu, état de la capture */
+function veilSyncControls(){
+  const ae=document.activeElement, free=id=>{ const e=$(id); return e&&e!==ae?e:null; };
+  let e;
+  if((e=free("vlVol"))&&+e.value!==S.vol) e.value=S.vol;
+  if((e=free("vlPlayInst"))&&e.value!==String(S.play.inst||"")) e.value=S.play.inst||"";
+  if((e=free("vlPlayOct"))&&e.value!==String(S.play.oct)) e.value=String(S.play.oct);
+  if((e=free("vlPlayLvl"))&&+e.value!==S.play.lvl) e.value=S.play.lvl;
+  const b=$("veilCap"); if(b){
+    const sp=b.querySelector("span"), on=!!CAP.on, secs=on&&live?Math.max(0,Math.round(live.ctx.currentTime-CAP.t0)):0;
+    const t=on?"Arrêter "+Math.floor(secs/60)+":"+String(secs%60).padStart(2,"0"):"Capturer";
+    if(sp&&sp.textContent!==t) sp.textContent=t; b.classList.toggle("on",on); b.setAttribute("aria-pressed",on?"true":"false"); b.disabled=!live&&!on;
+  }
+  const n=$("capNote"), m=$("vlCapMsg"); if(m&&n){ const t=n.textContent, show=/Capture|Encodage|encodeur/.test(t)?t:""; if(m.textContent!==show) m.textContent=show; }
+}
 function veilBuild(){
   const open=$("veilBtn"); if(open) open.onclick=veilOpen;
   $("veilClose").onclick=veilClose; $("veilMixBtn").onclick=()=>veilMix(!veilMixOpen()); $("veilFs").onclick=veilFs;
   $("veilPlay").onclick=()=>{ live?stopLive():startLive(); };
   if(!document.documentElement.requestFullscreen) $("veilFs").hidden=true;
+  veilBuildControls();
   document.addEventListener("fullscreenchange",()=>{ const sp=$("veilFs")&&$("veilFs").querySelector("span"); if(sp) sp.textContent=document.fullscreenElement?"Quitter":"Plein écran"; if(VEIL.on) setTimeout(veilFit,80); });
   const v=$("veil"); ["mousemove","pointerdown","touchstart","keydown"].forEach(ev=>v.addEventListener(ev,veilWake,{passive:true}));
   document.addEventListener("keydown",e=>{
     if(!VEIL.on) return;
     if(e.key==="Escape"){ veilClose(); e.preventDefault(); }
-    else if((e.key==="m"||e.key==="M")&&!e.ctrlKey&&!e.metaKey&&!(e.target&&e.target.closest&&e.target.closest("input,select,textarea"))){ veilMix(!veilMixOpen()); e.preventDefault(); }
-    else if((e.key==="f"||e.key==="F")&&!e.ctrlKey&&!e.metaKey){ veilFs(); e.preventDefault(); }
     else if((e.key===" "||e.code==="Space")&&!(e.target&&e.target.closest&&e.target.closest("button"))){ live?stopLive():startLive(); e.preventDefault(); }
   });
   if(window.ResizeObserver) new ResizeObserver(()=>veilFit()).observe(v); else window.addEventListener("resize",veilFit);

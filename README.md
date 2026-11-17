@@ -31,6 +31,14 @@ On arrive sur Conduire : un univers (Médiéval, Aventure, Pirates, Nordique, F�
 - Compression douce sur la mélodie et les nappes, et les nappes s'effacent un peu (-2 dB) à chaque note de la mélodie, qui reste devant.
 - Respirations (Composer, Forme) : dans la moitié des sections par défaut, une voix (nappes, percussion, boucles ou pendules) se retire au début de la section et revient à mi-section ou aux trois quarts, sur une mesure.
 
+## Cohérence des univers
+
+- Far West : plus de bourdon (c'est lui qui donnait un air médiéval). Trois sons propres : sifflet (presque un sinus, glissade d'attaque, vibrato qui s'installe), harmonica (anche libre nasillarde, note prise par en dessous, trémolo de la main) et guitare grattée en nappe (chaque note de l'accord est une corde, coups vers le bas sur les temps, vers le haut entre deux, étouffés au coup suivant). Desertum : guitare, sifflet en écho, guitare grattée. Duellum : sifflet sur mineur harmonique, guitare grave, battement de grand tambour. Equitatus : harmonica, trompette, guitare battue au galop. Saloon : piano et guitare.
+- Nordique : flûte de bois au lieu du ney pour Fjordus, lyre et chœur au lieu du bol pour Runae, chœur au lieu de l'orgue d'église pour Bellum, tambour sur cadre (façon Sami) pour la veillée et le rituel.
+- Pirates : tambour sur cadre (bodhrán) pour les chants de marins, plus de bourdon de cornemuse, violon et guitare grattée à la taverne du port, grand tambour et bourdon sans orgue pour la tempête.
+- Nature : flûte de bois au lieu du ney en forêt.
+- Les ambiances retouchées ont été re-mesurées : toutes à -13 LUFS.
+
 ## Veillée
 
 Le bouton Veillée (au-dessus de la partition, en lecture) ouvre la machine en grand, à regarder en fond, dans le noir. Au centre, une rosace : chaque note s'allume à sa place dans la gamme (l'angle, la tonique en haut), plus loin du centre quand elle est plus aiguë. La mélodie trace sa constellation des neuf dernières secondes, le canon et les boucles s'y mêlent en points, les nappes font des arcs, les frappes des ondes depuis le centre, le bourdon respire au milieu et la forme d'onde court sur le pourtour. En titre, le nom de l'ambiance, sa phrase et son univers ; en bas, ton, tempo, section et affects, puis la partition en ruban. Chaque univers a ses couleurs (néon pour Cyberpunk, sang sur noir pour Horreur, mer et or pour Pirates...). Espace pour jouer, F pour le plein écran, Échap pour fermer ; les commandes s'effacent après quatre secondes sans geste.

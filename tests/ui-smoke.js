@@ -48,10 +48,10 @@ setTimeout(async()=>{
  const un=d.getElementById('univers'); console.log('univers',[...un.options].map(o=>o.value).join(','));
  for(const id of ['calme','espace','orient']){ un.value=id; un.dispatchEvent(new w.Event('change')); d.querySelectorAll('#presets .lnk').forEach(b=>b.click()); await new Promise(r=>setTimeout(r,150)); }
  console.log('glose :',d.getElementById('presetGloss').textContent);
- for(const inst of ['luth','harpe','flute','carillon','orgue','oud','ney','kalimba','bol','verre','synthe','archet','cuivre','guitare','piano','accordeon','basse','atelier']) w.eval(`(()=>{const e=buildEngine(new AudioContext(),merge(clone(DEFAULT),{mel:{inst:"${inst}"},canon:{lvl:.5,inst:"${inst}"},loops:{lvl:.5,inst:"${inst}"},pend:{lvl:.5,inst:"${inst}"}}),{});e.start(0,5,0);e.schedule(60);})()`);
+ for(const inst of ['luth','harpe','flute','carillon','orgue','oud','ney','kalimba','bol','verre','synthe','archet','cuivre','guitare','piano','accordeon','basse','sifflet','harmonica','atelier']) w.eval(`(()=>{const e=buildEngine(new AudioContext(),merge(clone(DEFAULT),{mel:{inst:"${inst}"},canon:{lvl:.5,inst:"${inst}"},loops:{lvl:.5,inst:"${inst}"},pend:{lvl:.5,inst:"${inst}"}}),{});e.start(0,5,0);e.schedule(60);})()`);
  for(const tm of ['anche','orgue','choeur','bol','pur']) w.eval(`(()=>{const e=buildEngine(new AudioContext(),merge(clone(DEFAULT),{drone:{timbre:"${tm}"}}),{});e.start(0,5,0);})()`);
  for(const kit of ['cadre','caisse','taiko','darbouka','bastringue','electro']) w.eval(`(()=>{const e=buildEngine(new AudioContext(),merge(clone(DEFAULT),{perc:{lvl:.8,kit:"${kit}"}}),{});e.start(0,5,0);e.schedule(60);})()`);
- for(const tm of ['choeur','cordes','orgue','synthe','verre','atelier']) w.eval(`(()=>{const e=buildEngine(new AudioContext(),merge(clone(DEFAULT),{pad:{lvl:.5,timbre:"${tm}"}}),{});e.start(0,5,0);e.schedule(60);})()`);
+ for(const tm of ['choeur','cordes','orgue','synthe','verre','grattee','atelier']) w.eval(`(()=>{const e=buildEngine(new AudioContext(),merge(clone(DEFAULT),{pad:{lvl:.5,timbre:"${tm}"}}),{});e.start(0,5,0);e.schedule(60);})()`);
  console.log('timbres : construits sans erreur');
  // musique modale, cordes physiques, acoustiques et adaptation
  w.eval(`(()=>{ for(const [n,o] of PRESETS){ for(const lg of ["modal","hasard"]) for(const md of ["physique","classique"]){ const S2=merge(clone(DEFAULT),clone(o)); S2.mus={logic:lg,model:md}; const e=buildEngine(new AudioContext(),S2,{record:true}); e.start(0,5,0); e.schedule(120); e.replan("all"); e.freeze(true); e.freeze(false); e.reroll(); } }

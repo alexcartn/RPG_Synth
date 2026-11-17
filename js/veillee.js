@@ -5,7 +5,7 @@
    quatre modules numérotés (partition, oscilloscope, cadran des notes, spectre à segments).
    Les touches et le pied de page s'effacent quand on ne touche plus à rien.
    ============================================================ */
-const VEIL={on:false, raf:0, idle:0, last:0, n:0, view:{id:"veilCv", lo:12, hi:48, cols:null, dpr:1, w:0, h:0, k:1.4},
+const VEIL={on:false, raf:0, idle:0, last:0, n:0, view:{id:"veilCv", el:"veil", lo:12, hi:48, cols:null, dpr:1, w:0, h:0, k:1.4},
   sbuf:null, fbuf:null, sGain:1, bars:[], peak:[], txt:{}};
 
 const veilDpr=()=>Math.min(2,window.devicePixelRatio||1);
@@ -59,7 +59,7 @@ function veilSpec(an){
     const lit=Math.round((VEIL.bars[i]||0)*rows), pk=Math.min(rows-1,Math.round((VEIL.peak[i]||0)*rows));
     for(let r=0;r<rows;r++){
       const x=i*bw+x0, y=y0-(r+1)*(cell+gap)+gap;
-      if(r<lit){ c.fillStyle=r>=rows*0.8?C.rub:C.ink; c.fillRect(x,y,cw,cell); }
+      if(r<lit){ c.fillStyle=r>=rows*0.8?C.rub:C.ink2; c.fillRect(x,y,cw,cell); }
       else if(r===pk&&lit>0){ c.fillStyle=C.rub; c.fillRect(x,y,cw,cell); }
       else{ c.strokeStyle=C.rule; c.globalAlpha=0.7; c.lineWidth=1; c.strokeRect(x+0.5,y+0.5,cw-1,cell-1); c.globalAlpha=1; }
     }
@@ -94,11 +94,11 @@ function veilText(id,t){ if(VEIL.txt[id]===t) return; VEIL.txt[id]=t; const e=$(
 function veilInfo(now,eng){
   const key=(typeof curScaleKey==="function"?curScaleKey():S.scales[0])||"mixolydien", sc=(SC[key]||SC.mixolydien);
   veilText("vlKey",NOTES[S.root]+" "+sc.n.replace(/\s*\(.*\)/,"").toLowerCase());
-  veilText("vlTempo",live?S.tempo+" ♩/min":"-");
+  veilText("vlTempo",live?S.tempo+" bpm":S.tempo+" bpm");
   veilText("vlAff",affTop(key,S.root,3).join(" · "));
   if(live&&eng&&now!==null){
     const bar=eng.bar, t0=eng.t0f(), b=Math.max(0,Math.floor((now-t0)/bar)), n=parseInt(S.meter,10)||4, beat=1+Math.floor((((now-t0)%bar)/bar)*n);
-    veilText("vlBar",String(b+1).padStart(3,"0")+" . "+beat+"/"+n);
+    veilText("vlBar",String(b+1).padStart(3,"0")+" · "+beat);
     const sec=eng.secAt(now), sn=Math.floor(Math.max(0,now-t0)/(S.sectionBars*bar))+1;
     veilText("vlSec",sn+" · "+(sec.role||"thème"));
   }else{ veilText("vlBar","-"); veilText("vlSec","-"); }
@@ -106,25 +106,34 @@ function veilInfo(now,eng){
 function veilFrame(ts){
   VEIL.raf=0; if(!VEIL.on) return;
   VEIL.raf=requestAnimationFrame(veilFrame);
-  if(typeof isEco==="function"&&isEco()&&ts-VEIL.last<33) return; VEIL.last=ts;
+  if(((typeof isEco==="function"&&isEco())||(window.matchMedia&&matchMedia("(prefers-reduced-motion:reduce)").matches))&&ts-VEIL.last<66) return; VEIL.last=ts;
   const now=live?live.ctx.currentTime:null, eng=live?live.eng:null, an=eng?eng.analyser("all"):null;
   vizDraw(now,eng,VEIL.view); veilScope(an); veilSpec(an); veilRing(now);
-  if((++VEIL.n)%6===0){ veilInfo(now,eng); const b=$("veilPlay"); if(b){ const sp=b.querySelector("span"), t=live?"Arrêter":"Jouer"; if(sp&&sp.textContent!==t) sp.textContent=t; b.classList.toggle("on",!!live); const i=b.querySelector("i"); if(i) i.textContent=live?"■":"▶"; } }
+  if((++VEIL.n)%6===0){ veilInfo(now,eng); const b=$("veilPlay"); if(b){ const sp=b.querySelector("span"), t=live?"Arrêter":"Jouer"; if(sp&&sp.textContent!==t) sp.textContent=t; b.classList.toggle("on",!!live); const ip=b.querySelector(".ip"), is=b.querySelector(".is"); if(ip) ip.style.display=live?"none":""; if(is) is.style.display=live?"":"none"; } }
 }
 function veilWake(){
   const v=$("veil"); if(!v) return; v.classList.remove("idle"); clearTimeout(VEIL.idle);
   VEIL.idle=setTimeout(()=>{ if(VEIL.on) v.classList.add("idle"); },4000);
 }
+/* palette de nuit : mémorisée */
+function veilNight(on){
+  const v=$("veil"), b=$("veilNight"); if(!v) return;
+  v.classList.toggle("night",!!on); if(b) b.setAttribute("aria-pressed",on?"true":"false");
+  try{ localStorage.setItem("bourdon.veilnight",on?"1":"0"); }catch(e){}
+  if(VEIL.on) veilFit();
+}
+/* tant que la veillée est ouverte, le reste de la page n'est ni atteignable au clavier ni lu par les lecteurs d'écran */
+function veilInert(on){ document.querySelectorAll("body>.folio,body>.dock").forEach(e=>{ if(on) e.setAttribute("inert",""); else e.removeAttribute("inert"); }); }
 function veilOpen(){
   const v=$("veil"); if(!v||VEIL.on) return;
-  VEIL.on=true; v.hidden=false; document.body.classList.add("veiling");
+  VEIL.on=true; v.hidden=false; document.body.classList.add("veiling"); veilInert(true);
   veilFit(); veilInfo(null,null); veilWake();
   VEIL.raf=requestAnimationFrame(veilFrame);
   const c=$("veilClose"); if(c) c.focus({preventScroll:true});
 }
 function veilClose(){
   const v=$("veil"); if(!v||!VEIL.on) return;
-  VEIL.on=false; cancelAnimationFrame(VEIL.raf); clearTimeout(VEIL.idle); v.hidden=true; document.body.classList.remove("veiling");
+  VEIL.on=false; cancelAnimationFrame(VEIL.raf); clearTimeout(VEIL.idle); v.hidden=true; document.body.classList.remove("veiling"); veilInert(false);
   try{ if(document.fullscreenElement) document.exitFullscreen(); }catch(e){}
   const b=$("veilBtn"); if(b) b.focus({preventScroll:true});
 }
@@ -134,7 +143,8 @@ function veilFs(){
 }
 function veilBuild(){
   const open=$("veilBtn"); if(open) open.onclick=veilOpen;
-  $("veilClose").onclick=veilClose; $("veilFs").onclick=veilFs;
+  $("veilClose").onclick=veilClose; $("veilFs").onclick=veilFs; $("veilNight").onclick=()=>veilNight(!$("veil").classList.contains("night"));
+  { let n=false; try{ n=localStorage.getItem("bourdon.veilnight")==="1"; }catch(e){} veilNight(n); }
   $("veilPlay").onclick=()=>{ live?stopLive():startLive(); };
   if(!document.documentElement.requestFullscreen) $("veilFs").hidden=true;
   document.addEventListener("fullscreenchange",()=>{ const sp=$("veilFs")&&$("veilFs").querySelector("span"); if(sp) sp.textContent=document.fullscreenElement?"Quitter":"Plein écran"; if(VEIL.on) setTimeout(veilFit,80); });
@@ -143,6 +153,7 @@ function veilBuild(){
     if(!VEIL.on) return;
     if(e.key==="Escape"){ veilClose(); e.preventDefault(); }
     else if((e.key==="f"||e.key==="F")&&!e.ctrlKey&&!e.metaKey){ veilFs(); e.preventDefault(); }
+    else if((e.key==="n"||e.key==="N")&&!e.ctrlKey&&!e.metaKey){ veilNight(!$("veil").classList.contains("night")); e.preventDefault(); }
     else if((e.key===" "||e.code==="Space")&&!(e.target&&e.target.closest&&e.target.closest("button"))){ live?stopLive():startLive(); e.preventDefault(); }
   });
   if(window.ResizeObserver) new ResizeObserver(()=>veilFit()).observe(v); else window.addEventListener("resize",veilFit);

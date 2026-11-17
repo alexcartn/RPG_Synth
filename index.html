@@ -130,14 +130,15 @@
     <dl class="vl-lcd" aria-live="off">
       <div><dt>Ton</dt><dd id="vlKey">-</dd></div>
       <div><dt>Tempo</dt><dd id="vlTempo">-</dd></div>
-      <div><dt>Mesure</dt><dd id="vlBar">-</dd></div>
+      <div title="Numéro de la mesure, puis temps dans la mesure"><dt>Mesure</dt><dd id="vlBar">-</dd></div>
       <div class="wide"><dt>Section</dt><dd id="vlSec">-</dd></div>
       <div class="wide"><dt>Affects</dt><dd id="vlAff">-</dd></div>
     </dl>
-    <div class="vl-keys">
-      <button class="vl-key" id="veilPlay" type="button" title="Lancer ou arrêter la lecture (Espace)"><i aria-hidden="true">▶</i><span>Jouer</span></button>
-      <button class="vl-key" id="veilFs" type="button" title="Plein écran (F)"><i aria-hidden="true">⛶</i><span>Plein écran</span></button>
-      <button class="vl-key" id="veilClose" type="button" title="Fermer la veillée (Échap)"><i aria-hidden="true">✕</i><span>Fermer</span></button>
+    <div class="vl-keys" role="group" aria-label="Commandes">
+      <button class="vl-key" id="veilPlay" type="button" title="Lancer ou arrêter la lecture (Espace)"><svg viewBox="0 0 20 20" aria-hidden="true"><path class="ip" d="M5 3.5v13l11-6.5z"/><path class="is" d="M5 4h4v12H5zM11 4h4v12h-4z" style="display:none"/></svg><span>Jouer</span></button>
+      <button class="vl-key" id="veilNight" type="button" aria-pressed="false" title="Palette de nuit : la même planche, encre claire sur fond sombre, pour regarder dans le noir (N)"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M15.5 12.2A6.5 6.5 0 0 1 7.8 4.5a6.5 6.5 0 1 0 7.7 7.7z"/></svg><span>Nuit</span></button>
+      <button class="vl-key" id="veilFs" type="button" title="Plein écran (F)"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 7V3h4M13 3h4v4M17 13v4h-4M7 17H3v-4"/></svg><span>Plein écran</span></button>
+      <button class="vl-key" id="veilClose" type="button" title="Fermer la veillée (Échap)"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 4l12 12M16 4L4 16"/></svg><span>Fermer</span></button>
     </div>
   </header>
   <section class="vl-mod vl-score"><h3><i>01</i>Partition<b>passé ← → à venir</b></h3><canvas id="veilCv" role="img" aria-label="Partition qui défile, en grand"></canvas></section>
@@ -146,7 +147,6 @@
     <section class="vl-mod"><h3><i>03</i>Cadran<b>notes de la gamme</b></h3><canvas id="veilRing" role="img" aria-label="Cadran des notes de la gamme"></canvas></section>
     <section class="vl-mod"><h3><i>04</i>Spectre<b>40 Hz → 14 kHz</b></h3><canvas id="veilSpec" role="img" aria-label="Spectre"></canvas></section>
   </div>
-  <footer class="vl-foot"><span>Espace · jouer</span><span>F · plein écran</span><span>Échap · fermer</span></footer>
 </div>
 <div class="dock"><button class="seal" id="play2" aria-pressed="false">Jouer</button><div class="dockT ctl"><div class="l"><label for="tension2">Tension</label><output id="tension2o"></output></div><input type="range" id="tension2" min="0" max="1" step="0.01" value="0.5"></div></div>
 

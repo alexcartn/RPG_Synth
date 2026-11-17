@@ -14,8 +14,8 @@ function vizFit(V){
   const r=cv.getBoundingClientRect(), dpr=Math.min(2,window.devicePixelRatio||1);
   V.w=Math.max(10,Math.round(r.width)); V.h=Math.max(10,Math.round(r.height)); V.dpr=dpr;
   cv.width=Math.round(V.w*dpr); cv.height=Math.round(V.h*dpr);
-  const cs=getComputedStyle(document.documentElement), v=n=>cs.getPropertyValue(n).trim();
-  V.cols={ink:v("--ink")||"#3a2e22", ink2:v("--ink-2")||"#6b5a46", rub:v("--rubric")||"#a3301c", gold:"oklch(0.62 0.12 78)", verd:"oklch(0.52 0.09 175)", rule:v("--rule")||"#b8a888", bg:v("--parch-2")||"#e8dcc2"};
+  const cs=getComputedStyle((V.el&&$(V.el))||document.documentElement), v=n=>cs.getPropertyValue(n).trim();
+  V.cols={ink:v("--ink")||"#3a2e22", ink2:v("--ink-2")||"#6b5a46", rub:v("--rubric")||"#a3301c", gold:v("--gold-d")||"oklch(0.62 0.12 78)", verd:v("--verd")||"oklch(0.52 0.09 175)", rule:v("--rule")||"#b8a888", bg:v("--parch-2")||"#e8dcc2"};
   vizDraw(V.last_now===undefined?null:V.last_now,V.last_eng,V);
 }
 

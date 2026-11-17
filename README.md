@@ -32,6 +32,11 @@ Une page à part, reliée par le lien « Studio » de la barre des modes. Ici ri
 
 On arrive sur Conduire : un univers (Médiéval, Aventure, Pirates, Nordique, Féerie, Horreur, Far West, Cyberpunk, Espace, Orient, Nature, Calme, ou Au hasard) et ce qu'on cherche (quatorze émotions), le bouton Jouer, huit boutons (volume, tension, densité, bourdon, nappes, brume, nuage, chaleur), un pad XY et le cercle des hauteurs. Les réglages fins sont dans Composer, en neuf chapitres repliés. L'en-tête est réduit au titre, la légende de la partition n'apparaît qu'en lecture, l'extinction a rejoint « Séance » dans la marge.
 
+## Équilibre du lieu et du bourdon
+
+- Le lieu reste un fond : feu, pluie, mer, ruisseau et nuit ont été recalés au niveau du murmure et du vent (ils sortaient 10 à 13 dB plus fort pour le même réglage). Mesuré en sonie pondérée sur les 65 ambiances, le lieu est maintenant au moins 12 dB sous la musique ; les ambiances où il restait présent (Desertum, Nox, Mare, Fjordus, Odyssea, Saloon, Silva…) ont leur niveau de lieu abaissé (table `PRESET_MIX`).
+- Le bourdon est baissé de 3 dB là où il étouffait la mélodie (Larva, Mare, Abyssus, Nox, Sidera, Cella). Il reste dominant, par choix, dans Calme et Dark ambient. Le gain de sonie de ces ambiances est compensé pour que le volume ne bouge pas.
+
 ## Rythmes, sonie et mixage
 
 - Chaque batterie a ses grilles, par mesure (4/4, 2/4, 3/4, 6/8, 7/8, 12/8 selon la batterie) : marche avec roulements pour la caisse claire, grosse caisse à chaque temps et charleston en doubles croches pour la boîte à rythmes, maqsoum et sama'i pour la darbouka, frappes espacées pour le grand tambour, « boum-tchac », gigue et valse pour les balais. Une case de la grille peut aussi frapper sur la double croche qui suit. Le tambour sur cadre garde la grille d'origine. Sans grille pour la mesure choisie, la batterie reprend la grille commune.

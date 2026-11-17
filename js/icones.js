@@ -35,6 +35,7 @@ const ICONS={
   brume:'<path d="M10 7a7 7 0 0 1 0 10M14.5 4a11 11 0 0 1 0 16M19 1.5a15 15 0 0 1 0 21"/><rect class="a" x="3" y="10.5" width="3" height="3"/>',
   nuage:'<rect x="3" y="12" width="3" height="3"/><rect x="8" y="9" width="3" height="3"/><rect x="13" y="12" width="3" height="3"/><rect x="18" y="8" width="3" height="3"/><rect x="6" y="16" width="3" height="3"/><rect x="16" y="16" width="3" height="3"/><rect class="a" x="10.5" y="14" width="3" height="3"/>',
   chaleur:'<path d="M12 3c1 4.5 5.5 5.5 5.5 10.5a5.5 5.5 0 0 1-11 0c0-2.3 1.2-3.8 2.5-4.8 0 2 1 3.3 2.2 3.3C11.2 8.5 11 6 12 3z"/><rect class="a" x="10.8" y="14" width="2.4" height="3"/>',
+  dungeon:'<path d="M2 20l7-11 3.5 5 3-4L22 20z"/><path d="M7.5 20v-3h3v3"/><rect class="a" x="17" y="3.5" width="2.6" height="2.6"/>',
   medieval:'<path d="M5 21V10a7 7 0 0 1 14 0v11z"/><path d="M12 21V8M8.5 14h7"/><rect class="a" x="10.8" y="2.6" width="2.4" height="2.4"/>',
   aventure:'<path d="M4 4l14 14M20 4L6 18M14 20l6-6M4 14l6 6"/><rect class="a" x="10.7" y="10.7" width="2.6" height="2.6"/>',
   pirates:'<circle cx="12" cy="5" r="2"/><path d="M12 7v14M8 11h8M5 14c0 4 3 7 7 7s7-3 7-7M3 14h4M17 14h4"/><rect class="a" x="10.8" y="15.5" width="2.4" height="2.4"/>',

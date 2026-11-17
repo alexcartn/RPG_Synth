@@ -31,6 +31,12 @@ On arrive sur Conduire : un univers (Médiéval, Aventure, Pirates, Nordique, F�
 - Compression douce sur la mélodie et les nappes, et les nappes s'effacent un peu (-2 dB) à chaque note de la mélodie, qui reste devant.
 - Respirations (Composer, Forme) : dans la moitié des sections par défaut, une voix (nappes, percussion, boucles ou pendules) se retire au début de la section et revient à mi-section ou aux trois quarts, sur une mesure.
 
+## Dungeon synth : accords, arpège, et un univers à part
+
+- Voix d'arpège (Composer, Voix, « Arpège ») : l'accord en cours égrené note à note, en va-et-vient, montant ou en Alberti (grave, aigu, milieu, aigu), en noires, croches ou doubles croches, sur un registre et une étendue choisis, avec l'instrument de son choix. C'est le pilier de l'accompagnement en dungeon synth.
+- Univers « Dungeon synth » (Montagne, Custos, Hiems, Castellum, Silva Antiqua) : de vrais enchaînements d'accords (harmonie idiomatique du mode) tenus par une nappe avec sa basse, un arpège qui les égrène, une mélodie simple qui revient (forme en rondeau, déjà-vu élevé), presque pas de bourdon, des timbales lointaines, une grande salle de Dattorro, un peu de souffle et de flottement de bande. Références : Mountain Realm, la scène « comfy » et épique du genre.
+- Médiéval repensé dans cette logique : Taberna (taverne au coin du feu, luth en arpège, flûte, foule), Chorea, Tripudium et Turris ont maintenant des accords, une basse et un arpège ; leur bourdon est réduit pour ne plus contredire les accords.
+
 ## FM, nappes vectorielles, essaim, distorsion de phase, plaque de Dattorro
 
 - Piano électrique FM (à la DX7) : porteuse 1:1 dont l'indice retombe vite, plus une « lame » 1:14 très brève qui fait le tintement, deux voix un rien désaccordées, étouffoir au relâchement. Cloches FM : rapport 1:3,5 inharmonique et longue résonance.

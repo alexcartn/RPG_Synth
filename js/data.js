@@ -106,7 +106,7 @@ const DEFAULT = {
   arp:{lvl:0, inst:"harpe", pat:"vaetvient", rate:1, reg:1, span:1},
   pend:{lvl:0, count:6, period:24, inst:"carillon"},
   amb:{lvl:1, murmur:0.35, clink:0.5, feu:0.15, vent:0, gouttes:0},
-  fx:{rev:0.4, size:2.6, dark:0.5, room:"gen", algo:"vivante", mod:0.5, shim:0, dly:0, dlyDiv:1.5, fb:0.4, sat:0.15, wow:0.12, veil:0.3, hiss:0},
+  fx:{voix:0, rev:0.4, size:2.6, dark:0.5, room:"gen", algo:"vivante", mod:0.5, shim:0, dly:0, dlyDiv:1.5, fb:0.4, sat:0.15, wow:0.12, veil:0.3, hiss:0},
   form:{shape:"constante", period:4, amount:0.5, breath:0.5},
   wx:{place:null, d:null, t:0},
   mach:true,
@@ -116,7 +116,7 @@ const DEFAULT = {
     {id:3,name:"Piste 3",inst:"flute",vol:0.8,pan:0.2,mute:false,solo:false,bars:4,notes:[]}]},
   syn:clone(SYN_DEFAULT),
   mus:{logic:"modal", model:"physique", form:"libre", color:"off", harm:"idiome", arc:"aucun", crit:0.6, mode:"veillee"},
-  rc:0.5, chant:"kyrie", plain:{lvl:0, reg:1, slow:1.5},
+  rc:0.5, tex:{lvl:1, sub:0, mid:0, air:0}, chant:"kyrie", plain:{lvl:0, reg:1, slow:1.5},
   car:{grav:0.5, aud:0.5, orn:0.5, sil:0.5, rep:0.5},
   chance:{skip:0.08, ratchet:0.07, mutate:0.12, octave:0.05, rest:0.08},
   turing:{lock:0.85, len:2, rate:1},
@@ -418,8 +418,33 @@ const ANTIQUE = [
     pad:{lvl:0.3, timbre:"machine", len:8, motion:0.3}, loops:{lvl:0.15, count:3, inst:"carillon", speed:1.3}, perc:{lvl:0}, amb:{vent:0.2, gouttes:0.4},
     fx:{rev:0.75, size:9, room:"grotte", dark:0.8, veil:0.6, sat:0.15, wow:0.15, hiss:0.06}}, "les Enfers : le Styx, des voix, un chœur sous la terre"]
 ];
+/* Dark ambient : des textures plutôt que des notes. Trois couches continues (grave, pierre qui chante, air), un bourdon, des chœurs lents,
+   une mélodie rare qui passe comme un souvenir, d'immenses réverbérations, aucun tempo audible, aucun bruitage. Mixé pour passer sous la voix. */
+const DARK = [
+  ["Carcer", {rc:0.05, seed:6601, root:1, scales:["phrygien","locrien",""], tempo:40, meter:"4/4", tension:0.6, sectionBars:16,
+    drone:{lvl:0.5, timbre:"choeur", bright:0.2, drift:0.8}, pad:{lvl:0.25, timbre:"machine", len:8, motion:0.3}, mel:{lvl:0.3, inst:"voix", dens:0.06, reg:0, span:1, leap:0.15},
+    canon:{lvl:0}, perc:{lvl:0}, tex:{sub:0.7, mid:0.5, air:0.25}, amb:{vent:0.15, gouttes:0.15}, grain:{mix:0.25, dens:0.3, size:0.8, spread:0.7, pitch:0.3},
+    fx:{voix:0.4, rev:0.8, size:9, room:"grotte", dark:0.8, veil:0.5, hiss:0.04, wow:0.1}}, "la prison sous la ville : pierre, chœur lointain, grondement"],
+  ["Vacuum", {rc:0.05, seed:9090, root:6, scales:["lydien","tons",""], tempo:40, meter:"4/4", tension:0.45, sectionBars:16,
+    drone:{lvl:0.4, timbre:"pur", bright:0.3, drift:0.7}, pad:{lvl:0.3, timbre:"vecteur", len:8, motion:0.4}, mel:{lvl:0.25, inst:"fmcloche", dens:0.05, reg:2, span:1},
+    canon:{lvl:0}, perc:{lvl:0}, tex:{sub:0.5, mid:0.3, air:0.6}, grain:{mix:0.4, dens:0.4, size:0.8, spread:0.8, pitch:0.5},
+    fx:{voix:0.4, rev:0.75, size:9, dark:0.5, shim:0.4, mod:0.8, veil:0.3}}, "le vide entre les étoiles : souffle, cloches perdues, grondement"],
+  ["Ruinae", {rc:0.05, seed:3131, root:4, scales:["eolien","phrygien",""], tempo:40, meter:"4/4", tension:0.5, sectionBars:16,
+    drone:{lvl:0.25, timbre:"anche", bright:0.2, drift:0.7}, pad:{lvl:0.2, timbre:"choeur", len:8, motion:0.3}, mel:{lvl:0.3, inst:"archet", dens:0.06, reg:0, span:1},
+    canon:{lvl:0}, perc:{lvl:0}, tex:{sub:0.4, mid:0.6, air:0.4}, amb:{vent:0.5},
+    fx:{voix:0.4, rev:0.7, size:8, dark:0.65, veil:0.4, hiss:0.03}}, "les ruines : le vent dans la pierre, un archet très loin"],
+  ["Sanctum", {rc:0.1, seed:7171, root:2, scales:["dorien","eolien",""], tempo:40, meter:"4/4", tension:0.5, sectionBars:16,
+    drone:{lvl:0.6, timbre:"choeur", bright:0.25, drift:0.7}, pad:{lvl:0.45, timbre:"choeur", len:8, motion:0.3}, mel:{lvl:0}, canon:{lvl:0},
+    perc:{lvl:0.08, kit:"taiko", shaker:0, ghost:0}, tex:{sub:0.6, mid:0.3, air:0.2}, amb:{feu:0.15},
+    fx:{voix:0.4, rev:0.75, size:8, room:"chapelle", dark:0.6, veil:0.4}}, "le sanctuaire souterrain : chœurs qui montent et s'effacent, un tambour très lent"],
+  ["Glacies", {rc:0.05, seed:2020, root:9, scales:["dorien","pentmin",""], tempo:40, meter:"4/4", tension:0.4, sectionBars:16,
+    drone:{lvl:0.3, timbre:"choeur", bright:0.3, drift:0.6}, pad:{lvl:0.2, timbre:"machine", len:8, motion:0.3}, mel:{lvl:0.28, inst:"archet", dens:0.05, reg:1, span:1},
+    canon:{lvl:0}, perc:{lvl:0}, tex:{sub:0.3, mid:0.4, air:0.6}, amb:{vent:0.5},
+    fx:{voix:0.4, rev:0.75, size:9, dark:0.45, veil:0.25, shim:0.2}}, "le glacier : le vent, la glace qui chante, un archet perdu"]
+];
 const UNIVERS = [
   {id:"dungeon", name:"Dungeon synth", tag:"accords, arpèges, flûtes et cordes de vieux claviers : la musique des donjons et des montagnes", items:DUNGEON},
+  {id:"dark", name:"Dark ambient", tag:"textures plutôt que notes : pierre, vent, chœurs lointains, grondements, pour passer sous la voix du meneur", items:DARK},
   {id:"antique", name:"Antiquité", tag:"Grèce, Sparte, Rome : aulos, lyre, cornu, et les gammes anciennes", items:ANTIQUE},
   {id:"medieval", name:"Médiéval", tag:"tavernes, cryptes, scriptoriums : le Moyen Âge à la cire et à la bière", items:MEDIEVAL},
   {id:"aventure", name:"Aventure", tag:"combat, voyage, embuscade, victoire : les temps forts d'une partie", items:AVENTURE},
@@ -439,22 +464,22 @@ UNIVERS.forEach(u=>{ if(u.id!=="medieval") u.items.forEach(it=>{ it[1].amb=Objec
 /* sonie : gain (dB) de chaque ambiance, mesuré hors ligne (BS.1770, 24 s, après le limiteur) pour viser -13 LUFS (-15 pour Calme) */
 const PRESET_NORM={"Taberna":-0.1,"Chorea":-5.0,"Crypta":-3.7,"Scriptorium":-7.9,"Turris":-4.0,"Tripudium":1.2,"Pugna":-4.8,"Iter":-5.4,"Triumphus":-5.0,"Insidiae":-0.5,"Portus":0.5,"Navigium":-4.9,"Tempestas":-5.2,"Thesaurus":-5.1,"Skalda":-3.7,"Bellum":-5.8,"Fjordus":-6.0,"Runae":-2.3,"Fata":-5.1,"Aula Fatarum":-6.1,"Sylva Magica":1.3,"Lullaby":2.2,"Larva":-2.2,"Domus Obscura":-5.7,"Sacrificium":-5.2,"Cella":-3.7,"Desertum":2.7,"Saloon":2.0,"Duellum":-6.1,"Equitatus":-5.9,"Urbs Neon":-2.8,"Machina":0.1,"Datum":-2.0,"Imber Toxicus":-3.6,"Sidera":3.1,"Nebula":-1.5,"Abyssus":-1.6,"Aegyptus":-2.4,"Eremus":-6.0,"Hortus":-5.3,"Bayati":-2.2,"Enharmonia":0.5,"Pluvia":-1.7,"Mare":-0.2,"Silva":-1.9,"Nox":-0.2,"Somnus":0.4,"Meditatio":-1.5,"Labor":-3.6,"Montagne":-5.2,"Hiems":-6.7,"Silva Antiqua":-6.4,"Agora":2.9,"Thermopylae":-1.9,"Odyssea":-0.9,"Hades":-2.1,"Custos":-7.4,"Castellum":-5.0,"Delphi":-2.0,"Sparta":-4.0,"Roma Triumphans":-1.7};
 /* chaque univers a sa batterie ; un préréglage peut en citer une autre */
-const UNIV_KIT={antique:"antique", dungeon:"taiko", medieval:"cadre", aventure:"caisse", pirates:"cadre", nordique:"taiko", feerie:"cadre", horreur:"taiko", western:"bastringue", cyber:"electro", espace:"electro", orient:"darbouka", nature:"cadre", calme:"cadre"};
+const UNIV_KIT={dark:"taiko", antique:"antique", dungeon:"taiko", medieval:"cadre", aventure:"caisse", pirates:"cadre", nordique:"taiko", feerie:"cadre", horreur:"taiko", western:"bastringue", cyber:"electro", espace:"electro", orient:"darbouka", nature:"cadre", calme:"cadre"};
 /* réglage fin, ambiance par ambiance : où elle se place entre rituel et chanson, ce qu'elle emprunte aux voix (arpège, plain-chant, voix), le tempérament de son époque, ses bêtes */
 const PRESET_TUNE={
   /* Dungeon synth : chansons, sauf l'hiver qui tient du rituel ; arpège génératif pour l'hiver, chevaux à l'écurie du château, orgue en Werckmeister */
   Hiems:{rc:0.6, arp:{pat:"auto"}}, Castellum:{temper:"werck", nature:{chevaux:0.08}},
   /* Antiquité : accord pythagoricien grec ; Sparte et Rome marchent, Rome est une fanfare */
-  Agora:{rc:0.3, temper:"pyth"}, Delphi:{temper:"pyth", loops:{lvl:0.12, count:2, inst:"bol", speed:1.6}}, Sparta:{rc:0.35, temper:"pyth"}, Thermopylae:{temper:"pyth"}, Odyssea:{rc:0.3, temper:"pyth"}, Hades:{temper:"pyth"},
+  Agora:{rc:0.3, temper:"pyth"}, Delphi:{temper:"pyth", loops:{lvl:0.12, count:2, inst:"bol", speed:1.6}}, Sparta:{rc:0.35, temper:"pyth"}, Thermopylae:{temper:"pyth"}, Odyssea:{rc:0.3, temper:"pyth"},
   "Roma Triumphans":{rc:0.6},
   /* Médiéval : chant sur bourdon en pythagoricien, danses à accords en mésotonique ; la tour du mage a un arpège qui mute ; un hibou autour de la tour */
-  Taberna:{temper:"meso"}, Chorea:{temper:"meso", fx:{algo:"salle"}}, Tripudium:{temper:"meso", fx:{algo:"salle"}}, Crypta:{temper:"pyth"}, Turris:{arp:{pat:"auto"}, nature:{hibou:0.15}},
+  Taberna:{temper:"meso"}, Chorea:{temper:"meso", fx:{algo:"salle"}}, Tripudium:{temper:"meso", fx:{algo:"salle"}}, Turris:{arp:{pat:"auto"}, nature:{hibou:0.15}},
   /* Aventure : le voyage a son luth en arpège, l'embuscade retient son souffle */
   Iter:{arp:{lvl:0.3, inst:"luth", pat:"vaetvient", rate:1, reg:1, span:1}}, Triumphus:{rc:0.65}, Insidiae:{rc:0.35},
   /* Pirates */
   Tempestas:{rc:0.6}, Thesaurus:{rc:0.55},
   /* Nordique : la veillée a une lyre qui improvise, les corbeaux d'Odin tournent sur le rituel */
-  Skalda:{arp:{lvl:0.25, inst:"lyre", pat:"auto", rate:1, reg:1, span:1}}, Bellum:{rc:0.5}, Fjordus:{rc:0.3}, Runae:{rc:0.25, nature:{corbeaux:0.12}},
+  Skalda:{arp:{lvl:0.25, inst:"lyre", pat:"auto", rate:1, reg:1, span:1}}, Bellum:{rc:0.5}, Runae:{rc:0.25, nature:{corbeaux:0.12}},
   /* Féerie : le bal est une valse avec sa harpe, en mésotonique ; la berceuse a sa harpe et des grillons */
   "Aula Fatarum":{rc:0.75, temper:"meso", arp:{lvl:0.3, inst:"harpe", pat:"vaetvient", rate:1, reg:1, span:1}}, "Sylva Magica":{rc:0.3, nature:{hibou:0.15}},
   Lullaby:{rc:0.55, arp:{lvl:0.25, inst:"harpe", pat:"vaetvient", rate:1, reg:1, span:1}, nature:{nuit:0.2}},
@@ -467,7 +492,10 @@ const PRESET_TUNE={
   /* Orient : un étang de grenouilles au jardin zen */
   Aegyptus:{rc:0.5}, Eremus:{rc:0.25}, Hortus:{rc:0.3, nature:{grenouilles:0.12}}, Bayati:{rc:0.45}, Enharmonia:{rc:0.25},
   /* Calme : le travail est un ostinato un peu plus présent */
-  Labor:{rc:0.3}
+  Labor:{rc:0.3},
+  /* textures dark ambient dans les ambiances de rituel et de ténèbres */
+  Crypta:{temper:"pyth", tex:{sub:0.5, mid:0.3}}, Cella:{tex:{sub:0.5, mid:0.5}}, Hades:{temper:"pyth", tex:{sub:0.6, mid:0.4, air:0.2}}, Abyssus:{tex:{sub:0.7, air:0.3}},
+  Larva:{tex:{mid:0.4, air:0.3}}, Nebula:{tex:{sub:0.3, air:0.5}}, Sidera:{tex:{air:0.4}}, "Domus Obscura":{tex:{sub:0.3}}, Fjordus:{rc:0.3, tex:{air:0.3}}
 };
 /* versions ambiance : les scènes chargées (fête, danse, bataille, fanfare) deviennent leur moment calme, juste avant ou juste après.
    Recette commune, celle des ambiances épurées : tempo lent, une voix soliste clairsemée, un fond doux, pas ou peu de percussion (lointaine), le lieu et ses bêtes portent la scène. */
@@ -499,7 +527,7 @@ const PRESET_BEASTS={Nox:{grenouilles:0.4, hibou:0.35}, Pluvia:{grenouilles:0.3}
   Thermopylae:{chevaux:0.12}, Odyssea:{mouettes:0.3}, Montagne:{loup:0.08}, Custos:{corbeaux:0.1}};
 const UNIV_EUCL={cyber:0.5, orient:0.35};
 /* point de départ sur l'axe rituel ↔ chanson : les musiques de bourdon d'un côté, les chansons de l'autre */
-const UNIV_RC={antique:0.15, calme:0.15, espace:0.2, horreur:0.25, nature:0.25, orient:0.4, nordique:0.45, medieval:0.5, feerie:0.5, cyber:0.55, aventure:0.6, pirates:0.7, western:0.75, dungeon:0.8};
+const UNIV_RC={dark:0.05, antique:0.15, calme:0.15, espace:0.2, horreur:0.25, nature:0.25, orient:0.4, nordique:0.45, medieval:0.5, feerie:0.5, cyber:0.55, aventure:0.6, pirates:0.7, western:0.75, dungeon:0.8};
 UNIVERS.forEach(u=>u.items.forEach(it=>{ const p=it[1]; p.perc=Object.assign({kit:UNIV_KIT[u.id]||"cadre", eucl:UNIV_EUCL[u.id]||0},p.perc||{}); if(p.norm===undefined) p.norm=PRESET_NORM[it[0]]||0; if(p.rc===undefined) p.rc=UNIV_RC[u.id]===undefined?0.5:UNIV_RC[u.id]; if(PRESET_BEASTS[it[0]]) p.nature=Object.assign({},p.nature||{},PRESET_BEASTS[it[0]]); if(PRESET_TUNE[it[0]]) merge(p,clone(PRESET_TUNE[it[0]]));
   const AV=AMBIANCE[it[0]]; if(AV){ if(!AV.o.canon&&!(it[0]==="Urbs Neon"||it[0]==="Machina"||it[0]==="Castellum")) merge(p,clone(Z)); merge(p,clone(AV.o)); it[2]=AV.g; } }));
 /* liste à plat des préréglages */

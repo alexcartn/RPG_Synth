@@ -121,7 +121,7 @@ function buildEngine(ctx, S, o){
   starts.push(wowL1,wowL2);
   const veil=ctx.createBiquadFilter(); veil.type="lowpass"; veil.Q.value=0.5;
   const master=G(0);
-  out.connect(sat); veil.connect(master);
+  out.connect(sat); const voixEQ=ctx.createBiquadFilter(); voixEQ.type="peaking"; voixEQ.frequency.value=1900; voixEQ.Q.value=0.8; voixEQ.gain.value=0; veil.connect(voixEQ); voixEQ.connect(master);
   const lWowIn=link(sat,wowD), lWowOut=link(wowD,veil), lWowBy=link(sat,veil);
   const volG=G(1); volG.connect(ctx.destination);
   const sleepG=G(1); sleepG.connect(volG);
@@ -316,7 +316,7 @@ function buildEngine(ctx, S, o){
     B.perc.lvl.gain.value=lv("perc",S.perc.lvl);
     B.amb.lvl.gain.value=lv("amb",S.amb.lvl===undefined?1:S.amb.lvl);
     B.play.lvl.gain.value=S.play?S.play.lvl:0.8;
-    volG.gain.value=S.vol===undefined?1:S.vol; normG.gain.value=Math.pow(10,clamp(S.norm||0,-12,12)/20);
+    volG.gain.value=S.vol===undefined?1:S.vol; voixEQ.gain.value=-6*clamp((S.fx&&S.fx.voix)||0,0,1); if(texSet) texSet(); normG.gain.value=Math.pow(10,clamp(S.norm||0,-12,12)/20);
     { const nt=natv(), wa=want("amb");
       NATS.forEach(k=>{ if(wa&&mach()&&(nt[k]||0)>0.001) ensureNature(k); });
       natG.pluie.gain.value=1; natG.mer.gain.value=(nt.mer||0)*1.0; natG.nuit.gain.value=(nt.nuit||0)*2.4; natG.ruisseau.gain.value=(nt.ruisseau||0)*1.6;
@@ -569,6 +569,26 @@ function buildEngine(ctx, S, o){
     lfo2.connect(lg2); lg2.connect(f.frequency); oscs.push(lfo2);
     oscs.forEach(x=>starts.push(x));
     if(isFifth) fifthGl=gls;
+  }
+  /* ---------- textures (dark ambient) : trois couches continues, chacune dans sa bande, qui bougent sur des minutes ----------
+     grave : un grondement de bruit brun sous 90 Hz et deux sinus graves qui battent lentement (jamais dans la réverbération) ;
+     texture : du bruit passé par des résonateurs très étroits accordés sur les harmoniques de la tonique, qui dérivent : la pierre ou le métal qui chante ;
+     air : un souffle aigu dont la bande se promène lentement. */
+  var texSet=null; /* var : setLevels() peut être appelé avant cette ligne */
+  if(want("tex")){
+    const T=()=>S.tex||{}, slow=(f0,amt,dst,base)=>{ const l=ctx.createOscillator(); l.frequency.value=f0; const g=G(amt); l.connect(g); g.connect(dst); starts.push(l); if(base!==undefined) dst.value=base; return l; };
+    const subG=G(0), midG=G(0), airG=G(0), texOut=G(1); subG.connect(texOut); texOut.connect(B.drone.it);
+    const tb=bus(0.9,0.15,{hp:60}); midG.connect(tb.in); airG.connect(tb.in);
+    /* grave */
+    { const ns=loopSrc(nb), lp=ctx.createBiquadFilter(); lp.type="lowpass"; lp.frequency.value=70; lp.Q.value=0.7; const am=G(0.6); ns.connect(lp); lp.connect(am); am.connect(subG); slow(0.011+0.02*((seed%997)/997),0.35,am.gain);
+      const f0=freq(-12); [0,0.13].forEach((d,i)=>{ const x=ctx.createOscillator(); x.frequency.value=f0+d; const g=G(0.35); x.connect(g); g.connect(subG); starts.push(x); slow(0.017+0.01*i,0.2,g.gain); }); }
+    /* texture : résonateurs sur les harmoniques 2, 3, 5 et 7 de la tonique */
+    { const ns=loopSrc(wb), f0=freq(0); [[2,1],[3,0.8],[5,0.55],[7,0.35]].forEach(([h,a],i)=>{ const bp=ctx.createBiquadFilter(); bp.type="bandpass"; bp.Q.value=45; bp.frequency.value=f0*h; const g=G(a*3.2);
+      ns.connect(bp); bp.connect(g); g.connect(midG); slow(0.007+0.006*i,f0*h*0.025,bp.frequency); slow(0.013+0.009*i,a*1.6,g.gain); }); }
+    /* air */
+    { const ns=loopSrc(wb), hp=ctx.createBiquadFilter(), bp=ctx.createBiquadFilter(); hp.type="highpass"; hp.frequency.value=4500; bp.type="bandpass"; bp.Q.value=0.9; bp.frequency.value=8000; const g=G(0.12);
+      ns.connect(hp); hp.connect(bp); bp.connect(g); g.connect(airG); slow(0.009,3000,bp.frequency); slow(0.021,0.05,g.gain); }
+    texSet=()=>{ const t=T(), l=t.lvl===undefined?1:t.lvl; subG.gain.value=(t.sub||0)*l*0.35; midG.gain.value=(t.mid||0)*l*0.85; airG.gain.value=(t.air||0)*l*0.9; tb.lvl.gain.value=mach()?1:0; texOut.gain.value=mach()?1:0; };
   }
   if(want("drone")){
     const tone=S.drone.timbre;

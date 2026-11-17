@@ -31,6 +31,13 @@ On arrive sur Conduire : un univers (Médiéval, Aventure, Pirates, Nordique, F�
 - Compression douce sur la mélodie et les nappes, et les nappes s'effacent un peu (-2 dB) à chaque note de la mélodie, qui reste devant.
 - Respirations (Composer, Forme) : dans la moitié des sections par défaut, une voix (nappes, percussion, boucles ou pendules) se retire au début de la section et revient à mi-section ou aux trois quarts, sur une mesure.
 
+## Dark ambient : textures plutôt que notes
+
+- Textures (Composer, Bourdon) : trois couches continues, chacune dans sa bande, qui évoluent sur des minutes. Le grondement grave (bruit brun sous 90 Hz et deux sons graves qui battent lentement, jamais dans la réverbération) ; la pierre qui chante (du souffle passé par des résonateurs très étroits accordés sur les harmoniques 2, 3, 5 et 7 de la tonique, qui dérivent) ; l'air (un souffle aigu dont la couleur se promène). C'est la recette du dark ambient : une couche par bande, un seul élément tient le grave.
+- Place pour la voix (Espace et patine) : un creux doux vers 1,9 kHz pour que la musique passe sous la voix du meneur de jeu.
+- Univers Dark ambient (Carcer, Vacuum, Ruinae, Sanctum, Glacies) : aucun tempo audible, une mélodie rare qui passe comme un souvenir, des chœurs lents, d'immenses réverbérations, pas de bruitage. Références : le label Cryo Chamber et ses mixages pensés pour passer sous des voix.
+- Les ambiances de rituel et de ténèbres prennent aussi ces textures : Crypta, Cella, Hades, Abyssus, Larva, Nebula, Sidera, Domus Obscura, Fjordus.
+
 ## Anche physique, cor, plain-chant
 
 - Aulos en modèle physique : une colonne d'air excitée par une anche battante (modèle de la clarinette de Cook et Scavone), avec un peu de nasal ; un son de bois creux, plus rien d'une trompette de clavier.

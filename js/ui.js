@@ -218,6 +218,9 @@ const UI=[
  {num:"III", title:"Bourdon", fr:"", sub:"Sous-grave, tonique, quinte, octaves. La quinte glisse vers un degré voisin de la gamme.", groups:[
   {items:[
    {k:"drone.lvl",type:"range",label:"Niveau",min:0,max:1,step:0.01,fmt:pct},
+   {k:"tex.sub",type:"range",label:"Texture : grondement grave",min:0,max:1,step:0.01,fmt:pct,hint:"Un grondement sous 90 Hz et deux sons graves qui battent lentement. Il ne passe jamais dans la réverbération."},
+   {k:"tex.mid",type:"range",label:"Texture : pierre qui chante",min:0,max:1,step:0.01,fmt:pct,hint:"Du souffle passé par des résonateurs très étroits accordés sur la tonique, qui dérivent lentement : la pierre ou le métal qui résonne."},
+   {k:"tex.air",type:"range",label:"Texture : air",min:0,max:1,step:0.01,fmt:pct,hint:"Un souffle aigu dont la couleur se promène lentement."},
    {k:"drone.timbre",type:"select",label:"Timbre",opts:[["anche","Anche (cornemuse)"],["orgue","Orgue de chambre"],["choeur","Chœur (voyelles)"],["bol","Bol chantant"],["machine","Machine à cordes"],["aulos","Aulos (anche nasillarde)"],["pur","Sinus pur"]],restart:true},
    {k:"drone.bright",type:"range",label:"Éclat",min:0,max:1,step:0.01,fmt:pct,restart:true},
    {k:"drone.glide",type:"range",label:"Quinte mobile",min:0,max:1,step:0.01,fmt:pct}]},
@@ -313,6 +316,7 @@ const UI=[
    {k:"fx.size",type:"range",label:"Taille de la salle",min:0.5,max:9,step:0.1,fmt:v=>v.toFixed(1)+" s",reverb:true},
    {k:"fx.dark",type:"range",label:"Ombre (réverb sourde)",min:0,max:1,step:0.01,fmt:pct,reverb:true},
    {k:"fx.room",type:"select",label:"Acoustique du lieu",opts:[["gen","Générique"],["chapelle","Chapelle de pierre"],["salle","Salle de bois"],["grotte","Grotte"],["plaque","Plaque métallique"]],reverb:true},
+   {k:"fx.voix",type:"range",label:"Place pour la voix",min:0,max:1,step:0.01,fmt:pct,hint:"Creuse doucement le médium (vers 1,9 kHz) pour que la musique passe sous la voix du meneur de jeu sans la couvrir."},
    {k:"fx.algo",type:"select",label:"Type de réverbération",opts:[["vivante","Vivante : la queue bouge et peut scintiller"],["lieu","Lieu : acoustique figée, avec ses premières réflexions"],["plaque","Plaque : la plaque de studio (Dattorro), dense et brillante"],["salle","Salle : la même cuve en plus grand, plus ample"]]},
    {k:"fx.mod",type:"range",label:"Mouvement de la queue (réverb vivante)",min:0,max:1,step:0.01,fmt:pct},
    {k:"fx.shim",type:"range",label:"Scintillement : la queue remonte d'une octave",min:0,max:1,step:0.01,fmt:pct},

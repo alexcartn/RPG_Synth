@@ -18,6 +18,10 @@ Une page à part, reliée par le lien « Studio » de la barre des modes. Ici ri
 - IV · Mélodie : clip Notes au piano roll (gamme seule ou chromatique, rangées teintées sur les notes de l'accord en cours, ligne d'accords au-dessus), ou enregistrement au clavier (piste armée ●, trois rangées de la gamme, Page ↑/↓ pour l'octave), quantification, transposition par degré, doublement. Relecture : notes de l'accord sur les temps forts, ambitus, grands sauts sans retour, note finale, usage de la note caractéristique, notes hors gamme, rythme.
 - Jouer, comme un instrument : un clavier en bas de page (trois octaves, plus fort en bas de la touche), le clavier d'ordinateur (notes de la gamme sur trois rangées, ou chromatique comme Ableton : A W S E D F T G Y H U J K, Z/X pour l'octave, C/V pour la nuance) et un clavier MIDI (Chrome, Edge : nuance et pédale de maintien). Les notes tiennent tant que la touche est enfoncée, sur la piste armée (●) ou la piste choisie. Maintien, accord d'une touche (la triade de la gamme bâtie sur la note), notes de la gamme et de l'accord qui tourne marquées sur les touches, métronome.
 - Enregistrer : ● Clip crée un clip Notes (1 à 8 mesures) dans la case choisie, le lance et enregistre en boucle par-dessus, avec ou sans quantification (aussi dans un clip de percussion). Capturer garde après coup ce que tu viens de jouer librement, même sans enregistrer, et en fait un clip.
+- Effets MIDI, avant l'instrument comme dans Ableton : Arpégiateur (en direct sur les touches tenues, calé sur le tempo : montant, descendant, va-et-vient, ordre joué, accord répété ; vitesse, octaves, durée ; écrit dans le clip avec ● Clip), Accord (triade ou septième de la gamme, quinte, octave), Gamme (ramène toute note dans la gamme), Humain (décalages de temps et de nuance, identiques à chaque passage). Ils agissent sur le jeu, la lecture des clips, le rendu et l'export MIDI ; l'enregistrement garde ce qui a été joué, avant les effets.
+- Piano roll : lasso (Maj + glisser), Ctrl+A, C, V, D (tout, copier, coller, dupliquer), couloir de vélocité sous la grille.
+- Arrangement : boucle de 2 à 16 mesures depuis le curseur.
+- Pistes séparées : export WAV d'une piste par fichier (dans un zip), au même gain, réverb et écho des retours inclus, pour mixer ailleurs.
 - MIDI : export du morceau (une piste par piste, la percussion sur le canal 10 en notes General MIDI) ou d'un clip seul (menu du clip), à glisser dans Ableton.
 - Percussion : séquenceur à pas, une batterie et un son par voie (grand tambour, tambour sur cadre, caisse, antique, darbouka, boîte à rythmes, balais), pour mélanger les moteurs ; grilles toutes faites tirées des batteries de la machine.
 - Instruments : tous ceux de la machine (cordes physiques, vents, cloches modales, voix…), les nappes (machine à cordes, chœur, orgue, vectorielle, essaim…) et les patches du synthé de Forger, y compris les tiens.
@@ -26,7 +30,7 @@ Une page à part, reliée par le lien « Studio » de la barre des modes. Ici ri
 - V · Arrangement : arme ● puis joue en vue Session, l'arrêt écrit l'arrangement ; ou construction depuis les scènes (×1, ×2, ×4). Blocs à déplacer, allonger (le clip boucle), dupliquer, supprimer, insertion de clips et de mesures, lecture depuis le curseur.
 - VI · Export : MP3 (128 à 320 kb/s) ou MIDI de l'arrangement, ou des scènes dans l'ordre ; le MP3 est rendu hors temps réel et normalisé.
 - Projet enregistré tout seul dans le navigateur, annulation (Ctrl+Z, Ctrl+Maj+Z), enregistrement et ouverture en fichier JSON, modèles (page blanche, dungeon synth, dark ambient).
-- Limites : pas encore de stems audio à l'export du studio ; les notes sont au demi-ton (pas de quarts de ton) ; l'enregistrement de l'arrangement se fait à la mesure.
+- Limites : les notes sont au demi-ton (pas de quarts de ton) ; l'enregistrement de l'arrangement se fait à la mesure.
 
 ## La page d'accueil
 

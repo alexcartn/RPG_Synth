@@ -215,6 +215,7 @@ const SON=(()=>{
       while(timeOf(X.next)<horizon&&guard++<64){
         const b=X.next;
         if(X.mode==="session") P.tracks.forEach(t=>{ const s=slot(t.id); if(s.pend!==undefined&&s.pend.at<=b+1e-6){ const was=s.row; s.row=s.pend.row; s.anchor=b; s.pend=undefined; if(was!==null) graph.cut(t,timeOf(b)); recChange(t.id,s.row,b); cb.state(); } });
+        if(X.mode==="arr"&&X.loop&&b>=X.loop.b*B()-1e-9){ const d=(X.loop.b-X.loop.a)*B(); X.next-=d; X.t0+=d*spb(); P.tracks.forEach(t=>graph.cut(t,timeOf(X.next))); continue; }
         if(X.mode==="arr"){ const end=PJ.arrLen(P.arr)*B(); if(b>=end){ if(!X.ending){ X.ending=true; setTimeout(()=>{ if(X.ending) stop(); },Math.max(0,(timeOf(b)-ctx.currentTime)*1000+2500)); } break; }
           P.tracks.forEach(t=>{ const st=stateAt(P,t,b), prevSt=stateAt(P,t,b-STEP); if(prevSt&&(!st||st.seg!==prevSt.seg)&&Math.abs(b%B())<1e-6) graph.cut(t,timeOf(b)); }); }
         if(X.metro&&Math.abs(b-Math.round(b))<1e-6) graph.click(timeOf(b),Math.round(b)%B()===0);
@@ -229,7 +230,8 @@ const SON=(()=>{
   }
 
   /* ---------- rendu hors ligne de l'arrangement, puis MP3 ---------- */
-  async function render(P,onProg){
+  async function render(P,onProg,soloId){
+    if(soloId){ P=JSON.parse(JSON.stringify(P)); P.tracks.forEach(t=>{ t.solo=false; t.mute=t.id!==soloId; }); }
     const B=TH.bb(P.meter), bars=PJ.arrLen(P.arr); if(!bars) throw new Error("L'arrangement est vide.");
     const spb=60/P.tempo, tail=6, dur=bars*B*spb+tail, sr=44100;
     const ctx=new OfflineAudioContext(2,Math.ceil(sr*dur),sr);

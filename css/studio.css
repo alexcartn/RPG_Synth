@@ -284,3 +284,8 @@ h3{font-size:1.05rem; color:var(--rubric)}
 .kb.shut .kbbar{opacity:.9}
 .kb .hint{margin:4px 0 0; font-size:.8em}
 @media (max-width:640px){ .piano{height:72px} }
+.velc{display:block; border:1px solid var(--rule); border-top:0; touch-action:none; cursor:ns-resize}
+.dev.mfx{border-style:dashed; border-color:var(--ink-3)}
+.dev.mfx .dh{background:var(--cell)}
+.mfxadd{border-color:var(--ink-3)}
+.loopr{position:absolute; top:0; height:22px; background:color-mix(in oklch,var(--gold) 45%,transparent); border-left:2px solid var(--gold); border-right:2px solid var(--gold); pointer-events:none; z-index:4}

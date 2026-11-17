@@ -115,7 +115,39 @@ const PJ=(()=>{
     const D=clipData(P,tr,clip,st.harm), L=D.len; if(!L) return;
     const anchor=D.sync&&st.hAnchor!==undefined?st.hAnchor:st.anchor;
     let pos=((b0-anchor)%L+L)%L; const span=b1-b0;
-    D.notes.forEach(n=>{ if(n.s>=L-1e-9) return; let x=n.s-pos; if(x<-1e-9) x+=L; if(x<span-1e-9&&x>=-1e-9) emit(n,b0+x); });
+    D.notes.forEach(n=>{ if(n.s>=L-1e-9) return; let x=n.s-pos; if(x<-1e-9) x+=L; if(x<span-1e-9&&x>=-1e-9) fxNote(P,tr,n,b0+x,emit); });
   }
-  return {bump,nid,ROLE,newTrack,dev,blank,template,stepsPerBar,drumClip,fixDrum,clipData,harmFor,harmTrack,sceneBars,arrFromScenes,arrLen,collect,ctxOf,parse,LANES_DEF};
+  /* ---------- effets MIDI (avant l'instrument, comme dans Ableton) ----------
+     accord : ajoute des notes ; gamme : ramène dans la gamme ; humain : décalages et nuances (déterministes) ; arpège : en direct sur les touches tenues */
+  const MFX={
+    arp:{n:"Arpégiateur", d:"Les touches tenues s'égrènent au tempo. Joue un accord, il devient un motif. Avec ● Clip, l'arpège s'écrit dans le clip.", p:[
+      {k:"motif",n:"Motif",def:"montant",opts:[["montant","Montant"],["descendant","Descendant"],["vaetvient","Va-et-vient"],["joue","Dans l'ordre joué"],["accord","Accord répété"]]},
+      {k:"rate",n:"Vitesse",def:0.5,opts:[[1,"Noires"],[0.5,"Croches"],[1/3,"Triolets"],[0.25,"Doubles croches"]]},
+      {k:"oct",n:"Octaves",def:1,opts:[[1,"1"],[2,"2"],[3,"3"]]},
+      {k:"gate",n:"Durée",min:0.1,max:1.5,def:0.8,u:"%"}]},
+    accord:{n:"Accord", d:"Chaque note devient un accord. « Triade de la gamme » reste toujours juste ; quinte et octave donnent un son archaïque, médiéval.", p:[
+      {k:"type",n:"Accord",def:"triade",opts:[["triade","Triade de la gamme"],["septieme","Septième de la gamme"],["quinte","Quinte"],["octave","Octave"],["quinteoct","Quinte et octave"],["sous","Octave en dessous"]]}]},
+    gamme:{n:"Gamme", d:"Ramène toute note hors gamme sur la note de la gamme la plus proche : impossible de jouer faux.", p:[]},
+    humain:{n:"Humain", d:"De petits décalages de temps et de nuance, toujours les mêmes à chaque passage : le jeu respire, moins mécanique.", p:[
+      {k:"time",n:"Décalage",min:0,max:40,def:12,u:"ms"},{k:"vel",n:"Nuance",min:0,max:0.5,def:0.15,u:"%"}]}
+  };
+  const MFX_ORDER=["arp","accord","gamme","humain"];
+  const hash=x=>{ let h=(x*2654435761)>>>0; h^=h>>>15; h=Math.imul(h,2246822507)>>>0; h^=h>>>13; return (h>>>0)/4294967296; };
+  function snapScale(P,p){ const iv=TH.MODES[P.mode].iv; for(let d=0;d<7;d++){ if(TH.inScale(iv,p-d-P.key)) return p-d; if(TH.inScale(iv,p+d-P.key)) return p+d; } return p; }
+  function chordUp(P,p,type){ const iv=TH.MODES[P.mode].iv, rel=((p-P.key)%12+12)%12, d=iv.indexOf(rel);
+    const deg=k=>d<0?p+[0,4,7,10][k/2|0]:p+iv[(d+k)%7]+12*Math.floor((d+k)/7)-rel;
+    if(type==="triade") return [p,deg(2),deg(4)]; if(type==="septieme") return [p,deg(2),deg(4),deg(6)];
+    if(type==="quinte") return [p,p+7]; if(type==="octave") return [p,p+12]; if(type==="quinteoct") return [p,p+7,p+12]; if(type==="sous") return [p,p-12]; return [p]; }
+  /* hauteurs jouées pour une note (accord, gamme), pour la lecture comme pour le jeu en direct */
+  function fxPitches(P,tr,p){ let ps=[p]; (tr.fx||[]).forEach(f=>{ if(f.on===false) return;
+    if(f.type==="gamme") ps=ps.map(q=>snapScale(P,q)); if(f.type==="accord") ps=ps.flatMap(q=>chordUp(P,q,f.p.type)); });
+    return [...new Set(ps)]; }
+  function fxNote(P,tr,n,nb,emit){
+    const fx=(tr.fx||[]).filter(f=>f.on!==false); if(!fx.length){ emit(n,nb); return; }
+    const hu=fx.find(f=>f.type==="humain"), ps=tr.kind==="drums"?[n.p]:fxPitches(P,tr,n.p);
+    ps.forEach((p,i)=>{ let v=n.v, b=nb; if(hu){ const r=hash(Math.round(nb*96)*131+p*7+i); v=Math.max(0.05,Math.min(1,v*(1+(r*2-1)*hu.p.vel))); b+=hash(Math.round(nb*96)*17+p)*hu.p.time/1000*P.tempo/60; }
+      emit(p===n.p&&v===n.v?n:{...n,p,v,v0:n.v},b); });
+  }
+  function mfx(type,p){ const D=MFX[type], def={}; D.p.forEach(s=>def[s.k]=s.def); return {id:nid("m"),type,on:true,p:Object.assign(def,p||{})}; }
+  return {MFX,MFX_ORDER,mfx,fxPitches,snapScale,bump,nid,ROLE,newTrack,dev,blank,template,stepsPerBar,drumClip,fixDrum,clipData,harmFor,harmTrack,sceneBars,arrFromScenes,arrLen,collect,ctxOf,parse,LANES_DEF};
 })();

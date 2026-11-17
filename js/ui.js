@@ -454,8 +454,12 @@ function updateTempo(){ $("tempoNum").textContent=S.tempo; $("tempoCap").textCon
 
 /* préréglages et scènes : chaque changement se fait par fondu enchaîné quand la lecture tourne */
 const fadeSec=()=>parseFloat($("fade").value)||4;
-function loadScene(state,btn,fade){
+/* ce qui joue : nom de l'ambiance, sa phrase, son univers (pour la veillée) */
+let SCENE={name:"",gloss:"",univ:""};
+function sceneOf(state){ const p=PRESETS.find(x=>x[1]===state); return p?{name:p[0],gloss:p[2],univ:p[3]}:null; }
+function loadScene(state,btn,fade,info){
   S=merge(clone(DEFAULT),clone(state)); normS(); S.seed=newSeed();
+  SCENE=info||sceneOf(state)||{name:"",gloss:"",univ:""};
   document.querySelectorAll("#presets .lnk,#scenes .lnk").forEach(x=>x.removeAttribute("aria-current"));
   if(btn) btn.setAttribute("aria-current","true");
   syncUI(); restartIfLive(fade||fadeSec());

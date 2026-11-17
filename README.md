@@ -12,6 +12,10 @@ Ouvrir `index.html` dans un navigateur récent (Chrome, Firefox, Safari). Les po
 
 On arrive sur Conduire : un univers (Médiéval, Aventure, Pirates, Nordique, Féerie, Horreur, Far West, Cyberpunk, Espace, Orient, Nature, Calme, ou Au hasard) et ce qu'on cherche (quatorze émotions), le bouton Jouer, huit boutons (volume, tension, densité, bourdon, nappes, brume, nuage, chaleur), un pad XY et le cercle des hauteurs. Les réglages fins sont dans Composer, en neuf chapitres repliés. L'en-tête est réduit au titre, la légende de la partition n'apparaît qu'en lecture, l'extinction a rejoint « Séance » dans la marge.
 
+## Veillée
+
+Le bouton Veillée (au-dessus de la partition, en lecture) ouvre la machine en grand, à regarder en fond, dans le noir. Au centre, une rosace : chaque note s'allume à sa place dans la gamme (l'angle, la tonique en haut), plus loin du centre quand elle est plus aiguë. La mélodie trace sa constellation des neuf dernières secondes, le canon et les boucles s'y mêlent en points, les nappes font des arcs, les frappes des ondes depuis le centre, le bourdon respire au milieu et la forme d'onde court sur le pourtour. En titre, le nom de l'ambiance, sa phrase et son univers ; en bas, ton, tempo, section et affects, puis la partition en ruban. Chaque univers a ses couleurs (néon pour Cyberpunk, sang sur noir pour Horreur, mer et or pour Pirates...). Espace pour jouer, F pour le plein écran, Échap pour fermer ; les commandes s'effacent après quatre secondes sans geste.
+
 ## Batteries et nouveaux instruments
 
 - Six batteries (Rythme, « Batterie ») : tambour sur cadre (celle d'origine), grosse caisse et caisse claire, grand tambour avec bâton et claquoir, darbouka et riqq, balais avec botte et tambourin, boîte à rythmes. Chaque univers a la sienne par défaut : caisse claire pour Aventure, grand tambour pour Nordique et Horreur, darbouka pour l'Orient, balais pour Far West et Pirates, boîte à rythmes pour Cyberpunk et Espace, tambour sur cadre ailleurs. Un préréglage peut en citer une autre.

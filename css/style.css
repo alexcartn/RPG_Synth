@@ -908,50 +908,42 @@ body.armed .knob[data-dst]{cursor:copy}
 .jeu-amp .lnk{font-size:1.02rem; color:var(--ink-2)}
 .jeu-amp .lnk[aria-current="true"]{color:var(--rubric)}
 
-/* ---------- veillée : panneau d'instrument sur parchemin ---------- */
-.score-big{position:absolute; top:6px; right:8px; z-index:2; font-size:.95rem; color:var(--ink-2); background:var(--parch-2); padding:2px 8px}
-.score-big:hover{color:var(--rubric)}
+/* ---------- veillée : une rosace dans le noir, aux couleurs de l'univers ---------- */
 body.veiling{overflow:hidden}
-.veil{position:fixed; inset:0; z-index:150; display:flex; flex-direction:column; gap:var(--sp-md); padding:var(--sp-lg) var(--sp-xl); background:var(--parch); color:var(--ink); cursor:default}
+.veil{--parch:oklch(0.16 0.02 55); --parch-2:oklch(0.21 0.025 55); --ink:oklch(0.9 0.04 85); --ink-2:oklch(0.7 0.045 75); --rule:oklch(0.4 0.035 65); --rubric:oklch(0.72 0.16 40); --gold-d:oklch(0.83 0.13 85); --verd:oklch(0.74 0.1 165);
+  position:fixed; inset:0; z-index:150; display:grid; grid-template-rows:minmax(0,1fr) auto; background:radial-gradient(120% 90% at 50% 45%, var(--parch-2), var(--parch) 70%); color:var(--ink); cursor:default; overflow:hidden}
 .veil[hidden]{display:none}
 .veil.idle{cursor:none}
-.veil .lnk{color:var(--ink-2)}
-/* bandeau : marque, afficheur à cristaux, touches */
-.vl-head{display:flex; align-items:stretch; gap:var(--sp-xl); flex:0 0 auto}
-.vl-brand{display:flex; flex-direction:column; justify-content:center; gap:2px; flex:none}
-.vl-brand b{font:400 2.1rem/1 "UnifrakturCook", var(--display); color:var(--rubric); font-weight:400}
-.vl-brand span{font:400 .8rem/1 var(--caps); letter-spacing:.28em; color:var(--ink-2); padding-left:2px}
-.vl-lcd{flex:1 1 auto; min-width:0; margin:0; display:grid; grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1.1fr) minmax(0,2fr); gap:0; background:var(--parch-2); border:1px solid var(--ink); box-shadow:inset 0 0 0 3px var(--parch-2), inset 0 0 0 4px var(--rule)}
-.vl-lcd>div{padding:8px 14px 7px; border-left:1px dotted var(--rule); min-width:0}
-.vl-lcd>div:first-child{border-left:0}
-.vl-lcd dt{font:400 .76rem/1 var(--caps); letter-spacing:.16em; color:var(--ink-2); margin-bottom:5px}
-.vl-lcd dd{margin:0; font:500 1.4rem/1.1 var(--body); color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-variant-numeric:tabular-nums lining-nums}
-.vl-lcd .wide dd{font-size:1.1rem; line-height:1.4; font-style:italic; font-weight:400}
-.vl-lcd #vlKey{color:var(--rubric)}
-.vl-keys{display:flex; gap:var(--sp-sm); flex:none; transition:opacity .5s var(--ease)}
+.veil[data-u="aventure"]{--parch:oklch(0.16 0.03 25); --parch-2:oklch(0.22 0.04 28); --ink:oklch(0.91 0.03 80); --ink-2:oklch(0.7 0.04 60); --rule:oklch(0.4 0.04 35); --rubric:oklch(0.68 0.18 30); --gold-d:oklch(0.82 0.14 78); --verd:oklch(0.75 0.08 140)}
+.veil[data-u="pirates"]{--parch:oklch(0.15 0.035 235); --parch-2:oklch(0.21 0.045 225); --ink:oklch(0.92 0.025 200); --ink-2:oklch(0.7 0.04 210); --rule:oklch(0.4 0.045 225); --rubric:oklch(0.82 0.14 78); --gold-d:oklch(0.78 0.11 185); --verd:oklch(0.72 0.12 30)}
+.veil[data-u="nordique"]{--parch:oklch(0.15 0.02 245); --parch-2:oklch(0.21 0.025 240); --ink:oklch(0.93 0.015 230); --ink-2:oklch(0.72 0.025 235); --rule:oklch(0.42 0.03 240); --rubric:oklch(0.82 0.09 215); --gold-d:oklch(0.86 0.07 95); --verd:oklch(0.7 0.12 25)}
+.veil[data-u="feerie"]{--parch:oklch(0.16 0.045 300); --parch-2:oklch(0.23 0.06 305); --ink:oklch(0.93 0.03 320); --ink-2:oklch(0.74 0.05 310); --rule:oklch(0.43 0.06 305); --rubric:oklch(0.8 0.14 345); --gold-d:oklch(0.88 0.12 95); --verd:oklch(0.82 0.11 170)}
+.veil[data-u="horreur"]{--parch:oklch(0.11 0.008 20); --parch-2:oklch(0.16 0.015 20); --ink:oklch(0.82 0.01 90); --ink-2:oklch(0.6 0.012 80); --rule:oklch(0.33 0.015 30); --rubric:oklch(0.55 0.19 25); --gold-d:oklch(0.72 0.03 95); --verd:oklch(0.6 0.05 150)}
+.veil[data-u="western"]{--parch:oklch(0.17 0.035 45); --parch-2:oklch(0.25 0.05 50); --ink:oklch(0.92 0.04 80); --ink-2:oklch(0.72 0.05 65); --rule:oklch(0.43 0.05 50); --rubric:oklch(0.75 0.15 55); --gold-d:oklch(0.86 0.12 88); --verd:oklch(0.72 0.08 200)}
+.veil[data-u="cyber"]{--parch:oklch(0.12 0.035 285); --parch-2:oklch(0.18 0.06 290); --ink:oklch(0.92 0.03 250); --ink-2:oklch(0.7 0.06 270); --rule:oklch(0.38 0.08 285); --rubric:oklch(0.7 0.25 350); --gold-d:oklch(0.86 0.14 200); --verd:oklch(0.84 0.2 140)}
+.veil[data-u="espace"]{--parch:oklch(0.1 0.03 265); --parch-2:oklch(0.17 0.05 270); --ink:oklch(0.92 0.02 250); --ink-2:oklch(0.68 0.04 260); --rule:oklch(0.36 0.05 265); --rubric:oklch(0.8 0.11 245); --gold-d:oklch(0.9 0.08 90); --verd:oklch(0.75 0.13 320)}
+.veil[data-u="orient"]{--parch:oklch(0.15 0.045 275); --parch-2:oklch(0.22 0.06 275); --ink:oklch(0.92 0.035 85); --ink-2:oklch(0.72 0.05 80); --rule:oklch(0.42 0.06 275); --rubric:oklch(0.82 0.14 80); --gold-d:oklch(0.75 0.12 185); --verd:oklch(0.7 0.14 25)}
+.veil[data-u="nature"]{--parch:oklch(0.15 0.03 155); --parch-2:oklch(0.21 0.04 150); --ink:oklch(0.92 0.03 110); --ink-2:oklch(0.72 0.04 130); --rule:oklch(0.4 0.04 150); --rubric:oklch(0.82 0.13 115); --gold-d:oklch(0.86 0.12 85); --verd:oklch(0.76 0.09 220)}
+.veil[data-u="calme"]{--parch:oklch(0.18 0.015 235); --parch-2:oklch(0.24 0.02 230); --ink:oklch(0.92 0.015 220); --ink-2:oklch(0.72 0.02 225); --rule:oklch(0.42 0.025 230); --rubric:oklch(0.82 0.07 200); --gold-d:oklch(0.86 0.06 80); --verd:oklch(0.78 0.06 150)}
+.vl-head{position:absolute; inset:0 0 auto 0; z-index:2; display:flex; justify-content:space-between; align-items:flex-start; gap:var(--sp-lg); padding:var(--sp-lg) var(--sp-xl); pointer-events:none}
+.vl-title{min-width:0; max-width:min(36rem,60vw)}
+.vl-univ{margin:0 0 4px; font:400 .8rem/1 var(--caps); letter-spacing:.3em; color:var(--ink-2)}
+.vl-title h2{margin:0; font:400 clamp(1.9rem,4.2vw,3.2rem)/1.05 var(--display); color:var(--ink); letter-spacing:.01em}
+.vl-gloss{margin:6px 0 0; font:italic 400 clamp(.95rem,1.4vw,1.15rem)/1.35 var(--body); color:var(--ink-2)}
+.vl-keys{display:flex; gap:var(--sp-sm); flex:none; pointer-events:auto; transition:opacity .6s var(--ease)}
 .veil.idle .vl-keys{opacity:0; pointer-events:none}
-.vl-key{display:flex; flex-direction:column; align-items:center; justify-content:space-between; gap:6px; width:88px; min-height:56px; padding:9px 4px 7px; background:var(--parch); color:var(--ink); border:1px solid var(--ink); border-radius:0; cursor:pointer; transition:background-color .12s var(--ease), color .12s var(--ease)}
-.vl-key svg{width:22px; height:22px; fill:currentColor; stroke:currentColor; stroke-width:1.6; stroke-linecap:square; stroke-linejoin:miter}
+.vl-key{display:flex; align-items:center; gap:8px; min-height:44px; padding:0 14px; background:transparent; color:var(--ink); border:1px solid var(--rule); border-radius:999px; cursor:pointer; transition:background-color .15s var(--ease), border-color .15s var(--ease), color .15s var(--ease)}
+.vl-key svg{width:18px; height:18px; fill:currentColor; stroke:currentColor; stroke-width:1.6; stroke-linecap:square; stroke-linejoin:miter}
 .vl-key svg path:not(.ip):not(.is){fill:none}
 .vl-key .is{stroke:none}
-.vl-key span{font:400 .76rem/1 var(--caps); letter-spacing:.12em; white-space:nowrap}
-.vl-key:hover,.vl-key:focus-visible{background:var(--ink); color:var(--parch); outline:none}
-.vl-key[aria-pressed="true"], #veilPlay.on{background:var(--rubric); border-color:var(--rubric); color:var(--parch)}
-/* modules : filet fin, repères de coin, titre numéroté */
-.vl-mod{position:relative; display:flex; flex-direction:column; min-height:0; min-width:0; border:1px solid var(--ink); background:linear-gradient(var(--parch-2),var(--parch-2)) padding-box}
-.vl-mod::before,.vl-mod::after{content:""; position:absolute; width:9px; height:9px; pointer-events:none; border:solid var(--rubric); border-width:0}
-.vl-mod::before{top:-1px; left:-1px; border-top-width:2px; border-left-width:2px}
-.vl-mod::after{bottom:-1px; right:-1px; border-bottom-width:2px; border-right-width:2px}
-.vl-mod h3{display:flex; align-items:center; gap:var(--sp-sm); margin:0; padding:0 var(--sp-md) 0 0; flex:none; font:400 .86rem/1 var(--caps); letter-spacing:.16em; text-transform:none; color:var(--ink); border-bottom:1px solid var(--ink); background:var(--parch)}
-.vl-mod h3 i{font:500 .82rem/1 var(--body); font-style:normal; letter-spacing:.02em; font-variant-numeric:lining-nums tabular-nums; background:var(--ink); color:var(--parch); padding:7px 8px 6px; margin-right:2px}
-.vl-mod h3 b{margin-left:auto; font:400 .84rem/1 var(--body); font-style:italic; letter-spacing:.02em; color:var(--ink-2); font-weight:400}
-.vl-mod canvas{flex:1 1 auto; min-height:0; width:100%; display:block}
-.vl-score{flex:1 1 auto}
-.vl-low{flex:0 0 clamp(150px,27vh,270px); display:grid; grid-template-columns:minmax(0,1.35fr) minmax(0,.8fr) minmax(0,1.35fr); gap:var(--sp-md)}
-@media (max-width:900px){ .vl-head{flex-wrap:wrap; gap:var(--sp-md)} .vl-lcd{order:3; flex:1 1 100%; grid-template-columns:repeat(3,1fr)} .vl-lcd .wide{display:none} .vl-keys{flex:1 1 100%; order:2} .vl-key{flex:1 1 0; width:auto; min-width:0} .vl-key span{white-space:normal; text-align:center; line-height:1.1; letter-spacing:.06em} .vl-brand{flex:1 1 100%} .vl-brand b{font-size:1.7rem} .vl-mod h3 b{display:none} }
-@media (max-width:760px){ .veil{padding:var(--sp-md)} .vl-low{grid-template-columns:minmax(0,1fr) minmax(0,.8fr); flex-basis:140px} .vl-low .vl-mod:last-child{display:none} }
-
-/* variante de nuit : la même planche, encre claire sur fond sombre (les toiles lisent ces variables) */
-.veil.night{--parch:oklch(0.2 0.022 58); --parch-2:oklch(0.245 0.026 58); --ink:oklch(0.9 0.035 88); --ink-2:oklch(0.72 0.045 80); --rule:oklch(0.42 0.035 68); --rubric:oklch(0.72 0.15 38); --verd:oklch(0.74 0.1 175); --gold-d:oklch(0.8 0.12 84)}
-.veil.night .vl-brand b{color:var(--rubric)}
-@media (prefers-reduced-motion:reduce){ .vl-keys,.vl-key{transition:none} }
+.vl-key span{font:400 .85rem/1 var(--caps); letter-spacing:.1em; white-space:nowrap}
+.vl-key:hover,.vl-key:focus-visible{border-color:var(--ink); outline:none}
+#veilPlay.on{background:var(--rubric); border-color:var(--rubric); color:var(--parch)}
+.vl-rose{grid-row:1; width:100%; height:100%; min-height:0; display:block}
+.vl-foot{grid-row:2; padding:0 var(--sp-xl) var(--sp-md); transition:opacity .8s var(--ease)}
+.vl-meta{display:flex; flex-wrap:wrap; gap:4px 22px; margin:0 0 6px; font:400 .82rem/1.3 var(--caps); letter-spacing:.14em; color:var(--ink-2); font-variant-numeric:lining-nums tabular-nums}
+.vl-meta #vlKey{color:var(--rubric)}
+.vl-meta #vlAff{font:italic 400 .9rem/1.3 var(--body); letter-spacing:.02em}
+.vl-ribbon{display:block; width:100%; height:clamp(70px,14vh,130px); opacity:.85}
+@media (max-width:760px){ .vl-head{flex-direction:column-reverse; padding:var(--sp-md)} .vl-title{max-width:100%} .vl-key span{display:none} .vl-key{padding:0 12px} .vl-foot{padding:0 var(--sp-md) var(--sp-md)} .vl-meta #vlAff{display:none} .vl-ribbon{height:84px} }
+@media (prefers-reduced-motion:reduce){ .vl-keys,.vl-key,.vl-foot{transition:none} }

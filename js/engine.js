@@ -507,6 +507,7 @@ function buildEngine(ctx, S, o){
     if(ty==="sine"||ty==="pur"){ mk("sine",1,0,f); }
     else if(ty==="bol"){ mk("sine",1,-w*0.25,f,0.9); mk("sine",1,w*0.25,f,0.9); mk("sine",2.003,0,f,0.28); mk("sine",2.71,w*0.1,f,0.12); }
     else if(ty==="anche"){ mk("sawtooth",1,-w,f); mk("sawtooth",1,w,f); }
+    else if(ty==="aulos"){ mk("sawtooth",1,-w*0.3,f,0.5); mk("square",1,w*0.3,f,0.32); f.frequency.value=base*1.8; droneFilters[droneFilters.length-1].base=base*1.8; }
     else if(ty==="machine"){ mk("sawtooth",1,0,f,0.75); mk("sawtooth",2,0,f,0.38); f.frequency.value=base*2.2; droneFilters[droneFilters.length-1].base=base*2.2; }
     else if(ty==="orgue"){ /* deux rangs de principal, l'un un rien plus haut : la voix céleste */
       [-1,1].forEach(sg=>{ const os=mk("sine",0.5,sg*w*0.4,f,0.69); os.setPeriodicWave(organWave("plein")); }); }
@@ -692,7 +693,7 @@ function buildEngine(ctx, S, o){
   }
   /* caisse de résonance : quelques bosses (fréquence, gain en dB, Q) propres à chaque instrument, entre la corde et la sortie */
   function body(src,peaks){ let h=src; peaks.forEach(([fq,gn,q])=>{ const b=ctx.createBiquadFilter(); b.type="peaking"; b.frequency.value=fq; b.gain.value=gn; b.Q.value=q; h.connect(b); h=b; }); return h; }
-  const BODY={l:[[175,6,1.4],[410,3.5,1.5],[2600,-2,1]], h:[[240,3.5,1],[880,2.5,1.2]], o:[[135,7,1.3],[290,4,1.4],[1800,-2.5,1]]};
+  const BODY={y:[[230,5,1.2],[720,3,1.5],[3100,3,2]], l:[[175,6,1.4],[410,3.5,1.5],[2600,-2,1]], h:[[240,3.5,1],[880,2.5,1.2]], o:[[135,7,1.3],[290,4,1.4],[1800,-2.5,1]]};
   /* bruits de jeu : glissement de doigt sur la corde, de temps en temps (déterministe : même rendu, même bruit) */
   const hz=x=>{ const v=Math.sin(x*12.9898)*43758.5453; return v-Math.floor(v); };
   function squeak(t,vel,dst){ const s=ctx.createBufferSource(); s.buffer=wb; const f=ctx.createBiquadFilter(); f.type="bandpass"; f.Q.value=4; f.frequency.setValueAtTime(1300,t-0.06); f.frequency.exponentialRampToValueAtTime(3200,t);
@@ -706,6 +707,7 @@ function buildEngine(ctx, S, o){
   const PHYS={
     luth(t,f,vel,len,dst,pan){ pluck(t,f,vel,dst,pan,{id:"l",t60:2.6,bright:0.55,pos:0.18},4.2); },
     harpe(t,f,vel,len,dst,pan){ pluck(t,f,vel*1.05,dst,pan,{id:"h",t60:4.2,bright:0.72,pos:0.25},3.6); },
+    lyre(t,f,vel,len,dst,pan){ pluck(t,f,vel,dst,pan,{id:"y",t60:1.9,bright:0.95,pos:0.11},7.4); },
     oud(t,f,vel,len,dst,pan){ pluck(t,f,vel*0.62,dst,pan,{id:"o1",t60:3,bright:0.6,pos:0.12},6.2); pluck(t,f*1.0023,vel*0.55,dst,pan,{id:"o2",t60:3,bright:0.6,pos:0.12},6.2); noiseHit(t,vel*0.12,2600,0.03,"bandpass",dst); }
   };
   const wgCache=new Map();
@@ -723,6 +725,7 @@ function buildEngine(ctx, S, o){
   }
   PHYS.flute=(t,f,vel,len,dst,pan)=>wgPlay("f",t,f,vel,Math.max(0.2,len),dst,pan,{noise:0.12},1.2,false);
   PHYS.ney=(t,f,vel,len,dst,pan)=>wgPlay("f",t,f,vel,Math.max(0.25,len),dst,pan,{noise:0.24,att:0.12,pressure:0.97},1.15,true);
+  PHYS.syrinx=(t,f,vel,len,dst,pan)=>wgPlay("f",t,f,vel,Math.max(0.2,len),dst,pan,{noise:0.38,att:0.05,pressure:0.95},1.0,true); /* flûte de Pan : beaucoup de souffle, attaque vive */
   PHYS.archet=(t,f,vel,len,dst,pan)=>{ if(f>800) return INST.archet(t,f,vel,len,dst,pan); wgPlay("b",t,f,vel,Math.max(0.3,len),dst,pan,{},1.8,false); };
   /* ---------- piano droit de bastringue : partiels inharmoniques, deux cordes désaccordées par note, étouffoir au relâchement ---------- */
   const BASS_CURVE=(()=>{ const n=1024, c=new Float32Array(n); for(let i=0;i<n;i++){ const x=i/(n-1)*2-1; c[i]=Math.tanh(1.8*x)/Math.tanh(1.8); } return c; })();
@@ -802,6 +805,28 @@ function buildEngine(ctx, S, o){
     const c=ctx.createOscillator(), c2=ctx.createOscillator(), g2=G(0.25); c.frequency.value=f; c2.frequency.value=f*2.003; c.connect(e); c2.connect(g2); g2.connect(e);
     const m1=fmOp(t,f,3.5,1.2+2.5*v,dur/5,c.frequency,0.05), m2=fmOp(t,f,1.41,0.6*v,dur/8,c2.frequency,0);
     [c,c2,m1,m2].forEach(o=>{ o.start(t); o.stop(t+dur+0.1); });
+  };
+  /* ---------- Antiquité ----------
+     aulos : la double flûte à anche des Grecs ; une anche nasillarde (scie et carré mêlés, formants vers 1,1 et 2,6 kHz), prise par en dessous, avec un souffle rauque.
+     cornu : le cor romain, un cuivre poussé jusqu'à la saturation. hydraulis : l'orgue à eau, des tuyaux dont l'air tremble et bouillonne. */
+  INST.aulos=(t,f,vel,len,dst,pan)=>{
+    const L=Math.max(0.12,len), a=ctx.createOscillator(), b=ctx.createOscillator(), gb=G(0.5), fl=ctx.createBiquadFilter(), f1=ctx.createBiquadFilter(), f2=ctx.createBiquadFilter();
+    a.type="sawtooth"; b.type="square"; const sc=hz(t*1.7+f)<0.5?0.95:0.985; [a,b].forEach(o=>{ o.frequency.setValueAtTime(f*sc,t); o.frequency.exponentialRampToValueAtTime(f,t+0.08); }); b.detune.value=6;
+    fl.type="lowpass"; fl.frequency.value=clamp(f*6+2500*Math.min(1,vel*4),1500,7000); fl.Q.value=0.7;
+    f1.type="peaking"; f1.frequency.value=1100; f1.gain.value=7; f1.Q.value=1.6; f2.type="peaking"; f2.frequency.value=2600; f2.gain.value=5; f2.Q.value=2;
+    const e=envA(t,0.025,vel*0.78,0.07,L), vb=ctx.createOscillator(), vg=G(0); vb.frequency.value=5.4; vb.connect(vg); vg.connect(a.detune); vg.connect(b.detune); vg.gain.setValueAtTime(0,t+0.2); vg.gain.linearRampToValueAtTime(10,t+Math.min(1,L));
+    a.connect(fl); b.connect(gb); gb.connect(fl); fl.connect(f1); f1.connect(f2); f2.connect(e); route(e,pan,dst);
+    noiseHit(t,vel*0.22,1800,Math.min(0.35,L),"bandpass",dst,1.4,0.02);
+    [a,b,vb].forEach(o=>{ o.start(t); o.stop(t+L+0.15); });
+  };
+  INST.lyre=(t,f,vel,len,dst,pan)=>INST.harpe(t,f,vel,len*0.6,dst,pan); INST.syrinx=(t,f,vel,len,dst,pan)=>INST.ney(t,f,vel,len,dst,pan);
+  INST.cornu=(t,f,vel,len,dst,pan)=>{ const sh=ctx.createWaveShaper(); sh.curve=BASS_CURVE; const g=G(0.6); sh.connect(g); g.connect(dst); INST.cuivre(t,f,vel*1.3,len,sh,pan); noiseHit(t,vel*0.15,900,0.05,"bandpass",dst,2); };
+  INST.hydraulis=(t,f,vel,len,dst,pan)=>{
+    const L=Math.max(0.2,len), x=ctx.createOscillator(); x.setPeriodicWave(organWave("positif")); x.frequency.value=f/2;
+    const e=envA(t,0.06,vel*0.95,0.15,L), am=G(1), tr=ctx.createOscillator(), tg=G(0.12); tr.frequency.value=4.5+2*hz(t+f); tr.connect(tg); tg.connect(am.gain);
+    x.connect(am); am.connect(e); route(e,pan,dst); chiff(t,f,vel,dst);
+    const ns=ctx.createBufferSource(); ns.buffer=wb; ns.loop=true; const bp=ctx.createBiquadFilter(); bp.type="bandpass"; bp.frequency.value=320; bp.Q.value=3; const ng=G(vel*0.12); ns.connect(bp); bp.connect(ng); ng.connect(e); /* l'eau qui bouillonne */
+    [x,tr].forEach(o=>{ o.start(t); o.stop(t+L+0.3); }); ns.start(t,hz(t)*1.5); ns.stop(t+L+0.3);
   };
   /* ---------- sifflet : presque un sinus, un léger souffle, un vibrato qui s'installe et une petite glissade d'attaque ---------- */
   INST.sifflet=(t,f,vel,len,dst,pan)=>{
@@ -898,7 +923,7 @@ function buildEngine(ctx, S, o){
     INST.accordeon=(t,f,vel,len,dst,pan)=>{ ac(t,f,vel,len,dst,pan); noiseHit(t,vel*0.12,3200,0.01,"bandpass",dst,2); noiseHit(t+Math.max(0.15,len),vel*0.08,900,0.12,"bandpass",dst,0.8,0.02); }; }
   const instRaw=(name,fb)=>(physOn()&&PHYS[name])||INST[name]||INST[fb||"luth"];
   /* porte passe-bas (à la manière d'une vactrol) : sur les sons pincés et frappés, le filtre se referme avec le son, plus vite quand la porte est réglée haut ; un son boisé, rond */
-  const LPGI={luth:1,harpe:1,oud:1,guitare:1,kalimba:1,carillon:1,verre:1,bol:1,piano:1};
+  const LPGI={lyre:1,luth:1,harpe:1,oud:1,guitare:1,kalimba:1,carillon:1,verre:1,bol:1,piano:1};
   const instOf=(name,fb)=>{ const fn=instRaw(name,fb), a=(S.mel&&S.mel.lpg)||0; if(a<0.01||!LPGI[name]) return fn;
     return (t,f,vel,len,dst,pan)=>{ const lp=ctx.createBiquadFilter(); lp.type="lowpass"; lp.Q.value=0.4; const v=Math.min(1,vel*4), c0=Math.min(16000,f*(3+26*v)), c1=Math.max(120,f*1.1), tau=0.05+0.6*(1-a);
       lp.frequency.setValueAtTime(c0,t); lp.frequency.setTargetAtTime(c1,t+0.004,tau); lp.connect(dst); fn(t,f,vel*(1+0.35*a),len,lp,pan); }; };
@@ -1115,6 +1140,10 @@ function buildEngine(ctx, S, o){
       stomp:(t,v)=>{ membrane(t,v,48,1.2,0.95); noiseHit(t,v*0.3,180,0.15,"lowpass",PB); },
       tap:(t,v)=>{ membrane(t,v*0.75,118,0.32,0.55); ping(t,v*0.25,1250,1150,0.01,0.05); },
       shaker:(t,v)=>{ ping(t,v*1.4,1650,1500,0.01,0.03); noiseHit(t,v*0.4,2400,0.02,"bandpass",PB,3); }},
+    antique:{ /* tympanon (tambour sur cadre grave), crotales (claquettes de bois), cymbalettes */
+      stomp:(t,v)=>{ membrane(t,v*0.95,80,0.5,0.75); noiseHit(t,v*0.25,300,0.05,"lowpass",PB); },
+      tap:(t,v)=>{ ping(t,v*0.55,2100,1900,0.005,0.03); ping(t+0.016,v*0.45,2250,2050,0.005,0.03); noiseHit(t,v*0.35,3000,0.025,"bandpass",PB,2); },
+      shaker:(t,v)=>metal(t,v*0.5,[1,1.53,2.11],3600,0.22,4000)},
     bastringue:{ /* caisse au balai, coup de botte sur le plancher, tambourin */
       stomp:(t,v)=>{ ping(t,v*1.1,125,70,0.06,0.2); noiseHit(t,v*0.4,700,0.05,"lowpass",PB); },
       tap:(t,v)=>{ noiseHit(t,v,2600,0.16,"bandpass",PB,0.7,0.012); membrane(t,v*0.35,210,0.1,0.3); },
@@ -1123,6 +1152,9 @@ function buildEngine(ctx, S, o){
   /* grilles propres à chaque batterie, case par croche : « avant/après » = sur la croche / sur la double croche qui suit.
      K grosse frappe, k frappe grave légère, T frappe aiguë, t frappe aiguë légère, h remplissage (selon la densité), H remplissage toujours, g frappe fantôme (selon le réglage) */
   const KPAT={
+    antique:{ /* péan en 5/8 (deux plus trois), dactyle de l'hexamètre en 2/4 (long, bref, bref) */
+      "5/8":["K/","h/","T/","h/","t/"], "2/4":["K/","h/","T/","t/"], "4/4":["K/","h/","T/","h/","k/","h/","T/","t/t"], "3/4":["K/","h/","T/","h/","t/","h/"],
+      "6/8":["K/","h/","t/","T/","h/","t/"], "7/8":["K/","h/","T/","h/","k/","T/","h/"]},
     caisse:{ /* marche : grosse caisse aux temps forts, caisse claire aux temps 2 et 4, roulements */
       "4/4":["Kh/","h/g","Th/","h/","kh/","h/g","Th/t","t/t"], "2/4":["Kh/","h/g","Th/","t/t"], "3/4":["Kh/","h/","Th/","h/g","Th/t","t/"],
       "6/8":["Kh/","h/","t/g","Th/","h/","t/t"], "12/8":["K/","h/","t/","T/","h/","t/","k/","h/","t/","T/","h/","t/t"]},
@@ -1140,12 +1172,12 @@ function buildEngine(ctx, S, o){
       "6/8":["K/","t/t","T/","K/","t/t","T/"], "12/8":["K/","h/","T/","k/","h/","T/","K/","h/","T/","k/","h/","T/"]} /* 6/8 : le galop, sabot-sabot-sabot */
   };
   /* relances : [sur le dernier temps toutes les quatre mesures, roulement des deux derniers temps de la section] */
-  const KFILL={caisse:["T/t","T/T"], electro:["TH/T","T/T"], darbouka:["T/t","T/T"], taiko:["T/","T/T"], bastringue:["t/t","T/t"]};
+  const KFILL={antique:["T/t","T/T"], caisse:["T/t","T/T"], electro:["TH/T","T/T"], darbouka:["T/t","T/T"], taiko:["T/","T/T"], bastringue:["t/t","T/t"]};
   const lastTc=new Map(), lastT=P=>{ if(!lastTc.has(P)){ let j=-1; P.forEach((x,i)=>{ if(x.split("/")[0].indexOf("T")>=0) j=i; }); lastTc.set(P,j); } return lastTc.get(P); };
   const kitPat=()=>{ const P=KPAT[S.perc.kit]; return P&&P[S.meter]&&P[S.meter].length===barE?P[S.meter]:null; };
   const MD=METERS[S.meter].d||2; /* croches par temps */
   /* humanisation (ms) : retard propre à chaque son, flottement aléatoire, et variation de la nuance */
-  const KHUM={cadre:{lay:{K:0,T:4,h:-2},jit:6,vj:0.1}, caisse:{lay:{K:0,T:3,h:0},jit:3,vj:0.06}, electro:{lay:{K:0,T:0,h:0},jit:0.5,vj:0.04},
+  const KHUM={antique:{lay:{K:0,T:2,h:-3},jit:6,vj:0.12}, cadre:{lay:{K:0,T:4,h:-2},jit:6,vj:0.1}, caisse:{lay:{K:0,T:3,h:0},jit:3,vj:0.06}, electro:{lay:{K:0,T:0,h:0},jit:0.5,vj:0.04},
     darbouka:{lay:{K:0,T:-3,h:5},jit:5,vj:0.12}, taiko:{lay:{K:0,T:6,h:0},jit:8,vj:0.1}, bastringue:{lay:{K:0,T:9,h:-4},jit:7,vj:0.12}};
   const kit=()=>KITS[S.perc.kit]||KITS.cadre;
   const stomp=(t,v)=>{ PB=pK; kit().stomp(t,v); }, tap=(t,v)=>{ PB=pT; kit().tap(t,v); }, shaker=(t,v)=>{ PB=pH; kit().shaker(t,v); };

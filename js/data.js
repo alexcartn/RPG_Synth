@@ -37,7 +37,8 @@ const SCALE_GROUPS = [
     ["rast","Maqam Rast (tierce et septième neutres)",[0,2,3.5,5,7,9,10.5]],
     ["bayati","Maqam Bayati",[0,1.5,3,5,7,8,10]],
     ["saba","Maqam Saba",[0,1.5,3,4,7,8,10]],
-    ["enharm","Enharmonique grec ancien",[0,0.5,1,5,7,7.5,8]]]],
+    ["enharm","Enharmonique grec ancien",[0,0.5,1,5,7,7.5,8]],
+    ["chromgr","Chromatique grec ancien",[0,1,2,5,7,8,9]]]],
   ["Personnel", [
     ["libre","Libre (dessinée sur le cercle)",null]]]
 ];
@@ -85,6 +86,7 @@ const METERS = {
   "3/4":{p:["S","h","T","h","T","h"], n:3, d:2},
   "2/4":{p:["S","h","T","h"], n:2, d:2},
   "7/8":{p:["S","h","T","h","s","h","t"], n:7, d:3},
+  "5/8":{p:["S","h","T","h","t"], n:5, d:2},
   "12/8":{p:["S","h","h","t","h","h","s","h","h","t","h","h"], n:12, d:3}
 };
 
@@ -392,8 +394,33 @@ const DUNGEON = [
     mel:{lvl:0.5, inst:"flute", dens:0.45, reg:1, span:1, leap:0.15, orn:0.25, deja:0.75, loop:2}, canon:{lvl:0}, perc:{lvl:0}, amb:{vent:0.15}, nature:{oiseaux:0.25, ruisseau:0.2},
     fx:{algo:"salle", rev:0.5, size:4, dark:0.45, wow:0.1, hiss:0.05, veil:0.2, sat:0.06}}, "vieille forêt : luth, flûte, cordes, oiseaux"]
 ];
+const ANTIQUE = [
+  ["Agora", {car:{grav:0.4, aud:0.5, orn:0.5, sil:0.35, rep:0.6}, seed:4801, root:4, scales:["phrygien","chromgr",""], tempo:84, meter:"4/4", swing:0, tension:0.4,
+    drone:{lvl:0.3, timbre:"aulos", bright:0.35}, mel:{lvl:0.6, inst:"lyre", dens:0.55, reg:1, span:2, leap:0.2, orn:0.25}, canon:{lvl:0.25, inst:"syrinx", delay:2, shift:"oct+"},
+    pad:{lvl:0}, perc:{lvl:0.25, shaker:0.3, ghost:0.2}, amb:{murmur:0.45, clink:0.15, feu:0}, fx:{rev:0.25, size:2, sat:0.05}}, "l'agora : la lyre, la foule, l'après-midi"],
+  ["Delphi", {car:{grav:0.75, aud:0.3, orn:0.4, sil:0.6, rep:0.6}, seed:1290, root:4, scales:["enharm","phrygien",""], tempo:50, meter:"4/4", swing:0, tension:0.55, sectionBars:12,
+    drone:{lvl:0.7, timbre:"aulos", bright:0.3, drift:0.6}, mel:{lvl:0.45, inst:"aulos", dens:0.2, reg:0, span:1, leap:0.15, orn:0.35}, canon:{lvl:0.25, inst:"voix", delay:3, shift:"oct-"},
+    pad:{lvl:0.35, timbre:"choeur", len:6, motion:0.3}, perc:{lvl:0}, amb:{murmur:0, clink:0, feu:0.3, vent:0.25}, fx:{algo:"salle", rev:0.6, size:6, dark:0.6, veil:0.3, sat:0.05}}, "Delphes : l'oracle, l'aulos, la fumée, un chœur grave"],
+  ["Sparta", {mus:{form:"ostinato"}, car:{grav:0.7, aud:0.75, orn:0.25, sil:0.15, rep:0.85}, seed:480, root:2, scales:["phrygien","dorien",""], tempo:120, meter:"5/8", swing:0, tension:0.75,
+    drone:{lvl:0.55, timbre:"aulos", bright:0.45}, mel:{lvl:0.6, inst:"aulos", dens:0.8, reg:1, span:1, leap:0.2, orn:0.2, deja:0.7, loop:2}, canon:{lvl:0},
+    pad:{lvl:0.25, timbre:"choeur", len:2, voices:3}, perc:{lvl:0.7, shaker:0.3, ghost:0.3}, amb:{vent:0.15}, fx:{rev:0.25, size:2.5, sat:0.12}}, "Sparte : la phalange en marche, l'aulos, le péan à cinq temps"],
+  ["Thermopylae", {mus:{arc:"arche"}, car:{grav:0.8, aud:0.35, orn:0.15, sil:0.6, rep:0.6}, seed:4800, root:9, scales:["chromgr","phrygien",""], tempo:56, meter:"4/4", swing:0, tension:0.7,
+    drone:{lvl:0.5, timbre:"aulos", bright:0.25, drift:0.6}, mel:{lvl:0.45, inst:"lyre", dens:0.2, reg:0, span:1, leap:0.2}, canon:{lvl:0},
+    pad:{lvl:0.2, timbre:"choeur", len:4}, perc:{lvl:0.35, shaker:0, ghost:0.1}, amb:{vent:0.4}, nature:{mer:0.3}, fx:{rev:0.4, size:4, dark:0.55, sat:0.08}}, "les Thermopyles : l'attente avant la bataille"],
+  ["Roma Triumphans", {mus:{form:"rondeau", arc:"arche"}, car:{grav:0.45, aud:0.8, orn:0.2, sil:0.15, rep:0.8}, seed:753, root:7, scales:["mixolydien","ionien",""], tempo:96, meter:"4/4", swing:0, tension:0.6,
+    drone:{lvl:0.2, timbre:"orgue"}, mel:{lvl:0.6, inst:"cornu", dens:0.6, reg:1, span:1, leap:0.35, deja:0.7, loop:2}, canon:{lvl:0.3, inst:"hydraulis", delay:2, shift:"oct-"},
+    pad:{lvl:0.3, timbre:"orgue", len:2, voices:3, bass:0.7}, perc:{lvl:0.6, kit:"caisse", shaker:0.3, ghost:0.3}, amb:{murmur:0.6, clink:0}, fx:{algo:"salle", rev:0.35, size:3.5, sat:0.1}}, "le triomphe à Rome : cornu, hydraulis, tambours, la foule"],
+  ["Odyssea", {car:{grav:0.5, aud:0.45, orn:0.35, sil:0.4, rep:0.6}, seed:800, root:2, scales:["phrygien","eolien",""], tempo:66, meter:"2/4", swing:0, tension:0.45,
+    drone:{lvl:0.3, timbre:"aulos", bright:0.3, drift:0.6}, mel:{lvl:0.55, inst:"lyre", dens:0.45, reg:1, span:2, leap:0.2, orn:0.2}, canon:{lvl:0.3, inst:"syrinx", delay:2, shift:"oct+"},
+    pad:{lvl:0.2, timbre:"choeur", len:4}, perc:{lvl:0.25, shaker:0.2, ghost:0.15}, amb:{vent:0.3}, nature:{mer:0.6}, fx:{rev:0.4, size:4, dark:0.45, sat:0.05}}, "l'Odyssée : la mer, la lyre, la syrinx, le rythme de l'hexamètre"],
+  ["Hades", {car:{grav:0.9, aud:0.2, orn:0.2, sil:0.8, rep:0.6}, seed:666, root:1, scales:["enharm","chromgr",""], tempo:44, meter:"4/4", swing:0, tension:0.7, sectionBars:12,
+    drone:{lvl:0.8, timbre:"choeur", bright:0.2, drift:0.8}, mel:{lvl:0.35, inst:"voix", dens:0.12, reg:0, span:1, leap:0.2}, canon:{lvl:0.2, inst:"syrinx", delay:3, shift:"oct+"},
+    pad:{lvl:0.3, timbre:"machine", len:8, motion:0.3}, loops:{lvl:0.15, count:3, inst:"carillon", speed:1.3}, perc:{lvl:0}, amb:{vent:0.2, gouttes:0.4},
+    fx:{rev:0.75, size:9, room:"grotte", dark:0.8, veil:0.6, sat:0.15, wow:0.15, hiss:0.06}}, "les Enfers : le Styx, des voix, un chœur sous la terre"]
+];
 const UNIVERS = [
   {id:"dungeon", name:"Dungeon synth", tag:"accords, arpèges, flûtes et cordes de vieux claviers : la musique des donjons et des montagnes", items:DUNGEON},
+  {id:"antique", name:"Antiquité", tag:"Grèce, Sparte, Rome : aulos, lyre, cornu, et les gammes anciennes", items:ANTIQUE},
   {id:"medieval", name:"Médiéval", tag:"tavernes, cryptes, scriptoriums : le Moyen Âge à la cire et à la bière", items:MEDIEVAL},
   {id:"aventure", name:"Aventure", tag:"combat, voyage, embuscade, victoire : les temps forts d'une partie", items:AVENTURE},
   {id:"pirates", name:"Pirates", tag:"ports, chants de marins, tempêtes et îles au trésor", items:PIRATES},
@@ -412,7 +439,7 @@ UNIVERS.forEach(u=>{ if(u.id!=="medieval") u.items.forEach(it=>{ it[1].amb=Objec
 /* sonie : gain (dB) de chaque ambiance, mesuré hors ligne (BS.1770, 24 s, après le limiteur) pour viser -13 LUFS (-15 pour Calme) */
 const PRESET_NORM={"Taberna":-3.1,"Chorea":-3.3,"Crypta":-3.6,"Scriptorium":-8.1,"Turris":-3.8,"Tripudium":-2.3,"Pugna":-3.7,"Iter":-3.2,"Triumphus":-3.9,"Insidiae":-0.9,"Portus":0.3,"Navigium":-4.9,"Tempestas":-4.4,"Thesaurus":-5.1,"Skalda":-3.6,"Bellum":-4.2,"Fjordus":-6.0,"Runae":-2.2,"Fata":-5.1,"Aula Fatarum":-5.3,"Sylva Magica":1.3,"Lullaby":2.2,"Larva":-1.9,"Domus Obscura":-6.8,"Sacrificium":-5.3,"Cella":-3.6,"Desertum":2.8,"Saloon":0.6,"Duellum":-6.1,"Equitatus":-2.3,"Urbs Neon":-2.9,"Machina":-0.5,"Datum":-2.1,"Imber Toxicus":-3.5,"Sidera":3.1,"Nebula":-2.0,"Abyssus":-1.6,"Aegyptus":-2.0,"Eremus":-6.0,"Hortus":-5.3,"Bayati":-2.1,"Enharmonia":0.6,"Pluvia":-1.0,"Mare":-0.2,"Silva":-2.2,"Nox":1.6,"Somnus":-1.2,"Meditatio":-1.9,"Labor":-2.9};
 /* chaque univers a sa batterie ; un préréglage peut en citer une autre */
-const UNIV_KIT={dungeon:"taiko", medieval:"cadre", aventure:"caisse", pirates:"cadre", nordique:"taiko", feerie:"cadre", horreur:"taiko", western:"bastringue", cyber:"electro", espace:"electro", orient:"darbouka", nature:"cadre", calme:"cadre"};
+const UNIV_KIT={antique:"antique", dungeon:"taiko", medieval:"cadre", aventure:"caisse", pirates:"cadre", nordique:"taiko", feerie:"cadre", horreur:"taiko", western:"bastringue", cyber:"electro", espace:"electro", orient:"darbouka", nature:"cadre", calme:"cadre"};
 const UNIV_EUCL={cyber:0.5, orient:0.35};
 /* point de départ sur l'axe rituel ↔ chanson : les musiques de bourdon d'un côté, les chansons de l'autre */
 const UNIV_RC={antique:0.15, calme:0.15, espace:0.2, horreur:0.25, nature:0.25, orient:0.4, nordique:0.45, medieval:0.5, feerie:0.5, cyber:0.55, aventure:0.6, pirates:0.7, western:0.75, dungeon:0.8};

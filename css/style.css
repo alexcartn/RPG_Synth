@@ -927,6 +927,7 @@ body.veiling{overflow:hidden}
 .veil[data-u="espace"]{--parch:oklch(0.1 0.03 265); --parch-2:oklch(0.17 0.05 270); --ink:oklch(0.92 0.02 250); --ink-2:oklch(0.68 0.04 260); --rule:oklch(0.36 0.05 265); --rubric:oklch(0.8 0.11 245); --gold-d:oklch(0.9 0.08 90); --verd:oklch(0.75 0.13 320)}
 .veil[data-u="orient"]{--parch:oklch(0.15 0.045 275); --parch-2:oklch(0.22 0.06 275); --ink:oklch(0.92 0.035 85); --ink-2:oklch(0.72 0.05 80); --rule:oklch(0.42 0.06 275); --rubric:oklch(0.82 0.14 80); --gold-d:oklch(0.75 0.12 185); --verd:oklch(0.7 0.14 25)}
 .veil[data-u="nature"]{--parch:oklch(0.15 0.03 155); --parch-2:oklch(0.21 0.04 150); --ink:oklch(0.92 0.03 110); --ink-2:oklch(0.72 0.04 130); --rule:oklch(0.4 0.04 150); --rubric:oklch(0.82 0.13 115); --gold-d:oklch(0.86 0.12 85); --verd:oklch(0.76 0.09 220)}
+.veil[data-u="antique"]{--parch:oklch(0.16 0.025 60); --parch-2:oklch(0.22 0.035 55); --ink:oklch(0.93 0.025 85); --ink-2:oklch(0.72 0.035 75); --rule:oklch(0.42 0.04 55); --rubric:oklch(0.66 0.14 40); --gold-d:oklch(0.84 0.1 85); --verd:oklch(0.7 0.08 200)}
 .veil[data-u="dungeon"]{--parch:oklch(0.14 0.03 290); --parch-2:oklch(0.2 0.04 285); --ink:oklch(0.9 0.035 80); --ink-2:oklch(0.7 0.04 70); --rule:oklch(0.4 0.04 285); --rubric:oklch(0.74 0.13 50); --gold-d:oklch(0.84 0.11 88); --verd:oklch(0.72 0.08 170)}
 .veil[data-u="calme"]{--parch:oklch(0.18 0.015 235); --parch-2:oklch(0.24 0.02 230); --ink:oklch(0.92 0.015 220); --ink-2:oklch(0.72 0.02 225); --rule:oklch(0.42 0.025 230); --rubric:oklch(0.82 0.07 200); --gold-d:oklch(0.86 0.06 80); --verd:oklch(0.78 0.06 150)}
 .vl-head{position:absolute; inset:0 0 auto 0; z-index:2; display:flex; justify-content:space-between; align-items:flex-start; gap:var(--sp-lg); padding:var(--sp-lg) var(--sp-xl); pointer-events:none}
@@ -1047,7 +1048,7 @@ body.playing .veil-open{box-shadow:3px 3px 0 var(--rubric)}
 @media (max-width:640px){ .modes{flex-wrap:wrap; gap:var(--sp-xs) var(--sp-lg)} .modes .lnk{font-size:1.1rem} .help-open{margin-left:0} .veil-open{margin-left:auto} }
 
 /* ---------- sélecteur d'univers : douze touches séparées, la même famille que les gestes ---------- */
-.seek .seek-uni{display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:8px}
+.seek .seek-uni{display:grid; grid-template-columns:repeat(8,minmax(0,1fr)); gap:8px}
 .seek .seek-uni .lnk{position:relative; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; gap:7px; min-height:70px; padding:12px 6px 9px; border:1px solid var(--rule); border-bottom-width:1px; background:transparent; color:var(--ink); font:400 .78rem/1.15 var(--caps); letter-spacing:.1em; text-align:center; cursor:pointer; transition:background-color .12s var(--ease), color .12s var(--ease), border-color .12s var(--ease)}
 .seek .seek-uni .lnk::before{content:""; position:absolute; top:5px; right:5px; width:5px; height:5px; background:var(--rule)}
 .seek .seek-uni .lnk .ic{width:24px; height:24px; color:var(--ink-2)}

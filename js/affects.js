@@ -34,6 +34,7 @@ const AFF_SC={
   bayati:["intime, nostalgique, tendre",{nostalgique:1,mélancolique:.8,sacré:.4}],
   saba:["poignant, deuil, douleur",{tragique:1,mélancolique:.8,fataliste:.6,nostalgique:.5}],
   enharm:["archaïque, étrange, antique",{étrange:1,mystérieux:.8,sacré:.6,fataliste:.4}],
+  chromgr:["antique, plaintif, tendu",{tragique:1,mélancolique:.8,étrange:.6,sacré:.5}],
   libre:["à toi de le dire",{}]
 };
 /* tonalités : du caractère traditionnel des tons, repris librement (inspiration baroque, pas une règle) */

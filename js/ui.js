@@ -187,7 +187,7 @@ setInterval(()=>{ if(typeof atScaleSync==="function") atScaleSync(); if(live){ c
 
 /* ---------- construction des contrôles ---------- */
 const pct=v=>Math.round(v*100)+" %";
-const INST_OPTS=[["luth","Luth"],["harpe","Harpe"],["flute","Flûte"],["carillon","Carillon"],["orgue","Orgue positif"],["roues","Orgue à roues"],["oud","Oud (corde pincée)"],["ney","Ney (flûte soufflée)"],["kalimba","Kalimba"],["bol","Bol chantant"],["verre","Cloches de verre"],["synthe","Synthé doux"],["archet","Archet (violon, viole)"],["cuivre","Cuivre doux"],["guitare","Guitare (acier)"],["piano","Piano de bastringue"],["fmpiano","Piano électrique (FM)"],["fmcloche","Cloches FM"],["accordeon","Accordéon musette"],["voix","Voix (vocalise)"],["sifflet","Sifflet"],["harmonica","Harmonica"],["basse","Basse synthé (grave)"],["atelier","Synthé perso (Atelier)"]];
+const INST_OPTS=[["luth","Luth"],["harpe","Harpe"],["flute","Flûte"],["carillon","Carillon"],["orgue","Orgue positif"],["roues","Orgue à roues"],["oud","Oud (corde pincée)"],["ney","Ney (flûte soufflée)"],["kalimba","Kalimba"],["bol","Bol chantant"],["verre","Cloches de verre"],["synthe","Synthé doux"],["archet","Archet (violon, viole)"],["cuivre","Cuivre doux"],["guitare","Guitare (acier)"],["piano","Piano de bastringue"],["fmpiano","Piano électrique (FM)"],["fmcloche","Cloches FM"],["accordeon","Accordéon musette"],["voix","Voix (vocalise)"],["aulos","Aulos (double flûte à anche)"],["lyre","Lyre"],["syrinx","Syrinx (flûte de Pan)"],["cornu","Cornu (cor romain)"],["hydraulis","Hydraulis (orgue à eau)"],["sifflet","Sifflet"],["harmonica","Harmonica"],["basse","Basse synthé (grave)"],["atelier","Synthé perso (Atelier)"]];
 const DRIFT_OPTS=[["none","Rien"],["filtre","Éclat du bourdon"],["reverb","Réverbération"],["densite","Densité de la mélodie"],["pan","Place de la mélodie (pan)"],["tension","Tension"],["voile","Voile (aigus)"],["grain","Nuage de grains"]];
 /* seconde cible d'une dérive : la même liste, dans le même sens puis à l'envers */
 const DRIFT2_OPTS=DRIFT_OPTS.concat(DRIFT_OPTS.slice(1).map(([k,l])=>["-"+k,l+", à l'envers"]));
@@ -209,7 +209,7 @@ const UI=[
    {k:"meter",type:"select",label:"Mesure",opts:Object.keys(METERS).map(k=>[k,k]),restart:true},
    {k:"swing",type:"range",label:"Swing",min:0,max:1,step:0.01,fmt:pct},
    {k:"perc.lvl",type:"range",label:"Percussion",min:0,max:1,step:0.01,fmt:pct},
-   {k:"perc.kit",type:"select",label:"Batterie",opts:[["cadre","Tambour sur cadre"],["caisse","Grosse caisse et caisse claire"],["taiko","Grand tambour, bâton, claquoir"],["darbouka","Darbouka et riqq"],["bastringue","Balais, botte et tambourin"],["electro","Boîte à rythmes"]]}]},
+   {k:"perc.kit",type:"select",label:"Batterie",opts:[["cadre","Tambour sur cadre"],["caisse","Grosse caisse et caisse claire"],["taiko","Grand tambour, bâton, claquoir"],["darbouka","Darbouka et riqq"],["bastringue","Balais, botte et tambourin"],["electro","Boîte à rythmes"],["antique","Tympanon, crotales, cymbalettes"]]}]},
   {fin:"Réglages de la percussion", items:[
    {k:"perc.shaker",type:"range",label:"Densité du shaker",min:0,max:1,step:0.01,fmt:pct},
    {k:"perc.ghost",type:"range",label:"Frappes fantômes",min:0,max:1,step:0.01,fmt:pct},
@@ -217,7 +217,7 @@ const UI=[
  {num:"III", title:"Bourdon", fr:"", sub:"Sous-grave, tonique, quinte, octaves. La quinte glisse vers un degré voisin de la gamme.", groups:[
   {items:[
    {k:"drone.lvl",type:"range",label:"Niveau",min:0,max:1,step:0.01,fmt:pct},
-   {k:"drone.timbre",type:"select",label:"Timbre",opts:[["anche","Anche (cornemuse)"],["orgue","Orgue de chambre"],["choeur","Chœur (voyelles)"],["bol","Bol chantant"],["machine","Machine à cordes"],["pur","Sinus pur"]],restart:true},
+   {k:"drone.timbre",type:"select",label:"Timbre",opts:[["anche","Anche (cornemuse)"],["orgue","Orgue de chambre"],["choeur","Chœur (voyelles)"],["bol","Bol chantant"],["machine","Machine à cordes"],["aulos","Aulos (anche nasillarde)"],["pur","Sinus pur"]],restart:true},
    {k:"drone.bright",type:"range",label:"Éclat",min:0,max:1,step:0.01,fmt:pct,restart:true},
    {k:"drone.glide",type:"range",label:"Quinte mobile",min:0,max:1,step:0.01,fmt:pct}]},
   {fin:"Réglages du bourdon", items:[

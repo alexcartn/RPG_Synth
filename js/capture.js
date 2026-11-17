@@ -14,7 +14,7 @@ function capFmtBuild(){
 }
 function capUI(){
   const b=$("capBtn"), n=$("capNote"); if(!b) return;
-  b.disabled=!live&&!CAP.on; b.setAttribute("aria-pressed",CAP.on?"true":"false"); b.textContent=CAP.on?"Arrêter et enregistrer":"Capturer la lecture";
+  b.disabled=!live&&!CAP.on; b.setAttribute("aria-pressed",CAP.on?"true":"false"); b.innerHTML=(CAP.on?ic("arreter"):ic("capturer"))+(CAP.on?"Arrêter et enregistrer":"Capturer la lecture");
   if(n&&!CAP.on) n.textContent=live?"Garde ce que tu entends, dans le format choisi.":"Lance la lecture, puis capture ce qui te plaît.";
 }
 function capTick(){ const n=$("capNote"); if(!CAP.on||!n||!live) return; const s=Math.round(live.ctx.currentTime-CAP.t0); n.textContent="Capture en cours : "+Math.floor(s/60)+":"+String(s%60).padStart(2,"0"); }

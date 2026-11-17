@@ -47,11 +47,12 @@ function paintKnob(el,spec){
   JEU.seen[spec.id]=v;
   if(spec.dst&&typeof synRings==="function") synRings(el,spec);
 }
+const ICK={vol:"volume",dens:"densite"};
 function makeKnob(spec){
   const el=document.createElement("div"); el.className="knob"; el.setAttribute("role","slider"); el.tabIndex=0;
   el.setAttribute("aria-label",spec.label); if(spec.tip) el.dataset.tip=spec.tip+" Glisse vers le haut ou le bas, molette ou flèches du clavier."; el.setAttribute("aria-valuemin","0"); el.setAttribute("aria-valuemax","100");
   let ticks=""; for(let i=0;i<=10;i++){ const a=A0+(A1-A0)*i/10, [x0,y0]=pol(34,a), [x1,y1]=pol(i%5===0?39:37,a); ticks+='<line x1="'+x0.toFixed(1)+'" y1="'+y0.toFixed(1)+'" x2="'+x1.toFixed(1)+'" y2="'+y1.toFixed(1)+'"/>'; }
-  el.innerHTML='<svg viewBox="0 0 80 80" aria-hidden="true"><g class="tk">'+ticks+'</g><path class="trk" d="'+arcPath(30,A0,A1)+'"/><path class="val" d=""/><circle class="cap" cx="40" cy="40" r="20"/><line class="ndl" x1="40" y1="40" x2="40" y2="24"/></svg><span class="kl">'+spec.label+'</span><output class="kv"></output>';
+  el.innerHTML='<svg viewBox="0 0 80 80" aria-hidden="true"><g class="tk">'+ticks+'</g><path class="trk" d="'+arcPath(30,A0,A1)+'"/><path class="val" d=""/><circle class="cap" cx="40" cy="40" r="20"/><line class="ndl" x1="40" y1="40" x2="40" y2="24"/></svg><span class="kl">'+ic(ICK[spec.id]||spec.id)+spec.label+'</span><output class="kv"></output>';
   let dragging=false, y0=0, v0=0, ring=null;
   if(spec.dst) el.dataset.dst=spec.dst;
   el.addEventListener("pointerdown",e=>{ if(spec.dst&&e.target.closest&&e.target.closest(".dr")){ ring=synRingStart(el,spec,e); if(ring){ el.setPointerCapture(e.pointerId); e.preventDefault(); return; } }

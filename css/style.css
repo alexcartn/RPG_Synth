@@ -1024,3 +1024,41 @@ body.playing .veil-open{box-shadow:3px 3px 0 var(--rubric)}
 @media (max-height:720px){ .vl-mix .dw-strip input.vert{height:84px} }
 @media (max-width:760px){ .vl-mix{left:var(--sp-md); right:var(--sp-md); width:auto; max-width:none} }
 @media (prefers-reduced-motion:reduce){ .vl-mix{transition:none} }
+
+/* ---------- icônes : trait de 1,6, bouts carrés, un carré cinabre par icône ---------- */
+.ic{width:1.15em; height:1.15em; flex:none; fill:none; stroke:currentColor; stroke-width:1.6; stroke-linecap:square; stroke-linejoin:miter; overflow:visible; vertical-align:-.2em}
+.ic .a{fill:var(--rubric); stroke:none}
+.ic .f{fill:currentColor; stroke:none}
+.modes .lnk,.help-open,.seek-uni .lnk,.seek-rnd{display:inline-flex; align-items:center; gap:.45em}
+.modes .lnk .ic{width:1.05em; height:1.05em}
+.seek-uni .lnk .ic{width:1.05em; height:1.05em; color:var(--ink-2)}
+.seek-uni .lnk:hover .ic,.seek-uni .lnk[aria-current="true"] .ic{color:var(--rubric)}
+.btn .ic,.jeu-gest .btn .ic{width:1.2em; height:1.2em; margin-right:.55em; vertical-align:-.25em}
+.jeu-gest .btn,.jeu-actions>.btn,.capbox .btn{display:inline-flex; align-items:center}
+.knob .kl{display:inline-flex; align-items:center; justify-content:center; gap:.4em}
+.knob .kl .ic{width:1em; height:1em; color:var(--ink-2)}
+.veil-open .ic{width:20px; height:20px}
+.vl-key .ic{width:18px; height:18px}
+.vl-key .ic .a{fill:var(--rubric)}
+
+@media (max-width:640px){ .modes{flex-wrap:wrap; gap:var(--sp-xs) var(--sp-lg)} .modes .lnk{font-size:1.1rem} .help-open{margin-left:0} .veil-open{margin-left:auto} }
+
+/* ---------- sélecteur d'univers : douze touches séparées, la même famille que les gestes ---------- */
+.seek .seek-uni{display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:8px}
+.seek .seek-uni .lnk{position:relative; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; gap:7px; min-height:70px; padding:12px 6px 9px; border:1px solid var(--rule); border-bottom-width:1px; background:transparent; color:var(--ink); font:400 .78rem/1.15 var(--caps); letter-spacing:.1em; text-align:center; cursor:pointer; transition:background-color .12s var(--ease), color .12s var(--ease), border-color .12s var(--ease)}
+.seek .seek-uni .lnk::before{content:""; position:absolute; top:5px; right:5px; width:5px; height:5px; background:var(--rule)}
+.seek .seek-uni .lnk .ic{width:24px; height:24px; color:var(--ink-2)}
+.seek .seek-uni .lnk span{display:block; text-wrap:balance}
+.seek .seek-uni .lnk:hover,.seek .seek-uni .lnk:focus-visible{border-color:var(--ink); color:var(--ink); outline:none}
+.seek .seek-uni .lnk:hover .ic{color:var(--ink)}
+.seek .seek-uni .lnk[aria-current="true"]{background:var(--ink); border-color:var(--ink); color:var(--parch)}
+.seek .seek-uni .lnk[aria-current="true"]::before{background:var(--gold)}
+.seek .seek-uni .lnk[aria-current="true"] .ic{color:var(--parch)}
+.seek .seek-uni .lnk[aria-current="true"] .ic .a{fill:var(--gold)}
+/* le tirage au sort est une action, pas un univers : bordure en pointillés, à part */
+.seek .seek-uni .seek-rnd{margin:0; padding:12px 6px 9px; border:1px dashed var(--ink-2); color:var(--ink-2); font-size:.78rem}
+.seek .seek-uni .seek-rnd:hover{border-style:solid; color:var(--rubric)}
+@media (max-width:1000px){ .seek .seek-uni{grid-template-columns:repeat(4,minmax(0,1fr))} }
+@media (max-width:640px){ .seek .seek-uni{grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px} .seek .seek-uni .lnk{min-height:64px} }
+@media (prefers-reduced-motion:reduce){ .seek .seek-uni .lnk{transition:none} }
+.seek .seek-tag{margin-top:10px}

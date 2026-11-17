@@ -440,6 +440,35 @@ UNIVERS.forEach(u=>{ if(u.id!=="medieval") u.items.forEach(it=>{ it[1].amb=Objec
 const PRESET_NORM={"Taberna":-5.5,"Chorea":-3.4,"Crypta":-3.7,"Scriptorium":-7.9,"Turris":-4.0,"Tripudium":-3.6,"Pugna":-4.4,"Iter":-3.3,"Triumphus":-5.4,"Insidiae":-0.5,"Portus":0.3,"Navigium":-4.9,"Tempestas":-5.3,"Thesaurus":-5.1,"Skalda":-3.7,"Bellum":-4.5,"Fjordus":-6.0,"Runae":-2.3,"Fata":-5.1,"Aula Fatarum":-4.7,"Sylva Magica":1.3,"Lullaby":2.2,"Larva":-2.2,"Domus Obscura":-5.7,"Sacrificium":-5.2,"Cella":-3.7,"Desertum":2.7,"Saloon":0.4,"Duellum":-6.1,"Equitatus":-3.6,"Urbs Neon":-2.9,"Machina":-0.6,"Datum":-2.0,"Imber Toxicus":-3.6,"Sidera":3.1,"Nebula":-1.5,"Abyssus":-1.6,"Aegyptus":-2.4,"Eremus":-6.0,"Hortus":-5.3,"Bayati":-2.2,"Enharmonia":0.5,"Pluvia":-1.7,"Mare":-0.2,"Silva":-1.9,"Nox":-0.2,"Somnus":0.4,"Meditatio":-1.5,"Labor":-3.6,"Montagne":-5.2,"Hiems":-6.7,"Silva Antiqua":-6.4,"Agora":0.4,"Thermopylae":-1.9,"Odyssea":-0.9,"Hades":-2.1,"Custos":-7.4,"Castellum":-6.9,"Delphi":-2.0,"Sparta":-3.6,"Roma Triumphans":-5.3};
 /* chaque univers a sa batterie ; un préréglage peut en citer une autre */
 const UNIV_KIT={antique:"antique", dungeon:"taiko", medieval:"cadre", aventure:"caisse", pirates:"cadre", nordique:"taiko", feerie:"cadre", horreur:"taiko", western:"bastringue", cyber:"electro", espace:"electro", orient:"darbouka", nature:"cadre", calme:"cadre"};
+/* réglage fin, ambiance par ambiance : où elle se place entre rituel et chanson, ce qu'elle emprunte aux voix (arpège, plain-chant, voix), le tempérament de son époque, ses bêtes */
+const PRESET_TUNE={
+  /* Dungeon synth : chansons, sauf l'hiver qui tient du rituel ; arpège génératif pour l'hiver, chevaux à l'écurie du château, orgue en Werckmeister */
+  Hiems:{rc:0.6, arp:{pat:"auto"}}, Castellum:{temper:"werck", nature:{chevaux:0.08}},
+  /* Antiquité : accord pythagoricien grec ; Sparte et Rome marchent, Rome est une fanfare */
+  Agora:{rc:0.3, temper:"pyth"}, Delphi:{temper:"pyth", loops:{lvl:0.12, count:2, inst:"bol", speed:1.6}}, Sparta:{rc:0.35, temper:"pyth"}, Thermopylae:{temper:"pyth"}, Odyssea:{rc:0.3, temper:"pyth"}, Hades:{temper:"pyth"},
+  "Roma Triumphans":{rc:0.6},
+  /* Médiéval : chant sur bourdon en pythagoricien, danses à accords en mésotonique ; la tour du mage a un arpège qui mute ; un hibou autour de la tour */
+  Taberna:{temper:"meso"}, Chorea:{temper:"meso", fx:{algo:"salle"}}, Tripudium:{temper:"meso", fx:{algo:"salle"}}, Crypta:{temper:"pyth"}, Turris:{arp:{pat:"auto"}, nature:{hibou:0.15}},
+  /* Aventure : le voyage a son luth en arpège, l'embuscade retient son souffle */
+  Iter:{arp:{lvl:0.3, inst:"luth", pat:"vaetvient", rate:1, reg:1, span:1}}, Triumphus:{rc:0.65}, Insidiae:{rc:0.35},
+  /* Pirates */
+  Tempestas:{rc:0.6}, Thesaurus:{rc:0.55},
+  /* Nordique : la veillée a une lyre qui improvise, les corbeaux d'Odin tournent sur le rituel */
+  Skalda:{arp:{lvl:0.25, inst:"lyre", pat:"auto", rate:1, reg:1, span:1}}, Bellum:{rc:0.5}, Fjordus:{rc:0.3}, Runae:{rc:0.25, nature:{corbeaux:0.12}},
+  /* Féerie : le bal est une valse avec sa harpe, en mésotonique ; la berceuse a sa harpe et des grillons */
+  "Aula Fatarum":{rc:0.75, temper:"meso", arp:{lvl:0.3, inst:"harpe", pat:"vaetvient", rate:1, reg:1, span:1}}, "Sylva Magica":{rc:0.3, nature:{hibou:0.15}},
+  Lullaby:{rc:0.55, arp:{lvl:0.25, inst:"harpe", pat:"vaetvient", rate:1, reg:1, span:1}, nature:{nuit:0.2}},
+  /* Horreur : le sacrifice est un rite */
+  Sacrificium:{rc:0.2, scales:["eolien","phrygien",""]},
+  /* Far West : le duel est un thème qui revient, à la Morricone */
+  Duellum:{rc:0.6},
+  /* Cyberpunk */
+  "Urbs Neon":{rc:0.6}, Datum:{rc:0.45}, "Imber Toxicus":{rc:0.3},
+  /* Orient : un étang de grenouilles au jardin zen */
+  Aegyptus:{rc:0.5}, Eremus:{rc:0.25}, Hortus:{rc:0.3, nature:{grenouilles:0.12}}, Bayati:{rc:0.45}, Enharmonia:{rc:0.25},
+  /* Calme : le travail est un ostinato un peu plus présent */
+  Labor:{rc:0.3}
+};
 /* les bêtes de chaque ambiance */
 const PRESET_BEASTS={Nox:{grenouilles:0.4, hibou:0.35}, Pluvia:{grenouilles:0.3}, Silva:{corbeaux:0.12}, Mare:{mouettes:0.3}, "Domus Obscura":{corbeaux:0.2, loup:0.12}, Crypta:{corbeaux:0.1},
   Larva:{hibou:0.2}, Fjordus:{loup:0.2}, Skalda:{loup:0.12}, Bellum:{chevaux:0.2}, Hiems:{loup:0.2}, "Silva Antiqua":{hibou:0.15}, Iter:{chevaux:0.15}, Insidiae:{corbeaux:0.15, hibou:0.15},
@@ -448,7 +477,7 @@ const PRESET_BEASTS={Nox:{grenouilles:0.4, hibou:0.35}, Pluvia:{grenouilles:0.3}
 const UNIV_EUCL={cyber:0.5, orient:0.35};
 /* point de départ sur l'axe rituel ↔ chanson : les musiques de bourdon d'un côté, les chansons de l'autre */
 const UNIV_RC={antique:0.15, calme:0.15, espace:0.2, horreur:0.25, nature:0.25, orient:0.4, nordique:0.45, medieval:0.5, feerie:0.5, cyber:0.55, aventure:0.6, pirates:0.7, western:0.75, dungeon:0.8};
-UNIVERS.forEach(u=>u.items.forEach(it=>{ const p=it[1]; p.perc=Object.assign({kit:UNIV_KIT[u.id]||"cadre", eucl:UNIV_EUCL[u.id]||0},p.perc||{}); if(p.norm===undefined) p.norm=PRESET_NORM[it[0]]||0; if(p.rc===undefined) p.rc=UNIV_RC[u.id]===undefined?0.5:UNIV_RC[u.id]; if(PRESET_BEASTS[it[0]]) p.nature=Object.assign({},p.nature||{},PRESET_BEASTS[it[0]]); }));
+UNIVERS.forEach(u=>u.items.forEach(it=>{ const p=it[1]; p.perc=Object.assign({kit:UNIV_KIT[u.id]||"cadre", eucl:UNIV_EUCL[u.id]||0},p.perc||{}); if(p.norm===undefined) p.norm=PRESET_NORM[it[0]]||0; if(p.rc===undefined) p.rc=UNIV_RC[u.id]===undefined?0.5:UNIV_RC[u.id]; if(PRESET_BEASTS[it[0]]) p.nature=Object.assign({},p.nature||{},PRESET_BEASTS[it[0]]); if(PRESET_TUNE[it[0]]) merge(p,clone(PRESET_TUNE[it[0]])); }));
 /* liste à plat des préréglages */
 const PRESETS = UNIVERS.flatMap(u=>u.items.map(([n,s,g])=>[n,s,g,u.id]));
 function clone(o){return JSON.parse(JSON.stringify(o));}

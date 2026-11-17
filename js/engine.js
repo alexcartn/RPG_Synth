@@ -906,7 +906,7 @@ function buildEngine(ctx, S, o){
     sanctus:{t:"sanc tus sanc tus sanc tus | do mi nus de us", n:[[0,2,3,3,2,0],[3,5,3,2,0]]},
     agnus:{t:"a gnus de i | qui tol lis pec ca ta mun di", n:[[0,3,2,0],[2,3,5,3,2,0,-2,0]]},
     gloria:{t:"glo ri a in ex cel sis de o", n:[[0,2,3,5,7,5,3,2,0]]},
-    paian:{t:"i e pai an | i e pai an | o pai an", n:[[0,1,4,0],[4,5,4,0],[1,0,0]]}
+    paian:{t:"i e pai an | i e pai an | o pai an", n:[[0,1,5,0],[5,7,5,0],[1,0,0]]}
   };
   function plainSeq(){ const T=TUNES[S.chant||"kyrie"]||TUNES.kyrie, ph=T.t.split(" | "); return ph.map((p,i)=>({syl:p.split(" "),n:T.n[i%T.n.length]})); }
   /* ---------- sifflet : presque un sinus, un léger souffle, un vibrato qui s'installe et une petite glissade d'attaque ---------- */

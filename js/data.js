@@ -88,7 +88,7 @@ const DEFAULT = {
   seed:1472, root:2, scales:["mixolydien","",""], custom:[1,0,1,0,1,1,0,1,0,1,1,0], sectionBars:16,
   temper:"egal", a4:440,
   tempo:120, meter:"4/4", swing:0.1, tension:0.5, vol:1,
-  perc:{lvl:0.5, shaker:0.55, ghost:0.35},
+  perc:{lvl:0.5, shaker:0.55, ghost:0.35, kit:"cadre"},
   drone:{lvl:0.8, timbre:"anche", bright:0.5, width:0.5, drift:0.5, glide:0.5},
   mel:{lvl:0.6, inst:"luth", dens:0.85, reg:0, span:2, leap:0.2, orn:0.15, deja:0, loop:2},
   canon:{lvl:0, inst:"harpe", delay:2, shift:"oct+"},
@@ -244,12 +244,8 @@ const SYN_P={
     mod:[{src:"lfo1",dst:"cutoff",amt:0.3},{src:"vel",dst:"cutoff",amt:0.5},{src:"none",dst:"amp",amt:0},{src:"none",dst:"pitch",amt:0}], lfo1:{shape:"triangle",rate:0.22}, fx:{drive:0.5,level:0.7}},
   verre:{oscA:{wave:0,uni:1,spread:0,lvl:0.85}, oscB:{lvl:0}, fm:{amt:0.85,ratio:5}, fil:{type:"lowpass",cut:9500,res:0.4,key:0.2,env:0}, envA:{a:0.002,d:1.5,s:0,r:1.2}, envF:{a:0.01,d:0.5,s:1,r:0.5}, env2:{a:0.002,d:0.5,s:0,r:0.4},
     mod:[{src:"env2",dst:"fm",amt:0.7},{src:"none",dst:"pitch",amt:0},{src:"none",dst:"amp",amt:0},{src:"none",dst:"cutoff",amt:0}], fx:{drive:0,level:0.9}},
-  accordeon:{oscA:{wave:0.67,uni:2,spread:10,lvl:0.7}, oscB:{wave:0.67,oct:0,det:-14,lvl:0.6,uni:2}, fil:{type:"lowpass",cut:2600,res:1.1,key:0.5,env:0}, envA:{a:0.04,d:0.2,s:0.9,r:0.12}, envF:{a:0.02,d:0.3,s:0.8,r:0.2},
-    mod:[{src:"lfo2",dst:"amp",amt:0.12},{src:"lfo2",dst:"pitch",amt:0.004},{src:"none",dst:"cutoff",amt:0},{src:"none",dst:"pan",amt:0}], lfo2:{shape:"sine",rate:5.5}, fx:{drive:0.12,level:0.9}},
   souffle:{oscA:{lvl:0,uni:1}, noise:{lvl:1}, fil:{type:"bandpass",cut:720,res:6,key:0.9,env:1400}, fx:{drive:0,level:3.4}, envA:{a:1.3,d:1,s:0.8,r:2}, envF:{a:1.6,d:1.5,s:0.3,r:2},
-    mod:[{src:"lfo1",dst:"cutoff",amt:0.45},{src:"none",dst:"pitch",amt:0},{src:"none",dst:"amp",amt:0},{src:"none",dst:"cutoff",amt:0}], lfo1:{shape:"sine",rate:0.12}},
-  twang:{oscA:{wave:0.67,uni:1,spread:0,lvl:0.8}, oscB:{wave:0.5,oct:1,lvl:0.25,uni:1,det:5}, fil:{type:"lowpass",cut:1200,res:2.2,key:0.7,env:3200}, envA:{a:0.003,d:0.9,s:0,r:0.3}, envF:{a:0.002,d:0.35,s:0.05,r:0.25},
-    mod:[{src:"vel",dst:"cutoff",amt:0.4},{src:"lfo2",dst:"pitch",amt:0.006},{src:"none",dst:"amp",amt:0},{src:"none",dst:"cutoff",amt:0}], lfo2:{shape:"sine",rate:4.5}, fx:{drive:0.2,level:0.9}}
+    mod:[{src:"lfo1",dst:"cutoff",amt:0.45},{src:"none",dst:"pitch",amt:0},{src:"none",dst:"amp",amt:0},{src:"none",dst:"cutoff",amt:0}], lfo1:{shape:"sine",rate:0.12}}
 };
 const AVENTURE = [
   ["Pugna", {car:{grav:0.7, aud:0.8, orn:0.3, sil:0.05, rep:0.8}, mus:{form:"ostinato"}, seed:4401, root:4, scales:["phrygien","phrygdom",""], tempo:150, meter:"4/4", swing:0, tension:0.8,
@@ -267,7 +263,7 @@ const AVENTURE = [
 ];
 const PIRATES = [
   ["Portus", {car:{grav:0.3, aud:0.7, orn:0.6, sil:0.15, rep:0.7}, mus:{form:"rondeau", arc:"arche"}, seed:1717, root:2, scales:["mixolydien","dorien",""], tempo:132, meter:"6/8", swing:0,
-    perc:{lvl:0.65, shaker:0.6, ghost:0.35}, drone:{lvl:0.6, timbre:"anche"}, mel:{lvl:0.7, inst:"atelier", dens:0.95, orn:0.35}, syn:SYN_P.accordeon,
+    perc:{lvl:0.65, shaker:0.6, ghost:0.35}, drone:{lvl:0.6, timbre:"anche"}, mel:{lvl:0.7, inst:"accordeon", dens:0.95, orn:0.35},
     canon:{lvl:0.3, inst:"luth", delay:2, shift:"oct+"}, pad:{lvl:0.1, timbre:"orgue"}, amb:{murmur:0.55, clink:0.6, feu:0.1}, fx:{rev:0.28, size:2.4, room:"salle", wow:0.18}}, "taverne de port : chant de marins, rhum, chopes"],
   ["Navigium", {car:{grav:0.45, aud:0.45, orn:0.4, sil:0.45, rep:0.6}, mus:{form:"variations", arc:"arche"}, seed:6006, root:9, scales:["dorien","eolien",""], tempo:66, meter:"12/8", swing:0,
     perc:{lvl:0.3, shaker:0.4, ghost:0.2}, drone:{lvl:0.65, timbre:"anche", drift:0.7}, mel:{lvl:0.55, inst:"archet", dens:0.5, span:2, orn:0.2},
@@ -323,12 +319,12 @@ const HORREUR = [
 ];
 const WESTERN = [
   ["Desertum", {car:{grav:0.5, aud:0.25, orn:0.15, sil:0.85, rep:0.4}, seed:7777, root:4, scales:["mixolydien","pentmin",""], tempo:70, meter:"4/4", tension:0.4,
-    perc:{lvl:0.12, shaker:0, ghost:0.1}, drone:{lvl:0.35, timbre:"pur", bright:0.2}, mel:{lvl:0.6, inst:"atelier", dens:0.22, reg:1, leap:0.25, orn:0.1, deja:0.3},
-    canon:{lvl:0}, pad:{lvl:0.08, timbre:"cordes", len:6}, amb:{vent:0.5}, syn:SYN_P.twang,
+    perc:{lvl:0.12, shaker:0, ghost:0.1}, drone:{lvl:0.35, timbre:"pur", bright:0.2}, mel:{lvl:0.6, inst:"guitare", dens:0.22, reg:1, leap:0.25, orn:0.1, deja:0.3},
+    canon:{lvl:0.18, inst:"ney", delay:4, shift:"oct+"}, pad:{lvl:0.08, timbre:"cordes", len:6}, amb:{vent:0.5},
     fx:{rev:0.4, size:3, room:"plaque", dly:0.35, dlyDiv:1.5, fb:0.3, sat:0.25, wow:0.22, veil:0.15}}, "désert de l'Ouest : guitare claire, vent, sifflet"],
   ["Saloon", {car:{grav:0.2, aud:0.85, orn:0.6, sil:0.05, rep:0.5}, mus:{form:"rondeau"}, seed:1881, root:7, scales:["ionien","mixolydien",""], tempo:116, meter:"2/4", swing:0.32,
-    perc:{lvl:0.45, shaker:0.5, ghost:0.5}, drone:{lvl:0.1, timbre:"orgue"}, mel:{lvl:0.75, inst:"kalimba", dens:1, orn:0.35, leap:0.3},
-    canon:{lvl:0.35, inst:"luth", delay:1, shift:"oct-"}, pad:{lvl:0.05, timbre:"orgue"}, amb:{murmur:0.6, clink:0.7}, fx:{rev:0.2, size:1.6, room:"salle", sat:0.2, wow:0.2}}, "saloon : piano mécanique, chopes, bagarre en vue"],
+    perc:{lvl:0.45, shaker:0.5, ghost:0.5}, drone:{lvl:0.1, timbre:"orgue"}, mel:{lvl:0.75, inst:"piano", dens:1, orn:0.35, leap:0.3},
+    canon:{lvl:0.3, inst:"piano", delay:1, shift:"oct-"}, pad:{lvl:0.05, timbre:"orgue"}, amb:{murmur:0.6, clink:0.7}, fx:{rev:0.2, size:1.6, room:"salle", sat:0.2, wow:0.2}}, "saloon : piano mécanique, chopes, bagarre en vue"],
   ["Duellum", {car:{grav:0.6, aud:0.25, orn:0.1, sil:0.8, rep:0.4}, mus:{arc:"arche"}, seed:1127, root:9, scales:["phrygdom","pentmin",""], tempo:58, meter:"4/4", tension:0.8,
     perc:{lvl:0.2, shaker:0, ghost:0.1}, drone:{lvl:0.6, timbre:"pur", bright:0.3}, mel:{lvl:0.5, inst:"ney", dens:0.12, reg:1, leap:0.3},
     canon:{lvl:0}, pad:{lvl:0.25, timbre:"cordes"}, amb:{vent:0.2}, fx:{rev:0.4, size:3, sat:0.2}}, "duel à midi : un sifflet, le silence, le battement"],
@@ -340,7 +336,7 @@ const CYBER = [
   ["Urbs Neon", {car:{grav:0.5, aud:0.6, orn:0.2, sil:0.3, rep:0.9}, mus:{form:"ostinato"}, seed:2077, root:5, scales:["eolien","dorien",""], tempo:100, meter:"4/4", swing:0, tension:0.6,
     turing:{lock:0.95, len:2}, chance:{skip:0.1, ratchet:0.22, mutate:0.05, octave:0.1, rest:0.06},
     perc:{lvl:0.65, shaker:0.8, ghost:0.5}, drone:{lvl:0.8, timbre:"pur", bright:0.7, width:0.9, drift:0.2, glide:0.1},
-    mel:{lvl:0.55, inst:"atelier", dens:0.8, leap:0.3, orn:0, deja:0.9, loop:2}, canon:{lvl:0.3, inst:"atelier", delay:3, shift:"oct+"},
+    mel:{lvl:0.55, inst:"atelier", dens:0.8, leap:0.3, orn:0, deja:0.9, loop:2}, canon:{lvl:0.45, inst:"basse", delay:2, shift:"oct-"},
     pad:{lvl:0.4, timbre:"synthe", len:4, motion:0.9, voices:4}, amb:{}, syn:SYN_P.acide,
     fx:{rev:0.4, size:3, room:"plaque", shim:0.15, dly:0.35, dlyDiv:1.5, fb:0.55, sat:0.4, wow:0, veil:0.1, hiss:0}, nature:{pluie:0.4}}, "ville sous la pluie : néons, synthés, basse"],
   ["Machina", {car:{grav:0.6, aud:0.9, orn:0.1, sil:0.05, rep:1}, mus:{form:"ostinato"}, seed:404, root:0, scales:["octa","phrygien",""], tempo:126, meter:"4/4", swing:0, tension:0.78,
@@ -348,7 +344,7 @@ const CYBER = [
     perc:{lvl:0.9, shaker:0.9, ghost:0.4}, drone:{lvl:0.95, timbre:"pur", bright:0.75, width:0.6, drift:0.1, glide:0},
     mel:{lvl:0.5, inst:"atelier", dens:1, leap:0.45, orn:0, deja:0.92, loop:2}, canon:{lvl:0},
     pad:{lvl:0.2, timbre:"synthe", len:2, motion:1, voices:3}, amb:{}, syn:SYN_P.acide,
-    loops:{lvl:0.35, count:5, inst:"atelier", speed:2}, grain:{mix:0.2, dens:0.6, size:0.3, spread:0.5, pitch:0.5, src:"tout"},
+    loops:{lvl:0.4, count:5, inst:"basse", speed:2}, grain:{mix:0.2, dens:0.6, size:0.3, spread:0.5, pitch:0.5, src:"tout"},
     fx:{rev:0.2, size:1.6, room:"plaque", dly:0.4, dlyDiv:1.5, fb:0.55, sat:0.55, wow:0, veil:0, hiss:0}}, "usine, intelligence artificielle : boucles mécaniques"],
   ["Datum", {car:{grav:0.5, aud:0.3, orn:0.1, sil:0.55, rep:0.7}, mus:{form:"ostinato"}, seed:1010, root:6, scales:["dorien4","dorien",""], tempo:84, meter:"4/4", swing:0, tension:0.55,
     turing:{lock:0.9, len:2}, chance:{ratchet:0.15, skip:0.2},
@@ -376,6 +372,9 @@ const UNIVERS = [
 ];
 /* hors du Moyen Âge, un préréglage qui ne cite pas un bruit de lieu n'en veut pas : sans cela, murmure et tintements de taverne s'invitaient dans l'espace ou chez les pirates */
 UNIVERS.forEach(u=>{ if(u.id!=="medieval") u.items.forEach(it=>{ it[1].amb=Object.assign({murmur:0,clink:0,feu:0,vent:0,gouttes:0},it[1].amb||{}); }); });
+/* chaque univers a sa batterie ; un préréglage peut en citer une autre */
+const UNIV_KIT={medieval:"cadre", aventure:"caisse", pirates:"bastringue", nordique:"taiko", feerie:"cadre", horreur:"taiko", western:"bastringue", cyber:"electro", espace:"electro", orient:"darbouka", nature:"cadre", calme:"cadre"};
+UNIVERS.forEach(u=>u.items.forEach(it=>{ const p=it[1]; p.perc=Object.assign({kit:UNIV_KIT[u.id]||"cadre"},p.perc||{}); }));
 /* liste à plat des préréglages */
 const PRESETS = UNIVERS.flatMap(u=>u.items.map(([n,s,g])=>[n,s,g,u.id]));
 function clone(o){return JSON.parse(JSON.stringify(o));}

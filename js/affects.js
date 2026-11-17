@@ -109,7 +109,7 @@ function affStart(pr){
     if(over.perc&&over.perc.lvl>0) over.perc.lvl=cl(over.perc.lvl*Math.min(1.3,k));
     if(over.mel&&over.mel.dens!==undefined) over.mel.dens=cl(over.mel.dens*(0.7+0.6*a)); }
   if(sel.length) over.tension=Math.round(Math.max(0.1,Math.min(0.9,sel.reduce((t,e)=>t+(AFF_AROUSAL[e]===undefined?0.5:AFF_AROUSAL[e]),0)/sel.length))*100)/100;
-  loadScene(over,null);
+  loadScene(over,null,undefined,{name:pr.preset[0],gloss:pr.preset[2],univ:seekUni()});
   const g=$("presetGloss"); if(g) g.textContent="";
   document.querySelectorAll("#presets .lnk").forEach(x=>x.removeAttribute("aria-current"));
 }

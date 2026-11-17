@@ -1337,7 +1337,7 @@ function buildEngine(ctx, S, o){
   const modal=()=>!(S.mus&&S.mus.logic==="hasard");
   /* caractère de la mélodie : cinq curseurs qui orientent le tirage (0,5 = comme avant) */
   const car=()=>S.car||{grav:0.5,aud:0.5,orn:0.5,sil:0.5,rep:0.5};
-  const leapE=()=>clamp(S.mel.leap+(car().aud-0.5)*1.2,0,1), ornE=()=>clamp(S.mel.orn+(car().orn-0.5)*0.9,0,1), dejaE=()=>clamp(S.mel.deja+(car().rep-0.5)*0.9,0,1);
+  const leapE=()=>clamp(S.mel.leap+(car().aud-0.5)*1.2,0,0.4), ornE=()=>clamp(S.mel.orn+(car().orn-0.5)*0.9,0,1), dejaE=()=>clamp(S.mel.deja+(car().rep-0.5)*0.9,0,1);
   const silE=()=>0.25+1.5*car().sil, gravE=()=>car().grav;
   const formE=()=>(S.mus&&S.mus.form)||"libre";
   const FS={ref:[],theme:[],ost:null,ostN:0};
@@ -1372,8 +1372,18 @@ function buildEngine(ctx, S, o){
     for(let j=0;out.length<vc&&j<4;j++){ if(!usedPc.has(j)) out.push(tones[j]+12); }
     return out.sort((a,b)=>a-b);
   }
+  /* ---------- air : lecture d'un vrai air (voir TUNES) ; ses accords remplacent la progression, et il revient avec des variations ---------- */
+  const TU=(()=>{ const T=(typeof TUNES!=="undefined")&&S.tune&&TUNES[S.tune]; if(!T) return null;
+    const notes=[]; let pos=0; T.notes.split(/\s+/).filter(x=>x&&x!=="|").forEach(tok=>{ const [a,b]=tok.split(":"), d=parseFloat(b)||1; if(a!=="r") notes.push({e:pos,off:parseFloat(a),d}); pos+=d; });
+    const chords=T.chords.split(/\s+/).map(c=>({root:parseFloat(c),minor:/m$/.test(c)}));
+    const bars=Math.max(chords.length,Math.ceil(pos/barE)); return {notes,chords,bars,per:bars+2}; })();
+  const tuneT0=()=>t0+2*bar;
+  function tuneChordAt(t){ const x=Math.floor((t-tuneT0())/bar+1e-6); if(x<0) return TU.chords[0]; const k=((x%TU.per)+TU.per)%TU.per; return k<TU.bars?TU.chords[k%TU.chords.length]:TU.chords[0]; }
   function ensureChords(until){
     if(chordEnd<0) chordEnd=t0;
+    if(TU){ while(chordEnd<until){ const t=chordEnd, c=tuneChordAt(t+0.01), r=pcOf(c.root), tones=[r,r+(c.minor?3:4),r+7], offs=tones.map(x=>{ let y=x; while(y<14) y+=12; while(y>25) y-=12; return y; }), iv=ivOf(S,secOf(t).key);
+        chordTl.push({t,len:bar,d:0,iv:[r],offs,sched:false,tune:true}); chordEnd=t+bar; }
+      if(chordTl.length>80) chordTl.splice(0,chordTl.length-60); return; }
     while(chordEnd<until){
       const t=chordEnd, iv=ivOf(S,secOf(t).key), n=iv.length, stg=clamp(S.pad.stag===undefined?0.5:S.pad.stag,0,1), nb0=Math.max(1,Math.round(S.pad.len*(rcAt(t)<0.45?1+Math.round((0.45-rcAt(t))*5):1))), nb=ambE()*stg>0.05&&R.s()<ambE()*stg*0.6?[Math.max(1,Math.round(nb0/2)),nb0,nb0+1,nb0*2][Math.floor(R.s()*4)]:nb0, len=nb*bar, vc=clamp(Math.round(S.pad.voices),2,o.lite?3:4);
       let dRaw, offs;
@@ -1620,13 +1630,29 @@ function buildEngine(ctx, S, o){
       cur.int=t+2;
     }
     /* mélodie et canon : chaque phrase est mémorisée, le déjà-vu décide de la rejouer */
-    while(cur.mel<until){
+    if(TU){ /* l'air revient en boucle : tel quel, puis orné, puis à l'octave, puis repris par le canon ; deux mesures de respiration entre deux reprises */
+      if(cur.ti===undefined){ cur.ti=0; cur.trep=0; }
+      while(true){
+        const nt=TU.notes[cur.ti], tt=tuneT0()+cur.trep*TU.per*bar+nt.e*E; if(tt>=until) break;
+        if(M&&want("mel")&&S.mel.lvl>0.001&&tt>=(ctx.currentTime||0)-0.02){
+          const v=cur.trep%4, base=12+12*S.mel.reg+(v===2?12:0), off=base+nt.off, len=Math.max(0.08,nt.d*E*0.92), vel=(nt.e%barE===0?0.24:0.2)*(0.92+0.16*hz(tt*1.3));
+          const fn=instOf(S.mel.inst,"luth");
+          if(v===1&&nt.d>=2){ const g=base+nt.off+(hz(tt)<0.5?2:-1); fn(tt-0.07,freq(g),vel*0.5,0.07,V.mel.node,-0.12); }
+          fn(tt,freq(off),vel,len,V.mel.node,-0.12); rec(0,tt,off,len,vel); if(o.onNote) o.onNote(tt,off,"mel",len,vel); padOpen(tt,len,vel); melOn.push(tt);
+          if(S.canon.lvl>0.001&&(v===3||v===1)){ const cd=S.canon.shift==="oct-"?-12:S.canon.shift==="q-"?-5:S.canon.shift==="q+"?7:S.canon.shift==="oct+"?12:0, ct=tt+(v===3?0:bar);
+            instOf(S.canon.inst,"harpe")(ct,freq(off+cd),vel*0.8,len,V.canon.node,0.3); rec(1,ct,off+cd,len,vel*0.8); if(o.onNote) o.onNote(ct,off+cd,"canon",len,vel*0.8); }
+        }
+        cur.ti++; if(cur.ti>=TU.notes.length){ cur.ti=0; cur.trep++; }
+      }
+      cur.mel=until;
+    }
+    else while(cur.mel<until){
       if(!M){ cur.mel=t0+bar*Math.ceil((until-t0)/bar); break; }
       if(arcRise(cur.mel,bar)){ cur.mel=t0+(Math.floor((cur.mel-t0)/secLen()+1e-6)+1)*secLen(); continue; }
       const sc=secOf(cur.mel), iv=ivOf(S,sc.key), stab=stableOf(iv), I=inten(cur.mel);
       const evo=S.form.shape==="constante"?0:(I-0.5)*S.form.amount;
       const dens=clamp(S.mel.dens+evo+(tensAt(cur.mel)-0.5)*0.6+(formE()==='passacaille'?0.07*(Math.floor(cpos/4)%6):0)+0.4*dv("densite"),0,1);
-      const shift=arcOn()?Math.round(arcAt(cur.mel)*6):0, lo=12+12*S.mel.reg+shift, hi=lo+12*S.mel.span, pool=poolOf(iv,lo,hi);
+      const shift=arcOn()?Math.round(arcAt(cur.mel)*6):0, lo=12+12*S.mel.reg+shift, hi=lo+Math.min(12*S.mel.span,17), pool=poolOf(iv,lo,hi); /* une octave et une quarte au plus : la mélodie reste chantable */
       if(!pool.length){cur.mel+=bar; continue;}
       const genRaw=modal()?(()=>genPhraseModal(pool,stab,dens,cur.mel,sc.i)):(()=>genPhrase(pool,stab,dens));
       let gen=()=>bestOf(genRaw,pool,stab);
@@ -1787,7 +1813,7 @@ function buildEngine(ctx, S, o){
         });
         if(bs>0.02){
           /* octave au-dessus du bourdon ; muette quand sa fondamentale frotte contre la tonique (seconde ou septième) ou contre la quinte (demi-ton) */
-          const root=ch.iv[ch.d%n]||0, pc=pcOf(root), dist=x=>{ const d=Math.abs(pcOf(pc-x)); return Math.min(d,12-d); }, rub=(dist(0)>0&&dist(0)<=2)||(dist(7)>0&&dist(7)<=1), bo=pc+12;
+          const root=ch.iv[ch.d%n]||0, pc=pcOf(root), dist=x=>{ const d=Math.abs(pcOf(pc-x)); return Math.min(d,12-d); }, rub=!ch.tune&&((dist(0)>0&&dist(0)<=2)||(dist(7)>0&&dist(7)<=1)), bo=pc+12;
           if(!rub){ padVoice(ch.t,ch.len,freq(bo),S.pad.timbre,0.5+bs); rec(2,ch.t,bo,ch.len,0.3*bs,"bass"); if(o.onNote) o.onNote(ch.t,bo,"pad",ch.len,0.3*bs); }
         }
       }

@@ -162,8 +162,8 @@ function seekBuild(){
     '<div class="seek-more"><details class="fin"><summary>Ambiances nommées de l\'univers</summary><div class="seek-named"><div class="row" id="seekPresets"></div><p class="hint" id="seekGloss"></p></div></details>'+
     '<details class="fin"><summary>La table des affects en entier</summary><div class="aff-tables">'+affTable()+'</div></details></div>';
   const uni=host.querySelector("#seekUni"), cur=seekUni();
-  UNIVERS.forEach(u=>{ const b=document.createElement("button"); b.type="button"; b.className="lnk"; b.dataset.id=u.id; b.textContent=u.name; b.title=u.tag; if(u.id===cur) b.setAttribute("aria-current","true"); b.onclick=()=>seekUniverse(u.id); uni.appendChild(b); });
-  { const r=document.createElement("button"); r.type="button"; r.className="lnk seek-rnd"; r.id="seekRnd"; r.textContent="Au hasard"; r.title="Un univers et une ou deux émotions tirés au sort : pour se laisser surprendre"; r.onclick=seekRandom; uni.appendChild(r); }
+  UNIVERS.forEach(u=>{ const b=document.createElement("button"); b.type="button"; b.className="lnk"; b.dataset.id=u.id; b.innerHTML=ic(u.id)+"<span>"+u.name+"</span>"; b.title=u.tag; if(u.id===cur) b.setAttribute("aria-current","true"); b.onclick=()=>seekUniverse(u.id); uni.appendChild(b); });
+  { const r=document.createElement("button"); r.type="button"; r.className="lnk seek-rnd"; r.id="seekRnd"; r.innerHTML=ic("hasard")+"<span>Au hasard</span>"; r.title="Un univers et une ou deux émotions tirés au sort : pour se laisser surprendre"; r.onclick=seekRandom; uni.appendChild(r); }
   const chips=host.querySelector("#affChips");
   const scName=k=>SC[k].n.replace(/\s*\(.*\)/,"").toLowerCase();
   EMOTIONS.forEach(e=>{ const b=document.createElement("button"); b.type="button"; b.className="aff-chip"; b.textContent=e; b.setAttribute("aria-pressed","false");

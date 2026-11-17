@@ -1024,3 +1024,21 @@ body.playing .veil-open{box-shadow:3px 3px 0 var(--rubric)}
 @media (max-height:720px){ .vl-mix .dw-strip input.vert{height:84px} }
 @media (max-width:760px){ .vl-mix{left:var(--sp-md); right:var(--sp-md); width:auto; max-width:none} }
 @media (prefers-reduced-motion:reduce){ .vl-mix{transition:none} }
+
+/* ---------- icônes : trait de 1,6, bouts carrés, un carré cinabre par icône ---------- */
+.ic{width:1.15em; height:1.15em; flex:none; fill:none; stroke:currentColor; stroke-width:1.6; stroke-linecap:square; stroke-linejoin:miter; overflow:visible; vertical-align:-.2em}
+.ic .a{fill:var(--rubric); stroke:none}
+.ic .f{fill:currentColor; stroke:none}
+.modes .lnk,.help-open,.seek-uni .lnk,.seek-rnd{display:inline-flex; align-items:center; gap:.45em}
+.modes .lnk .ic{width:1.05em; height:1.05em}
+.seek-uni .lnk .ic{width:1.05em; height:1.05em; color:var(--ink-2)}
+.seek-uni .lnk:hover .ic,.seek-uni .lnk[aria-current="true"] .ic{color:var(--rubric)}
+.btn .ic,.jeu-gest .btn .ic{width:1.2em; height:1.2em; margin-right:.55em; vertical-align:-.25em}
+.jeu-gest .btn,.jeu-actions>.btn,.capbox .btn{display:inline-flex; align-items:center}
+.knob .kl{display:inline-flex; align-items:center; justify-content:center; gap:.4em}
+.knob .kl .ic{width:1em; height:1em; color:var(--ink-2)}
+.veil-open .ic{width:20px; height:20px}
+.vl-key .ic{width:18px; height:18px}
+.vl-key .ic .a{fill:var(--rubric)}
+
+@media (max-width:640px){ .modes{flex-wrap:wrap; gap:var(--sp-xs) var(--sp-lg)} .modes .lnk{font-size:1.1rem} .help-open{margin-left:0} .veil-open{margin-left:auto} }

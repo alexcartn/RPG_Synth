@@ -30,12 +30,12 @@
   </figure>
 
   <nav class="modes" id="modes" aria-label="Mode de travail">
-    <button class="lnk" id="jeuBtn" type="button" aria-pressed="true" title="Choisir une ambiance, lancer la lecture et la piloter en direct">Conduire</button>
-    <button class="lnk" id="reglBtn" type="button" aria-pressed="false" title="Tous les réglages de la pièce, chapitre par chapitre">Composer</button>
-    <button class="lnk" id="atelierBtn" type="button" aria-pressed="false" title="Construire son propre synthé et le jouer au clavier">Forger</button>
-    <button class="lnk" id="dawBtn" type="button" aria-pressed="false" title="Des pistes qui bouclent par-dessus la machine, avec un mixeur">Arranger</button>
-    <button class="lnk help-open" id="helpBtn" type="button" title="Rouvrir l'accueil et la visite guidée">Aide</button>
-    <button class="veil-open" id="veilBtn" type="button" title="Veillée : la machine en grand, dans le noir, aux couleurs de l'univers, pour la regarder tourner en fond. Plein écran possible (F)."><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2 10s3-5.5 8-5.5S18 10 18 10s-3 5.5-8 5.5S2 10 2 10z"/><circle cx="10" cy="10" r="2.4"/></svg><span>Veillée</span></button>
+    <button class="lnk" id="jeuBtn" type="button" aria-pressed="true" title="Choisir une ambiance, lancer la lecture et la piloter en direct"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-conduire"/></svg>Conduire</button>
+    <button class="lnk" id="reglBtn" type="button" aria-pressed="false" title="Tous les réglages de la pièce, chapitre par chapitre"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-composer"/></svg>Composer</button>
+    <button class="lnk" id="atelierBtn" type="button" aria-pressed="false" title="Construire son propre synthé et le jouer au clavier"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-forger"/></svg>Forger</button>
+    <button class="lnk" id="dawBtn" type="button" aria-pressed="false" title="Des pistes qui bouclent par-dessus la machine, avec un mixeur"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-arranger"/></svg>Arranger</button>
+    <button class="lnk help-open" id="helpBtn" type="button" title="Rouvrir l'accueil et la visite guidée"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-aide"/></svg>Aide</button>
+    <button class="veil-open" id="veilBtn" type="button" title="Veillée : la machine en grand, dans le noir, aux couleurs de l'univers, pour la regarder tourner en fond. Plein écran possible (F)."><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-veillee"/></svg><span>Veillée</span></button>
   </nav>
 
   <nav class="toc" id="toc" aria-label="Chapitres"></nav>
@@ -47,16 +47,16 @@
     </div>
     <div class="jeu-bar">
       <div class="jeu-actions">
-        <button class="btn" id="jeuFreeze" type="button" aria-pressed="false" disabled>Figer</button>
-        <button class="btn" id="jeuReroll" type="button" disabled>Autre phrase</button>
-        <button class="btn" id="jeuGel" type="button" aria-pressed="false" disabled title="Le nuage de grains garde ce qu'il vient d'entendre et le fait tourner">Geler le nuage</button>
+        <button class="btn" id="jeuFreeze" type="button" aria-pressed="false" disabled><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-figer"/></svg>Figer</button>
+        <button class="btn" id="jeuReroll" type="button" disabled><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-phrase"/></svg>Autre phrase</button>
+        <button class="btn" id="jeuGel" type="button" aria-pressed="false" disabled title="Le nuage de grains garde ce qu'il vient d'entendre et le fait tourner"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-nuage"/></svg>Geler le nuage</button>
         <span class="jeu-gest" id="jeuGest" role="group" aria-label="Gestes musicaux">
-          <button class="btn" data-g="suspense" type="button" disabled title="Suspense : la mélodie se tait, une nappe monte sur la dominante. Pour une porte qui s'entrouvre.">Suspense</button>
-          <button class="btn" data-g="revelation" type="button" disabled title="Révélation : l'accord s'ouvre, une montée claire. Pour le coffre, le secret, le lever de soleil.">Révélation</button>
-          <button class="btn" data-g="danger" type="button" disabled title="Danger : motif de triton grave, percussion et bourdon qui montent. Pour l'embuscade, le monstre.">Danger</button>
-          <button class="btn" data-g="poursuite" type="button" disabled title="Poursuite : un ostinato rapide et une percussion qui galope. Pour la fuite, le combat qui s'emballe.">Poursuite</button>
-          <button class="btn" data-g="triomphe" type="button" disabled title="Triomphe : fanfare de cuivres et accord plein. Pour la victoire, l'entrée du héros.">Triomphe</button>
-          <button class="btn" data-g="apaisement" type="button" disabled title="Apaisement : tout redescend, la percussion s'éteint, une nappe large revient. Pour la fin du combat, la veillée.">Apaisement</button>
+          <button class="btn" data-g="suspense" type="button" disabled title="Suspense : la mélodie se tait, une nappe monte sur la dominante. Pour une porte qui s'entrouvre."><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-suspense"/></svg>Suspense</button>
+          <button class="btn" data-g="revelation" type="button" disabled title="Révélation : l'accord s'ouvre, une montée claire. Pour le coffre, le secret, le lever de soleil."><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-revelation"/></svg>Révélation</button>
+          <button class="btn" data-g="danger" type="button" disabled title="Danger : motif de triton grave, percussion et bourdon qui montent. Pour l'embuscade, le monstre."><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-danger"/></svg>Danger</button>
+          <button class="btn" data-g="poursuite" type="button" disabled title="Poursuite : un ostinato rapide et une percussion qui galope. Pour la fuite, le combat qui s'emballe."><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-poursuite"/></svg>Poursuite</button>
+          <button class="btn" data-g="triomphe" type="button" disabled title="Triomphe : fanfare de cuivres et accord plein. Pour la victoire, l'entrée du héros."><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-triomphe"/></svg>Triomphe</button>
+          <button class="btn" data-g="apaisement" type="button" disabled title="Apaisement : tout redescend, la percussion s'éteint, une nappe large revient. Pour la fin du combat, la veillée."><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-apaisement"/></svg>Apaisement</button>
           <span class="jeu-amp" id="jeuAmp" role="group" aria-label="Ampleur des gestes" title="Ampleur du geste : discret, plein ou immense. Plus c'est grand, plus c'est long, fort et dense."><span class="seek-l">Ampleur</span><button class="lnk" data-amp="0" type="button">discret</button><button class="lnk" data-amp="1" type="button">plein</button><button class="lnk" data-amp="2" type="button">immense</button></span>
         </span>
       </div>
@@ -80,7 +80,7 @@
       <div class="lecture">
         <button class="seal" id="play" aria-pressed="false">Jouer</button>
         <div class="capbox">
-          <button class="btn" id="capBtn" type="button" aria-pressed="false" disabled>Capturer la lecture</button>
+          <button class="btn" id="capBtn" type="button" aria-pressed="false" disabled><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-capturer"/></svg>Capturer la lecture</button>
           <select id="capFmt" aria-label="Format de la capture" title="Format de la capture : WAV et MIDI dans un zip, WAV seul, MP3 seul (320 kb/s, sans MIDI) ou WAV et MP3. Le MP3 charge son encodeur à la première utilisation."></select>
           <p class="hint" id="capNote" aria-live="polite"></p>
         </div>
@@ -150,8 +150,8 @@
     <div class="vl-title"><p class="vl-univ" id="vlUniv"></p><h2 id="vlName">Bourdon</h2><p class="vl-gloss" id="vlGloss"></p></div>
     <div class="vl-keys" role="group" aria-label="Commandes">
       <button class="vl-key" id="veilPlay" type="button" title="Lancer ou arrêter la lecture (Espace)"><svg viewBox="0 0 20 20" aria-hidden="true"><path class="ip" d="M5 3.5v13l11-6.5z"/><path class="is" d="M5 4h4v12H5zM11 4h4v12h-4z" style="display:none"/></svg><span>Jouer</span></button>
-      <button class="vl-key" id="veilMixBtn" type="button" aria-pressed="false" aria-expanded="false" aria-controls="vlMix" title="Mixeur : niveau, pan, sourdine et solo de chaque voix, sans quitter la veillée (M)"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 3v14M10 3v14M15 3v14"/><path d="M3 7h4M8 13h4M13 6h4"/></svg><span>Mixeur</span></button>
-      <button class="vl-key" id="veilFs" type="button" title="Plein écran (F)"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 7V3h4M13 3h4v4M17 13v4h-4M7 17H3v-4"/></svg><span>Plein écran</span></button>
+      <button class="vl-key" id="veilMixBtn" type="button" aria-pressed="false" aria-expanded="false" aria-controls="vlMix" title="Mixeur : niveau, pan, sourdine et solo de chaque voix, sans quitter la veillée (M)"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-mixeur"/></svg><span>Mixeur</span></button>
+      <button class="vl-key" id="veilFs" type="button" title="Plein écran (F)"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-ecran"/></svg><span>Plein écran</span></button>
       <button class="vl-key" id="veilClose" type="button" title="Fermer la veillée (Échap)"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 4l12 12M16 4L4 16"/></svg><span>Fermer</span></button>
     </div>
   </header>
@@ -167,6 +167,7 @@
 </div>
 <div class="dock"><button class="seal" id="play2" aria-pressed="false">Jouer</button><div class="dockT ctl"><div class="l"><label for="tension2">Tension</label><output id="tension2o"></output></div><input type="range" id="tension2" min="0" max="1" step="0.01" value="0.5"></div></div>
 
+<script src="js/icones.js"></script>
 <script src="js/fx.js"></script>
 <script src="js/synth.js"></script>
 <script src="js/phys.js"></script>

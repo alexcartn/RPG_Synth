@@ -778,6 +778,25 @@ function buildEngine(ctx, S, o){
     formants(src,e,f,v0,v1,t,t+Math.min(0.3,L*0.3),t+L,2.4); route(e,pan,dst);
     [x,vb,dr].forEach(o=>{ o.start(t); o.stop(t+L+0.4); }); ns.start(t,hz(t)*1.5); ns.stop(t+L+0.4);
   };
+  /* ---------- FM à la DX7 : un modulateur sinusoïdal fait varier la fréquence de la porteuse ; l'indice (la profondeur) décroît avec la note ---------- */
+  function fmOp(t,f,ratio,index,decay,dst,sustain){ const m=ctx.createOscillator(), mg=G(0); m.frequency.value=f*ratio;
+    mg.gain.setValueAtTime(index*f*ratio,t); mg.gain.setTargetAtTime(index*f*ratio*(sustain||0),t+0.002,decay); m.connect(mg); mg.connect(dst); return m; }
+  /* piano électrique : porteuse 1:1 à indice qui retombe vite (le corps), plus une « lame » 1:14 très brève (le tintement de la frappe), deux voix un rien désaccordées */
+  INST.fmpiano=(t,f,vel,len,dst,pan)=>{
+    const L=Math.max(0.12,len), v=Math.min(1,vel*4), e=G(0), off=t+L+0.02, dur=clamp(2.4*Math.pow(220/f,0.4),0.8,4);
+    e.gain.setValueAtTime(0,t); e.gain.linearRampToValueAtTime(vel*1.24,t+0.003); e.gain.setTargetAtTime(0,t+0.01,dur/3);
+    if(off<t+dur){ e.gain.setTargetAtTime(0,off,0.08); } route(e,pan,dst);
+    const os=[]; [-4,4].forEach(dc=>{ const c=ctx.createOscillator(); c.frequency.value=f; c.detune.value=dc; c.connect(e); os.push(c,fmOp(t,f,1,0.6+1.6*v,0.25,c.frequency,0.15)); });
+    const tn=ctx.createOscillator(), tg=G(0); tn.frequency.value=f; tg.gain.setValueAtTime(vel*0.35*v,t); tg.gain.setTargetAtTime(0,t,0.04); tn.connect(tg); tg.connect(e); os.push(tn,fmOp(t,f,14,2.5*v,0.02,tn.frequency,0));
+    const end=Math.min(t+dur,off+0.5)+0.1; os.forEach(o=>{ o.start(t); o.stop(end); });
+  };
+  /* cloches FM : rapport 1:3,5 (inharmonique), indice qui s'éteint lentement, longue résonance */
+  INST.fmcloche=(t,f,vel,len,dst,pan)=>{
+    const v=Math.min(1,vel*4), dur=clamp(5*Math.pow(330/f,0.3),2,8), e=G(0); e.gain.setValueAtTime(0,t); e.gain.linearRampToValueAtTime(vel*1.02,t+0.002); e.gain.setTargetAtTime(0,t+0.005,dur/4); route(e,pan,dst);
+    const c=ctx.createOscillator(), c2=ctx.createOscillator(), g2=G(0.25); c.frequency.value=f; c2.frequency.value=f*2.003; c.connect(e); c2.connect(g2); g2.connect(e);
+    const m1=fmOp(t,f,3.5,1.2+2.5*v,dur/5,c.frequency,0.05), m2=fmOp(t,f,1.41,0.6*v,dur/8,c2.frequency,0);
+    [c,c2,m1,m2].forEach(o=>{ o.start(t); o.stop(t+dur+0.1); });
+  };
   /* ---------- sifflet : presque un sinus, un léger souffle, un vibrato qui s'installe et une petite glissade d'attaque ---------- */
   INST.sifflet=(t,f,vel,len,dst,pan)=>{
     const L=Math.max(0.15,len), x=ctx.createOscillator(), x2=ctx.createOscillator(), g2=G(0.06*bri(vel)), mix=G(1);
@@ -953,7 +972,35 @@ function buildEngine(ctx, S, o){
     route(e,((Math.round(f*3)%9)/4-1)*0.55,V.pad.node); /* nappes ouvertes : chaque hauteur a sa place dans l'espace */
     const end=t+len+rel+0.1, os=[];
     const add=(type,fr,det,dst,gain)=>{const x=ctx.createOscillator(); x.type=type; x.frequency.value=fr; x.detune.value=det; if(gain!==undefined){const g=G(gain); x.connect(g); g.connect(dst);} else if(dst) x.connect(dst); os.push(x); return x;};
-    if(timbre==="orgue"){ /* plein-jeu : principaux 8', 4', 2', nasard, fourniture, et un peu de bourdon 16' ; deux tuyaux un rien désaccordés ; chuintement et vent */
+    if(timbre==="phase"){ /* distorsion de phase façon CZ (onde « résonante ») : un sinus dont la fréquence est un multiple glissant de la note, fenêtré par une dent de scie qui s'éteint à chaque période ; le multiple monte et redescend au fil de la note, comme un formant qui balaie. Calculé note par note. */
+      R.v(); const tot=len+rel+0.1, n=Math.floor(sr*Math.min(tot,40)), buf=ctx.createBuffer(1,n,sr), d=buf.getChannelData(0), h0=hz(f*0.37+t);
+      const r0=1.6+1.4*h0, r1=4+5*hz(f+t*1.9), per=Math.max(4,len*0.7), lp0=Math.min(0.9,f*9/sr*6.28);
+      let ph=0, ph2=0, y=0; for(let i=0;i<n;i++){ const tt=i/sr, sw=0.5-0.5*Math.cos(2*Math.PI*Math.min(1,tt/per)), r=r0+(r1-r0)*(sw<0.5?sw*2:2-sw*2)+0.3*Math.sin(tt*0.7+h0*6);
+        ph+=f/sr; if(ph>=1){ ph-=1; ph2=0; } ph2+=r*f/sr; const x=(1-ph)*Math.sin(2*Math.PI*ph2); y+=(x-y)*lp0; d[i]=y*1.06; }
+      const x=ctx.createBufferSource(); x.buffer=buf; x.connect(e); x.start(t); x.stop(t+tot);
+      return;
+    }
+    if(timbre==="essaim"){ /* essaim : sept scies désaccordées qui dérivent chacune à leur rythme (façon Plaits), un filtre qui respire */
+      const base=R.v(), N=o.lite?4:7, lp=ctx.createBiquadFilter(); lp.type="lowpass"; lp.Q.value=0.8; lp.frequency.value=Math.min(6000,900+f*2.5); lp.connect(e);
+      const lf=ctx.createOscillator(), lg=G(Math.min(2500,500+f*1.5)); lf.frequency.value=0.05+0.08*hz(base*9.1); lf.connect(lg); lg.connect(lp.frequency); os.push(lf);
+      for(let i=0;i<N;i++){ const h=k=>hz(base*53.3+i*11.9+k*7.7), x=add("sawtooth",f,((i/(N-1))*2-1)*22,null), g=G(0.87/Math.sqrt(N)), pn=PAN(((i%2?1:-1)*(0.2+0.6*h(1))));
+        x.connect(g); g.connect(pn); pn.connect(lp);
+        const dr=ctx.createOscillator(), dg=G(4+6*h(2)); dr.frequency.value=0.07+0.25*h(3); dr.connect(dg); dg.connect(x.detune); os.push(dr); }
+    }
+    else if(timbre==="vecteur"){ /* nappe vectorielle : quatre timbres aux coins (chœur, verre, cordes, souffle) ; un point tourne lentement entre eux et chaque coin monte et descend à son tour */
+      const base=R.v(), perR=14+16*hz(base*3.7), ph0=hz(base*5.3)*6.2832;
+      const corner=(k,node)=>{ const g=G(0.87), lfo=ctx.createOscillator(), a=ph0+k*Math.PI/2, re=new Float32Array([0,Math.sin(a)]), im=new Float32Array([0,Math.cos(a)]);
+        lfo.setPeriodicWave(ctx.createPeriodicWave(re,im,{disableNormalization:true})); lfo.frequency.value=1/perR; const lg=G(0.87); lfo.connect(lg); lg.connect(g.gain); os.push(lfo); node.connect(g); g.connect(e); };
+      /* chœur : deux chanteurs, voyelle « o » */
+      { const src=G(1), out3=G(1); { const x=add("sine",f,0,src,1); x.setPeriodicWave(glottal("souffle")); } formants(src,out3,f,"o","a",t,t+a,t+len,2.2); corner(0,out3); }
+      /* verre : trois partiels purs */
+      { const gv=G(1); [[1,0.7],[2.003,0.22],[3.01,0.09]].forEach(([m,a2])=>add("sine",f*m,0,gv,a2)); corner(1,gv); }
+      /* cordes : deux scies désaccordées sous un passe-bas */
+      { const lpc=ctx.createBiquadFilter(); lpc.type="lowpass"; lpc.frequency.value=Math.min(4500,1400+f*2); add("sawtooth",f,-9,lpc,0.4); add("sawtooth",f,9,lpc,0.4); corner(2,lpc); }
+      /* souffle : du bruit passé par deux résonances accordées sur la note */
+      { const ns=ctx.createBufferSource(); ns.buffer=wb; ns.loop=true; const gs=G(1); [[f,30,1.1]].forEach(([F,q,a2])=>{ const bp=ctx.createBiquadFilter(); bp.type="bandpass"; bp.frequency.value=F; bp.Q.value=q; const g=G(a2*4); ns.connect(bp); bp.connect(g); g.connect(gs); }); os.push(ns); corner(3,gs); }
+    }
+    else if(timbre==="orgue"){ /* plein-jeu : principaux 8', 4', 2', nasard, fourniture, et un peu de bourdon 16' ; deux tuyaux un rien désaccordés ; chuintement et vent */
       [-2,2].forEach(dc=>{ const x=add("sine",f/2,dc,e,0.71); x.setPeriodicWave(organWave("plein")); });
       chiff(t,f,0.2,e); const ns=ctx.createBufferSource(); ns.buffer=wb; ns.loop=true; const nb=ctx.createBiquadFilter(); nb.type="bandpass"; nb.frequency.value=Math.min(5000,f*4); nb.Q.value=0.9; const ng=G(0.04); ns.connect(nb); nb.connect(ng); ng.connect(e); os.push(ns);
     }

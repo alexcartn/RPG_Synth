@@ -31,6 +31,15 @@ On arrive sur Conduire : un univers (Médiéval, Aventure, Pirates, Nordique, F�
 - Compression douce sur la mélodie et les nappes, et les nappes s'effacent un peu (-2 dB) à chaque note de la mélodie, qui reste devant.
 - Respirations (Composer, Forme) : dans la moitié des sections par défaut, une voix (nappes, percussion, boucles ou pendules) se retire au début de la section et revient à mi-section ou aux trois quarts, sur une mesure.
 
+## FM, nappes vectorielles, essaim, distorsion de phase, plaque de Dattorro
+
+- Piano électrique FM (à la DX7) : porteuse 1:1 dont l'indice retombe vite, plus une « lame » 1:14 très brève qui fait le tintement, deux voix un rien désaccordées, étouffoir au relâchement. Cloches FM : rapport 1:3,5 inharmonique et longue résonance.
+- Nappe vectorielle : quatre timbres aux coins (chœur, verre, cordes, souffle accordé) ; un point tourne lentement entre eux (14 à 30 s par tour) et chaque coin monte puis descend à son tour. La nappe ne reste jamais figée.
+- Essaim : sept scies désaccordées qui dérivent chacune à son rythme, sous un filtre qui respire (façon Plaits).
+- Distorsion de phase (façon Casio CZ, onde « résonante ») : un sinus à un multiple glissant de la note, fenêtré par une dent de scie ; le multiple monte et redescend au fil de la note, comme un formant qui balaie. Calculé note par note.
+- Réverbérations plaque et salle de Dattorro (Type de réverbération) : la cuve à deux branches croisées de Dattorro, en worklet ; la salle est la même cuve, une fois et demie plus grande. Niveaux alignés sur la réverbération vivante.
+- Dans les ambiances : la voix chante dans Lullaby, Larva, Sylva Magica, Nebula, Crypta (en plus de Fjordus et Sacrificium) ; machine à cordes dans Abyssus, Cella, Skalda, Turris ; nappe vectorielle dans Sidera, Meditatio, Somnus ; essaim dans Nebula et Machina ; distorsion de phase dans Urbs Neon et Datum ; piano électrique FM dans Pluvia ; cloches FM dans Sidera et Imber Toxicus ; orgue à roues dans Imber Toxicus ; harmonica dans Saloon ; plaque de Dattorro dans Desertum, Duellum, Equitatus, Urbs Neon, Machina, Datum, Sidera ; salle dans Triumphus et Pugna ; Scriptorium en pythagoricien, Triumphus en Kirnberger ; porte passe-bas sur la harpe de Hortus.
+
 ## Voix, machine à cordes, orgues, rythmes euclidiens, porte passe-bas, tempéraments
 
 - Moteur de voix : la source est la dérivée d'une impulsion glottale de Rosenberg (ouverture en cosinus, fermeture rapide), dont la série de Fourier est calculée une fois ; deux sources, tendue et soufflée. Elle passe par les cinq formants d'une voyelle (a, o, ou, é), pris dans la tessiture de la note (basse, ténor, alto, soprano) ; le premier formant monte avec la note quand elle le dépasse, comme chez les sopranos. Souffle filtré par les mêmes formants.

@@ -105,7 +105,8 @@ const DEFAULT = {
   loops:{lvl:0, count:3, inst:"carillon", speed:1},
   arp:{lvl:0, inst:"harpe", pat:"vaetvient", rate:1, reg:1, span:1},
   pend:{lvl:0, count:6, period:24, inst:"carillon"},
-  bille:{lvl:0, count:3, haut:1, rebond:0.72, pause:1, inst:"kalimba", mode:"fixe"},
+  arbre:{lvl:0, inst:"verre", prof:4, vent:0.4, pousse:3, harm:true},
+  bille:{lvl:0, count:3, haut:1, rebond:0.72, pause:1, travers:1, inst:"kalimba", mode:"clavier"},
   amb:{lvl:1, murmur:0.35, clink:0.5, feu:0.15, vent:0, gouttes:0},
   fx:{voix:0, rev:0.4, size:2.6, dark:0.5, room:"gen", algo:"vivante", mod:0.5, shim:0, dly:0, dlyDiv:1.5, fb:0.4, sat:0.15, wow:0.12, veil:0.3, hiss:0},
   form:{shape:"constante", period:4, amount:0.5, breath:0.5},
@@ -510,6 +511,9 @@ UNIVERS.forEach(u=>u.items.forEach(it=>{ const p=it[1]; p.perc=Object.assign({ki
 const PRESET_MIX={"Desertum":{amb:0.43,norm:0.8},"Nox":{amb:0.51,drone:0.71,norm:1.8},"Mare":{amb:0.52,drone:0.71,norm:2.1},"Fjordus":{amb:0.57},"Odyssea":{amb:0.61},"Saloon":{amb:0.62,norm:0.3},"Silva":{amb:0.65},"Hiems":{amb:0.67},"Pluvia":{amb:0.68},"Sylva Magica":{amb:0.69},"Skalda":{amb:0.71},"Domus Obscura":{amb:0.72},"Larva":{amb:0.74,drone:0.71,norm:0.4},"Portus":{amb:0.76},"Equitatus":{amb:0.83},"Crypta":{amb:0.84},"Glacies":{amb:0.86},"Abyssus":{drone:0.71},"Sidera":{drone:0.71,norm:0.6},"Cella":{drone:0.71,norm:0.5}};
 UNIVERS.forEach(u=>u.items.forEach(it=>{ const m=PRESET_MIX[it[0]], p=it[1]; if(!m) return; if(m.amb){ p.amb=p.amb||{}; p.amb.lvl=+((p.amb.lvl===undefined?1:p.amb.lvl)*m.amb).toFixed(3); } if(m.drone&&p.drone) p.drone.lvl=+((p.drone.lvl===undefined?DEFAULT.drone.lvl:p.drone.lvl)*m.drone).toFixed(3); if(m.norm) p.norm=+((p.norm||0)+m.norm).toFixed(1); }));
 /* billes dans quelques ambiances planantes : des notes qui tombent et rebondissent au loin */
+/* l'arbre dans les forêts : une ramure qui pousse et que le vent fait tinter */
+const PRESET_ARBRE={"Silva":{lvl:0.4,inst:"kalimba",prof:5,vent:0.5,pousse:2}, "Silva Antiqua":{lvl:0.35,inst:"verre",prof:5,vent:0.35,pousse:4}, "Hortus":{lvl:0.3,inst:"verre",prof:4,vent:0.3,pousse:3}, "Nox":{lvl:0.25,inst:"carillon",prof:4,vent:0.25,pousse:5}};
+UNIVERS.forEach(u=>u.items.forEach(it=>{ const a=PRESET_ARBRE[it[0]]; if(a) it[1].arbre=Object.assign({},DEFAULT.arbre,a); }));
 const PRESET_BILLE={"Glacies":{lvl:0.32,inst:"verre",count:2,haut:2,rebond:0.82,pause:1.5}, "Sylva Magica":{lvl:0.3,inst:"kalimba",count:4,haut:1,rebond:0.74}, "Nebula":{lvl:0.28,inst:"fmcloche",count:3,haut:1.5,rebond:0.8,pause:2}, "Meditatio":{lvl:0.25,inst:"kalimba",count:2,haut:2.5,rebond:0.85,pause:2,mode:"descend"}};
 UNIVERS.forEach(u=>u.items.forEach(it=>{ const b=PRESET_BILLE[it[0]]; if(b) it[1].bille=Object.assign({},DEFAULT.bille,b); }));
 /* liste à plat des préréglages */

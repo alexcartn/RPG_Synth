@@ -215,7 +215,7 @@ function buildEngine(ctx, S, o){
   }
   /* le grave est au bourdon ; la mélodie a un peu de présence, les nappes un creux dans le bas-médium pour ne pas l'empâter, la percussion sa petite pièce */
   const B={drone:bus(0.45,0.1,{pk:[2600,-2,0.8],ens:true,mono:true}), mel:bus(0.9,1,{hp:140,pk:[2800,2,0.9],comp:[-26,2.5,3]}), pad:bus(0.8,0.6,{hp:170,pk:[380,-3,1],comp:[-30,2,2],ens:true}), perc:bus(0.4,0,{hp:30,room:true,longRev:0.06}),
-    amb:bus(0.3,0,{hp:110}), loops:bus(0.9,0.8,{hp:190}), arp:bus(0.8,0.45,{hp:110}), plain:bus(0.95,0.2,{hp:80}), pend:bus(0.9,0.7,{hp:190}), bille:bus(0.85,0.6,{hp:180}), play:bus(0.85,0.9,{hp:60}), daw:bus(0.7,0.6,{hp:40})};
+    amb:bus(0.3,0,{hp:110}), loops:bus(0.9,0.8,{hp:190}), arp:bus(0.8,0.45,{hp:110}), plain:bus(0.95,0.2,{hp:80}), pend:bus(0.9,0.7,{hp:190}), bille:bus(0.85,0.6,{hp:180}), arbre:bus(0.95,0.45,{hp:120}), play:bus(0.85,0.9,{hp:60}), daw:bus(0.7,0.6,{hp:40})};
   /* une voix jouée à la basse garde son grave */
   function eqSync(){ const lo=(n,inst)=>{ const h=B[n].hp; if(h) h.frequency.value=inst?35:B[n].eq.hp; };
     lo("mel",S.mel.inst==="basse"||S.canon.inst==="basse"); lo("loops",S.loops.inst==="basse"); lo("pend",S.pend.inst==="basse"); lo("bille",S.bille&&S.bille.inst==="basse");
@@ -294,7 +294,7 @@ function buildEngine(ctx, S, o){
     m.an.getFloatTimeDomainData(m.buf); let pk=0; for(let i=0;i<m.buf.length;i++){ const a=Math.abs(m.buf[i]); if(a>pk) pk=a; } return pk;
   }
   const newGen=name=>{ const v=V[name], g=G(1); g.connect(v.dst); v.node=g; };
-  [["mel",B.mel.in],["canon",canonG],["pad",B.pad.in],["loops",B.loops.in],["pend",B.pend.in],["bille",B.bille.in],["arp",B.arp.in],["plain",B.plain.in]].forEach(([n,d])=>{ V[n]={dst:d,node:null}; newGen(n); });
+  [["mel",B.mel.in],["canon",canonG],["pad",B.pad.in],["loops",B.loops.in],["pend",B.pend.in],["bille",B.bille.in],["arbre",B.arbre.in],["arp",B.arp.in],["plain",B.plain.in]].forEach(([n,d])=>{ V[n]={dst:d,node:null}; newGen(n); });
   const murG=G(0), fireG=G(0), windG=G(0), dripG=G(0);
   const lMur=link(murG,B.amb.in), lFire=link(fireG,B.amb.in), lWind=link(windG,B.amb.in); dripG.connect(B.amb.in);
   /* sons de nature : chaque lit n'est construit que s'il est utilisé, et débranché quand il retombe à zéro */
@@ -308,7 +308,7 @@ function buildEngine(ctx, S, o){
   const trkOn=t=>!t.mute&&(!anySolo()||!!t.solo);
   function setLevels(){
     const lv=(n,v)=>(want(n)&&mach()&&mixOn(n))?v:0;
-    { const pp=(DAW().mix||{}).pan||{}; ["drone","mel","pad","perc","loops","pend","bille","amb"].forEach(n=>{ const p=B[n].pn.pan; if(p) p.value=clamp(pp[n]||0,-1,1); }); }
+    { const pp=(DAW().mix||{}).pan||{}; ["drone","mel","pad","perc","loops","pend","bille","arbre","amb"].forEach(n=>{ const p=B[n].pn.pan; if(p) p.value=clamp(pp[n]||0,-1,1); }); }
     B.drone.lvl.gain.value=lv("drone",S.drone.lvl);
     B.mel.lvl.gain.value=lv("mel",S.mel.lvl);
     canonG.gain.value=lv("mel",S.canon.lvl);
@@ -328,7 +328,7 @@ function buildEngine(ctx, S, o){
       [["perc",m.perc],["pad",m.pad],["drone",m.drone],["amb",m.amb]].forEach(([n,v])=>{ const g=B[n].tm.gain; if(g.cancelScheduledValues) g.cancelScheduledValues(now); g.value=v; });
     }
     B.loops.lvl.gain.value=lv("loops",S.loops.lvl); B.arp.lvl.gain.value=lv("arp",(S.arp&&S.arp.lvl)||0); B.plain.lvl.gain.value=lv("plain",(S.plain&&S.plain.lvl)||0);
-    B.pend.lvl.gain.value=lv("pend",S.pend.lvl); B.bille.lvl.gain.value=lv("bille",(S.bille&&S.bille.lvl)||0);
+    B.pend.lvl.gain.value=lv("pend",S.pend.lvl); B.bille.lvl.gain.value=lv("bille",(S.bille&&S.bille.lvl)||0); B.arbre.lvl.gain.value=lv("arbre",(S.arbre&&S.arbre.lvl)||0);
     murG.gain.value=S.amb.murmur; fireG.gain.value=S.amb.feu*0.4; windG.gain.value=ventv()*0.9; dripG.gain.value=S.amb.gouttes*0.8;
     wet.gain.value=S.fx.rev*2;
     if(padC!==padClosed()) padRest(ctx.currentTime||0);
@@ -1590,7 +1590,7 @@ function buildEngine(ctx, S, o){
   /* ---------- ordonnanceur ---------- */
   let pieceFade=0;
   const cur={mel:0,drone:0,clink:0,perc:0,k:0,pad:0,int:0,fire:0,wind:0,drip:0,bird:0,sec:1,arp:0,aj:0,pl:0,pli:0,plj:0};
-  const phBars=new Set(), fillBars=[], melOn=[]; let billes=[], loopsL=[], pendK=[], lastPh=null, lastD=null, frozen=null;
+  const phBars=new Set(), fillBars=[], melOn=[]; let arbre=null, billes=[], loopsL=[], pendK=[], lastPh=null, lastD=null, frozen=null;
   const lastOff={v:null};
   function rec(tr,t,off,dur,vel,tag){ if(o.record||o.rolling) events.push(tag?{tr,t,off,dur,vel,tag}:{tr,t,off,dur,vel}); }
   const ctr={pm:null,pc:null,li:null};
@@ -1865,20 +1865,43 @@ function buildEngine(ctx, S, o){
       billes.forEach((b,i)=>{
         let guard=0;
         while(b.t<until&&guard++<400){
-          if(b.phase==="rest"){ b.phase="fall"; b.drop=b.t; b.D=billeD(i); b.k=0; b.T=0; b.v=1; b.pitch=null; b.t+=b.D; b.arcs.push({t0:b.drop,t1:b.t,type:"fall",D:b.D}); continue; }
+          if(b.phase==="rest"){ b.phase="fall"; b.drop=b.t; b.D=billeD(i); b.k=0; b.T=0; b.v=1; b.pitch=null; b.t+=b.D;
+            /* en deux dimensions : la bille part de biais, ricoche sur les murs ; elle repart de là où elle s'était posée, dans l'autre sens */
+            b.dir=-(b.dir||(i%2?-1:1)); b.sx={x0:b.x===undefined?(i+0.5)/billes.length:b.x,vx:(BL.travers===undefined?1:BL.travers)*(0.16+0.07*i)*b.dir,drop:b.drop};
+            b.arcs.push({t0:b.drop,t1:b.t,type:"fall",D:b.D,sx:b.sx}); continue; }
           /* impact */
           if(on){
             if(b.pitch===null){ const cpc=chordPcs(chordAt(b.t)), cand=[]; for(let x=12;x<36;x+=0.5){ const pc=((x%12)+12)%12; if(cpc.some(p=>Math.abs(p-pc)<0.01)) cand.push(x); } const iv=ivOf(S,secOf(b.t).key); b.pitch=cand.length?cand[(i*2)%cand.length]+(i>=cand.length?12:0):degOff(iv,i)+12; b.deg=0; }
-            let off=b.pitch; if(BL.mode==="descend"){ const iv=ivOf(S,secOf(b.t).key), base=iv.indexOf(((b.pitch%12)+12)%12); off=base>=0?degOff(iv,base-b.k)+12*Math.floor(b.pitch/12):b.pitch-b.k; }
-            const vel=0.2*Math.pow(b.v,0.8), pan=(billes.length>1?i/(billes.length-1)*2-1:0)*0.7;
+            let off=b.pitch; if(BL.mode==="clavier"){ const iv=ivOf(S,secOf(b.t).key), K=8, x=billeXof(b.sx,b.t); off=degOff(iv,Math.min(K-1,Math.floor(x*K)))+12; } else if(BL.mode==="descend"){ const iv=ivOf(S,secOf(b.t).key), base=iv.indexOf(((b.pitch%12)+12)%12); off=base>=0?degOff(iv,base-b.k)+12*Math.floor(b.pitch/12):b.pitch-b.k; }
+            const vel=0.2*Math.pow(b.v,0.8), pan=(billeXof(b.sx,b.t)*2-1)*0.75;
             fn(b.t,freq(off),vel,Math.max(0.3,E*3),V.bille.node,pan); rec(4,b.t,off,E*3,vel); if(o.onNote) o.onNote(b.t,off,"pend",E*3,vel);
           }
           b.k++; b.T=b.k===1?2*e*b.D:b.T*e; b.v*=e;
-          if(b.T<0.035||b.k>60){ b.arcs.push({t0:b.t,t1:b.t+billeD(i)*(BL.pause===undefined?1:BL.pause)+0.5,type:"rest"}); b.phase="rest"; b.t+=billeD(i)*(BL.pause===undefined?1:BL.pause)+0.5; }
-          else { b.arcs.push({t0:b.t,t1:b.t+b.T,type:"arc",h:(b.T*b.T)/(4*b.D*b.D)}); b.t+=b.T; }
+          if(b.T<0.035||b.k>60){ b.x=billeXof(b.sx,b.t); b.arcs.push({t0:b.t,t1:b.t+billeD(i)*(BL.pause===undefined?1:BL.pause)+0.5,type:"rest",sx:{x0:b.x,vx:0,drop:b.t}}); b.phase="rest"; b.t+=billeD(i)*(BL.pause===undefined?1:BL.pause)+0.5; }
+          else { b.arcs.push({t0:b.t,t1:b.t+b.T,type:"arc",h:(b.T*b.T)/(4*b.D*b.D),sx:b.sx}); b.t+=b.T; }
           if(b.arcs.length>80) b.arcs.splice(0,b.arcs.length-80);
         }
       });
+    }
+    /* arbre : bourgeons à chaque nouvel étage, puis rafales de vent qui font tinter les feuilles qu'elles traversent */
+    if(arbre){
+      const A=S.arbre||{}, on=M&&(A.lvl||0)>0.001&&want("arbre"), fn=instOf(A.inst||"verre","verre"), deep=instOf("bol","bol"), rr=arbre.rr, D=arbre.D, P=Math.max(0,(A.pousse===undefined?3:A.pousse)*60), vent=clamp(A.vent===undefined?0.4:A.vent,0,1);
+      const grownAt=t=>P<=0?D:clamp((t-arbre.t0)/P*D,0,D);
+      const play=(n,t,vel,len)=>{ let off=degOff(ivOf(S,secOf(t).key),n.g)+12;
+        if(A.harm!==false){ const cpc=chordPcs(chordAt(t)); if(cpc.length){ let best=off,bd=99; for(let dx=-2;dx<=2;dx+=0.5){ const pc=(((off+dx)%12)+12)%12; if(cpc.some(p=>Math.abs(p-pc)<0.01)&&Math.abs(dx)<bd){ bd=Math.abs(dx); best=off+dx; } } off=best; } }
+        n.hits.push(t); if(n.hits.length>6) n.hits.shift(); if(!on) return;
+        const pan=(n.x*2-1)*0.8; (n.d<=1?deep:fn)(t,freq(off),vel,len,V.arbre.node,pan); rec(4,t,off,len,vel); if(o.onNote) o.onNote(t,off,"pend",len,vel); };
+      /* bourgeons : quand un étage apparaît, ses branches s'éveillent une à une */
+      while(arbre.budL<D&&arbre.t0+(P<=0?0:P*(arbre.budL+1)/D)<until){ const L=++arbre.budL, tL=arbre.t0+(P<=0?0:P*L/D)+1;
+        if(P>0) arbre.nodes.filter(n=>n.d===L).forEach((n,k)=>play(n,tL+k*0.9*E+rr()*0.3,0.06,E*4)); }
+      /* rafales */
+      let guard=0;
+      while(arbre.next<until&&guard++<50){ const tg=arbre.next, gd=grownAt(tg), c=rr(), w=0.07+0.17*rr(), str=(0.35+0.65*rr())*(0.4+0.6*vent), dir=rr()<0.5?-1:1;
+        arbre.nodes.forEach(n=>{ if(n.d>gd+0.001) return; const dist=Math.abs(n.x-c); if(dist>w) return; const leaf=n.d>=Math.floor(gd);
+          if(leaf&&rr()>0.3+0.5*str) return; if(!leaf&&rr()>0.2*str) return; if(n.d===0&&str<0.75) return;
+          const t=tg+((n.x-c)*dir+w)*(1.6+1.2*(1-vent))+rr()*0.25, vel=(leaf?0.12:0.09)*str*(1-0.6*dist/w);
+          play(n,t,vel,leaf?E*3:E*8); });
+        arbre.next=tg+(-Math.log(1-rr()*0.98))/(0.025+0.3*vent); }
     }
     /* lieu */
     if(!M){ for(const k of ["clink","fire","wind","drip","bird"]) if(cur[k]<until) cur[k]=until; bands.forEach(b=>{ if(b.cur<until) b.cur=until; }); }
@@ -1916,11 +1939,24 @@ function buildEngine(ctx, S, o){
     initLoops(t);
     pendK=Array.from({length:pendN()},()=>0);
     initBilles(t+bar*0.5);
+    initArbre(t);
   }
   /* billes : temps de chute de chacune (plus haute = chute plus longue, rythmes qui s'entrecroisent) */
   const billeN=()=>clamp(Math.round((S.bille&&S.bille.count)||3),1,6);
   const billeD=i=>Math.max(0.25,((S.bille&&S.bille.haut)||1)*bar*(1+0.37*i));
-  function initBilles(t){ billes=Array.from({length:billeN()},(_,i)=>({phase:"rest",t:t+i*bar*0.75,arcs:[{t0:0,t1:t+i*bar*0.75,type:"hang"}]})); }
+  function initBilles(t){ const n=billeN(); billes=Array.from({length:n},(_,i)=>({phase:"rest",t:t+i*bar*0.75,x:(i+0.5)/n,arcs:[{t0:0,t1:t+i*bar*0.75,type:"hang",sx:{x0:(i+0.5)/n,vx:0,drop:0}}]})); }
+  /* position horizontale (0 à 1) : mouvement uniforme, réfléchi par les deux murs */
+  const billeXof=(sx,t)=>{ if(!sx) return 0.5; let u=sx.x0+sx.vx*(t-sx.drop)/bar; u=((u%2)+2)%2; return u>1?2-u:u; };
+  /* arbre : une ramure fractale qui pousse ; tronc et branches graves, feuilles aiguës ; des rafales de vent la traversent */
+  function initArbre(t){
+    const A=S.arbre||{}, D=clamp(Math.round(A.prof||4),2,6), rr=mulberry32((seed^0x7A3B1E)>>>0), nodes=[];
+    const grow=(par,x,y,ang,len,d,g)=>{ const nx=x+len*Math.sin(ang), ny=y+len*Math.cos(ang), i=nodes.length; nodes.push({x:nx,y:ny,px:x,py:y,par,d,g:Math.min(16,g),hits:[]});
+      if(d<D){ const sp=0.38+0.2*rr(); grow(i,nx,ny,ang-sp*(0.8+0.4*rr()),len*(0.68+0.08*rr()),d+1,g+2); grow(i,nx,ny,ang+sp*(0.8+0.4*rr()),len*(0.68+0.08*rr()),d+1,g+4); } };
+    grow(-1,0,0,0,0.32,0,-7);
+    let x0=1e9,x1=-1e9,y1=0; nodes.forEach(n=>{ x0=Math.min(x0,n.x,n.px); x1=Math.max(x1,n.x,n.px); y1=Math.max(y1,n.y); });
+    nodes.forEach(n=>{ const f=v=>(v-x0)/Math.max(1e-6,x1-x0); n.x=f(n.x); n.px=f(n.px); n.y/=y1; n.py/=y1; });
+    arbre={nodes,D,t0:t,rr,next:t+2+rr()*4,budL:0};
+  }
   function initLoops(t){
     const nl=clamp(Math.round(S.loops.count),1,5), lens=[29,31,37,41,43,47,53,59].slice();
     loopsL=[];
@@ -1946,6 +1982,7 @@ function buildEngine(ctx, S, o){
     if(all||what==="arp"){ kill("arp",0.05); cur.arp=t0+Math.ceil((now+0.05-t0)/E)*E; }
     if(all) dawReplan();
     if(all||what==="bille"){ kill("bille",0.05); initBilles(now+0.05); }
+    if(all||what==="arbre"){ kill("arbre",0.05); const old=arbre; initArbre(old?old.t0:now); if(old){ arbre.next=Math.max(arbre.next,now+0.5); arbre.budL=old.budL; } }
     if(all||what==="pend"){
       kill("pend",0.05); const T=Math.max(1,S.pend.period*bar);
       pendK=Array.from({length:pendN()},(_,i)=>Math.max(0,Math.ceil(((now-t0)/T)*(PEND_N0+i)-0.25)));
@@ -2025,8 +2062,12 @@ function buildEngine(ctx, S, o){
     starts.forEach(x=>{try{x.stop(now+d+0.2);}catch(e){}});
     synDropAll(ctx,now+d+0.3,[...synOwn]);
   }
-  const billeY=t=>billes.map(b=>{ const a=b.arcs.find(x=>t>=x.t0&&t<x.t1); if(!a) return 0; const u=(t-a.t0)/(a.t1-a.t0);
-    if(a.type==="hang") return 1; if(a.type==="fall") return 1-u*u; if(a.type==="arc") return a.h*4*u*(1-u); return 0; });
+  /* position de chaque bille pour l'affichage : x de 0 à 1 entre les murs, y = 0 au sol, 1 à la hauteur de départ */
+  const billeY=t=>billes.map(b=>{ const a=b.arcs.find(x=>t>=x.t0&&t<x.t1); if(!a) return {x:b.x===undefined?0.5:b.x,y:0}; const u=(t-a.t0)/(a.t1-a.t0), x=billeXof(a.sx,t);
+    if(a.type==="hang") return {x,y:1}; if(a.type==="fall") return {x,y:1-u*u}; if(a.type==="arc") return {x,y:a.h*4*u*(1-u)}; return {x,y:0}; });
+  /* l'arbre pour l'affichage : branches poussées, et l'éclat de chaque nœud (1 juste après qu'il a sonné) */
+  const arbreState=t=>{ if(!arbre) return null; const A=S.arbre||{}, P=Math.max(0,(A.pousse===undefined?3:A.pousse)*60), D=arbre.D, gd=P<=0?D:clamp((t-arbre.t0)/P*D,0,D);
+    return {grown:gd,nodes:arbre.nodes.map(n=>{ let h=-1; n.hits.forEach(x=>{ if(x<=t&&x>h) h=x; }); return {x:n.x,y:n.y,px:n.px,py:n.py,d:n.d,glow:h<0?0:Math.max(0,1-(t-h)/1.6)}; })}; };
   const pendX=t=>Array.from({length:pendN()},(_,i)=>Math.cos(2*Math.PI*(PEND_N0+i)*(t-t0)/(S.pend.period*bar)));
   built=true; fxAttach();
   /* banque de sons pour le Studio : les instruments, nappes et batteries de la machine, joués vers une destination donnée */
@@ -2036,5 +2077,5 @@ function buildEngine(ctx, S, o){
     perc:(k,part,t,v,dst)=>{ const s=PB; PB=dst; try{ (KITS[k]||KITS.cadre)[part](t,v); } finally{ PB=s; } },
     kpat:KPAT, kits:Object.keys(KITS), noise:()=>wb
   };
-  return {billeY,bank,pieceEnd:()=>pieceFade,fxAttach,grainFreeze,fxOn:()=>!!fx,start,schedule,setLevels,setReverb,stop,fadeOut,sleepFade,sleepClear,replan,freeze,reroll,gesture,play,synOn,dawOn,dawNote,rackSync,meter,tap:()=>volG,analyser:k=>k==="all"?anaAll:anaSyn,dawReplan,dawPos,pendX,tensNow:()=>tensAt(ctx.currentTime),adaptNow:()=>adaptE(ctx.currentTime),tensPos:()=>{ if(!curveOn()) return -1; const L=Math.max(30,S.curve.dur*60), x=(ctx.currentTime-t0)/L; return S.curve.mode==='loop'?((x%1)+1)%1:clamp(x,0,1); },events,out,master,secAt:t=>secOf(t),bar,E,t0f:()=>t0,chords:()=>chordTl.slice(),phraseBars:()=>[...phBars],fillBars:()=>fillBars.slice()};
+  return {arbreState,billeY,bank,pieceEnd:()=>pieceFade,fxAttach,grainFreeze,fxOn:()=>!!fx,start,schedule,setLevels,setReverb,stop,fadeOut,sleepFade,sleepClear,replan,freeze,reroll,gesture,play,synOn,dawOn,dawNote,rackSync,meter,tap:()=>volG,analyser:k=>k==="all"?anaAll:anaSyn,dawReplan,dawPos,pendX,tensNow:()=>tensAt(ctx.currentTime),adaptNow:()=>adaptE(ctx.currentTime),tensPos:()=>{ if(!curveOn()) return -1; const L=Math.max(30,S.curve.dur*60), x=(ctx.currentTime-t0)/L; return S.curve.mode==='loop'?((x%1)+1)%1:clamp(x,0,1); },events,out,master,secAt:t=>secOf(t),bar,E,t0f:()=>t0,chords:()=>chordTl.slice(),phraseBars:()=>[...phBars],fillBars:()=>fillBars.slice()};
 }

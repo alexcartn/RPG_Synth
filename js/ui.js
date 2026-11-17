@@ -341,17 +341,17 @@ const UI=[
    {k:"drift.3.t2",type:"select",label:"Dérive 4 : et aussi",opts:DRIFT2_OPTS},
    {k:"drift.3.d",type:"range",label:"Dérive 4 : profondeur",min:0,max:1,step:0.01,fmt:pct},
    {k:"drift.3.v",type:"range",label:"Dérive 4 : vitesse",min:0,max:1,step:0.01,fmt:pct}]}]},
- {num:"VIII", title:"Boucles et pendules", fr:"", sub:"Deux machines à hasard réglé : des boucles de bande de longueurs premières entre elles, et des pendules qui se désynchronisent puis se retrouvent.", groups:[
-  {h:"Boucles de bande", hf:"", items:[
-   {k:"loops.lvl",type:"range",label:"Niveau (0 = absentes)",min:0,max:1,step:0.01,fmt:pct},
-   {k:"loops.inst",type:"select",label:"Instrument",opts:INST_OPTS},
-   {k:"loops.count",type:"range",label:"Nombre de boucles",min:1,max:5,step:1,fmt:v=>v+(v>1?" boucles":" boucle")},
-   {k:"loops.speed",type:"range",label:"Durée des boucles",min:0.6,max:2,step:0.05,fmt:v=>"× "+v.toFixed(2)}]},
-  {h:"Pendules", hf:"", items:[
-   {k:"pend.lvl",type:"range",label:"Niveau (0 = absents)",min:0,max:1,step:0.01,fmt:pct},
-   {k:"pend.inst",type:"select",label:"Instrument",opts:INST_OPTS},
-   {k:"pend.count",type:"range",label:"Nombre de pendules",min:3,max:10,step:1,fmt:v=>v+" pendules"},
-   {k:"pend.period",type:"range",label:"Période de resynchronisation",min:8,max:48,step:2,fmt:v=>v+" mesures"}]}]}
+ {num:"VIII", title:"Boucles et pendules", fr:"", sub:"Deux voix sans mesure à elles : chacune tourne à son rythme, et les superpositions changent tout le temps. Les boucles font revenir des notes à des intervalles inégaux ; les pendules partent ensemble, s'éparpillent, puis se retrouvent. Le « ? » à côté de chaque réglage l'explique.", groups:[
+  {h:"Boucles de bande", hf:"des notes qui reviennent, chacune à son rythme", items:[
+   {k:"loops.lvl",type:"range",label:"Niveau (0 = absentes)",min:0,max:1,step:0.01,fmt:pct,hint:"Le volume des boucles. À 0, elles sont éteintes."},
+   {k:"loops.inst",type:"select",label:"Instrument",opts:INST_OPTS,hint:"Le son des notes de boucle."},
+   {k:"loops.count",type:"range",label:"Nombre de boucles",min:1,max:5,step:1,fmt:v=>v+(v>1?" boucles":" boucle"),hint:"Chaque boucle est une seule note qui revient à intervalles réguliers. Avec plusieurs boucles de durées différentes (premières entre elles), les notes se superposent autrement à chaque tour : l'ensemble ne se répète presque jamais, comme les boucles de bande d'Eno."},
+   {k:"loops.speed",type:"range",label:"Durée des boucles",min:0.6,max:2,step:0.05,fmt:v=>"× "+v.toFixed(2),hint:"Allonge ou raccourcit toutes les boucles à la fois. Plus c'est grand, plus les notes reviennent rarement."}]},
+  {h:"Pendules", hf:"des notes qui s'éparpillent puis se retrouvent", items:[
+   {k:"pend.lvl",type:"range",label:"Niveau (0 = absents)",min:0,max:1,step:0.01,fmt:pct,hint:"Le volume des pendules. À 0, ils sont éteints."},
+   {k:"pend.inst",type:"select",label:"Instrument",opts:INST_OPTS,hint:"Le son des notes de pendule."},
+   {k:"pend.count",type:"range",label:"Nombre de pendules",min:3,max:10,step:1,fmt:v=>v+" pendules",hint:"Chaque pendule bat à une vitesse un peu différente : 3 battements par période pour le premier, 4 pour le suivant, et ainsi de suite. Ils partent ensemble, se désynchronisent, puis retombent ensemble. On entend des notes qui s'éparpillent puis se rassemblent ; le dessin sous le cercle des hauteurs les montre."},
+   {k:"pend.period",type:"range",label:"Période de resynchronisation",min:8,max:48,step:2,fmt:v=>v+" mesures",hint:"La durée d'un cycle complet, de l'unisson au retour à l'unisson. Plus c'est long, plus l'éparpillement est lent."}]}]}
 ];
 
 const CTL=[];

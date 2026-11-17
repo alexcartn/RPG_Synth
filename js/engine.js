@@ -612,6 +612,70 @@ function buildEngine(ctx, S, o){
   PHYS.flute=(t,f,vel,len,dst,pan)=>wgPlay("f",t,f,vel,Math.max(0.2,len),dst,pan,{noise:0.12},1.2,false);
   PHYS.ney=(t,f,vel,len,dst,pan)=>wgPlay("f",t,f,vel,Math.max(0.25,len),dst,pan,{noise:0.24,att:0.12,pressure:0.97},1.15,true);
   PHYS.archet=(t,f,vel,len,dst,pan)=>{ if(f>800) return INST.archet(t,f,vel,len,dst,pan); wgPlay("b",t,f,vel,Math.max(0.3,len),dst,pan,{},1.8,false); };
+  /* ---------- piano droit de bastringue : partiels inharmoniques, deux cordes désaccordées par note, étouffoir au relâchement ---------- */
+  const BASS_CURVE=(()=>{ const n=1024, c=new Float32Array(n); for(let i=0;i<n;i++){ const x=i/(n-1)*2-1; c[i]=Math.tanh(1.8*x)/Math.tanh(1.8); } return c; })();
+  const pianoCache=new Map();
+  function pianoBuf(f,vel){
+    const vq=Math.round(clamp(vel*4,0,1)*5), key=Math.round(f*20)+"|"+vq, hit=pianoCache.get(key);
+    if(hit){ pianoCache.delete(key); pianoCache.set(key,hit); return hit; }
+    const vv=vq/5, dur=clamp(1.4+1.8*(260/f),1.2,3.6), n=Math.floor(sr*dur), out=new Float32Array(n), Bi=0.0006, nyq=Math.min(sr*0.45,9500);
+    const T=dur*0.55, bright=2.5+9*vv;
+    [-11,11].forEach(cents=>{ /* honky-tonk : les deux cordes d'un même chœur battent l'une contre l'autre */
+      const fs=f*Math.pow(2,cents/1200);
+      for(let k=1;k<=18;k++){
+        const fk=fs*k*Math.sqrt(1+Bi*k*k); if(fk>nyq) break;
+        const a=Math.pow(k,-0.85)*Math.exp(-(k-1)/bright)*Math.abs(Math.sin(Math.PI*k*0.13))*0.5;
+        const tau=T/(1+0.45*(k-1)), w=2*Math.PI*fk/sr, cw=Math.cos(w), sw=Math.sin(w);
+        const d1=Math.exp(-1/(sr*tau*0.25)), d2=Math.exp(-1/(sr*tau));
+        let re=0, im=1, e1=0.65*a, e2=0.35*a; /* double décroissance : attaque qui s'éteint vite, résonance qui traîne */
+        for(let i=0;i<n;i++){ out[i]+=im*(e1+e2); const r2=re*cw-im*sw; im=re*sw+im*cw; re=r2; e1*=d1; e2*=d2; }
+      }
+    });
+    /* le marteau : un petit choc sourd */
+    let lp=0; const rnd=mulberry32((Math.floor(f*10)*2246822519)>>>0), hn=Math.floor(sr*0.012);
+    for(let i=0;i<hn;i++){ lp+=((rnd()*2-1)-lp)*0.25; out[i]+=lp*0.35*(0.4+vv)*(1-i/hn); }
+    let pk=0; for(let i=0;i<n;i++){ const a=out[i]<0?-out[i]:out[i]; if(a>pk) pk=a; }
+    const nf=Math.floor(sr*0.04), sc=0.9/(pk||1); for(let i=0;i<n;i++){ let v=out[i]*sc; if(i>n-nf) v*=(n-i)/nf; out[i]=v; }
+    const buf=ctx.createBuffer(1,n,sr); buf.getChannelData(0).set(out);
+    const r={buf,dur}; pianoCache.set(key,r); if(pianoCache.size>48) pianoCache.delete(pianoCache.keys().next().value); return r;
+  }
+  INST.piano=(t,f,vel,len,dst,pan)=>{
+    const pb=pianoBuf(f,vel), x=ctx.createBufferSource(); x.buffer=pb.buf; x.playbackRate.value=1;
+    const e=G(0), off=t+Math.max(0.12,len)+0.02; e.gain.setValueAtTime(vel*4,t);
+    if(off<t+pb.dur){ e.gain.setValueAtTime(vel*4,off); e.gain.setTargetAtTime(0,off,0.07); }
+    x.connect(e); route(e,pan,dst); x.start(t); x.stop(Math.min(t+pb.dur,off+0.6)+0.05);
+  };
+  /* ---------- guitare : corde d'acier pincée près du chevalet, caisse de résonance en bois ---------- */
+  INST.guitare=(t,f,vel,len,dst,pan)=>{
+    const pb=pluckBuf(f,vel,{id:"g",t60:3.4,bright:0.9,pos:0.09}), x=ctx.createBufferSource(); x.buffer=pb.buf;
+    const b1=ctx.createBiquadFilter(), b2=ctx.createBiquadFilter(), hs=ctx.createBiquadFilter();
+    b1.type="peaking"; b1.frequency.value=105; b1.gain.value=7; b1.Q.value=1.6;
+    b2.type="peaking"; b2.frequency.value=230; b2.gain.value=4; b2.Q.value=1.4;
+    hs.type="highshelf"; hs.frequency.value=3200; hs.gain.value=3;
+    const e=G(vel*3.4); x.connect(b1); b1.connect(b2); b2.connect(hs); hs.connect(e); route(e,pan,dst);
+    x.start(t); x.stop(t+pb.dur+0.05);
+    noiseHit(t,vel*0.1,4200,0.012,"bandpass",dst); /* le médiator */
+  };
+  /* ---------- basse : toujours ramenée dans le grave (40 à 160 Hz), scie et carré sous un filtre qui claque ---------- */
+  INST.basse=(t,f,vel,len,dst,pan)=>{
+    let fb=f; while(fb>160) fb/=2; while(fb<40) fb*=2;
+    const L=Math.max(0.12,len), fl=ctx.createBiquadFilter(); fl.type="lowpass"; fl.Q.value=5;
+    fl.frequency.setValueAtTime(clamp(fb*3+2600*vel*4,250,3200),t); fl.frequency.setTargetAtTime(fb*2.2,t+0.01,0.09);
+    const sh=ctx.createWaveShaper(); sh.curve=BASS_CURVE; const e=envA(t,0.004,vel*1.5,0.07,L);
+    fl.connect(sh); sh.connect(e); route(e,pan*0.3,dst);
+    const a=ctx.createOscillator(), b=ctx.createOscillator(), gb=G(0.6); a.type="sawtooth"; b.type="square"; a.frequency.value=fb; b.frequency.value=fb; b.detune.value=-6;
+    a.connect(fl); b.connect(gb); gb.connect(fl); [a,b].forEach(o=>{ o.start(t); o.stop(t+L+0.12); });
+  };
+  /* ---------- accordéon musette : trois anches (une juste, deux désaccordées), un soufflet qui respire ---------- */
+  INST.accordeon=(t,f,vel,len,dst,pan)=>{
+    const L=Math.max(0.15,len), fl=ctx.createBiquadFilter(), fm=ctx.createBiquadFilter();
+    fl.type="lowpass"; fl.Q.value=0.7; fl.frequency.value=clamp(f*5+1500*bri(vel),1200,5500);
+    fm.type="peaking"; fm.frequency.value=1250; fm.gain.value=5; fm.Q.value=1.3;
+    const e=envA(t,0.035,vel*0.55,0.09,L), sw=ctx.createOscillator(), sg=G(vel*0.06); sw.frequency.value=0.9+((f*7.31+t*3.7)%1)*0.6; /* pas de tirage : les stems doivent rester alignés */ sw.connect(sg); sg.connect(e.gain);
+    fl.connect(fm); fm.connect(e); route(e,pan,dst);
+    [[-13,0.8],[0,1],[13,0.8]].forEach(([d,a])=>{ const x=ctx.createOscillator(), g=G(a); x.type="sawtooth"; x.frequency.value=f; x.detune.value=d; x.connect(g); g.connect(fl); x.start(t); x.stop(t+L+0.15); });
+    sw.start(t); sw.stop(t+L+0.15);
+  };
   const instOf=(name,fb)=>(physOn()&&PHYS[name])||INST[name]||INST[fb||"luth"];
 
   /* ---------- synthé perso : l'Atelier comme instrument ---------- */
@@ -708,9 +772,9 @@ function buildEngine(ctx, S, o){
   }
 
   /* ---------- percussion ---------- */
-  function noiseHit(t,vel,fq,dur,type,dst){
-    const s=ctx.createBufferSource(); s.buffer=wb; const f=ctx.createBiquadFilter(); f.type=type; f.frequency.value=fq; f.Q.value=type==="bandpass"?1.2:0.7;
-    const e=G(0); e.gain.setValueAtTime(0,t); e.gain.linearRampToValueAtTime(vel,t+0.002); e.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  function noiseHit(t,vel,fq,dur,type,dst,q,att){
+    const s=ctx.createBufferSource(); s.buffer=wb; const f=ctx.createBiquadFilter(); f.type=type; f.frequency.value=fq; f.Q.value=q||(type==="bandpass"?1.2:0.7);
+    const e=G(0); e.gain.setValueAtTime(0,t); e.gain.linearRampToValueAtTime(vel,t+(att||0.002)); e.gain.exponentialRampToValueAtTime(0.0001,t+dur);
     s.connect(f); f.connect(e); e.connect(dst); s.start(t,R.v()*1.5); s.stop(t+dur+0.05);
   }
   function thump(t,vel,f0,f1,dur){
@@ -726,9 +790,48 @@ function buildEngine(ctx, S, o){
       x.connect(e); e.connect(B.perc.in); x.start(t); x.stop(t+dec*dm+0.05);
     });
   }
-  const stomp=(t,v)=>{ if(physOn()){ membrane(t,v,88,0.42,0.55); noiseHit(t,v*0.2,380,0.05,"lowpass",B.perc.in); } else{ thump(t,v*0.7,115,46,0.35); noiseHit(t,v*0.18,420,0.06,"lowpass",B.perc.in); } };
-  const tap=(t,v)=>{ if(physOn()){ membrane(t,v,170,0.16,0.3); noiseHit(t,v*0.45,1900,0.07,"bandpass",B.perc.in); } else{ thump(t,v*0.25,220,150,0.1); noiseHit(t,v*0.5,1700,0.09,"bandpass",B.perc.in); } };
-  const shaker=(t,v)=>noiseHit(t,v,7000,0.045,"highpass",B.perc.in);
+  /* son bref accordé : hauteur qui tombe de f0 à f1 en « drop » secondes */
+  function ping(t,vel,f0,f1,drop,dec,type){
+    const x=ctx.createOscillator(); x.type=type||"sine"; x.frequency.setValueAtTime(f0,t); x.frequency.exponentialRampToValueAtTime(f1,t+drop);
+    const e=G(0); e.gain.setValueAtTime(0,t); e.gain.linearRampToValueAtTime(vel,t+0.002); e.gain.exponentialRampToValueAtTime(0.0001,t+dec);
+    x.connect(e); e.connect(B.perc.in); x.start(t); x.stop(t+dec+0.05);
+  }
+  /* métal : partiels inharmoniques (cymbalette, charleston), passés par un passe-haut */
+  function metal(t,vel,ratios,f0,dec,hp){
+    const f=ctx.createBiquadFilter(); f.type="highpass"; f.frequency.value=hp; const e=G(0);
+    e.gain.setValueAtTime(0,t); e.gain.linearRampToValueAtTime(vel,t+0.001); e.gain.exponentialRampToValueAtTime(0.0001,t+dec); f.connect(e); e.connect(B.perc.in);
+    ratios.forEach(r=>{ const x=ctx.createOscillator(); x.type="square"; x.frequency.value=f0*r; x.connect(f); x.start(t); x.stop(t+dec+0.05); });
+  }
+  const PB=B.perc.in, HAT=[1,1.483,1.932,2.546,2.63,3.897];
+  /* batteries : chaque univers frappe sur sa peau. stomp = temps fort grave, tap = contretemps, shaker = remplissage */
+  const KITS={
+    cadre:{ /* tambour sur cadre, bodhrán : la batterie d'origine */
+      stomp:(t,v)=>{ if(physOn()){ membrane(t,v,88,0.42,0.55); noiseHit(t,v*0.2,380,0.05,"lowpass",PB); } else{ thump(t,v*0.7,115,46,0.35); noiseHit(t,v*0.18,420,0.06,"lowpass",PB); } },
+      tap:(t,v)=>{ if(physOn()){ membrane(t,v,170,0.16,0.3); noiseHit(t,v*0.45,1900,0.07,"bandpass",PB); } else{ thump(t,v*0.25,220,150,0.1); noiseHit(t,v*0.5,1700,0.09,"bandpass",PB); } },
+      shaker:(t,v)=>noiseHit(t,v,7000,0.045,"highpass",PB)},
+    caisse:{ /* grosse caisse et caisse claire à timbre : marche, bataille */
+      stomp:(t,v)=>{ membrane(t,v*0.95,56,0.75,0.75); noiseHit(t,v*0.25,260,0.07,"lowpass",PB); },
+      tap:(t,v)=>{ membrane(t,v*0.7,185,0.13,0.4); noiseHit(t,v*0.7,3800,0.19,"bandpass",PB,0.6); noiseHit(t,v*0.3,7000,0.12,"highpass",PB); },
+      shaker:(t,v)=>noiseHit(t,v*1.3,4200,0.06,"bandpass",PB,0.8)},
+    electro:{ /* boîte à rythmes : grosse caisse en sinus qui plonge, claquement, charleston métallique */
+      stomp:(t,v)=>{ ping(t,v*1.1,165,46,0.07,0.55); noiseHit(t,v*0.12,3200,0.008,"highpass",PB); },
+      tap:(t,v)=>{ [0,0.011,0.023].forEach((d,i)=>noiseHit(t+d,v*(i<2?0.5:0.75),1150,i<2?0.012:0.16,"bandpass",PB,1.6)); },
+      shaker:(t,v)=>metal(t,v*0.8,HAT,330,0.045,7200)},
+    darbouka:{ /* doum grave, tek sec sur le bord, cymbalettes du riqq */
+      stomp:(t,v)=>{ membrane(t,v*0.9,98,0.5,0.7); },
+      tap:(t,v)=>{ ping(t,v*0.45,900,700,0.02,0.07); noiseHit(t,v*0.75,3000,0.035,"bandpass",PB,1.8); },
+      shaker:(t,v)=>{ metal(t,v*0.55,[1,1.37,1.81],4300,0.14,5000); noiseHit(t,v*0.5,8500,0.05,"highpass",PB); }},
+    taiko:{ /* grand tambour de cérémonie, bord de fût au bâton, claquoir de bois */
+      stomp:(t,v)=>{ membrane(t,v,48,1.2,0.95); noiseHit(t,v*0.3,180,0.15,"lowpass",PB); },
+      tap:(t,v)=>{ membrane(t,v*0.75,118,0.32,0.55); ping(t,v*0.25,1250,1150,0.01,0.05); },
+      shaker:(t,v)=>{ ping(t,v*1.4,1650,1500,0.01,0.03); noiseHit(t,v*0.4,2400,0.02,"bandpass",PB,3); }},
+    bastringue:{ /* caisse au balai, coup de botte sur le plancher, tambourin */
+      stomp:(t,v)=>{ ping(t,v*1.1,125,70,0.06,0.2); noiseHit(t,v*0.4,700,0.05,"lowpass",PB); },
+      tap:(t,v)=>{ noiseHit(t,v,2600,0.16,"bandpass",PB,0.7,0.012); membrane(t,v*0.35,210,0.1,0.3); },
+      shaker:(t,v)=>{ metal(t,v*0.6,[1,1.42,1.73],5200,0.16,6000); noiseHit(t,v*0.6,9000,0.07,"highpass",PB); }}
+  };
+  const kit=()=>KITS[S.perc.kit]||KITS.cadre;
+  const stomp=(t,v)=>kit().stomp(t,v), tap=(t,v)=>kit().tap(t,v), shaker=(t,v)=>kit().shaker(t,v);
 
   /* ---------- lieu : murmure, tintements, feu, vent, gouttes ---------- */
   const bands=[];
@@ -1104,7 +1207,7 @@ function buildEngine(ctx, S, o){
         const tt=onsets[ni], vel=nt.vel, len=Math.max(0.05,Math.min(E*nt.dE*0.92,ni+1<onsets.length?onsets[ni+1]-tt-0.02:1e9));
         if(!skipped&&want("mel")&&S.mel.lvl>0.001){
           const fn=instOf(S.mel.inst,"luth");
-          if((nt.grace||nt.trill)&&pool.length>2&&(S.mel.inst==="luth"||S.mel.inst==="harpe"||S.mel.inst==="carillon"||S.mel.inst==="oud"||S.mel.inst==="kalimba")){
+          if((nt.grace||nt.trill)&&pool.length>2&&(S.mel.inst==="luth"||S.mel.inst==="harpe"||S.mel.inst==="carillon"||S.mel.inst==="oud"||S.mel.inst==="kalimba"||S.mel.inst==="guitare"||S.mel.inst==="piano")){
             const gi=clamp(pool.indexOf(off)+nt.gdir,0,pool.length-1); if(nt.trill){ fn(tt-0.16,freq(pool[gi]),vel*0.42,0.07,V.mel.node,0); fn(tt-0.08,freq(off),vel*0.5,0.07,V.mel.node,0); } fn(tt-0.07+(nt.trill?0.0:0),freq(pool[gi]),vel*0.55,0.08,V.mel.node,0);
           }
           const pan=clamp((R.v()*2-1)*0.35+0.8*dv("pan"),-1,1);

@@ -185,7 +185,7 @@ setInterval(()=>{ if(typeof atScaleSync==="function") atScaleSync(); if(live){ c
 
 /* ---------- construction des contrôles ---------- */
 const pct=v=>Math.round(v*100)+" %";
-const INST_OPTS=[["luth","Luth"],["harpe","Harpe"],["flute","Flûte"],["carillon","Carillon"],["orgue","Orgue positif"],["oud","Oud (corde pincée)"],["ney","Ney (flûte soufflée)"],["kalimba","Kalimba"],["bol","Bol chantant"],["verre","Cloches de verre"],["synthe","Synthé doux"],["archet","Archet (violon, viole)"],["cuivre","Cuivre doux"],["atelier","Synthé perso (Atelier)"]];
+const INST_OPTS=[["luth","Luth"],["harpe","Harpe"],["flute","Flûte"],["carillon","Carillon"],["orgue","Orgue positif"],["oud","Oud (corde pincée)"],["ney","Ney (flûte soufflée)"],["kalimba","Kalimba"],["bol","Bol chantant"],["verre","Cloches de verre"],["synthe","Synthé doux"],["archet","Archet (violon, viole)"],["cuivre","Cuivre doux"],["guitare","Guitare (acier)"],["piano","Piano de bastringue"],["accordeon","Accordéon musette"],["basse","Basse synthé (grave)"],["atelier","Synthé perso (Atelier)"]];
 const DRIFT_OPTS=[["none","Rien"],["filtre","Éclat du bourdon"],["reverb","Réverbération"],["densite","Densité de la mélodie"],["pan","Place de la mélodie (pan)"],["tension","Tension"],["voile","Voile (aigus)"],["grain","Nuage de grains"]];
 /* seconde cible d'une dérive : la même liste, dans le même sens puis à l'envers */
 const DRIFT2_OPTS=DRIFT_OPTS.concat(DRIFT_OPTS.slice(1).map(([k,l])=>["-"+k,l+", à l'envers"]));
@@ -206,7 +206,8 @@ const UI=[
    {k:"tempo",type:"range",label:"Tempo",min:40,max:180,step:1,fmt:v=>v+" bpm",restart:true},
    {k:"meter",type:"select",label:"Mesure",opts:Object.keys(METERS).map(k=>[k,k]),restart:true},
    {k:"swing",type:"range",label:"Swing",min:0,max:1,step:0.01,fmt:pct},
-   {k:"perc.lvl",type:"range",label:"Percussion",min:0,max:1,step:0.01,fmt:pct}]},
+   {k:"perc.lvl",type:"range",label:"Percussion",min:0,max:1,step:0.01,fmt:pct},
+   {k:"perc.kit",type:"select",label:"Batterie",opts:[["cadre","Tambour sur cadre"],["caisse","Grosse caisse et caisse claire"],["taiko","Grand tambour, bâton, claquoir"],["darbouka","Darbouka et riqq"],["bastringue","Balais, botte et tambourin"],["electro","Boîte à rythmes"]]}]},
   {fin:"Réglages de la percussion", items:[
    {k:"perc.shaker",type:"range",label:"Densité du shaker",min:0,max:1,step:0.01,fmt:pct},
    {k:"perc.ghost",type:"range",label:"Frappes fantômes",min:0,max:1,step:0.01,fmt:pct}]}]},

@@ -18,7 +18,8 @@ const w=dom.window,d=w.document;
    pas les résultats du moment : s'il échoue, c'est la musique qu'il faut corriger, pas le seuil. */
 const NAMES=(process.argv.slice(2).find(a=>!a.startsWith('--'))||'Taberna,Tripudium,Chorea,Sidera,Somnus,Crypta,Bayati,Scriptorium').split(',');
 const ONLY=process.argv.includes('--print');
-const DANCE=['Taberna','Tripudium','Chorea'], SLOW=['Sidera','Somnus'];
+/* depuis les versions ambiance, la taverne, le branle et la gigue sont des ambiances lentes au placement libre : plus aucune danse à caler sur la grille */
+const DANCE=[], SLOW=['Sidera','Somnus','Taberna','Tripudium','Chorea'];
 setTimeout(()=>{
 
  try{

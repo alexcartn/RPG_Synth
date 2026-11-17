@@ -14,7 +14,7 @@ function tickSchedule(){ if(live) live.eng.schedule(live.ctx.currentTime+lookahe
 document.addEventListener("visibilitychange",tickSchedule);
 
 /* réglages immédiats : quelles voix replanifier quand un réglage change, sans redémarrer le moteur */
-const GAIN_ONLY={"mel.lvl":"mel","canon.lvl":"mel","pad.lvl":"pad","loops.lvl":"loops","pend.lvl":"pend"};
+const GAIN_ONLY={"mel.lvl":"mel","canon.lvl":"mel","pad.lvl":"pad","loops.lvl":"loops","pend.lvl":"pend","bille.lvl":"bille"};
 function replanTarget(k,prev,now){
   if(k in GAIN_ONLY) return ((prev>0.001)!==(now>0.001))?GAIN_ONLY[k]:null; /* seulement quand une voix s'allume ou s'éteint */
   if(k.startsWith("mel.")||k.startsWith("canon.")||k.startsWith("car.")||k.startsWith("chance.")||k.startsWith("turing.")) return "mel";
@@ -23,6 +23,7 @@ function replanTarget(k,prev,now){
   if(k.startsWith("arp.")) return "arp";
   if(k.startsWith("plain.")||k==="chant") return "plain";
   if(k.startsWith("pend.")) return "pend";
+  if(k.startsWith("bille.")) return "bille";
   if(k.startsWith("scales.")||k==="sectionBars"||k.startsWith("mus.")) return "all";
   return null;
 }
@@ -126,6 +127,20 @@ function setPlayUI(on){
 }
 $("play").onclick=$("play2").onclick=$("play3").onclick=()=>{live?stopLive():startLive();};
 
+/* billes : chacune tombe et rebondit dans sa colonne ; la trace s'efface derrière elle */
+function drawBille(){
+  const cv=$("billeCv"); if(!cv) return; const wrap=cv.parentNode, on=live&&S.bille&&S.bille.lvl>0.001&&live.eng.billeY;
+  if(wrap.hidden===!!on) wrap.hidden=!on;
+  if(!on) return;
+  const c=cv.getContext("2d"), W=cv.width, H=cv.height, now=live.ctx.currentTime, ys=live.eng.billeY(now), N=ys.length;
+  const cs=getComputedStyle(document.documentElement), ink=cs.getPropertyValue("--ink").trim()||"#3a2e22", rub=cs.getPropertyValue("--rubric").trim()||"#a3301c";
+  c.clearRect(0,0,W,H); const floor=H-10, top=12;
+  c.strokeStyle=ink; c.globalAlpha=.5; c.lineWidth=2; c.beginPath(); c.moveTo(0,floor+6); c.lineTo(W,floor+6); c.stroke();
+  for(let i=0;i<N;i++){ const x=W*(i+0.5)/N;
+    c.globalAlpha=.18; c.lineWidth=1; for(let k=1;k<=6;k++){ const y=live.eng.billeY(now-k*0.035)[i]; c.beginPath(); c.arc(x,floor-y*(floor-top),6-k*0.6,0,Math.PI*2); c.fillStyle=ink; c.fill(); }
+    c.globalAlpha=1; const y=floor-ys[i]*(floor-top); c.fillStyle=rub; c.beginPath(); c.arc(x,y,7,0,Math.PI*2); c.fill();
+    if(ys[i]<0.02){ c.strokeStyle=rub; c.globalAlpha=.4; c.beginPath(); c.ellipse(x,floor+6,12,3,0,0,Math.PI*2); c.stroke(); c.globalAlpha=1; } }
+}
 function drawPend(){
   const cv=$("pend"), wrap=cv.parentNode, on=live&&S.pend.lvl>0.001;
   if(wrap.hidden===on) wrap.hidden=!on;
@@ -142,7 +157,7 @@ function drawPend(){
 function frame(ts){
   raf=0; if(!live) return;
   { const pe=live.eng.pieceEnd&&live.eng.pieceEnd(); if(pe&&live.ctx.currentTime>pe+0.3){ stopLive(); status("La pièce est finie.","ok"); return; } }
-  if(!isEco()||ts-lastFrame>=33){ lastFrame=ts; vizDraw(live.ctx.currentTime,live.eng); drawPend(); tableFrame(); jeuFrame(); }
+  if(!isEco()||ts-lastFrame>=33){ lastFrame=ts; vizDraw(live.ctx.currentTime,live.eng); drawPend(); drawBille(); tableFrame(); jeuFrame(); }
   raf=requestAnimationFrame(frame);
 }
 
@@ -387,7 +402,7 @@ const UI=[
    {k:"drift.3.t2",type:"select",label:"Dérive 4 : et aussi",opts:DRIFT2_OPTS},
    {k:"drift.3.d",type:"range",label:"Dérive 4 : profondeur",min:0,max:1,step:0.01,fmt:pct},
    {k:"drift.3.v",type:"range",label:"Dérive 4 : vitesse",min:0,max:1,step:0.01,fmt:pct}]}]},
- {num:"VIII", title:"Boucles et pendules", fr:"", sub:"Deux voix sans mesure à elles : chacune tourne à son rythme, et les superpositions changent tout le temps. Les boucles font revenir des notes à des intervalles inégaux ; les pendules partent ensemble, s'éparpillent, puis se retrouvent. Le « ? » à côté de chaque réglage l'explique.", groups:[
+ {num:"VIII", title:"Boucles, pendules et billes", fr:"", sub:"Deux voix sans mesure à elles : chacune tourne à son rythme, et les superpositions changent tout le temps. Les boucles font revenir des notes à des intervalles inégaux ; les pendules partent ensemble, s'éparpillent, puis se retrouvent. Le « ? » à côté de chaque réglage l'explique.", groups:[
   {h:"Boucles de bande", hf:"des notes qui reviennent, chacune à son rythme", items:[
    {k:"loops.lvl",type:"range",label:"Niveau (0 = absentes)",min:0,max:1,step:0.01,fmt:pct,hint:"Le volume des boucles. À 0, elles sont éteintes."},
    {k:"loops.inst",type:"select",label:"Instrument",opts:INST_OPTS,hint:"Le son des notes de boucle."},
@@ -397,7 +412,15 @@ const UI=[
    {k:"pend.lvl",type:"range",label:"Niveau (0 = absents)",min:0,max:1,step:0.01,fmt:pct,hint:"Le volume des pendules. À 0, ils sont éteints."},
    {k:"pend.inst",type:"select",label:"Instrument",opts:INST_OPTS,hint:"Le son des notes de pendule."},
    {k:"pend.count",type:"range",label:"Nombre de pendules",min:3,max:10,step:1,fmt:v=>v+" pendules",hint:"Chaque pendule bat à une vitesse un peu différente : 3 battements par période pour le premier, 4 pour le suivant, et ainsi de suite. Ils partent ensemble, se désynchronisent, puis retombent ensemble. On entend des notes qui s'éparpillent puis se rassemblent ; le dessin sous le cercle des hauteurs les montre."},
-   {k:"pend.period",type:"range",label:"Période de resynchronisation",min:8,max:48,step:2,fmt:v=>v+" mesures",hint:"La durée d'un cycle complet, de l'unisson au retour à l'unisson. Plus c'est long, plus l'éparpillement est lent."}]}]}
+   {k:"pend.period",type:"range",label:"Période de resynchronisation",min:8,max:48,step:2,fmt:v=>v+" mesures",hint:"La durée d'un cycle complet, de l'unisson au retour à l'unisson. Plus c'est long, plus l'éparpillement est lent."}]},
+  {h:"Billes", hf:"des notes qui tombent, rebondissent et s'accélèrent", items:[
+   {k:"bille.lvl",type:"range",label:"Niveau (0 = absentes)",min:0,max:1,step:0.01,fmt:pct,hint:"Le volume des billes. À 0, elles sont éteintes."},
+   {k:"bille.inst",type:"select",label:"Instrument",opts:INST_OPTS,hint:"Le son de chaque rebond. Kalimba, verre, carillon et harpe sonnent comme des billes sur une lame."},
+   {k:"bille.count",type:"range",label:"Nombre de billes",min:1,max:6,step:1,fmt:v=>v+(v>1?" billes":" bille"),hint:"Chaque bille tombe d'une hauteur un peu différente : leurs rebonds s'entrecroisent puis se séparent."},
+   {k:"bille.haut",type:"range",label:"Hauteur de chute",min:0.25,max:3,step:0.05,fmt:v=>v.toFixed(2)+" mesure"+(v>=2?"s":""),hint:"Le temps de la première chute. Plus c'est haut, plus les premiers rebonds sont longs et lents."},
+   {k:"bille.rebond",type:"range",label:"Rebond",min:0.4,max:0.92,step:0.01,fmt:pct,hint:"L'énergie gardée à chaque rebond. Bas : quelques rebonds secs. Haut : une longue accélération qui s'éteint comme une bille de verre."},
+   {k:"bille.pause",type:"range",label:"Repos avant de la relâcher",min:0,max:4,step:0.1,fmt:v=>"× "+v.toFixed(1),hint:"Le temps où la bille reste au sol avant d'être relâchée, en multiple de son temps de chute."},
+   {k:"bille.mode",type:"select",label:"Notes",opts:[["fixe","Une note par bille (de l'accord)"],["descend","Descend la gamme à chaque rebond"]],hint:"Une seule note qui rebondit, ou une cascade qui descend la gamme."}]}]}
 ];
 
 const CTL=[];

@@ -37,6 +37,10 @@ Une page à part, reliée par le lien « Studio » de la barre des modes. Ici ri
 
 On arrive sur Conduire : un univers (Médiéval, Aventure, Pirates, Nordique, Féerie, Horreur, Cyberpunk, Espace, Orient, Nature, Calme, ou Au hasard) et ce qu'on cherche (quatorze émotions), le bouton Jouer, huit boutons (volume, tension, densité, bourdon, nappes, brume, nuage, chaleur), un pad XY et le cercle des hauteurs. Les réglages fins sont dans Composer, en neuf chapitres repliés. L'en-tête est réduit au titre, la légende de la partition n'apparaît qu'en lecture, l'extinction a rejoint « Séance » dans la marge.
 
+## Billes : des notes qui tombent et rebondissent
+
+Troisième simulation, à côté des boucles et des pendules (Composer, chapitre VIII) : des billes lâchées d'une hauteur, qui rebondissent en perdant de l'énergie. Chaque rebond est une note, de plus en plus rapprochée et de plus en plus douce (chaque vol dure « rebond » fois le précédent), jusqu'à ce que la bille s'immobilise ; elle est relâchée après un repos. Une à six billes, chacune d'une hauteur un peu différente : leurs accélérations s'entrecroisent. Chaque bille joue une note de l'accord en cours, ou descend la gamme à chaque rebond. Réglages : niveau, instrument, nombre, hauteur de chute, rebond, repos, notes. Une fenêtre les montre tomber (marge de Composer), elles ont leur voie au mixeur. Glacies, Sylva Magica, Nebula et Meditatio en ont.
+
 ## Far West retiré
 
 L'univers Far West et ses ambiances (Desertum, Saloon, Duellum, Equitatus) sont retirés : la machine se recentre sur les ambiances planantes. Ses instruments (guitare, piano de bastringue, harmonica, sifflet) et sa batterie aux balais restent disponibles, notamment dans le Studio.

@@ -215,10 +215,10 @@ function buildEngine(ctx, S, o){
   }
   /* le grave est au bourdon ; la mélodie a un peu de présence, les nappes un creux dans le bas-médium pour ne pas l'empâter, la percussion sa petite pièce */
   const B={drone:bus(0.45,0.1,{pk:[2600,-2,0.8],ens:true,mono:true}), mel:bus(0.9,1,{hp:140,pk:[2800,2,0.9],comp:[-26,2.5,3]}), pad:bus(0.8,0.6,{hp:170,pk:[380,-3,1],comp:[-30,2,2],ens:true}), perc:bus(0.4,0,{hp:30,room:true,longRev:0.06}),
-    amb:bus(0.3,0,{hp:110}), loops:bus(0.9,0.8,{hp:190}), arp:bus(0.8,0.45,{hp:110}), plain:bus(0.95,0.2,{hp:80}), pend:bus(0.9,0.7,{hp:190}), play:bus(0.85,0.9,{hp:60}), daw:bus(0.7,0.6,{hp:40})};
+    amb:bus(0.3,0,{hp:110}), loops:bus(0.9,0.8,{hp:190}), arp:bus(0.8,0.45,{hp:110}), plain:bus(0.95,0.2,{hp:80}), pend:bus(0.9,0.7,{hp:190}), bille:bus(0.85,0.6,{hp:180}), play:bus(0.85,0.9,{hp:60}), daw:bus(0.7,0.6,{hp:40})};
   /* une voix jouée à la basse garde son grave */
   function eqSync(){ const lo=(n,inst)=>{ const h=B[n].hp; if(h) h.frequency.value=inst?35:B[n].eq.hp; };
-    lo("mel",S.mel.inst==="basse"||S.canon.inst==="basse"); lo("loops",S.loops.inst==="basse"); lo("pend",S.pend.inst==="basse");
+    lo("mel",S.mel.inst==="basse"||S.canon.inst==="basse"); lo("loops",S.loops.inst==="basse"); lo("pend",S.pend.inst==="basse"); lo("bille",S.bille&&S.bille.inst==="basse");
     if(B.pad.ens) B.pad.ens.set(S.pad.timbre==="machine"); if(B.drone.ens) B.drone.ens.set(S.drone.timbre==="machine"); }
   const canonG=G(0); const lCanon=link(canonG,B.mel.it);
   /* liens entre voix : chaque note de la mélodie ouvre le filtre des nappes, qui se referme ensuite */
@@ -294,7 +294,7 @@ function buildEngine(ctx, S, o){
     m.an.getFloatTimeDomainData(m.buf); let pk=0; for(let i=0;i<m.buf.length;i++){ const a=Math.abs(m.buf[i]); if(a>pk) pk=a; } return pk;
   }
   const newGen=name=>{ const v=V[name], g=G(1); g.connect(v.dst); v.node=g; };
-  [["mel",B.mel.in],["canon",canonG],["pad",B.pad.in],["loops",B.loops.in],["pend",B.pend.in],["arp",B.arp.in],["plain",B.plain.in]].forEach(([n,d])=>{ V[n]={dst:d,node:null}; newGen(n); });
+  [["mel",B.mel.in],["canon",canonG],["pad",B.pad.in],["loops",B.loops.in],["pend",B.pend.in],["bille",B.bille.in],["arp",B.arp.in],["plain",B.plain.in]].forEach(([n,d])=>{ V[n]={dst:d,node:null}; newGen(n); });
   const murG=G(0), fireG=G(0), windG=G(0), dripG=G(0);
   const lMur=link(murG,B.amb.in), lFire=link(fireG,B.amb.in), lWind=link(windG,B.amb.in); dripG.connect(B.amb.in);
   /* sons de nature : chaque lit n'est construit que s'il est utilisé, et débranché quand il retombe à zéro */
@@ -308,7 +308,7 @@ function buildEngine(ctx, S, o){
   const trkOn=t=>!t.mute&&(!anySolo()||!!t.solo);
   function setLevels(){
     const lv=(n,v)=>(want(n)&&mach()&&mixOn(n))?v:0;
-    { const pp=(DAW().mix||{}).pan||{}; ["drone","mel","pad","perc","loops","pend","amb"].forEach(n=>{ const p=B[n].pn.pan; if(p) p.value=clamp(pp[n]||0,-1,1); }); }
+    { const pp=(DAW().mix||{}).pan||{}; ["drone","mel","pad","perc","loops","pend","bille","amb"].forEach(n=>{ const p=B[n].pn.pan; if(p) p.value=clamp(pp[n]||0,-1,1); }); }
     B.drone.lvl.gain.value=lv("drone",S.drone.lvl);
     B.mel.lvl.gain.value=lv("mel",S.mel.lvl);
     canonG.gain.value=lv("mel",S.canon.lvl);
@@ -328,7 +328,7 @@ function buildEngine(ctx, S, o){
       [["perc",m.perc],["pad",m.pad],["drone",m.drone],["amb",m.amb]].forEach(([n,v])=>{ const g=B[n].tm.gain; if(g.cancelScheduledValues) g.cancelScheduledValues(now); g.value=v; });
     }
     B.loops.lvl.gain.value=lv("loops",S.loops.lvl); B.arp.lvl.gain.value=lv("arp",(S.arp&&S.arp.lvl)||0); B.plain.lvl.gain.value=lv("plain",(S.plain&&S.plain.lvl)||0);
-    B.pend.lvl.gain.value=lv("pend",S.pend.lvl);
+    B.pend.lvl.gain.value=lv("pend",S.pend.lvl); B.bille.lvl.gain.value=lv("bille",(S.bille&&S.bille.lvl)||0);
     murG.gain.value=S.amb.murmur; fireG.gain.value=S.amb.feu*0.4; windG.gain.value=ventv()*0.9; dripG.gain.value=S.amb.gouttes*0.8;
     wet.gain.value=S.fx.rev*2;
     if(padC!==padClosed()) padRest(ctx.currentTime||0);
@@ -1590,7 +1590,7 @@ function buildEngine(ctx, S, o){
   /* ---------- ordonnanceur ---------- */
   let pieceFade=0;
   const cur={mel:0,drone:0,clink:0,perc:0,k:0,pad:0,int:0,fire:0,wind:0,drip:0,bird:0,sec:1,arp:0,aj:0,pl:0,pli:0,plj:0};
-  const phBars=new Set(), fillBars=[], melOn=[]; let loopsL=[], pendK=[], lastPh=null, lastD=null, frozen=null;
+  const phBars=new Set(), fillBars=[], melOn=[]; let billes=[], loopsL=[], pendK=[], lastPh=null, lastD=null, frozen=null;
   const lastOff={v:null};
   function rec(tr,t,off,dur,vel,tag){ if(o.record||o.rolling) events.push(tag?{tr,t,off,dur,vel,tag}:{tr,t,off,dur,vel}); }
   const ctr={pm:null,pc:null,li:null};
@@ -1858,6 +1858,28 @@ function buildEngine(ctx, S, o){
         }
       }
     }
+    /* billes : chacune tombe, rebondit en perdant de l'énergie (chaque vol dure « rebond » fois le précédent),
+       s'immobilise, puis est relâchée. Un rebond = une note, d'autant plus douce que la bille est fatiguée. */
+    {
+      const BL=S.bille||{}, on=M&&(BL.lvl||0)>0.001&&want("bille"), fn=instOf(BL.inst||"kalimba","kalimba"), e=clamp(BL.rebond||0.72,0.3,0.93);
+      billes.forEach((b,i)=>{
+        let guard=0;
+        while(b.t<until&&guard++<400){
+          if(b.phase==="rest"){ b.phase="fall"; b.drop=b.t; b.D=billeD(i); b.k=0; b.T=0; b.v=1; b.pitch=null; b.t+=b.D; b.arcs.push({t0:b.drop,t1:b.t,type:"fall",D:b.D}); continue; }
+          /* impact */
+          if(on){
+            if(b.pitch===null){ const cpc=chordPcs(chordAt(b.t)), cand=[]; for(let x=12;x<36;x+=0.5){ const pc=((x%12)+12)%12; if(cpc.some(p=>Math.abs(p-pc)<0.01)) cand.push(x); } const iv=ivOf(S,secOf(b.t).key); b.pitch=cand.length?cand[(i*2)%cand.length]+(i>=cand.length?12:0):degOff(iv,i)+12; b.deg=0; }
+            let off=b.pitch; if(BL.mode==="descend"){ const iv=ivOf(S,secOf(b.t).key), base=iv.indexOf(((b.pitch%12)+12)%12); off=base>=0?degOff(iv,base-b.k)+12*Math.floor(b.pitch/12):b.pitch-b.k; }
+            const vel=0.2*Math.pow(b.v,0.8), pan=(billes.length>1?i/(billes.length-1)*2-1:0)*0.7;
+            fn(b.t,freq(off),vel,Math.max(0.3,E*3),V.bille.node,pan); rec(4,b.t,off,E*3,vel); if(o.onNote) o.onNote(b.t,off,"pend",E*3,vel);
+          }
+          b.k++; b.T=b.k===1?2*e*b.D:b.T*e; b.v*=e;
+          if(b.T<0.035||b.k>60){ b.arcs.push({t0:b.t,t1:b.t+billeD(i)*(BL.pause===undefined?1:BL.pause)+0.5,type:"rest"}); b.phase="rest"; b.t+=billeD(i)*(BL.pause===undefined?1:BL.pause)+0.5; }
+          else { b.arcs.push({t0:b.t,t1:b.t+b.T,type:"arc",h:(b.T*b.T)/(4*b.D*b.D)}); b.t+=b.T; }
+          if(b.arcs.length>80) b.arcs.splice(0,b.arcs.length-80);
+        }
+      });
+    }
     /* lieu */
     if(!M){ for(const k of ["clink","fire","wind","drip","bird"]) if(cur[k]<until) cur[k]=until; bands.forEach(b=>{ if(b.cur<until) b.cur=until; }); }
     if(M&&want("amb")){
@@ -1893,7 +1915,12 @@ function buildEngine(ctx, S, o){
     bands.forEach(b=>b.cur=t);
     initLoops(t);
     pendK=Array.from({length:pendN()},()=>0);
+    initBilles(t+bar*0.5);
   }
+  /* billes : temps de chute de chacune (plus haute = chute plus longue, rythmes qui s'entrecroisent) */
+  const billeN=()=>clamp(Math.round((S.bille&&S.bille.count)||3),1,6);
+  const billeD=i=>Math.max(0.25,((S.bille&&S.bille.haut)||1)*bar*(1+0.37*i));
+  function initBilles(t){ billes=Array.from({length:billeN()},(_,i)=>({phase:"rest",t:t+i*bar*0.75,arcs:[{t0:0,t1:t+i*bar*0.75,type:"hang"}]})); }
   function initLoops(t){
     const nl=clamp(Math.round(S.loops.count),1,5), lens=[29,31,37,41,43,47,53,59].slice();
     loopsL=[];
@@ -1918,6 +1945,7 @@ function buildEngine(ctx, S, o){
     if(all||what==="plain"){ kill("plain",0.05); cur.pl=t0+Math.ceil((now+0.05-t0)/bar)*bar; cur.plj=0; }
     if(all||what==="arp"){ kill("arp",0.05); cur.arp=t0+Math.ceil((now+0.05-t0)/E)*E; }
     if(all) dawReplan();
+    if(all||what==="bille"){ kill("bille",0.05); initBilles(now+0.05); }
     if(all||what==="pend"){
       kill("pend",0.05); const T=Math.max(1,S.pend.period*bar);
       pendK=Array.from({length:pendN()},(_,i)=>Math.max(0,Math.ceil(((now-t0)/T)*(PEND_N0+i)-0.25)));
@@ -1997,6 +2025,8 @@ function buildEngine(ctx, S, o){
     starts.forEach(x=>{try{x.stop(now+d+0.2);}catch(e){}});
     synDropAll(ctx,now+d+0.3,[...synOwn]);
   }
+  const billeY=t=>billes.map(b=>{ const a=b.arcs.find(x=>t>=x.t0&&t<x.t1); if(!a) return 0; const u=(t-a.t0)/(a.t1-a.t0);
+    if(a.type==="hang") return 1; if(a.type==="fall") return 1-u*u; if(a.type==="arc") return a.h*4*u*(1-u); return 0; });
   const pendX=t=>Array.from({length:pendN()},(_,i)=>Math.cos(2*Math.PI*(PEND_N0+i)*(t-t0)/(S.pend.period*bar)));
   built=true; fxAttach();
   /* banque de sons pour le Studio : les instruments, nappes et batteries de la machine, joués vers une destination donnée */
@@ -2006,5 +2036,5 @@ function buildEngine(ctx, S, o){
     perc:(k,part,t,v,dst)=>{ const s=PB; PB=dst; try{ (KITS[k]||KITS.cadre)[part](t,v); } finally{ PB=s; } },
     kpat:KPAT, kits:Object.keys(KITS), noise:()=>wb
   };
-  return {bank,pieceEnd:()=>pieceFade,fxAttach,grainFreeze,fxOn:()=>!!fx,start,schedule,setLevels,setReverb,stop,fadeOut,sleepFade,sleepClear,replan,freeze,reroll,gesture,play,synOn,dawOn,dawNote,rackSync,meter,tap:()=>volG,analyser:k=>k==="all"?anaAll:anaSyn,dawReplan,dawPos,pendX,tensNow:()=>tensAt(ctx.currentTime),adaptNow:()=>adaptE(ctx.currentTime),tensPos:()=>{ if(!curveOn()) return -1; const L=Math.max(30,S.curve.dur*60), x=(ctx.currentTime-t0)/L; return S.curve.mode==='loop'?((x%1)+1)%1:clamp(x,0,1); },events,out,master,secAt:t=>secOf(t),bar,E,t0f:()=>t0,chords:()=>chordTl.slice(),phraseBars:()=>[...phBars],fillBars:()=>fillBars.slice()};
+  return {billeY,bank,pieceEnd:()=>pieceFade,fxAttach,grainFreeze,fxOn:()=>!!fx,start,schedule,setLevels,setReverb,stop,fadeOut,sleepFade,sleepClear,replan,freeze,reroll,gesture,play,synOn,dawOn,dawNote,rackSync,meter,tap:()=>volG,analyser:k=>k==="all"?anaAll:anaSyn,dawReplan,dawPos,pendX,tensNow:()=>tensAt(ctx.currentTime),adaptNow:()=>adaptE(ctx.currentTime),tensPos:()=>{ if(!curveOn()) return -1; const L=Math.max(30,S.curve.dur*60), x=(ctx.currentTime-t0)/L; return S.curve.mode==='loop'?((x%1)+1)%1:clamp(x,0,1); },events,out,master,secAt:t=>secOf(t),bar,E,t0f:()=>t0,chords:()=>chordTl.slice(),phraseBars:()=>[...phBars],fillBars:()=>fillBars.slice()};
 }

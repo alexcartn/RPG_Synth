@@ -120,6 +120,7 @@ function drawPend(){
 /* une image : 30 par seconde en mode économe, 60 sinon */
 function frame(ts){
   raf=0; if(!live) return;
+  { const pe=live.eng.pieceEnd&&live.eng.pieceEnd(); if(pe&&live.ctx.currentTime>pe+0.3){ stopLive(); status("La pièce est finie.","ok"); return; } }
   if(!isEco()||ts-lastFrame>=33){ lastFrame=ts; vizDraw(live.ctx.currentTime,live.eng); drawPend(); tableFrame(); jeuFrame(); }
   raf=requestAnimationFrame(frame);
 }
@@ -225,9 +226,10 @@ const UI=[
  {num:"IV", title:"Voix", fr:"", sub:"Mélodie, canon décalé et nappes d'accords construits sur la gamme de la section.", groups:[
   {h:"Logique musicale", hf:"logique musicale et timbres", items:[
    {k:"mus.logic",type:"select",label:"Logique musicale",opts:[["modal","Modale : la mélodie suit les accords"],["hasard","Hasard (ancienne version)"]]},
-   {k:"mus.form",type:"select",label:"Forme de la pièce",opts:[["libre","Libre : phrases et déjà-vu"],["passacaille","Passacaille : une basse qui revient, des variations dessus"],["ostinato","Ostinato : un motif qui tourne"],["rondeau","Rondeau : refrain et couplets"],["variations","Thème et variations"],["turing","Machine de Turing : un registre qui boucle et mute"]]},
+   {k:"mus.form",type:"select",label:"Forme de la pièce",opts:[["libre","Libre : phrases et déjà-vu"],["passacaille","Passacaille : une basse qui revient, des variations dessus"],["ostinato","Ostinato : un motif qui tourne"],["rondeau","Rondeau : refrain et couplets"],["theme","Thème : deux phrases qui reviennent, variées selon les sections"],["variations","Thème et variations"],["turing","Machine de Turing : un registre qui boucle et mute"]]},
    {k:"mus.color",type:"select",label:"Couleur du mode",opts:[["off","Fixe : les gammes choisies"],["tension","Suit la tension (du lydien au locrien)"],["meteo","Suit la météo du lieu"],["les deux","Tension et météo"]]},
    {k:"mus.harm",type:"select",label:"Harmonie",opts:[["idiome","Idiomatique : les progressions typiques de chaque mode"],["libre","Libre : accords pondérés par le mode"]]},
+   {k:"mus.mode",type:"select",label:"Façon de jouer",opts:[["veillee","Veillée : ne s'arrête jamais, le plan revient en grands cycles"],["piece","Pièce : intro, thème, développement, apogée, retombée, coda, puis fin"]],hint:"Veillée pour le fond sonore d'une partie. Pièce pour une œuvre fermée, à écouter ou à exporter (environ six sections)."},
    {k:"mus.arc",type:"select",label:"Plan de la pièce",opts:[["aucun","Aucun : des sections égales"],["arche","Arche : intro, thème, développement, apogée, retombée, coda"]]},
    {k:"mus.crit",type:"range",label:"Exigence : la machine tire plusieurs phrases et garde la meilleure",min:0,max:1,step:0.01,fmt:pct},
    {k:"mus.model",type:"select",label:"Cordes et timbres",opts:[["physique","Cordes pincées par modèle physique"],["classique","Synthèse classique"]]}]},
@@ -272,7 +274,7 @@ const UI=[
   {fin:"Arpège", items:[
    {k:"arp.lvl",type:"range",label:"Arpège",min:0,max:1,step:0.01,fmt:pct,hint:"L'accord en cours, égrené note à note : l'accompagnement typique du dungeon synth et des musiques de jeu."},
    {k:"arp.inst",type:"select",label:"Instrument de l'arpège",opts:INST_OPTS},
-   {k:"arp.pat",type:"select",label:"Motif",opts:[["vaetvient","Va-et-vient"],["montant","Montant"],["alberti","Alberti (grave, aigu, milieu, aigu)"]]},
+   {k:"arp.pat",type:"select",label:"Motif",opts:[["vaetvient","Va-et-vient"],["montant","Montant"],["alberti","Alberti (grave, aigu, milieu, aigu)"],["turing","Machine de Turing : un motif bouclé qui mute lentement"],["auto","Selon rituel ↔ chanson (Turing côté rituel)"]]},
    {k:"arp.rate",type:"select",num:true,label:"Vitesse",opts:[["0.5","Noires"],["1","Croches"],["2","Doubles croches"]]},
    {k:"arp.reg",type:"range",label:"Registre de l'arpège",min:0,max:2,step:1,fmt:v=>["grave","médium","aigu"][v]},
    {k:"arp.span",type:"range",label:"Étendue de l'arpège",min:1,max:2,step:1,fmt:v=>v+" octave"+(v>1?"s":"")}]},

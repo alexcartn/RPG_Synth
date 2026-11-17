@@ -15,6 +15,7 @@ const KNOBS=[
   {id:"nuage",label:"Nuage",tip:"Nuage de grains : la mélodie hachée en poussières de son qui flottent.",get:()=>(S.grain&&S.grain.mix)||0,set:v=>{S.grain.mix=v;},keys:["grain.mix"]},
   {id:"canon",label:"Canon",tip:"Une seconde voix qui reprend la mélodie en décalé.",get:()=>S.canon.lvl,set:v=>{S.canon.lvl=v;},keys:["canon.lvl"],zero:"mel",noKnob:true},
   {id:"chaleur",label:"Chaleur",tip:"Saturation et léger tremblé, comme une vieille bande magnétique.",get:()=>Math.min(1,S.fx.sat/0.6),set:v=>{S.fx.sat=v*0.6; S.fx.wow=0.04+v*0.36;},keys:["fx.sat","fx.wow"]},
+  {id:"rc",label:"Rituel ↔ Chanson",tip:"Rituel : le bourdon, des accords qui ne bougent presque pas, les boucles et les pendules libres. Chanson : des accords qui avancent, l'arpège, un thème qui revient, le bourdon en simple pédale.",get:()=>S.rc===undefined?0.5:S.rc,set:v=>{S.rc=v;},keys:["rc"],noKnob:true,fmt:v=>v<0.34?"rituel":v>0.66?"chanson":"entre les deux"},
   {id:"echo",label:"Écho",tip:"Répétitions qui s'éteignent.",get:()=>S.fx.dly,set:v=>{S.fx.dly=v;},keys:["fx.dly"],noKnob:true}
 ];
 const KNOB=Object.fromEntries(KNOBS.map(k=>[k.id,k]));
@@ -151,6 +152,8 @@ function jeuFrame(){
 function setJeu(on){ setMode(on?"jeu":"reglage"); }
 function buildJeu(){
   const kn=$("knobs"); KNOBS.filter(k=>!k.noKnob).forEach(k=>kn.appendChild(makeKnob(k)));
+  /* le curseur Rituel ↔ Chanson, au-dessus des boutons : la commande centrale */
+  { const w=document.createElement("div"); w.className="jeu-rc"; w.appendChild(mkCtl({k:"rc",type:"range",label:"Rituel ↔ Chanson",min:0,max:1,step:0.01,fmt:v=>KNOB.rc.fmt(v),hint:KNOB.rc.tip})); kn.parentNode.parentNode.insertBefore(w,kn.parentNode); }
   const opts=KNOBS.map(k=>'<option value="'+k.id+'">'+k.label+'</option>').join("");
   $("xSel").innerHTML=opts; $("ySel").innerHTML=opts; $("xSel").value=JEU.xy.x; $("ySel").value=JEU.xy.y;
   $("xSel").onchange=()=>{ JEU.xy.x=$("xSel").value; xyDraw(); }; $("ySel").onchange=()=>{ JEU.xy.y=$("ySel").value; xyDraw(); };

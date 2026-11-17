@@ -3,8 +3,6 @@
    PARTITION QUI DÉFILE : ce qui a été joué à gauche, ce qui va venir à droite
    ============================================================ */
 const VIZ={ev:[], lo:12, hi:48, cols:null, dpr:1, w:0, h:0, last:0, id:"scoreCv", k:1};
-/* palette de la veillée : la même partition, à la chandelle */
-const VIZ_NIGHT={ink:"#efe3c8", ink2:"#b3a182", rub:"#ec6a4a", gold:"#f0c566", verd:"#7cc4aa", rule:"#6b5944", bg:"transparent"};
 const VIZ_PAST=7, VIZ_FUTURE=9;
 const PITCHED={mel:1,canon:1,pad:1,loop:1,pend:1,play:1};
 
@@ -17,7 +15,7 @@ function vizFit(V){
   V.w=Math.max(10,Math.round(r.width)); V.h=Math.max(10,Math.round(r.height)); V.dpr=dpr;
   cv.width=Math.round(V.w*dpr); cv.height=Math.round(V.h*dpr);
   const cs=getComputedStyle(document.documentElement), v=n=>cs.getPropertyValue(n).trim();
-  V.cols=V.night?VIZ_NIGHT:{ink:v("--ink")||"#3a2e22", ink2:v("--ink-2")||"#6b5a46", rub:v("--rubric")||"#a3301c", gold:"oklch(0.62 0.12 78)", verd:"oklch(0.52 0.09 175)", rule:v("--rule")||"#b8a888", bg:v("--parch-2")||"#e8dcc2"};
+  V.cols={ink:v("--ink")||"#3a2e22", ink2:v("--ink-2")||"#6b5a46", rub:v("--rubric")||"#a3301c", gold:"oklch(0.62 0.12 78)", verd:"oklch(0.52 0.09 175)", rule:v("--rule")||"#b8a888", bg:v("--parch-2")||"#e8dcc2"};
   vizDraw(V.last_now===undefined?null:V.last_now,V.last_eng,V);
 }
 

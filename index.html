@@ -125,16 +125,28 @@
   </div>
 </div>
 <div class="veil" id="veil" hidden role="dialog" aria-modal="true" aria-label="Veillée : vue agrandie de la machine">
-  <div class="veil-top">
-    <div class="veil-id"><span class="veil-key" id="veilKey"></span><span class="veil-aff" id="veilAff"></span></div>
-    <div class="veil-act"><button class="lnk" id="veilPlay" type="button">Jouer</button><button class="lnk" id="veilFs" type="button">Plein écran</button><button class="lnk" id="veilClose" type="button">Fermer</button></div>
+  <header class="vl-head">
+    <div class="vl-brand"><b>Bourdon</b><span>Veillée</span></div>
+    <dl class="vl-lcd" aria-live="off">
+      <div><dt>Ton</dt><dd id="vlKey">-</dd></div>
+      <div><dt>Tempo</dt><dd id="vlTempo">-</dd></div>
+      <div><dt>Mesure</dt><dd id="vlBar">-</dd></div>
+      <div class="wide"><dt>Section</dt><dd id="vlSec">-</dd></div>
+      <div class="wide"><dt>Affects</dt><dd id="vlAff">-</dd></div>
+    </dl>
+    <div class="vl-keys">
+      <button class="vl-key" id="veilPlay" type="button" title="Lancer ou arrêter la lecture (Espace)"><i aria-hidden="true">▶</i><span>Jouer</span></button>
+      <button class="vl-key" id="veilFs" type="button" title="Plein écran (F)"><i aria-hidden="true">⛶</i><span>Plein écran</span></button>
+      <button class="vl-key" id="veilClose" type="button" title="Fermer la veillée (Échap)"><i aria-hidden="true">✕</i><span>Fermer</span></button>
+    </div>
+  </header>
+  <section class="vl-mod vl-score"><h3><i>01</i>Partition<b>passé ← → à venir</b></h3><canvas id="veilCv" role="img" aria-label="Partition qui défile, en grand"></canvas></section>
+  <div class="vl-low">
+    <section class="vl-mod"><h3><i>02</i>Oscilloscope<b id="vlPk"></b></h3><canvas id="veilScope" role="img" aria-label="Oscilloscope"></canvas></section>
+    <section class="vl-mod"><h3><i>03</i>Cadran<b>notes de la gamme</b></h3><canvas id="veilRing" role="img" aria-label="Cadran des notes de la gamme"></canvas></section>
+    <section class="vl-mod"><h3><i>04</i>Spectre<b>40 Hz → 14 kHz</b></h3><canvas id="veilSpec" role="img" aria-label="Spectre"></canvas></section>
   </div>
-  <canvas class="veil-score" id="veilCv" role="img" aria-label="Partition qui défile, en grand"></canvas>
-  <div class="veil-low">
-    <canvas id="veilScope" role="img" aria-label="Oscilloscope"></canvas>
-    <canvas id="veilRing" role="img" aria-label="Cercle des notes de la gamme"></canvas>
-    <canvas id="veilSpec" role="img" aria-label="Spectre"></canvas>
-  </div>
+  <footer class="vl-foot"><span>Espace · jouer</span><span>F · plein écran</span><span>Échap · fermer</span></footer>
 </div>
 <div class="dock"><button class="seal" id="play2" aria-pressed="false">Jouer</button><div class="dockT ctl"><div class="l"><label for="tension2">Tension</label><output id="tension2o"></output></div><input type="range" id="tension2" min="0" max="1" step="0.01" value="0.5"></div></div>
 

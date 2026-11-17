@@ -31,6 +31,17 @@ On arrive sur Conduire : un univers (Médiéval, Aventure, Pirates, Nordique, F�
 - Compression douce sur la mélodie et les nappes, et les nappes s'effacent un peu (-2 dB) à chaque note de la mélodie, qui reste devant.
 - Respirations (Composer, Forme) : dans la moitié des sections par défaut, une voix (nappes, percussion, boucles ou pendules) se retire au début de la section et revient à mi-section ou aux trois quarts, sur une mesure.
 
+## Rituel ↔ Chanson, veillée ou pièce, thème, Antiquité, bêtes, chant, Varier
+
+- Rituel ↔ Chanson (curseur central de Conduire, au-dessus des boutons) : côté rituel, le bourdon est fort, les accords tiennent longtemps, les boucles et les pendules sont libres ; côté chanson, les accords avancent, l'arpège entre, la mélodie devient un thème qui revient, le bourdon n'est plus qu'une pédale. Chaque univers a son point de départ (Antiquité et Calme côté rituel, Dungeon synth et Far West côté chanson). Avec un plan de pièce, l'intro et la coda tirent vers le rituel, le thème et l'apogée vers la chanson.
+- Façon de jouer (Composer, Gamme et accord) : Veillée, qui ne s'arrête jamais et fait revenir le plan en grands cycles, pour le fond sonore d'une partie ; Pièce, qui joue intro, thème, développement, apogée, retombée et coda, puis s'éteint et s'arrête.
+- Forme « Thème » : deux phrases écrites au début, qui reviennent telles quelles au thème, variées à l'apogée, en fragments au développement, étirées dans l'intro et la coda. Côté chanson, la forme libre devient ce thème.
+- Les modules dans l'orchestre : l'arpège peut être écrit par une machine de Turing (huit pas dans l'accord, qui mutent lentement, plus vite côté rituel) ; les boucles de longueurs inégales portent chacune une note du thème, qui se recompose à la manière d'Eno ; les pendules sonnent les notes de l'accord en cours.
+- Univers Antiquité : aulos (double flûte à anche, aussi en bourdon), lyre, syrinx, cornu, hydraulis ; tympanon, crotales et cymbalettes ; péan en 5/8, dactyle en 2/4 ; gamme chromatique grecque. Agora, Delphi, Sparta, Thermopylae, Roma Triumphans, Odyssea, Hades.
+- Bêtes (Lieu) : grenouilles, hibou, loups, corbeaux, chevaux, mouettes, chacune en petit modèle (coassement en train d'impulsions, hululement qui fléchit, hurlement qui monte et tient avec un second loup qui répond, croassement rauque, hennissement qui dégringole puis ébrouement, cri de mouette). Les grillons de la nuit chantent plus vite quand il fait chaud (loi de Dolbear), avec la météo réelle. Placées dans 25 ambiances.
+- Chant (instrument « Chant ») : la voix articule les syllabes d'un texte, une par note (Kyrie, Alleluia, Dies irae, Sanctus, Agnus Dei, Gloria, péan grec), avec des consonnes simples (occlusives, s, m, n, l, r). Crypta chante le Dies irae, Scriptorium l'Alleluia, Sacrificium l'Agnus Dei, Delphi le péan.
+- Varier (Conduire) : une variante proche de l'ambiance en cours (tonalité voisine, tempo, instruments de la même famille, densité, dosage rituel et chanson) ; Revenir défait la dernière.
+
 ## Dungeon synth : accords, arpège, et un univers à part
 
 - Voix d'arpège (Composer, Voix, « Arpège ») : l'accord en cours égrené note à note, en va-et-vient, montant ou en Alberti (grave, aigu, milieu, aigu), en noires, croches ou doubles croches, sur un registre et une étendue choisis, avec l'instrument de son choix. C'est le pilier de l'accompagnement en dungeon synth.

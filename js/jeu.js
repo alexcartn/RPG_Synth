@@ -149,6 +149,28 @@ function jeuFrame(){
     dawMetersTick();
   }
 }
+/* varier : une variante proche de l'ambiance en cours, comme on lance des dés autour d'un préréglage ; « Revenir » défait la dernière */
+const VARY={stack:[]};
+const FAMI=[["luth","oud","harpe","lyre","guitare","kalimba"],["flute","ney","syrinx","sifflet"],["archet","voix","chant","cuivre","aulos","harmonica","cornu"],["carillon","verre","bol","fmcloche"],["piano","fmpiano","orgue","roues","hydraulis"]];
+const FAMP=[["cordes","machine","choeur","vecteur"],["orgue","roues"],["verre","synthe","essaim","phase"]];
+function varyScene(){
+  const rnd=Math.random, pick=a=>a[Math.floor(rnd()*a.length)], cl=(v,a,b)=>Math.max(a,Math.min(b,v)), sib=(fams,x)=>{ const f=fams.find(F=>F.indexOf(x)>=0); return f?pick(f):x; };
+  VARY.stack.push({s:clone(S),sc:Object.assign({},SCENE)}); if(VARY.stack.length>12) VARY.stack.shift();
+  const N=clone(S);
+  N.root=((N.root+pick([0,0,2,-2,5,7]))%12+12)%12;
+  if(N.scales[1]&&rnd()<0.4) N.scales=[N.scales[1],N.scales[0],N.scales[2]||""];
+  N.tempo=Math.round(cl(N.tempo*(0.9+0.2*rnd()),40,180));
+  if(rnd()<0.5) N.mel.inst=sib(FAMI,N.mel.inst);
+  if(N.canon.lvl>0.01&&rnd()<0.4) N.canon.inst=sib(FAMI,N.canon.inst);
+  if(rnd()<0.4) N.pad.timbre=sib(FAMP,N.pad.timbre);
+  N.mel.dens=Math.round(cl(N.mel.dens+(rnd()-0.5)*0.3,0.05,1)*100)/100; N.mel.leap=Math.round(cl(N.mel.leap+(rnd()-0.5)*0.2,0,1)*100)/100;
+  N.rc=Math.round(cl((N.rc===undefined?0.5:N.rc)+(rnd()-0.5)*0.3,0,1)*100)/100;
+  if(N.arp&&N.arp.lvl>0.01&&rnd()<0.4) N.arp.pat=pick(["vaetvient","montant","alberti","turing"]);
+  N.perc.shaker=Math.round(cl(N.perc.shaker+(rnd()-0.5)*0.3,0,1)*100)/100;
+  loadScene(N,null,undefined,{name:(SCENE.name||"Ambiance").replace(/ \(variante\)$/,"")+" (variante)",gloss:SCENE.gloss,univ:SCENE.univ});
+  $("jeuBack").disabled=false;
+}
+function varyBack(){ const p=VARY.stack.pop(); if(!p) return; loadScene(p.s,null,undefined,p.sc); $("jeuBack").disabled=!VARY.stack.length; }
 function setJeu(on){ setMode(on?"jeu":"reglage"); }
 function buildJeu(){
   const kn=$("knobs"); KNOBS.filter(k=>!k.noKnob).forEach(k=>kn.appendChild(makeKnob(k)));
@@ -165,6 +187,7 @@ function buildJeu(){
   $("jeuBtn").onclick=()=>setMode("jeu");
   $("jeuFreeze").onclick=()=>{ if(!live) return; JEU.frozen=live.eng.freeze(!JEU.frozen); $("jeuFreeze").setAttribute("aria-pressed",JEU.frozen?"true":"false"); syncUI(); };
   $("jeuReroll").onclick=()=>{ if(live) live.eng.reroll(); };
+  $("jeuVary").onclick=varyScene; $("jeuBack").onclick=varyBack;
   /* geler le nuage : s'il était absent, on le fait entrer pour que le gel s'entende */
   $("jeuGel").onclick=()=>{
     if(!live) return;

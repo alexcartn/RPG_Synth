@@ -187,7 +187,7 @@ setInterval(()=>{ if(typeof atScaleSync==="function") atScaleSync(); if(live){ c
 
 /* ---------- construction des contrôles ---------- */
 const pct=v=>Math.round(v*100)+" %";
-const INST_OPTS=[["luth","Luth"],["harpe","Harpe"],["flute","Flûte"],["carillon","Carillon"],["orgue","Orgue positif"],["roues","Orgue à roues"],["oud","Oud (corde pincée)"],["ney","Ney (flûte soufflée)"],["kalimba","Kalimba"],["bol","Bol chantant"],["verre","Cloches de verre"],["synthe","Synthé doux"],["archet","Archet (violon, viole)"],["cuivre","Cuivre doux"],["guitare","Guitare (acier)"],["piano","Piano de bastringue"],["fmpiano","Piano électrique (FM)"],["fmcloche","Cloches FM"],["accordeon","Accordéon musette"],["voix","Voix (vocalise)"],["aulos","Aulos (double flûte à anche)"],["lyre","Lyre"],["syrinx","Syrinx (flûte de Pan)"],["cornu","Cornu (cor romain)"],["hydraulis","Hydraulis (orgue à eau)"],["sifflet","Sifflet"],["harmonica","Harmonica"],["basse","Basse synthé (grave)"],["atelier","Synthé perso (Atelier)"]];
+const INST_OPTS=[["luth","Luth"],["harpe","Harpe"],["flute","Flûte"],["carillon","Carillon"],["orgue","Orgue positif"],["roues","Orgue à roues"],["oud","Oud (corde pincée)"],["ney","Ney (flûte soufflée)"],["kalimba","Kalimba"],["bol","Bol chantant"],["verre","Cloches de verre"],["synthe","Synthé doux"],["archet","Archet (violon, viole)"],["cuivre","Cuivre doux"],["guitare","Guitare (acier)"],["piano","Piano de bastringue"],["fmpiano","Piano électrique (FM)"],["fmcloche","Cloches FM"],["accordeon","Accordéon musette"],["voix","Voix (vocalise)"],["chant","Chant (paroles latines ou grecques)"],["aulos","Aulos (double flûte à anche)"],["lyre","Lyre"],["syrinx","Syrinx (flûte de Pan)"],["cornu","Cornu (cor romain)"],["hydraulis","Hydraulis (orgue à eau)"],["sifflet","Sifflet"],["harmonica","Harmonica"],["basse","Basse synthé (grave)"],["atelier","Synthé perso (Atelier)"]];
 const DRIFT_OPTS=[["none","Rien"],["filtre","Éclat du bourdon"],["reverb","Réverbération"],["densite","Densité de la mélodie"],["pan","Place de la mélodie (pan)"],["tension","Tension"],["voile","Voile (aigus)"],["grain","Nuage de grains"]];
 /* seconde cible d'une dérive : la même liste, dans le même sens puis à l'envers */
 const DRIFT2_OPTS=DRIFT_OPTS.concat(DRIFT_OPTS.slice(1).map(([k,l])=>["-"+k,l+", à l'envers"]));
@@ -250,6 +250,7 @@ const UI=[
    {k:"turing.rate",type:"select",label:"Pas du registre",opts:[[1,"Croche"],[2,"Noire"]],num:true}]},
   {h:"Mélodie", hf:"", items:[
    {k:"mel.inst",type:"select",label:"Instrument",opts:INST_OPTS},
+   {k:"chant",type:"select",label:"Texte du chant",opts:[["kyrie","Kyrie eleison"],["alleluia","Alleluia"],["diesirae","Dies irae"],["sanctus","Sanctus"],["agnus","Agnus Dei"],["gloria","Gloria in excelsis"],["paian","Péan grec (Iè paian)"]],hint:"Les paroles que chante l'instrument « Chant », une syllabe par note."},
    {k:"mel.lpg",type:"range",label:"Porte passe-bas",min:0,max:1,step:0.01,fmt:pct,hint:"Sur les sons pincés et frappés (luth, harpe, oud, guitare, kalimba, carillon, verre, bol, piano) : le filtre se referme avec le son, qui devient boisé et rond. Vaut pour la mélodie, le canon, les boucles et les pendules."},
    {k:"mel.lvl",type:"range",label:"Niveau",min:0,max:1,step:0.01,fmt:pct},
    {k:"mel.dens",type:"range",label:"Densité",min:0,max:1,step:0.01,fmt:pct},
@@ -295,7 +296,13 @@ const UI=[
    {k:"nature.mer",type:"range",label:"Vagues (mer)",min:0,max:1,step:0.01,fmt:pct},
    {k:"nature.nuit",type:"range",label:"Nuit (grillons)",min:0,max:1,step:0.01,fmt:pct},
    {k:"nature.ruisseau",type:"range",label:"Ruisseau",min:0,max:1,step:0.01,fmt:pct},
-   {k:"nature.oiseaux",type:"range",label:"Oiseaux",min:0,max:1,step:0.01,fmt:pct}]}]},
+   {k:"nature.oiseaux",type:"range",label:"Oiseaux",min:0,max:1,step:0.01,fmt:pct},
+   {k:"nature.grenouilles",type:"range",label:"Grenouilles",min:0,max:1,step:0.01,fmt:pct},
+   {k:"nature.hibou",type:"range",label:"Hibou",min:0,max:1,step:0.01,fmt:pct},
+   {k:"nature.loup",type:"range",label:"Loups",min:0,max:1,step:0.01,fmt:pct},
+   {k:"nature.corbeaux",type:"range",label:"Corbeaux",min:0,max:1,step:0.01,fmt:pct},
+   {k:"nature.chevaux",type:"range",label:"Chevaux",min:0,max:1,step:0.01,fmt:pct},
+   {k:"nature.mouettes",type:"range",label:"Mouettes",min:0,max:1,step:0.01,fmt:pct}]}]},
  {num:"VI", title:"Espace et patine", fr:"", sub:"Réverbération, écho et le grain d'une vieille bande.", groups:[
   {h:"Espace", hf:"", items:[
    {k:"vol",type:"range",label:"Volume général (l'export est toujours normalisé)",min:0,max:1,step:0.01,fmt:pct},

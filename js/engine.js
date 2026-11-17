@@ -358,7 +358,7 @@ function buildEngine(ctx, S, o){
     setLink(lRev,rev&&!vivante()); setLink(lDly,dly); setLink(lDout,dly);
     if(fx){ const al=algoR(); setLink(fx.lVb,rev&&al==="vivante"); setLink(fx.lPl,rev&&al==="plaque"); setLink(fx.lSa,rev&&al==="salle"); const g=GR(), on=(g.mix||0)>0.001, src=g.src||"mel"; for(const k in fx.src) fx.src[k].forEach(l=>setLink(l,on&&(k===src||src==="tout"))); }
     setLink(lCanon,S.canon.lvl>0.001);
-    { const nt=natv(), wa=want("amb")&&mach(); NATS.forEach(k=>setLink(natL[k],wa&&(nt[k]||0)>0.001)); setLink(lBird,wa&&(nt.oiseaux||0)>0.001); }
+    { const nt=natv(), wa=want("amb")&&mach(); NATS.forEach(k=>setLink(natL[k],wa&&(nt[k]||0)>0.001)); setLink(lBird,wa&&(nt.oiseaux||0)>0.001); setLink(lBeast,wa&&BEASTS.some(k=>(nt[k]||0)>0.001)); }
     setLink(lMur,mach()&&S.amb.murmur>0.001); setLink(lFire,mach()&&S.amb.feu>0.001); setLink(lWind,mach()&&ventv()>0.001);
     droneLinks.forEach(l=>setLink(l,mach()&&S.drone.lvl>0.001));
   }
@@ -423,8 +423,46 @@ function buildEngine(ctx, S, o){
       natB.pluie={bg,ag,bg2};
     }
     else if(k==="mer"){ const {b,loopEnd}=genSea(), x=natSrc(b,loopEnd); x.connect(out); }
-    else if(k==="nuit"){ const x=natSrc(genNight()); x.connect(out); }
+    else if(k==="nuit"){ const x=natSrc(genNight()); x.connect(out); /* les grillons chantent plus vite quand il fait chaud (loi de Dolbear) */ if(wxOn()&&S.wx.d&&S.wx.d.temp!==undefined) x.playbackRate.value=clamp(0.75+(S.wx.d.temp-12)/30,0.7,1.35); }
     else if(k==="ruisseau"){ const x=natSrc(genBrook()), f=bq("lowpass",5200,0.5); x.connect(f); f.connect(out); }
+  }
+  /* bêtes : grenouilles, hibou, loup, corbeaux, chevaux, mouettes ; chacune est un petit modèle (source, enveloppe, filtres), jouée comme les oiseaux, loin dans l'espace */
+  const beastG=G(1), lBeast=link(beastG,B.amb.in), BEASTS=["grenouilles","hibou","loup","corbeaux","chevaux","mouettes"];
+  const BEAST_T={grenouilles:4, hibou:16, loup:34, corbeaux:12, chevaux:28, mouettes:9};
+  function beast(k,t,v){
+    const pan=(R.t()*2-1)*0.85, a=0.35+0.65*v, O=(type,fr)=>{ const x=ctx.createOscillator(); x.type=type; x.frequency.value=fr; return x; }, fin=(n,lpf)=>{ const lp=ctx.createBiquadFilter(); lp.type="lowpass"; lp.frequency.value=lpf; n.connect(lp); route(lp,pan,beastG); };
+    if(k==="grenouilles"){ /* coassement : un train de 6 à 14 impulsions nasillardes, une ou deux fois */
+      const f0=170+R.t()*170, rate=18+R.t()*14, n=6+Math.floor(R.t()*9), rep=R.t()<0.5?2:1, x=O("sawtooth",f0), bp=ctx.createBiquadFilter(), e=G(0); bp.type="bandpass"; bp.frequency.value=900+R.t()*500; bp.Q.value=3;
+      x.connect(bp); bp.connect(e); fin(e,3000); let tt=t;
+      for(let r=0;r<rep;r++){ for(let i=0;i<n;i++){ const p=tt+i/rate; e.gain.setValueAtTime(0,p); e.gain.linearRampToValueAtTime(a*0.9,p+0.004); e.gain.exponentialRampToValueAtTime(0.0005,p+0.7/rate); } tt+=n/rate+0.18; }
+      x.start(t); x.stop(tt+0.1); return; }
+    if(k==="hibou"){ /* « hou… hou-hou » : un sinus grave qui fléchit, souffle léger */
+      const f0=330+R.t()*90, hoots=[[0,0.22],[0.55,0.18],[0.85,0.55]];
+      hoots.forEach(([d,L])=>{ const x=O("sine",f0), e=G(0), tt=t+d; x.frequency.setValueAtTime(f0*1.04,tt); x.frequency.exponentialRampToValueAtTime(f0*0.93,tt+L); e.gain.setValueAtTime(0,tt); e.gain.linearRampToValueAtTime(a*0.35,tt+0.06); e.gain.setValueAtTime(a*0.35,tt+L-0.08); e.gain.linearRampToValueAtTime(0,tt+L); x.connect(e); fin(e,1200); x.start(tt); x.stop(tt+L+0.05); });
+      return; }
+    if(k==="loup"){ /* hurlement : monte, tient avec un vibrato, retombe ; parfois un second loup répond une tierce au-dessus */
+      const one=(tt,f0,L)=>{ const x=O("sawtooth",f0), s=O("sine",f0), lp=ctx.createBiquadFilter(), e=G(0), vb=O("sine",5.2), vg=G(14); lp.type="lowpass"; lp.frequency.value=1300; x.connect(lp); lp.connect(e); const gs=G(0.6); s.connect(gs); gs.connect(e);
+        [x,s].forEach(o=>{ o.frequency.setValueAtTime(f0,tt); o.frequency.exponentialRampToValueAtTime(f0*1.6,tt+L*0.3); o.frequency.setValueAtTime(f0*1.6,tt+L*0.7); o.frequency.exponentialRampToValueAtTime(f0*1.15,tt+L); vg.connect(o.detune); });
+        vb.connect(vg); e.gain.setValueAtTime(0,tt); e.gain.linearRampToValueAtTime(a*0.22,tt+L*0.3); e.gain.setValueAtTime(a*0.22,tt+L*0.75); e.gain.linearRampToValueAtTime(0,tt+L); fin(e,2400); [x,s,vb].forEach(o=>{ o.start(tt); o.stop(tt+L+0.1); }); };
+      const f0=330+R.t()*80, L=2.8+R.t()*1.8; one(t,f0,L); if(R.t()<0.45) one(t+0.8+R.t(),f0*1.19,L*0.85); return; }
+    if(k==="corbeaux"){ /* croassements : deux à quatre « crâ » rauques */
+      const n=2+Math.floor(R.t()*3), f0=500+R.t()*180;
+      for(let i=0;i<n;i++){ const tt=t+i*(0.38+R.t()*0.12), x=O("sawtooth",f0), sh=ctx.createWaveShaper(); sh.curve=BASS_CURVE; const bp=ctx.createBiquadFilter(), pk=ctx.createBiquadFilter(), e=G(0);
+        bp.type="bandpass"; bp.frequency.value=1250; bp.Q.value=1.6; pk.type="peaking"; pk.frequency.value=1700; pk.gain.value=8; pk.Q.value=2;
+        x.frequency.setValueAtTime(f0*1.1,tt); x.frequency.exponentialRampToValueAtTime(f0*0.85,tt+0.26); x.connect(sh); sh.connect(bp); bp.connect(pk); pk.connect(e);
+        e.gain.setValueAtTime(0,tt); e.gain.linearRampToValueAtTime(a*0.5,tt+0.02); e.gain.exponentialRampToValueAtTime(0.001,tt+0.28); fin(e,5000); x.start(tt); x.stop(tt+0.32); noiseHit(tt,a*0.12,2400,0.2,"bandpass",beastG,1.5); }
+      return; }
+    if(k==="chevaux"){ /* hennissement qui dégringole en tremblant, puis un ébrouement */
+      const L=1.1+R.t()*0.5, x=O("sawtooth",1100), am=G(1), fl=O("sine",11+R.t()*4), fg=G(0.55), bp=ctx.createBiquadFilter(), e=G(0); bp.type="bandpass"; bp.frequency.value=1400; bp.Q.value=1.2;
+      x.frequency.setValueAtTime(1150,t); x.frequency.exponentialRampToValueAtTime(480,t+L); fl.connect(fg); fg.connect(am.gain); x.connect(am); am.connect(bp); bp.connect(e);
+      e.gain.setValueAtTime(0,t); e.gain.linearRampToValueAtTime(a*0.4,t+0.08); e.gain.linearRampToValueAtTime(0,t+L); fin(e,4500); [x,fl].forEach(o=>{ o.start(t); o.stop(t+L+0.1); });
+      noiseHit(t+L+0.25,a*0.5,500,0.35,"lowpass",beastG,0.7,0.03); return; }
+    if(k==="mouettes"){ /* cris de mouette : « kiaou », glissés vers l'aigu puis retombés */
+      const n=2+Math.floor(R.t()*4), f0=1350+R.t()*500;
+      for(let i=0;i<n;i++){ const tt=t+i*(0.32+R.t()*0.2), L=0.26+R.t()*0.12, x=O("sawtooth",f0), lp=ctx.createBiquadFilter(), e=G(0); lp.type="lowpass"; lp.frequency.value=4200;
+        x.frequency.setValueAtTime(f0,tt); x.frequency.exponentialRampToValueAtTime(f0*1.55,tt+L*0.35); x.frequency.exponentialRampToValueAtTime(f0*1.1,tt+L); x.connect(lp); lp.connect(e);
+        e.gain.setValueAtTime(0,tt); e.gain.linearRampToValueAtTime(a*0.28,tt+0.03); e.gain.exponentialRampToValueAtTime(0.001,tt+L); fin(e,6000); x.start(tt); x.stop(tt+L+0.05); }
+      return; }
   }
   /* oiseaux : phrases brèves tirées au hasard (trois "espèces"), planifiées comme les autres événements */
   function bird(t){
@@ -461,10 +499,10 @@ function buildEngine(ctx, S, o){
   }
   /* formants (Hz, dB, largeur) par tessiture et par voyelle */
   const FORM={
-    basse:{a:[[600,0,60],[1040,-7,70],[2250,-9,110],[2450,-9,120],[2750,-20,130]], o:[[400,0,40],[750,-11,80],[2400,-21,100],[2600,-20,120],[2900,-40,120]], u:[[350,0,40],[600,-20,80],[2400,-32,100],[2675,-28,120],[2950,-36,120]], e:[[400,0,60],[1620,-12,80],[2400,-9,100],[2800,-12,120],[3100,-18,120]]},
-    tenor:{a:[[650,0,80],[1080,-6,90],[2650,-7,120],[2900,-8,130],[3250,-22,140]], o:[[400,0,40],[800,-10,80],[2600,-12,100],[2800,-12,120],[3000,-26,120]], u:[[350,0,40],[600,-20,60],[2700,-17,100],[2900,-14,120],[3300,-26,120]], e:[[400,0,70],[1700,-14,80],[2600,-12,100],[3200,-14,120],[3580,-20,120]]},
-    alto:{a:[[800,0,80],[1150,-4,90],[2800,-20,120],[3500,-36,130],[4950,-60,140]], o:[[450,0,70],[800,-9,80],[2830,-16,100],[3500,-28,130],[4950,-55,135]], u:[[325,0,50],[700,-12,60],[2530,-30,170],[3500,-40,180],[4950,-64,200]], e:[[400,0,60],[1600,-24,80],[2700,-30,120],[3300,-35,150],[4950,-60,200]]},
-    soprano:{a:[[800,0,80],[1150,-6,90],[2900,-32,120],[3900,-20,130],[4950,-50,140]], o:[[450,0,70],[800,-11,80],[2830,-22,100],[3800,-22,130],[4950,-50,135]], u:[[325,0,50],[700,-16,60],[2700,-35,170],[3800,-40,180],[4950,-60,200]], e:[[350,0,60],[2000,-20,100],[2800,-15,120],[3600,-40,150],[4950,-56,200]]}
+    basse:{i:[[250,0,60],[1750,-30,90],[2600,-16,100],[3050,-22,120],[3340,-28,120]], a:[[600,0,60],[1040,-7,70],[2250,-9,110],[2450,-9,120],[2750,-20,130]], o:[[400,0,40],[750,-11,80],[2400,-21,100],[2600,-20,120],[2900,-40,120]], u:[[350,0,40],[600,-20,80],[2400,-32,100],[2675,-28,120],[2950,-36,120]], e:[[400,0,60],[1620,-12,80],[2400,-9,100],[2800,-12,120],[3100,-18,120]]},
+    tenor:{i:[[290,0,40],[1870,-15,90],[2800,-18,100],[3250,-20,120],[3540,-30,120]], a:[[650,0,80],[1080,-6,90],[2650,-7,120],[2900,-8,130],[3250,-22,140]], o:[[400,0,40],[800,-10,80],[2600,-12,100],[2800,-12,120],[3000,-26,120]], u:[[350,0,40],[600,-20,60],[2700,-17,100],[2900,-14,120],[3300,-26,120]], e:[[400,0,70],[1700,-14,80],[2600,-12,100],[3200,-14,120],[3580,-20,120]]},
+    alto:{i:[[350,0,50],[1700,-20,100],[2700,-30,120],[3700,-36,150],[4950,-60,200]], a:[[800,0,80],[1150,-4,90],[2800,-20,120],[3500,-36,130],[4950,-60,140]], o:[[450,0,70],[800,-9,80],[2830,-16,100],[3500,-28,130],[4950,-55,135]], u:[[325,0,50],[700,-12,60],[2530,-30,170],[3500,-40,180],[4950,-64,200]], e:[[400,0,60],[1600,-24,80],[2700,-30,120],[3300,-35,150],[4950,-60,200]]},
+    soprano:{i:[[270,0,60],[2140,-12,90],[2950,-26,100],[3900,-26,120],[4950,-44,120]], a:[[800,0,80],[1150,-6,90],[2900,-32,120],[3900,-20,130],[4950,-50,140]], o:[[450,0,70],[800,-11,80],[2830,-22,100],[3800,-22,130],[4950,-50,135]], u:[[325,0,50],[700,-16,60],[2700,-35,170],[3800,-40,180],[4950,-60,200]], e:[[350,0,60],[2000,-20,100],[2800,-15,120],[3600,-40,150],[4950,-56,200]]}
   };
   const tess=f=>f<165?"basse":f<260?"tenor":f<440?"alto":"soprano";
   /* banc de formants : src → 5 passe-bandes en parallèle → out ; la voyelle passe de v0 à v1 entre t1 et t2 */
@@ -827,6 +865,32 @@ function buildEngine(ctx, S, o){
     x.connect(am); am.connect(e); route(e,pan,dst); chiff(t,f,vel,dst);
     const ns=ctx.createBufferSource(); ns.buffer=wb; ns.loop=true; const bp=ctx.createBiquadFilter(); bp.type="bandpass"; bp.frequency.value=320; bp.Q.value=3; const ng=G(vel*0.12); ns.connect(bp); bp.connect(ng); ng.connect(e); /* l'eau qui bouillonne */
     [x,tr].forEach(o=>{ o.start(t); o.stop(t+L+0.3); }); ns.start(t,hz(t)*1.5); ns.stop(t+L+0.3);
+  };
+  /* chant : la voix articule des syllabes d'un texte (latin ou grec), une syllabe par note. Les consonnes sont simples :
+     occlusives (k, t, p, g, d, b) : un silence bref puis un petit bruit coloré ; s : un souffle aigu ; m, n, l : des formants nasaux ou latéraux qui glissent vers la voyelle ; r : un battement. */
+  const TEXTS={kyrie:"ky ri e e le i son chri ste e le i son", alleluia:"al le lu i a al le lu i a", diesirae:"di es i rae di es il la sol vet sae clum in fa vil la",
+    sanctus:"sanc tus sanc tus sanc tus do mi nus de us", agnus:"a gnus de i qui tol lis pec ca ta mun di", paian:"i e pai an i e pai an o pai an", gloria:"glo ri a in ex cel sis de o"};
+  const VMAP={a:"a",e:"e",i:"i",y:"i",o:"o",u:"u"}, NAS={m:[[250,0,60],[1000,-14,120]], n:[[260,0,60],[1500,-14,120]], l:[[360,0,60],[1150,-8,100]], g:[[300,0,80],[1600,-10,120]]};
+  let chantI=0;
+  INST.chant=(t,f,vel,len,dst,pan)=>{
+    const words=(TEXTS[S.chant||"kyrie"]||TEXTS.kyrie).split(" "), syl=words[chantI++%words.length], m=syl.match(/^([^aeiouy]*)([aeiouy]+)([^aeiouy]*)$/)||[syl,"","a",""];
+    const on=m[1], vw=VMAP[m[2][m[2].length-1]]||"a", v0=VMAP[m[2][0]]||vw, coda=m[3], L=Math.max(0.25,len), soft=vel<0.17;
+    let ts=t; const plo=/^(k|c|t|p|q|d|b|ch|qu)/.test(on);
+    if(plo){ ts=t+0.035; const fq=/^(t|d)/.test(on)?4500:/^(p|b)/.test(on)?900:2600; noiseHit(ts-0.005,vel*0.5,fq,0.03,"bandpass",dst,1.5,0.002); }
+    if(/s$|^s|sc/.test(on)) { noiseHit(t,vel*0.35,6000,0.09,"highpass",dst,0.7,0.02); ts=t+0.08; }
+    const x=ctx.createOscillator(), src=G(1), e=envA(ts,soft?0.08:0.05,vel*1.6,0.25,Math.max(0.15,L-(ts-t)));
+    x.setPeriodicWave(glottal(soft?"souffle":"tendu")); x.frequency.setValueAtTime(f*0.98,ts); x.frequency.exponentialRampToValueAtTime(f,ts+0.08); x.connect(src);
+    const vb=ctx.createOscillator(), vg=G(0); vb.frequency.value=5.3; vb.connect(vg); vg.connect(x.detune); vg.gain.setValueAtTime(0,ts+Math.min(0.35,L*0.4)); vg.gain.linearRampToValueAtTime(16,ts+Math.min(1,L*0.9));
+    const ns=ctx.createBufferSource(); ns.buffer=wb; ns.loop=true; const hp=ctx.createBiquadFilter(); hp.type="highpass"; hp.frequency.value=1200; const ng=G(soft?0.04:0.015); ns.connect(hp); hp.connect(ng); ng.connect(src);
+    /* sonore initiale (m, n, l, gn) : on part de ses formants, la voyelle arrive en 70 ms */
+    const son=on.slice(-1), nas=NAS[son]||(on==="gn"?NAS.n:null);
+    if(nas&&!plo){ const T=FORM[tess(f)]; nas.forEach(([F,db,bw],k)=>{ const bp=ctx.createBiquadFilter(), g=G(0); bp.type="bandpass"; bp.Q.value=F/bw; bp.frequency.setValueAtTime(F,ts); bp.frequency.linearRampToValueAtTime((T[v0]||T.a)[k][0],ts+0.07);
+      g.gain.setValueAtTime(Math.pow(10,db/20)*2.4,ts); g.gain.linearRampToValueAtTime(0,ts+0.08); src.connect(bp); bp.connect(g); g.connect(e); }); }
+    formants(src,e,f,v0,vw,ts,ts+0.06,ts+Math.min(0.25,L*0.4),3.0);
+    if(/r/.test(on)){ e.gain.setValueAtTime(vel*1.6,ts+0.06); e.gain.linearRampToValueAtTime(vel*0.5,ts+0.075); e.gain.linearRampToValueAtTime(vel*1.6,ts+0.09); }
+    if(/[nm]$/.test(coda)){ /* finale nasale : la voyelle se ferme sur m ou n */ }
+    if(/s$/.test(coda)) noiseHit(t+L-0.05,vel*0.3,6000,0.1,"highpass",dst,0.7,0.02);
+    route(e,pan,dst); [x,vb].forEach(o=>{ o.start(ts); o.stop(t+L+0.4); }); ns.start(ts,hz(t)*1.5); ns.stop(t+L+0.4);
   };
   /* ---------- sifflet : presque un sinus, un léger souffle, un vibrato qui s'installe et une petite glissade d'attaque ---------- */
   INST.sifflet=(t,f,vel,len,dst,pan)=>{
@@ -1756,6 +1820,8 @@ function buildEngine(ctx, S, o){
       while(cur.clink<until){ clink(cur.clink); cur.clink+=(18+R.a()*30)/(0.25+S.amb.clink*1.5); }
       cur.fire=until; /* les craquements viennent de la boucle précalculée */
       while(cur.bird<until){ const t=cur.bird, ov=natv().oiseaux||0; if(ov>0.001) bird(t); cur.bird=t+(7+R.t()*14)/(0.25+ov*1.75); }
+      { const nt=natv(); BEASTS.forEach(k=>{ const v=nt[k]||0; if(cur["b_"+k]===undefined) cur["b_"+k]=t0+2+R.t()*BEAST_T[k]*0.4;
+        while(cur["b_"+k]<until){ const t=cur["b_"+k]; if(v>0.001) beast(k,t,v); cur["b_"+k]=t+BEAST_T[k]*(0.5+R.t())/(0.25+v*1.75); } }); }
       while(cur.wind<until){
         const t=cur.wind;
         if(windBP){ windBP.frequency.setTargetAtTime(250+R.a()*700,t,2.5); windMod.gain.setTargetAtTime(0.2+R.a()*0.8,t,2.5); }

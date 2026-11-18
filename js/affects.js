@@ -157,9 +157,9 @@ function seekNamed(){
 }
 function seekBuild(){
   const host=$("seekBox"); if(!host) return;
-  host.innerHTML='<div class="seek-row"><span class="seek-l"><i>I</i>Univers</span><div class="seek-c"><div class="seek-uni" id="seekUni" role="group" aria-label="Univers"></div><p class="seek-tag" id="seekTag"></p></div></div>'+
-    '<div class="seek-row"><span class="seek-l"><i>II</i>Je cherche</span><div class="seek-c"><div class="aff-chips" id="affChips" role="group" aria-label="Émotions"></div></div></div>'+
-    '<div class="seek-row"><span class="seek-l"><i>III</i>Je pars de</span><div class="seek-c"><div class="aff-res" id="affRes"></div><p class="aff-now" id="affNow" aria-live="polite"></p></div></div>'+
+  host.innerHTML='<div class="seek-row"><span class="seek-l"><i>1</i>Choisis un univers</span><div class="seek-c"><div class="seek-uni" id="seekUni" role="group" aria-label="Univers"></div><p class="seek-tag" id="seekTag"></p></div></div>'+
+    '<div class="seek-row"><span class="seek-l"><i>2</i>Une émotion ?<small>facultatif</small></span><div class="seek-c"><div class="aff-chips" id="affChips" role="group" aria-label="Émotions"></div></div></div>'+
+    '<div class="seek-row"><span class="seek-l"><i>3</i>Un seul départ<small>clique l'un d'eux</small></span><div class="seek-c"><div class="aff-res" id="affRes"></div><p class="aff-now" id="affNow" aria-live="polite"></p></div></div>'+
     '<div class="seek-more"><details class="fin"><summary>Ambiances nommées de l\'univers</summary><div class="seek-named"><div class="row" id="seekPresets"></div><p class="hint" id="seekGloss"></p></div></details>'+
     '<details class="fin"><summary>La table des affects en entier</summary><div class="aff-tables">'+affTable()+'</div></details></div>';
   const uni=host.querySelector("#seekUni"), cur=seekUni();

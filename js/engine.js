@@ -215,7 +215,7 @@ function buildEngine(ctx, S, o){
   }
   /* le grave est au bourdon ; la mélodie a un peu de présence, les nappes un creux dans le bas-médium pour ne pas l'empâter, la percussion sa petite pièce */
   const B={drone:bus(0.45,0.1,{pk:[2600,-2,0.8],ens:true,mono:true}), mel:bus(0.9,1,{hp:140,pk:[2800,2,0.9],comp:[-26,2.5,3]}), pad:bus(0.8,0.6,{hp:170,pk:[380,-3,1],comp:[-30,2,2],ens:true}), perc:bus(0.4,0,{hp:30,room:true,longRev:0.06}),
-    amb:bus(0.3,0,{hp:110}), loops:bus(0.9,0.8,{hp:190}), arp:bus(0.8,0.45,{hp:110}), plain:bus(0.95,0.2,{hp:80}), pend:bus(0.9,0.7,{hp:190}), bille:bus(0.85,0.6,{hp:180}), arbre:bus(0.95,0.45,{hp:120}), play:bus(0.85,0.9,{hp:60}), daw:bus(0.7,0.6,{hp:40})};
+    amb:bus(0.3,0,{hp:110}), loops:bus(0.9,0.8,{hp:190}), arp:bus(0.8,0.45,{hp:110}), plain:bus(0.95,0.2,{hp:80}), pend:bus(0.9,0.7,{hp:190}), bille:bus(0.85,0.6,{hp:180}), arbre:bus(0.95,0.45,{hp:120}), nuee:bus(1,0.5,{hp:200}), play:bus(0.85,0.9,{hp:60}), daw:bus(0.7,0.6,{hp:40})};
   /* une voix jouée à la basse garde son grave */
   function eqSync(){ const lo=(n,inst)=>{ const h=B[n].hp; if(h) h.frequency.value=inst?35:B[n].eq.hp; };
     lo("mel",S.mel.inst==="basse"||S.canon.inst==="basse"); lo("loops",S.loops.inst==="basse"); lo("pend",S.pend.inst==="basse"); lo("bille",S.bille&&S.bille.inst==="basse");
@@ -294,7 +294,7 @@ function buildEngine(ctx, S, o){
     m.an.getFloatTimeDomainData(m.buf); let pk=0; for(let i=0;i<m.buf.length;i++){ const a=Math.abs(m.buf[i]); if(a>pk) pk=a; } return pk;
   }
   const newGen=name=>{ const v=V[name], g=G(1); g.connect(v.dst); v.node=g; };
-  [["mel",B.mel.in],["canon",canonG],["pad",B.pad.in],["loops",B.loops.in],["pend",B.pend.in],["bille",B.bille.in],["arbre",B.arbre.in],["arp",B.arp.in],["plain",B.plain.in]].forEach(([n,d])=>{ V[n]={dst:d,node:null}; newGen(n); });
+  [["mel",B.mel.in],["canon",canonG],["pad",B.pad.in],["loops",B.loops.in],["pend",B.pend.in],["bille",B.bille.in],["arbre",B.arbre.in],["nuee",B.nuee.in],["arp",B.arp.in],["plain",B.plain.in]].forEach(([n,d])=>{ V[n]={dst:d,node:null}; newGen(n); });
   const murG=G(0), fireG=G(0), windG=G(0), dripG=G(0);
   const lMur=link(murG,B.amb.in), lFire=link(fireG,B.amb.in), lWind=link(windG,B.amb.in); dripG.connect(B.amb.in);
   /* sons de nature : chaque lit n'est construit que s'il est utilisé, et débranché quand il retombe à zéro */
@@ -308,7 +308,7 @@ function buildEngine(ctx, S, o){
   const trkOn=t=>!t.mute&&(!anySolo()||!!t.solo);
   function setLevels(){
     const lv=(n,v)=>(want(n)&&mach()&&mixOn(n))?v:0;
-    { const pp=(DAW().mix||{}).pan||{}; ["drone","mel","pad","perc","loops","pend","bille","arbre","amb"].forEach(n=>{ const p=B[n].pn.pan; if(p) p.value=clamp(pp[n]||0,-1,1); }); }
+    { const pp=(DAW().mix||{}).pan||{}; ["drone","mel","pad","perc","loops","pend","bille","arbre","nuee","amb"].forEach(n=>{ const p=B[n].pn.pan; if(p) p.value=clamp(pp[n]||0,-1,1); }); }
     B.drone.lvl.gain.value=lv("drone",S.drone.lvl);
     B.mel.lvl.gain.value=lv("mel",S.mel.lvl);
     canonG.gain.value=lv("mel",S.canon.lvl);
@@ -328,7 +328,7 @@ function buildEngine(ctx, S, o){
       [["perc",m.perc],["pad",m.pad],["drone",m.drone],["amb",m.amb]].forEach(([n,v])=>{ const g=B[n].tm.gain; if(g.cancelScheduledValues) g.cancelScheduledValues(now); g.value=v; });
     }
     B.loops.lvl.gain.value=lv("loops",S.loops.lvl); B.arp.lvl.gain.value=lv("arp",(S.arp&&S.arp.lvl)||0); B.plain.lvl.gain.value=lv("plain",(S.plain&&S.plain.lvl)||0);
-    B.pend.lvl.gain.value=lv("pend",S.pend.lvl); B.bille.lvl.gain.value=lv("bille",(S.bille&&S.bille.lvl)||0); B.arbre.lvl.gain.value=lv("arbre",(S.arbre&&S.arbre.lvl)||0);
+    B.pend.lvl.gain.value=lv("pend",S.pend.lvl); B.bille.lvl.gain.value=lv("bille",(S.bille&&S.bille.lvl)||0); B.arbre.lvl.gain.value=lv("arbre",(S.arbre&&S.arbre.lvl)||0); B.nuee.lvl.gain.value=lv("nuee",(S.nuee&&S.nuee.lvl)||0);
     murG.gain.value=S.amb.murmur; fireG.gain.value=S.amb.feu*0.4; windG.gain.value=ventv()*0.9; dripG.gain.value=S.amb.gouttes*0.8;
     wet.gain.value=S.fx.rev*2;
     if(padC!==padClosed()) padRest(ctx.currentTime||0);
@@ -1590,7 +1590,7 @@ function buildEngine(ctx, S, o){
   /* ---------- ordonnanceur ---------- */
   let pieceFade=0;
   const cur={mel:0,drone:0,clink:0,perc:0,k:0,pad:0,int:0,fire:0,wind:0,drip:0,bird:0,sec:1,arp:0,aj:0,pl:0,pli:0,plj:0};
-  const phBars=new Set(), fillBars=[], melOn=[]; let arbre=null, billes=[], loopsL=[], pendK=[], lastPh=null, lastD=null, frozen=null;
+  const phBars=new Set(), fillBars=[], melOn=[]; let nuee=null, arbre=null, billes=[], loopsL=[], pendK=[], lastPh=null, lastD=null, frozen=null;
   const lastOff={v:null};
   function rec(tr,t,off,dur,vel,tag){ if(o.record||o.rolling) events.push(tag?{tr,t,off,dur,vel,tag}:{tr,t,off,dur,vel}); }
   const ctr={pm:null,pc:null,li:null};
@@ -1883,6 +1883,26 @@ function buildEngine(ctx, S, o){
         }
       });
     }
+    /* nuée : les sources (une à trois) dérivent lentement ; chaque particule jaillit, vole, retombe sous la gravité et s'éteint.
+       Hauteur : une note de l'accord en cours (plus elle part vite, plus elle est aiguë) ; pan : sa position ; glissé : sa chute */
+    if(nuee){
+      const Nn=S.nuee||{}, on=M&&(Nn.lvl||0)>0.001&&want("nuee"), rr=nuee.rr, rate=(0.6+(Nn.dens===undefined?0.4:Nn.dens)*22)*(o.lite?0.5:1);
+      const life=0.15+2.6*(Nn.vie===undefined?0.5:Nn.vie), disp=Nn.disp===undefined?0.5:Nn.disp, grav=Nn.grav===undefined?0.3:Nn.grav, srcN=clamp(Math.round(Nn.sources||2),1,3), reg=Nn.haut===undefined?0.5:Nn.haut, mat=Nn.mat||"verre";
+      let guard=0;
+      while(nuee.next<until&&guard++<2000){
+        const t=nuee.next, e=Math.floor(rr()*srcN), ex=(e+0.5)/srcN+0.12*Math.sin((t-nuee.t0)*0.07+e*2.1), ang=-Math.PI/2+(rr()*2-1)*disp*Math.PI*0.55, sp=0.25+0.75*rr(), L=life*(0.5+rr());
+        const vx=Math.cos(ang)*sp*0.35, vy=-Math.sin(ang)*sp*0.9, g=0.2+grav*1.6;
+        if(nuee.parts.length>240) nuee.parts.splice(0,nuee.parts.length-240);
+        nuee.parts.push({t0:t,L,x0:ex,y0:0.12,vx,vy,g});
+        if(on){
+          const cpc=chordPcs(chordAt(t)), iv=ivOf(S,secOf(t).key), lo=12+Math.round(reg*24), cand=[];
+          for(let x=lo;x<lo+19;x+=0.5){ const pc=((x%12)+12)%12; if(Nn.harm===false?iv.indexOf(pc)>=0:cpc.some(p=>Math.abs(p-pc)<0.01)) cand.push(x); }
+          if(cand.length){ const off=cand[Math.min(cand.length-1,Math.floor((sp*0.7+rr()*0.3)*cand.length))], fall=Math.pow(2,-(g*L*L*0.5-vy*L)*0.012);
+            nueeGrain(t,freq(off),Math.min(2.8,L),0.05+0.07*rr(),(ex+vx*L*0.5)*2-1,clamp(fall,0.9,1.06),mat); }
+        }
+        nuee.next=t+(-Math.log(1-rr()*0.98))/rate;
+      }
+    }
     /* arbre : bourgeons à chaque nouvel étage, puis rafales de vent qui font tinter les feuilles qu'elles traversent */
     if(arbre){
       const A=S.arbre||{}, on=M&&(A.lvl||0)>0.001&&want("arbre"), fn=instOf(A.inst||"verre","verre"), deep=instOf("bol","bol"), rr=arbre.rr, D=arbre.D, P=Math.max(0,(A.pousse===undefined?3:A.pousse)*60), vent=clamp(A.vent===undefined?0.4:A.vent,0,1);
@@ -1940,6 +1960,7 @@ function buildEngine(ctx, S, o){
     pendK=Array.from({length:pendN()},()=>0);
     initBilles(t+bar*0.5);
     initArbre(t);
+    initNuee(t);
   }
   /* billes : temps de chute de chacune (plus haute = chute plus longue, rythmes qui s'entrecroisent) */
   const billeN=()=>clamp(Math.round((S.bille&&S.bille.count)||3),1,6);
@@ -1956,6 +1977,16 @@ function buildEngine(ctx, S, o){
     let x0=1e9,x1=-1e9,y1=0; nodes.forEach(n=>{ x0=Math.min(x0,n.x,n.px); x1=Math.max(x1,n.x,n.px); y1=Math.max(y1,n.y); });
     nodes.forEach(n=>{ const f=v=>(v-x0)/Math.max(1e-6,x1-x0); n.x=f(n.x); n.px=f(n.px); n.y/=y1; n.py/=y1; });
     arbre={nodes,D,t0:t,rr,next:t+2+rr()*4,budL:0};
+  }
+  /* nuée (d'après Emit) : des sources émettent des particules ; chacune est un grain de son court */
+  function initNuee(t){ nuee={rr:mulberry32((seed^0x3E51A7)>>>0), next:t+1, parts:[], t0:t}; }
+  function nueeGrain(t,f,dur,vel,pan,glide,mat){
+    const g=G(0), p=PAN(clamp(pan,-1,1)); g.connect(p); p.connect(V.nuee.node); const end=t+dur;
+    const att=mat==="verre"?0.004:dur*0.35;
+    g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(vel,t+att); g.gain.setTargetAtTime(0,t+att,Math.max(0.01,(dur-att)/3.2));
+    if(mat==="souffle"){ const ns=ctx.createBufferSource(); ns.buffer=wb; ns.loop=true; const bp=ctx.createBiquadFilter(); bp.type="bandpass"; bp.Q.value=28; bp.frequency.setValueAtTime(f,t); bp.frequency.exponentialRampToValueAtTime(f*glide,end); const k=G(16); ns.connect(bp); bp.connect(k); k.connect(g); ns.start(t,(t*7.3)%1.5); ns.stop(end+0.05); return; }
+    if(mat==="voix"){ const x=ctx.createOscillator(), lp=ctx.createBiquadFilter(), bp=ctx.createBiquadFilter(); x.type="sawtooth"; x.frequency.setValueAtTime(f,t); x.frequency.exponentialRampToValueAtTime(f*glide,end); lp.type="lowpass"; lp.frequency.value=Math.min(4000,f*4); bp.type="peaking"; bp.frequency.value=f<300?700:1100; bp.gain.value=8; bp.Q.value=3; const k=G(0.63); x.connect(lp); lp.connect(bp); bp.connect(k); k.connect(g); x.start(t); x.stop(end+0.05); return; }
+    [[1,0.55],[2.76,0.12],[5.4,0.045]].forEach(([r,a])=>{ const x=ctx.createOscillator(), k=G(a); x.frequency.setValueAtTime(f*r,t); x.frequency.exponentialRampToValueAtTime(f*r*glide,end); x.connect(k); k.connect(g); x.start(t); x.stop(end+0.05); });
   }
   function initLoops(t){
     const nl=clamp(Math.round(S.loops.count),1,5), lens=[29,31,37,41,43,47,53,59].slice();
@@ -1981,6 +2012,7 @@ function buildEngine(ctx, S, o){
     if(all||what==="plain"){ kill("plain",0.05); cur.pl=t0+Math.ceil((now+0.05-t0)/bar)*bar; cur.plj=0; }
     if(all||what==="arp"){ kill("arp",0.05); cur.arp=t0+Math.ceil((now+0.05-t0)/E)*E; }
     if(all) dawReplan();
+    if(all||what==="nuee"){ kill("nuee",0.05); if(nuee) nuee.next=Math.max(nuee.next,now+0.05); else initNuee(now); }
     if(all||what==="bille"){ kill("bille",0.05); initBilles(now+0.05); }
     if(all||what==="arbre"){ kill("arbre",0.05); const old=arbre; initArbre(old?old.t0:now); if(old){ arbre.next=Math.max(arbre.next,now+0.5); arbre.budL=old.budL; } }
     if(all||what==="pend"){
@@ -2066,6 +2098,8 @@ function buildEngine(ctx, S, o){
   const billeY=t=>billes.map(b=>{ const a=b.arcs.find(x=>t>=x.t0&&t<x.t1); if(!a) return {x:b.x===undefined?0.5:b.x,y:0}; const u=(t-a.t0)/(a.t1-a.t0), x=billeXof(a.sx,t);
     if(a.type==="hang") return {x,y:1}; if(a.type==="fall") return {x,y:1-u*u}; if(a.type==="arc") return {x,y:a.h*4*u*(1-u)}; return {x,y:0}; });
   /* l'arbre pour l'affichage : branches poussées, et l'éclat de chaque nœud (1 juste après qu'il a sonné) */
+  /* particules visibles : position (0 à 1) et ce qu'il leur reste de vie */
+  const nueeState=t=>!nuee?[]:nuee.parts.filter(q=>t>=q.t0&&t<q.t0+q.L).map(q=>{ const a=t-q.t0; return {x:q.x0+q.vx*a, y:q.y0+q.vy*a-0.5*q.g*a*a*0.6, life:1-a/q.L}; });
   const arbreState=t=>{ if(!arbre) return null; const A=S.arbre||{}, P=Math.max(0,(A.pousse===undefined?3:A.pousse)*60), D=arbre.D, gd=P<=0?D:clamp((t-arbre.t0)/P*D,0,D);
     return {grown:gd,nodes:arbre.nodes.map(n=>{ let h=-1; n.hits.forEach(x=>{ if(x<=t&&x>h) h=x; }); return {x:n.x,y:n.y,px:n.px,py:n.py,d:n.d,glow:h<0?0:Math.max(0,1-(t-h)/1.6)}; })}; };
   const pendX=t=>Array.from({length:pendN()},(_,i)=>Math.cos(2*Math.PI*(PEND_N0+i)*(t-t0)/(S.pend.period*bar)));
@@ -2077,5 +2111,5 @@ function buildEngine(ctx, S, o){
     perc:(k,part,t,v,dst)=>{ const s=PB; PB=dst; try{ (KITS[k]||KITS.cadre)[part](t,v); } finally{ PB=s; } },
     kpat:KPAT, kits:Object.keys(KITS), noise:()=>wb
   };
-  return {arbreState,billeY,bank,pieceEnd:()=>pieceFade,fxAttach,grainFreeze,fxOn:()=>!!fx,start,schedule,setLevels,setReverb,stop,fadeOut,sleepFade,sleepClear,replan,freeze,reroll,gesture,play,synOn,dawOn,dawNote,rackSync,meter,tap:()=>volG,analyser:k=>k==="all"?anaAll:anaSyn,dawReplan,dawPos,pendX,tensNow:()=>tensAt(ctx.currentTime),adaptNow:()=>adaptE(ctx.currentTime),tensPos:()=>{ if(!curveOn()) return -1; const L=Math.max(30,S.curve.dur*60), x=(ctx.currentTime-t0)/L; return S.curve.mode==='loop'?((x%1)+1)%1:clamp(x,0,1); },events,out,master,secAt:t=>secOf(t),bar,E,t0f:()=>t0,chords:()=>chordTl.slice(),phraseBars:()=>[...phBars],fillBars:()=>fillBars.slice()};
+  return {nueeState,arbreState,billeY,bank,pieceEnd:()=>pieceFade,fxAttach,grainFreeze,fxOn:()=>!!fx,start,schedule,setLevels,setReverb,stop,fadeOut,sleepFade,sleepClear,replan,freeze,reroll,gesture,play,synOn,dawOn,dawNote,rackSync,meter,tap:()=>volG,analyser:k=>k==="all"?anaAll:anaSyn,dawReplan,dawPos,pendX,tensNow:()=>tensAt(ctx.currentTime),adaptNow:()=>adaptE(ctx.currentTime),tensPos:()=>{ if(!curveOn()) return -1; const L=Math.max(30,S.curve.dur*60), x=(ctx.currentTime-t0)/L; return S.curve.mode==='loop'?((x%1)+1)%1:clamp(x,0,1); },events,out,master,secAt:t=>secOf(t),bar,E,t0f:()=>t0,chords:()=>chordTl.slice(),phraseBars:()=>[...phBars],fillBars:()=>fillBars.slice()};
 }

@@ -5,7 +5,7 @@
    ============================================================ */
 const DW={tab:"clip", machFold:false, lv:{}, view:"roll", seqOct:0, seqStep:1, seqDens:0.4, recDirty:false, rec:false, held:new Map(), undo:[], drag:null, snap:true, raf:0, scrolled:false, built:false, hov:null};
 const DCOL=["#a3301c","#2f6f5b","#b0801f","#4a5a8a","#7a4a7a","#4a7a8a","#8a6a3a","#5a5a5a"];
-const MACH=[["drone","Bourdon","drone.lvl"],["mel","Mélodie et canon","mel.lvl"],["pad","Nappes","pad.lvl"],["perc","Percussion","perc.lvl"],["loops","Boucles","loops.lvl"],["pend","Pendules","pend.lvl"],["bille","Billes","bille.lvl"],["arbre","Arbre","arbre.lvl"],["amb","Lieu","amb.lvl"]];
+const MACH=[["drone","Bourdon","drone.lvl"],["mel","Mélodie et canon","mel.lvl"],["pad","Nappes","pad.lvl"],["perc","Percussion","perc.lvl"],["loops","Boucles","loops.lvl"],["pend","Pendules","pend.lvl"],["bille","Billes","bille.lvl"],["arbre","Arbre","arbre.lvl"],["nuee","Nuée","nuee.lvl"],["amb","Lieu","amb.lvl"]];
 const GRIDS=[[2,"Noire"],[1,"Croche"],[0.5,"Double-croche"],[0.25,"Libre"]];
 const ROW=12, GUT=44;
 const curTrack=()=>S.daw.tracks[S.daw.sel]||S.daw.tracks[0];

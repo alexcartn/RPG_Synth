@@ -73,6 +73,7 @@ h1::first-letter{font:700 1.3em/.7 "UnifrakturCook","IM Fell English",serif; col
 .note-t{font:400 9.5px var(--caps); fill:var(--ink-2); text-anchor:middle; pointer-events:none; letter-spacing:.04em}
 .note-g{cursor:pointer; outline:none}
 .note-g:focus-visible .note-c{stroke:var(--ink); stroke-width:2.4}
+canvas#nueeCv{width:100%; height:100px; display:block; background:var(--parch-2); border-bottom:1px solid var(--rule)}
 canvas#arbreCv{width:100%; height:150px; display:block; background:var(--parch-2); border-bottom:1px solid var(--rule)}
 canvas#billeCv{width:100%; height:70px; display:block; background:var(--parch-2); border-bottom:1px solid var(--rule)}
 canvas#pend{width:100%; height:56px; display:block; background:var(--parch-2); border-bottom:1px solid var(--rule)}

@@ -14,7 +14,7 @@ function tickSchedule(){ if(live) live.eng.schedule(live.ctx.currentTime+lookahe
 document.addEventListener("visibilitychange",tickSchedule);
 
 /* réglages immédiats : quelles voix replanifier quand un réglage change, sans redémarrer le moteur */
-const GAIN_ONLY={"mel.lvl":"mel","canon.lvl":"mel","pad.lvl":"pad","loops.lvl":"loops","pend.lvl":"pend","bille.lvl":"bille","arbre.lvl":"arbre"};
+const GAIN_ONLY={"mel.lvl":"mel","canon.lvl":"mel","pad.lvl":"pad","loops.lvl":"loops","pend.lvl":"pend","bille.lvl":"bille","arbre.lvl":"arbre","nuee.lvl":"nuee"};
 function replanTarget(k,prev,now){
   if(k in GAIN_ONLY) return ((prev>0.001)!==(now>0.001))?GAIN_ONLY[k]:null; /* seulement quand une voix s'allume ou s'éteint */
   if(k.startsWith("mel.")||k.startsWith("canon.")||k.startsWith("car.")||k.startsWith("chance.")||k.startsWith("turing.")) return "mel";
@@ -25,6 +25,7 @@ function replanTarget(k,prev,now){
   if(k.startsWith("pend.")) return "pend";
   if(k.startsWith("bille.")) return "bille";
   if(k.startsWith("arbre.")) return "arbre";
+  if(k.startsWith("nuee.")) return "nuee";
   if(k.startsWith("scales.")||k==="sectionBars"||k.startsWith("mus.")) return "all";
   return null;
 }
@@ -158,6 +159,17 @@ function drawArbre(){
     if(n.glow>0&&f>=1){ c.globalAlpha=n.glow; c.fillStyle=n.d<=1?gold:rub; c.beginPath(); c.arc(x1,y1,3+5*n.glow,0,Math.PI*2); c.fill(); } });
   c.globalAlpha=1;
 }
+/* nuée : chaque particule est un point qui jaillit, retombe et pâlit à mesure que son grain s'éteint */
+function drawNuee(){
+  const cv=$("nueeCv"); if(!cv) return; const wrap=cv.parentNode, on=live&&S.nuee&&S.nuee.lvl>0.001&&live.eng.nueeState;
+  if(wrap.hidden===!!on) wrap.hidden=!on;
+  if(!on) return;
+  const c=cv.getContext("2d"), W=cv.width, H=cv.height, ps=live.eng.nueeState(live.ctx.currentTime);
+  const cs=getComputedStyle(document.documentElement), ink=cs.getPropertyValue("--ink").trim()||"#3a2e22", rub=cs.getPropertyValue("--rubric").trim()||"#a3301c";
+  c.clearRect(0,0,W,H); c.fillStyle=ink; c.globalAlpha=.3; c.fillRect(0,H-6,W,1);
+  ps.forEach(q=>{ const x=q.x*W, y=H-6-q.y*(H-16); if(y<-10||y>H) return; c.globalAlpha=0.15+0.75*q.life; c.fillStyle=q.life>0.7?rub:ink; c.beginPath(); c.arc(x,y,1.5+3*q.life,0,Math.PI*2); c.fill(); });
+  c.globalAlpha=1;
+}
 function drawPend(){
   const cv=$("pend"), wrap=cv.parentNode, on=live&&S.pend.lvl>0.001;
   if(wrap.hidden===on) wrap.hidden=!on;
@@ -174,7 +186,7 @@ function drawPend(){
 function frame(ts){
   raf=0; if(!live) return;
   { const pe=live.eng.pieceEnd&&live.eng.pieceEnd(); if(pe&&live.ctx.currentTime>pe+0.3){ stopLive(); status("La pièce est finie.","ok"); return; } }
-  if(!isEco()||ts-lastFrame>=33){ lastFrame=ts; vizDraw(live.ctx.currentTime,live.eng); drawPend(); drawBille(); drawArbre(); tableFrame(); jeuFrame(); }
+  if(!isEco()||ts-lastFrame>=33){ lastFrame=ts; vizDraw(live.ctx.currentTime,live.eng); drawPend(); drawBille(); drawArbre(); drawNuee(); tableFrame(); jeuFrame(); }
   raf=requestAnimationFrame(frame);
 }
 
@@ -341,6 +353,16 @@ const UI=[
    {k:"arbre.vent",type:"range",label:"Vent",min:0,max:1,step:0.01,fmt:v=>v<0.15?"calme":v<0.45?"brise":v<0.75?"vent":"tempête",hint:"La force et la fréquence des rafales. Une brise fait frémir quelques feuilles de temps en temps ; une tempête secoue tout, jusqu'au tronc."},
    {k:"arbre.pousse",type:"range",label:"Pousse",min:0,max:10,step:0.5,fmt:v=>v<0.25?"déjà grand":v+" min",hint:"Le temps que met l'arbre à grandir depuis le début de la pièce : chaque nouvel étage s'éveille en bourgeons. À zéro, il est déjà grand."},
    {k:"arbre.harm",type:"select",label:"Accord",opts:[["true","Les feuilles suivent l'accord"],["false","Toute la gamme"]],hint:"Les feuilles tintent sur les notes de l'accord en cours, ou sur toutes les notes de la gamme."}]},
+  {h:"Nuée", hf:"des particules de son qui jaillissent et retombent", id:"g-nuee", items:[
+   {k:"nuee.lvl",type:"range",label:"Niveau (0 = absente)",min:0,max:1,step:0.01,fmt:pct,hint:"Le volume de la nuée. À 0, elle est absente."},
+   {k:"nuee.mat",type:"select",label:"Matière",opts:[["verre","Verre (étincelles)"],["souffle","Souffle (sifflements)"],["voix","Voix (poussière de chœur)"]],hint:"De quoi est fait chaque grain : un tintement de verre, un souffle accordé, ou un éclat de voix."},
+   {k:"nuee.dens",type:"range",label:"Densité",min:0,max:1,step:0.01,fmt:v=>Math.round(0.6+v*22)+" grains / s",hint:"Combien de particules jaillissent chaque seconde : de quelques étincelles à un nuage continu."},
+   {k:"nuee.vie",type:"range",label:"Vie des grains",min:0,max:1,step:0.01,fmt:v=>(0.15+2.6*v).toFixed(1)+" s",hint:"Combien de temps chaque particule vit : courte, un picotement ; longue, des traînées qui se superposent."},
+   {k:"nuee.disp",type:"range",label:"Dispersion",min:0,max:1,step:0.01,fmt:pct,hint:"L'éventail des directions : un jet étroit vers le haut ou une gerbe qui s'ouvre de tous côtés (et dans tout le stéréo)."},
+   {k:"nuee.grav",type:"range",label:"Gravité",min:0,max:1,step:0.01,fmt:pct,hint:"La force qui fait retomber les particules ; elle fait aussi légèrement glisser leur hauteur, vers le haut à l'envol, vers le bas à la chute."},
+   {k:"nuee.sources",type:"range",label:"Sources",min:1,max:3,step:1,fmt:v=>v+(v>1?" sources":" source"),hint:"Le nombre de points d'où jaillissent les particules ; ils dérivent lentement dans l'espace."},
+   {k:"nuee.haut",type:"range",label:"Registre",min:0,max:1,step:0.01,fmt:v=>v<0.33?"grave":v<0.66?"médium":"aigu",hint:"La hauteur autour de laquelle la nuée flotte. Les particules les plus rapides sonnent plus haut."},
+   {k:"nuee.harm",type:"select",label:"Notes",opts:[["true","Sur l'accord en cours"],["false","Toute la gamme"]],hint:"Les grains prennent les notes de l'accord en cours (la nuée se pose sur les nappes) ou toute la gamme."}]},
   {h:"Nuage de grains", hf:"la musique reprise en grains", id:"g-grain", items:[
    {k:"grain.mix",type:"range",label:"Nuage (0 = absent)",min:0,max:1,step:0.01,fmt:pct},
    {k:"grain.src",type:"select",label:"Ce qui est mis en grains",opts:[["mel","Mélodie et canon"],["pad","Nappes"],["cycles","Boucles et pendules"],["tout","Tout cela"]]},
@@ -550,7 +572,7 @@ function buildChapters(){
    Chaque commande ici pilote la vraie commande du chapitre Couches, qui reste la seule source. */
 const PUPITRE=[["Bourdon","drone.lvl","drone.timbre","g-drone"],["Mélodie","mel.lvl","mel.inst","g-mel"],["Plain-chant","plain.lvl","chant","g-plain"],
  ["Canon","canon.lvl","canon.inst","g-canon"],["Nappes","pad.lvl","pad.timbre","g-pad"],["Arpège","arp.lvl","arp.inst","g-arp"],["Percussion","perc.lvl","perc.kit","g-perc"],
- ["Boucles","loops.lvl","loops.inst","g-loops"],["Pendules","pend.lvl","pend.inst","g-pend"],["Billes","bille.lvl","bille.inst","g-bille"],["Arbre","arbre.lvl","arbre.inst","g-arbre"],
+ ["Boucles","loops.lvl","loops.inst","g-loops"],["Pendules","pend.lvl","pend.inst","g-pend"],["Billes","bille.lvl","bille.inst","g-bille"],["Arbre","arbre.lvl","arbre.inst","g-arbre"],["Nuée","nuee.lvl","nuee.mat","g-nuee"],
  ["Nuage de grains","grain.mix","grain.src","g-grain"]];
 const PP_MEM={}, PP_ROWS=[];
 const ctlEl=k=>$("c_"+k.replace(/\./g,"_"));

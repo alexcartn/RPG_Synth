@@ -105,6 +105,7 @@ const DEFAULT = {
   loops:{lvl:0, count:3, inst:"carillon", speed:1},
   arp:{lvl:0, inst:"harpe", pat:"vaetvient", rate:1, reg:1, span:1},
   pend:{lvl:0, count:6, period:24, inst:"carillon"},
+  nuee:{lvl:0, dens:0.4, vie:0.5, disp:0.5, grav:0.3, sources:2, haut:0.5, mat:"verre", harm:true},
   arbre:{lvl:0, inst:"verre", prof:4, vent:0.4, pousse:3, harm:true},
   bille:{lvl:0, count:3, haut:1, rebond:0.72, pause:1, travers:1, inst:"kalimba", mode:"clavier"},
   amb:{lvl:1, murmur:0.35, clink:0.5, feu:0.15, vent:0, gouttes:0},
@@ -514,6 +515,9 @@ UNIVERS.forEach(u=>u.items.forEach(it=>{ const m=PRESET_MIX[it[0]], p=it[1]; if(
 /* l'arbre dans les forêts : une ramure qui pousse et que le vent fait tinter */
 const PRESET_ARBRE={"Silva":{lvl:0.4,inst:"kalimba",prof:5,vent:0.5,pousse:2}, "Silva Antiqua":{lvl:0.35,inst:"verre",prof:5,vent:0.35,pousse:4}, "Hortus":{lvl:0.3,inst:"verre",prof:4,vent:0.3,pousse:3}, "Nox":{lvl:0.25,inst:"carillon",prof:4,vent:0.25,pousse:5}};
 UNIVERS.forEach(u=>u.items.forEach(it=>{ const a=PRESET_ARBRE[it[0]]; if(a) it[1].arbre=Object.assign({},DEFAULT.arbre,a); }));
+/* nuée de grains autour des nappes, dans les ambiances les plus flottantes */
+const PRESET_NUEE={"Vacuum":{lvl:0.35,mat:"souffle",dens:0.3,vie:0.7,grav:0.15,haut:0.6}, "Abyssus":{lvl:0.3,mat:"voix",dens:0.35,vie:0.8,grav:0.25,haut:0.35}, "Sanctum":{lvl:0.28,mat:"voix",dens:0.25,vie:0.9,grav:0.1,haut:0.55}, "Glacies":{lvl:0.25,mat:"verre",dens:0.45,vie:0.35,grav:0.4,haut:0.8}};
+UNIVERS.forEach(u=>u.items.forEach(it=>{ const n=PRESET_NUEE[it[0]]; if(n) it[1].nuee=Object.assign({},DEFAULT.nuee,n); }));
 const PRESET_BILLE={"Glacies":{lvl:0.32,inst:"verre",count:2,haut:2,rebond:0.82,pause:1.5}, "Sylva Magica":{lvl:0.3,inst:"kalimba",count:4,haut:1,rebond:0.74}, "Nebula":{lvl:0.28,inst:"fmcloche",count:3,haut:1.5,rebond:0.8,pause:2}, "Meditatio":{lvl:0.25,inst:"kalimba",count:2,haut:2.5,rebond:0.85,pause:2,mode:"descend"}};
 UNIVERS.forEach(u=>u.items.forEach(it=>{ const b=PRESET_BILLE[it[0]]; if(b) it[1].bille=Object.assign({},DEFAULT.bille,b); }));
 /* liste à plat des préréglages */

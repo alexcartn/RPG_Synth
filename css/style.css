@@ -73,6 +73,7 @@ h1::first-letter{font:700 1.3em/.7 "UnifrakturCook","IM Fell English",serif; col
 .note-t{font:400 9.5px var(--caps); fill:var(--ink-2); text-anchor:middle; pointer-events:none; letter-spacing:.04em}
 .note-g{cursor:pointer; outline:none}
 .note-g:focus-visible .note-c{stroke:var(--ink); stroke-width:2.4}
+canvas#nueeCv{width:100%; height:100px; display:block; background:var(--parch-2); border-bottom:1px solid var(--rule)}
 canvas#arbreCv{width:100%; height:150px; display:block; background:var(--parch-2); border-bottom:1px solid var(--rule)}
 canvas#billeCv{width:100%; height:70px; display:block; background:var(--parch-2); border-bottom:1px solid var(--rule)}
 canvas#pend{width:100%; height:56px; display:block; background:var(--parch-2); border-bottom:1px solid var(--rule)}
@@ -899,6 +900,9 @@ body.armed .knob[data-dst]{cursor:copy}
 .seek-l{font:400 .8rem/1 var(--caps); letter-spacing:.1em; color:var(--ink-2); white-space:nowrap}
 .seek-l i{font:italic 400 1.05rem/1 var(--display); color:var(--rubric); letter-spacing:0; margin-right:.55em; display:inline-block; min-width:1.5em}
 .seek-c{min-width:0}
+.seek-l{white-space:normal; line-height:1.25}
+.seek-l small{display:block; margin:3px 0 0 2.15em; font:italic 400 .8rem/1.2 var(--body); letter-spacing:0; color:var(--ink-2)}
+.seek .aff-tables{max-height:20rem; overflow:auto; margin-top:var(--sp-xs); gap:var(--sp-lg)}
 .seek-uni{display:flex; flex-wrap:wrap; gap:var(--sp-xs) var(--sp-lg)}
 .seek .lnk{color:var(--ink)} .seek .lnk:hover, .seek .lnk[aria-current="true"]{color:var(--rubric)}
 .seek-uni .lnk{font-size:1.15rem}

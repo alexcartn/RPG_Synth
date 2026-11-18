@@ -917,6 +917,9 @@
   $("sMeter").onchange=()=>{ const v=$("sMeter").value; if(TR) TR.stop(); edit(()=>{ P.meter=v; P.tracks.forEach(t=>{ if(t.kind==="drums") t.clips.forEach(c=>c&&PJ.fixDrum(t,c,v)); }); },"all"); };
   $("sQuant").onchange=()=>edit(()=>P.quant=+$("sQuant").value,"top");
   $("pName").onchange=()=>edit(()=>P.name=$("pName").value.trim()||"Sans titre","top");
+  { const bc=$("bConseils"), K="bourdon.studio.conseils"; let on=true; try{ on=localStorage.getItem(K)!=="0"; }catch(e){}
+    const apply=()=>{ document.body.classList.toggle("sans-conseils",!on); bc.setAttribute("aria-pressed",on?"true":"false"); };
+    bc.onclick=()=>{ on=!on; try{ localStorage.setItem(K,on?"1":"0"); }catch(e){} apply(); }; apply(); }
   document.querySelectorAll(".views button").forEach(b=>b.onclick=()=>{ UI.view=b.dataset.v; if(UI.view==="arr") UI.focus="arr"; else if(UI.focus==="arr") UI.focus="clip"; renderTop(); renderArr(); renderConseils(); });
   $("bUndo").onclick=doUndo; $("bRedo").onclick=doRedo;
   $("bProj").onclick=()=>$("dlgProj").showModal();

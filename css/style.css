@@ -872,6 +872,9 @@ body.armed .knob[data-dst]{cursor:copy}
 .seek-l{font:400 .8rem/1 var(--caps); letter-spacing:.1em; color:var(--ink-2); white-space:nowrap}
 .seek-l i{font:italic 400 1.05rem/1 var(--display); color:var(--rubric); letter-spacing:0; margin-right:.55em; display:inline-block; min-width:1.5em}
 .seek-c{min-width:0}
+.seek-l{white-space:normal; line-height:1.25}
+.seek-l small{display:block; margin:3px 0 0 2.15em; font:italic 400 .8rem/1.2 var(--body); letter-spacing:0; color:var(--ink-2)}
+.seek .aff-tables{max-height:20rem; overflow:auto; margin-top:var(--sp-xs); gap:var(--sp-lg)}
 .seek-uni{display:flex; flex-wrap:wrap; gap:var(--sp-xs) var(--sp-lg)}
 .seek .lnk{color:var(--ink)} .seek .lnk:hover, .seek .lnk[aria-current="true"]{color:var(--rubric)}
 .seek-uni .lnk{font-size:1.15rem}

@@ -101,7 +101,7 @@ const DEFAULT = {
   drone:{lvl:0.8, timbre:"anche", bright:0.5, width:0.5, drift:0.5, glide:0.5},
   mel:{lvl:0.6, inst:"luth", lpg:0, dens:0.85, reg:0, span:2, leap:0.2, orn:0.15, deja:0, loop:2},
   canon:{lvl:0, inst:"harpe", delay:2, shift:"oct+"},
-  pad:{lvl:0.22, timbre:"cordes", len:2, motion:0.5, voices:3, deja:0, loop:2, stag:0.5, bass:0.5},
+  pad:{lvl:0.22, timbre:"cordes", len:2, motion:0.5, voices:3, deja:0, loop:2, stag:0.5, bass:0.5, bassOct:12},
   loops:{lvl:0, count:3, inst:"carillon", speed:1},
   arp:{lvl:0, inst:"harpe", pat:"vaetvient", rate:1, reg:1, span:1},
   pend:{lvl:0, count:6, period:24, inst:"carillon"},
@@ -357,25 +357,38 @@ const CYBER = [
 ];
 const DUNGEON = [
   ["Montagne", {mus:{logic:"modal", harm:"idiome", form:"rondeau", arc:"arche"}, car:{grav:0.5, aud:0.45, orn:0.3, sil:0.35, rep:0.85}, seed:2024, root:9, scales:["eolien","dorien",""], tempo:76, meter:"4/4", swing:0, tension:0.4, sectionBars:16,
-    drone:{lvl:0}, pad:{lvl:0.55, timbre:"machine", len:2, motion:0.6, voices:4, bass:0.7, stag:0.2}, arp:{lvl:0.42, inst:"harpe", pat:"vaetvient", rate:1, reg:1, span:1},
-    mel:{lvl:0.55, inst:"flute", dens:0.45, reg:1, span:1, leap:0.15, orn:0.2, deja:0.75, loop:2}, canon:{lvl:0}, perc:{lvl:0.18, shaker:0, ghost:0},
-    fx:{algo:"salle", rev:0.55, size:4.5, dark:0.45, wow:0.1, hiss:0.05, veil:0.2, sat:0.08}}, "royaume des montagnes : cordes, harpe, flûte, timbales lointaines"],
+    drone:{lvl:0}, pad:{lvl:0.55, timbre:"machine", len:2, motion:0.6, voices:4, bass:0.85, bassOct:0, stag:0.2}, arp:{lvl:0.42, inst:"harpe", pat:"vaetvient", rate:1, reg:1, span:1},
+    mel:{lvl:0.55, inst:"flute", dens:0.55, reg:1, span:1, leap:0.15, orn:0.2, deja:0.75, loop:2}, canon:{lvl:0}, perc:{lvl:0.08, shaker:0, ghost:0},
+    fx:{algo:"salle", rev:0.45, size:4.5, dark:0.45, wow:0.04, hiss:0.01, veil:0.5, sat:0.08}}, "royaume des montagnes : cordes, harpe, flûte, timbales lointaines"],
   ["Custos", {mus:{logic:"modal", harm:"idiome", form:"passacaille", arc:"arche"}, car:{grav:0.75, aud:0.5, orn:0.2, sil:0.3, rep:0.85}, seed:3141, root:2, scales:["harm","eolien",""], tempo:66, meter:"4/4", swing:0, tension:0.6, sectionBars:16,
-    drone:{lvl:0.15, timbre:"choeur", bright:0.3}, pad:{lvl:0.5, timbre:"choeur", len:2, motion:0.5, voices:4, bass:0.8, stag:0.15}, arp:{lvl:0.38, inst:"harpe", pat:"alberti", rate:1, reg:0, span:1},
-    mel:{lvl:0.55, inst:"cuivre", dens:0.35, reg:1, span:1, leap:0.2, orn:0.1, deja:0.7, loop:2}, canon:{lvl:0}, perc:{lvl:0.28, shaker:0, ghost:0.1}, amb:{vent:0.15},
-    fx:{algo:"salle", rev:0.6, size:6, dark:0.55, wow:0.12, hiss:0.06, veil:0.3, sat:0.1}}, "le dernier gardien : chœur, cor, harpe grave, timbales"],
+    drone:{lvl:0.15, timbre:"choeur", bright:0.3}, pad:{lvl:0.5, timbre:"choeur", len:2, motion:0.5, voices:4, bass:0.9, bassOct:0, stag:0.15}, arp:{lvl:0.38, inst:"harpe", pat:"alberti", rate:1, reg:0, span:1},
+    mel:{lvl:0.55, inst:"cuivre", dens:0.35, reg:1, span:1, leap:0.2, orn:0.1, deja:0.7, loop:2}, canon:{lvl:0}, perc:{lvl:0.12, shaker:0, ghost:0.1}, amb:{vent:0.15},
+    fx:{algo:"salle", rev:0.5, size:6, dark:0.55, wow:0.04, hiss:0.01, veil:0.55, sat:0.1}}, "le dernier gardien : chœur, cor, harpe grave, timbales"],
   ["Hiems", {mus:{logic:"modal", harm:"idiome", form:"rondeau"}, car:{grav:0.6, aud:0.35, orn:0.25, sil:0.5, rep:0.85}, seed:1902, root:4, scales:["dorien","eolien",""], tempo:62, meter:"3/4", swing:0, tension:0.35, sectionBars:16,
-    drone:{lvl:0}, pad:{lvl:0.5, timbre:"vecteur", len:2, motion:0.5, voices:3, bass:0.6}, arp:{lvl:0.35, inst:"carillon", lpg:0.3, pat:"montant", rate:1, reg:2, span:1},
+    drone:{lvl:0}, pad:{lvl:0.5, timbre:"vecteur", len:2, motion:0.5, voices:3, bass:0.8, bassOct:0}, arp:{lvl:0.35, inst:"carillon", lpg:0.3, pat:"montant", rate:1, reg:2, span:1},
     mel:{lvl:0.5, inst:"flute", dens:0.35, reg:1, span:1, leap:0.15, orn:0.15, deja:0.75, loop:2}, canon:{lvl:0}, perc:{lvl:0}, amb:{vent:0.45},
-    fx:{algo:"salle", rev:0.65, size:7, dark:0.5, wow:0.12, hiss:0.07, veil:0.3, sat:0.06}}, "hiver sur la forteresse : neige, clochettes, flûte"],
+    fx:{algo:"salle", rev:0.55, size:7, dark:0.5, wow:0.04, hiss:0.01, veil:0.5, sat:0.06}}, "hiver sur la forteresse : neige, clochettes, flûte"],
   ["Castellum", {mus:{logic:"modal", harm:"idiome", form:"rondeau", arc:"arche"}, car:{grav:0.4, aud:0.65, orn:0.3, sil:0.2, rep:0.85}, seed:1415, root:7, scales:["mixolydien","ionien",""], tempo:84, meter:"4/4", swing:0, tension:0.55, sectionBars:16,
-    drone:{lvl:0}, pad:{lvl:0.45, timbre:"orgue", len:2, motion:0.6, voices:4, bass:0.8}, arp:{lvl:0.38, inst:"harpe", pat:"montant", rate:1, reg:1, span:1},
-    mel:{lvl:0.6, inst:"cuivre", dens:0.5, reg:1, span:1, leap:0.3, orn:0.1, deja:0.75, loop:2}, canon:{lvl:0.25, inst:"flute", delay:2, shift:"oct+"}, perc:{lvl:0.35, kit:"caisse", shaker:0.2, ghost:0.2},
-    fx:{algo:"salle", rev:0.5, size:5, dark:0.4, wow:0.08, hiss:0.04, veil:0.15, sat:0.08}}, "le château : orgue, cor, harpe, tambour de garde"],
+    drone:{lvl:0}, pad:{lvl:0.45, timbre:"orgue", len:2, motion:0.6, voices:4, bass:0.85, bassOct:0}, arp:{lvl:0.38, inst:"harpe", pat:"montant", rate:1, reg:1, span:1},
+    mel:{lvl:0.6, inst:"cuivre", dens:0.5, reg:1, span:1, leap:0.3, orn:0.1, deja:0.75, loop:2}, canon:{lvl:0.25, inst:"flute", delay:2, shift:"oct+"}, perc:{lvl:0.15, kit:"caisse", shaker:0.2, ghost:0.2},
+    fx:{algo:"salle", rev:0.42, size:5, dark:0.4, wow:0.03, hiss:0.01, veil:0.4, sat:0.08}}, "le château : orgue, cor, harpe, tambour de garde"],
   ["Silva Antiqua", {mus:{logic:"modal", harm:"idiome", form:"rondeau"}, car:{grav:0.4, aud:0.45, orn:0.35, sil:0.35, rep:0.8}, seed:808, root:0, scales:["dorien","mixolydien",""], tempo:72, meter:"3/4", swing:0, tension:0.35, sectionBars:16,
-    drone:{lvl:0}, pad:{lvl:0.45, timbre:"cordes", len:2, motion:0.5, voices:3, bass:0.7}, arp:{lvl:0.45, inst:"luth", pat:"vaetvient", rate:1, reg:1, span:1},
-    mel:{lvl:0.5, inst:"flute", dens:0.45, reg:1, span:1, leap:0.15, orn:0.25, deja:0.75, loop:2}, canon:{lvl:0}, perc:{lvl:0}, amb:{vent:0.15}, nature:{oiseaux:0.25, ruisseau:0.2},
-    fx:{algo:"salle", rev:0.5, size:4, dark:0.45, wow:0.1, hiss:0.05, veil:0.2, sat:0.06}}, "vieille forêt : luth, flûte, cordes, oiseaux"]
+    drone:{lvl:0}, pad:{lvl:0.45, timbre:"cordes", len:2, motion:0.5, voices:3, bass:0.8, bassOct:0}, arp:{lvl:0.45, inst:"luth", pat:"vaetvient", rate:1, reg:1, span:1},
+    mel:{lvl:0.5, inst:"flute", dens:0.55, reg:1, span:1, leap:0.15, orn:0.25, deja:0.75, loop:2}, canon:{lvl:0}, perc:{lvl:0}, amb:{vent:0.15}, nature:{oiseaux:0.25, ruisseau:0.2},
+    fx:{algo:"salle", rev:0.5, size:4, dark:0.45, wow:0.04, hiss:0.01, veil:0.45, sat:0.06}}, "vieille forêt : luth, flûte, cordes, oiseaux"],
+  /* vieux dungeon synth des claviers des années 90 : son net mais filtré vers 3 kHz, pas de bande, une vraie basse sous le bourdon, mineur, des fondus */
+  ["Vigilia", {mus:{logic:"modal", harm:"idiome", form:"rondeau", arc:"arche"}, car:{grav:0.55, aud:0.4, orn:0.25, sil:0.25, rep:0.85}, seed:1993, root:9, scales:["eolien","dorien",""], tempo:72, meter:"4/4", swing:0, tension:0.45, sectionBars:16,
+    drone:{lvl:0}, pad:{lvl:0.5, timbre:"machine", len:1, motion:0.6, voices:3, bass:0.95, bassOct:0, stag:0.1}, arp:{lvl:0.4, inst:"harpe", lpg:0.4, pat:"vaetvient", rate:2, reg:1, span:1},
+    mel:{lvl:0.55, inst:"flute", dens:0.65, reg:1, span:1, leap:0.15, orn:0.2, deja:0.8, loop:2}, canon:{lvl:0}, perc:{lvl:0},
+    fx:{algo:"salle", rev:0.3, size:3, dark:0.65, wow:0.02, hiss:0, veil:0.95, sat:0.04}}, "la veille sur le rempart : vieux clavier, flûte, harpe en doubles croches, basse ronde"],
+  ["Regnum Umbrae", {mus:{logic:"modal", harm:"idiome", form:"passacaille", arc:"arche"}, car:{grav:0.7, aud:0.45, orn:0.2, sil:0.2, rep:0.85}, seed:1997, root:6, scales:["harm","eolien",""], tempo:80, meter:"4/4", swing:0, tension:0.55, sectionBars:16,
+    drone:{lvl:0}, pad:{lvl:0.5, timbre:"orgue", len:1, motion:0.55, voices:3, bass:1, bassOct:0, stag:0.1}, arp:{lvl:0.38, inst:"harpe", lpg:0.4, pat:"alberti", rate:2, reg:0, span:1},
+    mel:{lvl:0.55, inst:"cuivre", dens:0.6, reg:1, span:1, leap:0.2, orn:0.15, deja:0.8, loop:2}, canon:{lvl:0.2, inst:"flute", delay:2, shift:"oct+"}, perc:{lvl:0.05, shaker:0, ghost:0},
+    fx:{algo:"salle", rev:0.32, size:3.5, dark:0.7, wow:0.02, hiss:0, veil:0.97, sat:0.05}}, "le royaume des ombres : orgue, cor, mineur harmonique, basse qui marche"],
+  ["Iter Montium", {mus:{logic:"modal", harm:"idiome", form:"rondeau", arc:"arche"}, car:{grav:0.45, aud:0.5, orn:0.3, sil:0.3, rep:0.8}, seed:1996, root:2, scales:["dorien","eolien",""], tempo:68, meter:"3/4", swing:0, tension:0.4, sectionBars:16,
+    drone:{lvl:0}, pad:{lvl:0.5, timbre:"cordes", len:1, motion:0.6, voices:3, bass:0.95, bassOct:0, stag:0.15}, arp:{lvl:0.42, inst:"luth", lpg:0.45, pat:"montant", rate:2, reg:1, span:1},
+    mel:{lvl:0.55, inst:"flute", dens:0.6, reg:1, span:1, leap:0.2, orn:0.25, deja:0.8, loop:2}, canon:{lvl:0}, perc:{lvl:0}, amb:{vent:0.08},
+    fx:{algo:"salle", rev:0.32, size:3.5, dark:0.65, wow:0.02, hiss:0, veil:0.95, sat:0.04}}, "le col des montagnes : cordes, luth égrené, flûte, à trois temps"]
 ];
 const ANTIQUE = [
   ["Agora", {car:{grav:0.4, aud:0.5, orn:0.5, sil:0.35, rep:0.6}, seed:4801, root:4, scales:["phrygien","chromgr",""], tempo:84, meter:"4/4", swing:0, tension:0.4,
@@ -444,7 +457,7 @@ const UNIVERS = [
 /* hors du Moyen Âge, un préréglage qui ne cite pas un bruit de lieu n'en veut pas : sans cela, murmure et tintements de taverne s'invitaient dans l'espace ou chez les pirates */
 UNIVERS.forEach(u=>{ if(u.id!=="medieval") u.items.forEach(it=>{ it[1].amb=Object.assign({murmur:0,clink:0,feu:0,vent:0,gouttes:0},it[1].amb||{}); }); });
 /* sonie : gain (dB) de chaque ambiance, mesuré hors ligne (BS.1770, 24 s, après le limiteur) pour viser -13 LUFS (-15 pour Calme) */
-const PRESET_NORM={"Taberna":-0.1,"Chorea":-5.0,"Crypta":-3.6,"Scriptorium":-7.9,"Turris":-4.0,"Tripudium":1.2,"Pugna":-4.8,"Iter":-5.4,"Triumphus":-5.0,"Insidiae":-0.5,"Portus":0.5,"Navigium":-4.9,"Tempestas":-5.2,"Thesaurus":-5.1,"Skalda":-3.7,"Bellum":-5.8,"Fjordus":-5.7,"Runae":-2.3,"Fata":-5.1,"Aula Fatarum":-6.1,"Sylva Magica":1.3,"Lullaby":2.2,"Larva":-2.7,"Domus Obscura":-5.7,"Sacrificium":-5.2,"Cella":-4.4,"Desertum":2.7,"Saloon":2.0,"Duellum":-6.1,"Equitatus":-5.9,"Urbs Neon":-2.8,"Machina":0.1,"Datum":-2.0,"Imber Toxicus":-3.6,"Sidera":2.8,"Nebula":-1.5,"Abyssus":-1.5,"Aegyptus":-2.4,"Eremus":-6.0,"Hortus":-5.3,"Bayati":-2.2,"Enharmonia":0.5,"Pluvia":-1.7,"Mare":-0.2,"Silva":-1.9,"Nox":-0.2,"Somnus":0.4,"Meditatio":-1.5,"Labor":-3.6,"Montagne":-5.2,"Hiems":-6.7,"Silva Antiqua":-6.4,"Agora":2.9,"Thermopylae":-1.9,"Odyssea":-0.9,"Hades":-3.3,"Custos":-7.4,"Castellum":-5.0,"Delphi":-2.0,"Sparta":-4.0,"Roma Triumphans":-1.7,"Carcer":-3.8,"Vacuum":-4.1,"Ruinae":-2.4,"Sanctum":-1.6,"Glacies":-3.1};
+const PRESET_NORM={"Taberna":-0.1,"Chorea":-5.0,"Crypta":-3.6,"Scriptorium":-7.9,"Turris":-4.0,"Tripudium":1.2,"Pugna":-4.8,"Iter":-5.4,"Triumphus":-5.0,"Insidiae":-0.5,"Portus":0.5,"Navigium":-4.9,"Tempestas":-5.2,"Thesaurus":-5.1,"Skalda":-3.7,"Bellum":-5.8,"Fjordus":-5.7,"Runae":-2.3,"Fata":-5.1,"Aula Fatarum":-6.1,"Sylva Magica":1.3,"Lullaby":2.2,"Larva":-2.7,"Domus Obscura":-5.7,"Sacrificium":-5.2,"Cella":-4.4,"Desertum":2.7,"Saloon":2.0,"Duellum":-6.1,"Equitatus":-5.9,"Urbs Neon":-2.8,"Machina":0.1,"Datum":-2.0,"Imber Toxicus":-3.6,"Sidera":2.8,"Nebula":-1.5,"Abyssus":-1.5,"Aegyptus":-2.4,"Eremus":-6.0,"Hortus":-5.3,"Bayati":-2.2,"Enharmonia":0.5,"Pluvia":-1.7,"Mare":-0.2,"Silva":-1.9,"Nox":-0.2,"Somnus":0.4,"Meditatio":-1.5,"Labor":-3.6,"Montagne":-5.7,"Hiems":-5.2,"Silva Antiqua":-5.7,"Agora":2.9,"Thermopylae":-1.9,"Odyssea":-0.9,"Hades":-3.3,"Custos":-5.5,"Castellum":-4.8,"Delphi":-2.0,"Sparta":-4.0,"Roma Triumphans":-1.7,"Carcer":-3.8,"Vacuum":-4.1,"Ruinae":-2.4,"Sanctum":-1.6,"Glacies":-3.1,"Vigilia":-4.5,"Regnum Umbrae":-5.5,"Iter Montium":-4.5};
 /* chaque univers a sa batterie ; un préréglage peut en citer une autre */
 const UNIV_KIT={dark:"taiko", antique:"antique", dungeon:"taiko", medieval:"cadre", aventure:"caisse", pirates:"cadre", nordique:"taiko", feerie:"cadre", horreur:"taiko", cyber:"electro", espace:"electro", orient:"darbouka", nature:"cadre", calme:"cadre"};
 /* réglage fin, ambiance par ambiance : où elle se place entre rituel et chanson, ce qu'elle emprunte aux voix (arpège, plain-chant, voix), le tempérament de son époque, ses bêtes */

@@ -312,7 +312,8 @@ const UI=[
    {k:"pad.motion",type:"range",label:"Mouvement harmonique",min:0,max:1,step:0.01,fmt:pct},
    {k:"pad.voices",type:"range",label:"Voix par accord",min:2,max:4,step:1,fmt:v=>v+" voix"},
    {k:"pad.stag",type:"range",label:"Entrées décalées",min:0,max:1,step:0.01,fmt:pct},
-   {k:"pad.bass",type:"range",label:"Basse",min:0,max:1,step:0.01,fmt:pct}]},
+   {k:"pad.bass",type:"range",label:"Basse",min:0,max:1,step:0.01,fmt:pct},
+   {k:"pad.bassOct",type:"select",num:true,label:"Octave de la basse",opts:[[12,"Médium : au-dessus du bourdon"],[0,"Grave : la basse ronde, sous le bourdon"]],hint:"Médium : la basse double l'accord une octave au-dessus du bourdon. Grave : elle descend entre Do2 et Si2 (65 à 123 Hz), comme la ligne de basse des vieux claviers de dungeon synth."}]},
   {h:"Arpège", hf:"l'accord égrené", id:"g-arp", items:[
    {k:"arp.lvl",type:"range",label:"Arpège",min:0,max:1,step:0.01,fmt:pct,hint:"L'accord en cours, égrené note à note : l'accompagnement typique du dungeon synth et des musiques de jeu."},
    {k:"arp.inst",type:"select",label:"Instrument de l'arpège",opts:INST_OPTS},

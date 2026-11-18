@@ -219,6 +219,7 @@ function buildEngine(ctx, S, o){
   /* une voix jouée à la basse garde son grave */
   function eqSync(){ const lo=(n,inst)=>{ const h=B[n].hp; if(h) h.frequency.value=inst?35:B[n].eq.hp; };
     lo("mel",S.mel.inst==="basse"||S.canon.inst==="basse"); lo("loops",S.loops.inst==="basse"); lo("pend",S.pend.inst==="basse"); lo("bille",S.bille&&S.bille.inst==="basse");
+    lo("pad",S.pad.bassOct===0&&S.pad.bass>0.02); if(B.pad.hp&&S.pad.bassOct===0&&S.pad.bass>0.02) B.pad.hp.frequency.value=45; /* basse grave : le passe-haut des nappes la laisserait muette */
     if(B.pad.ens) B.pad.ens.set(S.pad.timbre==="machine"); if(B.drone.ens) B.drone.ens.set(S.drone.timbre==="machine"); }
   const canonG=G(0); const lCanon=link(canonG,B.mel.it);
   /* liens entre voix : chaque note de la mélodie ouvre le filtre des nappes, qui se referme ensuite */
@@ -1807,9 +1808,10 @@ function buildEngine(ctx, S, o){
           put(ch.t+dl,len,off);
         });
         if(bs>0.02){
-          /* octave au-dessus du bourdon ; muette quand sa fondamentale frotte contre la tonique (seconde ou septième) ou contre la quinte (demi-ton) */
-          const root=ch.iv[ch.d%n]||0, pc=pcOf(root), dist=x=>{ const d=Math.abs(pcOf(pc-x)); return Math.min(d,12-d); }, rub=(dist(0)>0&&dist(0)<=2)||(dist(7)>0&&dist(7)<=1), bo=pc+12;
-          if(!rub){ padVoice(ch.t,ch.len,freq(bo),S.pad.timbre,0.5+bs); rec(2,ch.t,bo,ch.len,0.3*bs,"bass"); if(o.onNote) o.onNote(ch.t,bo,"pad",ch.len,0.3*bs); }
+          /* octave au-dessus du bourdon (ou dans son registre, sous lui, pour la basse ronde du dungeon synth) ;
+             muette quand sa fondamentale frotte contre un bourdon qui sonne (seconde ou septième de la tonique, demi-ton de la quinte) */
+          const root=ch.iv[ch.d%n]||0, pc=pcOf(root), dist=x=>{ const d=Math.abs(pcOf(pc-x)); return Math.min(d,12-d); }, droneOn=S.drone.lvl>0.01, rub=droneOn&&((dist(0)>0&&dist(0)<=2)||(dist(7)>0&&dist(7)<=1)), bo=S.pad.bassOct===0?pc-(S.root+pc>=12?12:0):pc+12; /* grave : toujours entre Do2 et Si2 (65 à 123 Hz), quelle que soit la tonique */
+          if(!rub){ padVoice(ch.t,ch.len,freq(bo),S.pad.timbre,(0.5+bs)*(S.pad.bassOct===0?3.2:1)); rec(2,ch.t,bo,ch.len,0.3*bs,"bass"); if(o.onNote) o.onNote(ch.t,bo,"pad",ch.len,0.3*bs); }
         }
       }
     }

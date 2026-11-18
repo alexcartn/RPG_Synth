@@ -246,83 +246,54 @@ const DRIFT_OPTS=[["none","Rien"],["filtre","Éclat du bourdon"],["reverb","Rév
 const DRIFT2_OPTS=DRIFT_OPTS.concat(DRIFT_OPTS.slice(1).map(([k,l])=>["-"+k,l+", à l'envers"]));
 const SCALE_OPTS=SCALE_GROUPS.map(([g,l])=>[g,l.map(([k,n])=>[k,n])]);
 const UI=[
- {num:"I", title:"Gamme et accord", fr:"", sub:"Tonique, gamme principale, et jusqu'à deux colorations qui se succèdent par sections.", groups:[
+ {num:"I", title:"Fondations", fr:"", sub:"Dans quoi on joue : tonalité, gammes, tempo et mesure. Le reste se pose dessus.", groups:[
   {items:[
    {k:"root",type:"select",label:"Tonalité",opts:NOTES.map((n,i)=>[i,n]),num:true,restart:true},
    {k:"scales.0",type:"select",label:"Gamme principale",groups:SCALE_OPTS,restart:false,ring:true},
    {k:"scales.1",type:"select",label:"Puis (facultatif)",groups:SCALE_OPTS,blank:"Aucune",ring:true},
    {k:"scales.2",type:"select",label:"Puis encore (facultatif)",groups:SCALE_OPTS,blank:"Aucune",ring:true},
    {k:"sectionBars",type:"range",label:"Durée d'une section",min:4,max:64,step:4,fmt:v=>v+" mesures"}]},
+  {h:"Pulsation", hf:"tempo, mesure, swing", items:[
+   {k:"tempo",type:"range",label:"Tempo",min:40,max:180,step:1,fmt:v=>v+" bpm",restart:true},
+   {k:"meter",type:"select",label:"Mesure",opts:Object.keys(METERS).map(k=>[k,k]),restart:true},
+   {k:"swing",type:"range",label:"Swing",min:0,max:1,step:0.01,fmt:pct}]},
   {fin:"Accord et tempérament", items:[
    {k:"temper",type:"select",label:"Tempérament",opts:[["egal","Égal"],["juste","Juste (intonation pure)"],["pyth","Pythagoricien"],["meso","Mésotonique (quart de comma)"],["werck","Werckmeister III"],["kirn","Kirnberger III"]],restart:true},
    {k:"a4",type:"range",label:"Diapason (La)",min:410,max:450,step:1,fmt:v=>v+" Hz",restart:true}]}]},
- {num:"II", title:"Rythme", fr:"", sub:"Une grille de croches commune à la mélodie, aux nappes et aux frappes.", groups:[
-  {items:[
-   {k:"tempo",type:"range",label:"Tempo",min:40,max:180,step:1,fmt:v=>v+" bpm",restart:true},
-   {k:"meter",type:"select",label:"Mesure",opts:Object.keys(METERS).map(k=>[k,k]),restart:true},
-   {k:"swing",type:"range",label:"Swing",min:0,max:1,step:0.01,fmt:pct},
-   {k:"perc.lvl",type:"range",label:"Percussion",min:0,max:1,step:0.01,fmt:pct},
-   {k:"perc.kit",type:"select",label:"Batterie",opts:[["cadre","Tambour sur cadre"],["caisse","Grosse caisse et caisse claire"],["taiko","Grand tambour, bâton, claquoir"],["darbouka","Darbouka et riqq"],["bastringue","Balais, botte et tambourin"],["electro","Boîte à rythmes"],["antique","Tympanon, crotales, cymbalettes"]]}]},
-  {fin:"Réglages de la percussion", items:[
-   {k:"perc.shaker",type:"range",label:"Densité du shaker",min:0,max:1,step:0.01,fmt:pct},
-   {k:"perc.ghost",type:"range",label:"Frappes fantômes",min:0,max:1,step:0.01,fmt:pct},
-   {k:"perc.eucl",type:"range",label:"Rythme euclidien",min:0,max:1,step:0.01,fmt:pct,hint:"Une couche de frappes légères réparties au plus juste sur les doubles croches (rythme euclidien). Leur nombre et leur décalage changent à chaque section."}]}]},
- {num:"III", title:"Bourdon", fr:"", sub:"Sous-grave, tonique, quinte, octaves. La quinte glisse vers un degré voisin de la gamme.", groups:[
-  {items:[
+ {num:"II", title:"Couches", fr:"", sub:"Ce qui sonne, voix par voix. Le pupitre au-dessus les allume et règle leur niveau ; ici, le détail de chacune.", groups:[
+  {h:"Ensemble", hf:"pour toutes les voix", id:"g-ens", items:[
+   {k:"vol",type:"range",label:"Volume général (l'export est toujours normalisé)",min:0,max:1,step:0.01,fmt:pct},
+   {k:"mus.model",type:"select",label:"Cordes et timbres",opts:[["physique","Cordes pincées par modèle physique"],["classique","Synthèse classique"]]},
+   {k:"fx.voix",type:"range",label:"Place pour la voix",min:0,max:1,step:0.01,fmt:pct,hint:"Creuse doucement le médium (vers 1,9 kHz) pour que la musique passe sous la voix du meneur de jeu sans la couvrir."}]},
+  {h:"Bourdon", hf:"sous-grave, tonique, quinte, octaves", id:"g-drone", items:[
    {k:"drone.lvl",type:"range",label:"Niveau",min:0,max:1,step:0.01,fmt:pct},
-   {k:"tex.sub",type:"range",label:"Texture : grondement grave",min:0,max:1,step:0.01,fmt:pct,hint:"Un grondement sous 90 Hz et deux sons graves qui battent lentement. Il ne passe jamais dans la réverbération."},
-   {k:"tex.mid",type:"range",label:"Texture : pierre qui chante",min:0,max:1,step:0.01,fmt:pct,hint:"Du souffle passé par des résonateurs très étroits accordés sur la tonique, qui dérivent lentement : la pierre ou le métal qui résonne."},
-   {k:"tex.air",type:"range",label:"Texture : air",min:0,max:1,step:0.01,fmt:pct,hint:"Un souffle aigu dont la couleur se promène lentement."},
    {k:"drone.timbre",type:"select",label:"Timbre",opts:[["anche","Anche (cornemuse)"],["orgue","Orgue de chambre"],["choeur","Chœur (voyelles)"],["bol","Bol chantant"],["machine","Machine à cordes"],["aulos","Aulos (anche nasillarde)"],["pur","Sinus pur"]],restart:true},
    {k:"drone.bright",type:"range",label:"Éclat",min:0,max:1,step:0.01,fmt:pct,restart:true},
-   {k:"drone.glide",type:"range",label:"Quinte mobile",min:0,max:1,step:0.01,fmt:pct}]},
+   {k:"drone.glide",type:"range",label:"Quinte mobile",min:0,max:1,step:0.01,fmt:pct},
+   {k:"tex.sub",type:"range",label:"Texture : grondement grave",min:0,max:1,step:0.01,fmt:pct,hint:"Un grondement sous 90 Hz et deux sons graves qui battent lentement. Il ne passe jamais dans la réverbération."},
+   {k:"tex.mid",type:"range",label:"Texture : pierre qui chante",min:0,max:1,step:0.01,fmt:pct,hint:"Du souffle passé par des résonateurs très étroits accordés sur la tonique, qui dérivent lentement : la pierre ou le métal qui résonne."},
+   {k:"tex.air",type:"range",label:"Texture : air",min:0,max:1,step:0.01,fmt:pct,hint:"Un souffle aigu dont la couleur se promène lentement."}]},
   {fin:"Réglages du bourdon", items:[
    {k:"drone.width",type:"range",label:"Largeur (désaccord)",min:0,max:1,step:0.01,fmt:pct,restart:true},
-   {k:"drone.drift",type:"range",label:"Dérive",min:0,max:1,step:0.01,fmt:pct,restart:true}]}]},
- {num:"IV", title:"Voix", fr:"", sub:"Mélodie, canon décalé et nappes d'accords construits sur la gamme de la section.", groups:[
-  {h:"Logique musicale", hf:"logique musicale et timbres", items:[
-   {k:"mus.logic",type:"select",label:"Logique musicale",opts:[["modal","Modale : la mélodie suit les accords"],["hasard","Hasard (ancienne version)"]]},
-   {k:"mus.form",type:"select",label:"Forme de la pièce",opts:[["libre","Libre : phrases et déjà-vu"],["passacaille","Passacaille : une basse qui revient, des variations dessus"],["ostinato","Ostinato : un motif qui tourne"],["rondeau","Rondeau : refrain et couplets"],["theme","Thème : deux phrases qui reviennent, variées selon les sections"],["variations","Thème et variations"],["turing","Machine de Turing : un registre qui boucle et mute"]]},
-   {k:"mus.color",type:"select",label:"Couleur du mode",opts:[["off","Fixe : les gammes choisies"],["tension","Suit la tension (du lydien au locrien)"],["meteo","Suit la météo du lieu"],["les deux","Tension et météo"]]},
-   {k:"mus.harm",type:"select",label:"Harmonie",opts:[["idiome","Idiomatique : les progressions typiques de chaque mode"],["libre","Libre : accords pondérés par le mode"]]},
-   {k:"mus.mode",type:"select",label:"Façon de jouer",opts:[["veillee","Veillée : ne s'arrête jamais, le plan revient en grands cycles"],["piece","Pièce : intro, thème, développement, apogée, retombée, coda, puis fin"]],hint:"Veillée pour le fond sonore d'une partie. Pièce pour une œuvre fermée, à écouter ou à exporter (environ six sections)."},
-   {k:"mus.arc",type:"select",label:"Plan de la pièce",opts:[["aucun","Aucun : des sections égales"],["arche","Arche : intro, thème, développement, apogée, retombée, coda"]]},
-   {k:"mus.crit",type:"range",label:"Exigence : la machine tire plusieurs phrases et garde la meilleure",min:0,max:1,step:0.01,fmt:pct},
-   {k:"mus.model",type:"select",label:"Cordes et timbres",opts:[["physique","Cordes pincées par modèle physique"],["classique","Synthèse classique"]]}]},
-  {h:"Caractère de la mélodie", hf:"", items:[
-   {k:"car.grav",type:"range",label:"Gravité : retour vers la tonique",min:0,max:1,step:0.01,fmt:pct},
-   {k:"car.aud",type:"range",label:"Audace : taille des sauts",min:0,max:1,step:0.01,fmt:pct},
-   {k:"car.orn",type:"range",label:"Ornements : appoggiatures et trilles",min:0,max:1,step:0.01,fmt:pct},
-   {k:"car.sil",type:"range",label:"Silences : souffles entre les notes et les phrases",min:0,max:1,step:0.01,fmt:pct},
-   {k:"car.rep",type:"range",label:"Répétition : retour des phrases déjà jouées",min:0,max:1,step:0.01,fmt:pct}]},
-  {h:"Chance", hf:"", items:[
-   {k:"chance.skip",type:"range",label:"Notes manquantes",min:0,max:1,step:0.01,fmt:pct},
-   {k:"chance.ratchet",type:"range",label:"Roulements : une note répétée vite",min:0,max:1,step:0.01,fmt:pct},
-   {k:"chance.mutate",type:"range",label:"Mutations : une note change de degré",min:0,max:1,step:0.01,fmt:pct},
-   {k:"chance.octave",type:"range",label:"Sauts d'octave imprévus",min:0,max:1,step:0.01,fmt:pct},
-   {k:"chance.rest",type:"range",label:"Silences imprévus entre les phrases",min:0,max:1,step:0.01,fmt:pct},
-   {k:"turing.lock",type:"range",label:"Verrou du registre (forme Turing) : 100 % boucle, 0 % tout change",min:0,max:1,step:0.01,fmt:pct},
-   {k:"turing.len",type:"select",label:"Longueur du registre",opts:[[1,"1 mesure"],[2,"2 mesures"],[4,"4 mesures"]],num:true},
-   {k:"turing.rate",type:"select",label:"Pas du registre",opts:[[1,"Croche"],[2,"Noire"]],num:true}]},
-  {h:"Mélodie", hf:"", items:[
-   {k:"mel.inst",type:"select",label:"Instrument",opts:INST_OPTS},
-   {k:"plain.lvl",type:"range",label:"Plain-chant",min:0,max:1,step:0.01,fmt:pct,hint:"Une voix qui chante le vrai air grégorien du texte choisi (Dies irae, Kyrie…), syllabe par syllabe, avec des respirations entre les phrases."},
-   {k:"plain.reg",type:"range",label:"Registre du plain-chant",min:0,max:2,step:1,fmt:v=>["grave","médium","aigu"][v]},
-   {k:"chant",type:"select",label:"Texte du chant",opts:[["kyrie","Kyrie eleison"],["alleluia","Alleluia"],["diesirae","Dies irae"],["sanctus","Sanctus"],["agnus","Agnus Dei"],["gloria","Gloria in excelsis"],["paian","Péan grec (Iè paian)"]],hint:"Les paroles que chante l'instrument « Chant », une syllabe par note."},
-   {k:"mel.lpg",type:"range",label:"Porte passe-bas",min:0,max:1,step:0.01,fmt:pct,hint:"Sur les sons pincés et frappés (luth, harpe, oud, guitare, kalimba, carillon, verre, bol, piano) : le filtre se referme avec le son, qui devient boisé et rond. Vaut pour la mélodie, le canon, les boucles et les pendules."},
+   {k:"drone.drift",type:"range",label:"Dérive",min:0,max:1,step:0.01,fmt:pct,restart:true}]},
+  {h:"Mélodie", hf:"", id:"g-mel", items:[
    {k:"mel.lvl",type:"range",label:"Niveau",min:0,max:1,step:0.01,fmt:pct},
+   {k:"mel.inst",type:"select",label:"Instrument",opts:INST_OPTS},
    {k:"mel.dens",type:"range",label:"Densité",min:0,max:1,step:0.01,fmt:pct},
-   {k:"mel.reg",type:"select",label:"Registre",opts:[[0,"Grave"],[1,"Médium"],[2,"Aigu"]],num:true}]},
+   {k:"mel.reg",type:"select",label:"Registre",opts:[[0,"Grave"],[1,"Médium"],[2,"Aigu"]],num:true},
+   {k:"mel.lpg",type:"range",label:"Porte passe-bas",min:0,max:1,step:0.01,fmt:pct,hint:"Sur les sons pincés et frappés (luth, harpe, oud, guitare, kalimba, carillon, verre, bol, piano) : le filtre se referme avec le son, qui devient boisé et rond. Vaut pour la mélodie, le canon, les boucles et les pendules."}]},
   {fin:"Réglages de la mélodie", items:[
-   {k:"mel.span",type:"range",label:"Étendue",min:1,max:3,step:1,fmt:v=>v+(v>1?" octaves":" octave")},
-   {k:"mel.leap",type:"range",label:"Sauts",min:0,max:1,step:0.01,fmt:pct},
-   {k:"mel.orn",type:"range",label:"Ornements (appoggiatures)",min:0,max:1,step:0.01,fmt:pct}]},
-  {h:"Canon", hf:"voix décalée", items:[
+   {k:"mel.span",type:"range",label:"Étendue",min:1,max:3,step:1,fmt:v=>v+(v>1?" octaves":" octave")}]},
+  {h:"Plain-chant", hf:"l'air grégorien du texte", id:"g-plain", items:[
+   {k:"plain.lvl",type:"range",label:"Plain-chant",min:0,max:1,step:0.01,fmt:pct,hint:"Une voix qui chante le vrai air grégorien du texte choisi (Dies irae, Kyrie…), syllabe par syllabe, avec des respirations entre les phrases."},
+   {k:"chant",type:"select",label:"Texte du chant",opts:[["kyrie","Kyrie eleison"],["alleluia","Alleluia"],["diesirae","Dies irae"],["sanctus","Sanctus"],["agnus","Agnus Dei"],["gloria","Gloria in excelsis"],["paian","Péan grec (Iè paian)"]],hint:"Les paroles que chante l'instrument « Chant », une syllabe par note."},
+   {k:"plain.reg",type:"range",label:"Registre du plain-chant",min:0,max:2,step:1,fmt:v=>["grave","médium","aigu"][v]}]},
+  {h:"Canon", hf:"voix décalée", id:"g-canon", items:[
    {k:"canon.lvl",type:"range",label:"Niveau (0 = absent)",min:0,max:1,step:0.01,fmt:pct},
    {k:"canon.inst",type:"select",label:"Instrument",opts:INST_OPTS},
    {k:"canon.delay",type:"range",label:"Retard",min:1,max:8,step:1,fmt:v=>v+(v>1?" mesures":" mesure")},
    {k:"canon.shift",type:"select",label:"Transposition",opts:[["uni","Unisson"],["oct+","Octave au-dessus"],["oct-","Octave en dessous"],["q+","Quinte au-dessus"],["q-","Quinte en dessous"],["t+","Tierce au-dessus"],["contre","Contrepoint : tierces et sixtes en mouvement contraire"]]}]},
-  {h:"Nappes", hf:"", items:[
+  {h:"Nappes", hf:"accords tenus", id:"g-pad", items:[
    {k:"pad.lvl",type:"range",label:"Niveau",min:0,max:1,step:0.01,fmt:pct},
    {k:"pad.timbre",type:"select",label:"Timbre",opts:[["choeur","Chœur"],["cordes","Cordes"],["orgue","Orgue"],["synthe","Synthé doux"],["verre","Verre"],["grattee","Guitare grattée"],["machine","Machine à cordes"],["roues","Orgue à roues"],["vecteur","Vectorielle (timbres qui tournent)"],["essaim","Essaim de scies"],["phase","Distorsion de phase"],["atelier","Synthé perso (Atelier)"]]},
    {k:"pad.len",type:"range",label:"Durée d'un accord",min:1,max:8,step:1,fmt:v=>v+(v>1?" mesures":" mesure")},
@@ -330,65 +301,88 @@ const UI=[
    {k:"pad.voices",type:"range",label:"Voix par accord",min:2,max:4,step:1,fmt:v=>v+" voix"},
    {k:"pad.stag",type:"range",label:"Entrées décalées",min:0,max:1,step:0.01,fmt:pct},
    {k:"pad.bass",type:"range",label:"Basse",min:0,max:1,step:0.01,fmt:pct}]},
-  {fin:"Arpège", items:[
+  {h:"Arpège", hf:"l'accord égrené", id:"g-arp", items:[
    {k:"arp.lvl",type:"range",label:"Arpège",min:0,max:1,step:0.01,fmt:pct,hint:"L'accord en cours, égrené note à note : l'accompagnement typique du dungeon synth et des musiques de jeu."},
    {k:"arp.inst",type:"select",label:"Instrument de l'arpège",opts:INST_OPTS},
    {k:"arp.pat",type:"select",label:"Motif",opts:[["vaetvient","Va-et-vient"],["montant","Montant"],["alberti","Alberti (grave, aigu, milieu, aigu)"],["turing","Machine de Turing : un motif bouclé qui mute lentement"],["auto","Selon rituel ↔ chanson (Turing côté rituel)"]]},
    {k:"arp.rate",type:"select",num:true,label:"Vitesse",opts:[["0.5","Noires"],["1","Croches"],["2","Doubles croches"]]},
    {k:"arp.reg",type:"range",label:"Registre de l'arpège",min:0,max:2,step:1,fmt:v=>["grave","médium","aigu"][v]},
    {k:"arp.span",type:"range",label:"Étendue de l'arpège",min:1,max:2,step:1,fmt:v=>v+" octave"+(v>1?"s":"")}]},
-  {fin:"Mémoire : déjà-vu de la mélodie et des nappes", items:[
-   {k:"mel.deja",type:"range",label:"Mélodie : retour du passé",min:0,max:1,step:0.01,fmt:v=>v<0.01?"jamais":pct(v)},
-   {k:"mel.loop",type:"range",label:"Mélodie : longueur de la boucle",min:1,max:8,step:1,fmt:v=>v+(v>1?" phrases":" phrase")},
-   {k:"pad.deja",type:"range",label:"Nappes : retour du passé",min:0,max:1,step:0.01,fmt:v=>v<0.01?"jamais":pct(v)},
-   {k:"pad.loop",type:"range",label:"Nappes : longueur de la boucle",min:1,max:8,step:1,fmt:v=>v+(v>1?" accords":" accord")}]}]},
- {num:"V", title:"Lieu", fr:"", sub:"La salle autour de la musique : de la taverne bruyante à la crypte qui goutte.", groups:[
-  {items:[
-   {k:"amb.murmur",type:"range",label:"Murmure de salle",min:0,max:1,step:0.01,fmt:pct},
-   {k:"amb.clink",type:"range",label:"Tintements de verres",min:0,max:1,step:0.01,fmt:pct},
-   {k:"amb.feu",type:"range",label:"Feu de cheminée",min:0,max:1,step:0.01,fmt:pct},
-   {k:"amb.vent",type:"range",label:"Vent",min:0,max:1,step:0.01,fmt:pct},
-   {k:"amb.gouttes",type:"range",label:"Gouttes (crypte)",min:0,max:1,step:0.01,fmt:pct}]},
-  {h:"Nature", hf:"sons de nature", items:[
-   {k:"nature.pluie",type:"range",label:"Pluie",min:0,max:1,step:0.01,fmt:pct},
-   {k:"nature.mer",type:"range",label:"Vagues (mer)",min:0,max:1,step:0.01,fmt:pct},
-   {k:"nature.nuit",type:"range",label:"Nuit (grillons)",min:0,max:1,step:0.01,fmt:pct},
-   {k:"nature.ruisseau",type:"range",label:"Ruisseau",min:0,max:1,step:0.01,fmt:pct},
-   {k:"nature.oiseaux",type:"range",label:"Oiseaux",min:0,max:1,step:0.01,fmt:pct},
-   {k:"nature.grenouilles",type:"range",label:"Grenouilles",min:0,max:1,step:0.01,fmt:pct},
-   {k:"nature.hibou",type:"range",label:"Hibou",min:0,max:1,step:0.01,fmt:pct},
-   {k:"nature.loup",type:"range",label:"Loups",min:0,max:1,step:0.01,fmt:pct},
-   {k:"nature.corbeaux",type:"range",label:"Corbeaux",min:0,max:1,step:0.01,fmt:pct},
-   {k:"nature.chevaux",type:"range",label:"Chevaux",min:0,max:1,step:0.01,fmt:pct},
-   {k:"nature.mouettes",type:"range",label:"Mouettes",min:0,max:1,step:0.01,fmt:pct}]}]},
- {num:"VI", title:"Espace et patine", fr:"", sub:"Réverbération, écho et le grain d'une vieille bande.", groups:[
-  {h:"Espace", hf:"", items:[
-   {k:"vol",type:"range",label:"Volume général (l'export est toujours normalisé)",min:0,max:1,step:0.01,fmt:pct},
-   {k:"fx.rev",type:"range",label:"Réverb",min:0,max:1,step:0.01,fmt:pct},
-   {k:"fx.size",type:"range",label:"Taille de la salle",min:0.5,max:9,step:0.1,fmt:v=>v.toFixed(1)+" s",reverb:true},
-   {k:"fx.dark",type:"range",label:"Ombre (réverb sourde)",min:0,max:1,step:0.01,fmt:pct,reverb:true},
-   {k:"fx.room",type:"select",label:"Acoustique du lieu",opts:[["gen","Générique"],["chapelle","Chapelle de pierre"],["salle","Salle de bois"],["grotte","Grotte"],["plaque","Plaque métallique"]],reverb:true},
-   {k:"fx.voix",type:"range",label:"Place pour la voix",min:0,max:1,step:0.01,fmt:pct,hint:"Creuse doucement le médium (vers 1,9 kHz) pour que la musique passe sous la voix du meneur de jeu sans la couvrir."},
-   {k:"fx.algo",type:"select",label:"Type de réverbération",opts:[["vivante","Vivante : la queue bouge et peut scintiller"],["lieu","Lieu : acoustique figée, avec ses premières réflexions"],["plaque","Plaque : la plaque de studio (Dattorro), dense et brillante"],["salle","Salle : la même cuve en plus grand, plus ample"]]},
-   {k:"fx.mod",type:"range",label:"Mouvement de la queue (réverb vivante)",min:0,max:1,step:0.01,fmt:pct},
-   {k:"fx.shim",type:"range",label:"Scintillement : la queue remonte d'une octave",min:0,max:1,step:0.01,fmt:pct},
-   {k:"fx.dly",type:"range",label:"Écho",min:0,max:1,step:0.01,fmt:pct},
-   {k:"fx.dlyDiv",type:"select",label:"Valeur de l'écho",opts:[[1.5,"Croche pointée"],[2,"Noire"],[3,"Noire pointée"]],num:true},
-   {k:"fx.fb",type:"range",label:"Répétitions de l'écho",min:0,max:0.9,step:0.01,fmt:pct}]},
-  {h:"Grain", hf:"nuage de grains et gel", items:[
+  {h:"Percussion", hf:"", id:"g-perc", items:[
+   {k:"perc.lvl",type:"range",label:"Percussion",min:0,max:1,step:0.01,fmt:pct},
+   {k:"perc.kit",type:"select",label:"Batterie",opts:[["cadre","Tambour sur cadre"],["caisse","Grosse caisse et caisse claire"],["taiko","Grand tambour, bâton, claquoir"],["darbouka","Darbouka et riqq"],["bastringue","Balais, botte et tambourin"],["electro","Boîte à rythmes"],["antique","Tympanon, crotales, cymbalettes"]]}]},
+  {fin:"Réglages de la percussion", items:[
+   {k:"perc.shaker",type:"range",label:"Densité du shaker",min:0,max:1,step:0.01,fmt:pct},
+   {k:"perc.ghost",type:"range",label:"Frappes fantômes",min:0,max:1,step:0.01,fmt:pct},
+   {k:"perc.eucl",type:"range",label:"Rythme euclidien",min:0,max:1,step:0.01,fmt:pct,hint:"Une couche de frappes légères réparties au plus juste sur les doubles croches (rythme euclidien). Leur nombre et leur décalage changent à chaque section."}]},
+  {h:"Boucles de bande", hf:"des notes qui reviennent, chacune à son rythme", id:"g-loops", items:[
+   {k:"loops.lvl",type:"range",label:"Niveau (0 = absentes)",min:0,max:1,step:0.01,fmt:pct,hint:"Le volume des boucles. À 0, elles sont éteintes."},
+   {k:"loops.inst",type:"select",label:"Instrument",opts:INST_OPTS,hint:"Le son des notes de boucle."},
+   {k:"loops.count",type:"range",label:"Nombre de boucles",min:1,max:5,step:1,fmt:v=>v+(v>1?" boucles":" boucle"),hint:"Chaque boucle est une seule note qui revient à intervalles réguliers. Avec plusieurs boucles de durées différentes (premières entre elles), les notes se superposent autrement à chaque tour : l'ensemble ne se répète presque jamais, comme les boucles de bande d'Eno."},
+   {k:"loops.speed",type:"range",label:"Durée des boucles",min:0.6,max:2,step:0.05,fmt:v=>"× "+v.toFixed(2),hint:"Allonge ou raccourcit toutes les boucles à la fois. Plus c'est grand, plus les notes reviennent rarement."}]},
+  {h:"Pendules", hf:"des notes qui s'éparpillent puis se retrouvent", id:"g-pend", items:[
+   {k:"pend.lvl",type:"range",label:"Niveau (0 = absents)",min:0,max:1,step:0.01,fmt:pct,hint:"Le volume des pendules. À 0, ils sont éteints."},
+   {k:"pend.inst",type:"select",label:"Instrument",opts:INST_OPTS,hint:"Le son des notes de pendule."},
+   {k:"pend.count",type:"range",label:"Nombre de pendules",min:3,max:10,step:1,fmt:v=>v+" pendules",hint:"Chaque pendule bat à une vitesse un peu différente : 3 battements par période pour le premier, 4 pour le suivant, et ainsi de suite. Ils partent ensemble, se désynchronisent, puis retombent ensemble. On entend des notes qui s'éparpillent puis se rassemblent ; le dessin sous le cercle des hauteurs les montre."},
+   {k:"pend.period",type:"range",label:"Période de resynchronisation",min:8,max:48,step:2,fmt:v=>v+" mesures",hint:"La durée d'un cycle complet, de l'unisson au retour à l'unisson. Plus c'est long, plus l'éparpillement est lent."}]},
+  {h:"Billes", hf:"des notes qui tombent, rebondissent et s'accélèrent", id:"g-bille", items:[
+   {k:"bille.lvl",type:"range",label:"Niveau (0 = absentes)",min:0,max:1,step:0.01,fmt:pct,hint:"Le volume des billes. À 0, elles sont éteintes."},
+   {k:"bille.inst",type:"select",label:"Instrument",opts:INST_OPTS,hint:"Le son de chaque rebond. Kalimba, verre, carillon et harpe sonnent comme des billes sur une lame."},
+   {k:"bille.count",type:"range",label:"Nombre de billes",min:1,max:6,step:1,fmt:v=>v+(v>1?" billes":" bille"),hint:"Chaque bille tombe d'une hauteur un peu différente : leurs rebonds s'entrecroisent puis se séparent."},
+   {k:"bille.haut",type:"range",label:"Hauteur de chute",min:0.25,max:3,step:0.05,fmt:v=>v.toFixed(2)+" mesure"+(v>=2?"s":""),hint:"Le temps de la première chute. Plus c'est haut, plus les premiers rebonds sont longs et lents."},
+   {k:"bille.rebond",type:"range",label:"Rebond",min:0.4,max:0.92,step:0.01,fmt:pct,hint:"L'énergie gardée à chaque rebond. Bas : quelques rebonds secs. Haut : une longue accélération qui s'éteint comme une bille de verre."},
+   {k:"bille.pause",type:"range",label:"Repos avant de la relâcher",min:0,max:4,step:0.1,fmt:v=>"× "+v.toFixed(1),hint:"Le temps où la bille reste au sol avant d'être relâchée, en multiple de son temps de chute."},
+   {k:"bille.travers",type:"range",label:"Élan de côté",min:0,max:3,step:0.05,fmt:v=>v<0.05?"tout droit":"× "+v.toFixed(2),hint:"La vitesse à laquelle les billes traversent la boîte et ricochent sur les murs. À zéro, elles tombent tout droit."},
+   {k:"bille.mode",type:"select",label:"Notes",opts:[["clavier","Le sol est un clavier : la note dépend de l'endroit du rebond"],["fixe","Une note par bille (de l'accord)"],["descend","Descend la gamme à chaque rebond"]],hint:"Sol-clavier : huit notes de la gamme côte à côte au fond de la boîte, une mélodie naît des trajectoires. Ou une seule note qui rebondit, ou une cascade qui descend."}]},
+  {h:"Arbre", hf:"une ramure qui pousse, que le vent fait tinter", id:"g-arbre", items:[
+   {k:"arbre.lvl",type:"range",label:"Niveau (0 = absent)",min:0,max:1,step:0.01,fmt:pct,hint:"Le volume de l'arbre. À 0, il est absent."},
+   {k:"arbre.inst",type:"select",label:"Son des feuilles",opts:INST_OPTS,hint:"Le son des feuilles qui tintent. Le tronc et les grosses branches sonnent comme des bols, graves et longs."},
+   {k:"arbre.prof",type:"range",label:"Ramure",min:2,max:6,step:1,fmt:v=>v+" étages ("+(Math.pow(2,v))+" feuilles)",hint:"Le nombre d'étages de branches. Plus il y en a, plus la ramure est fine et les feuilles nombreuses et aiguës."},
+   {k:"arbre.vent",type:"range",label:"Vent",min:0,max:1,step:0.01,fmt:v=>v<0.15?"calme":v<0.45?"brise":v<0.75?"vent":"tempête",hint:"La force et la fréquence des rafales. Une brise fait frémir quelques feuilles de temps en temps ; une tempête secoue tout, jusqu'au tronc."},
+   {k:"arbre.pousse",type:"range",label:"Pousse",min:0,max:10,step:0.5,fmt:v=>v<0.25?"déjà grand":v+" min",hint:"Le temps que met l'arbre à grandir depuis le début de la pièce : chaque nouvel étage s'éveille en bourgeons. À zéro, il est déjà grand."},
+   {k:"arbre.harm",type:"select",label:"Accord",opts:[["true","Les feuilles suivent l'accord"],["false","Toute la gamme"]],hint:"Les feuilles tintent sur les notes de l'accord en cours, ou sur toutes les notes de la gamme."}]},
+  {h:"Nuage de grains", hf:"la musique reprise en grains", id:"g-grain", items:[
    {k:"grain.mix",type:"range",label:"Nuage (0 = absent)",min:0,max:1,step:0.01,fmt:pct},
    {k:"grain.src",type:"select",label:"Ce qui est mis en grains",opts:[["mel","Mélodie et canon"],["pad","Nappes"],["cycles","Boucles et pendules"],["tout","Tout cela"]]},
    {k:"grain.dens",type:"range",label:"Densité des grains",min:0,max:1,step:0.01,fmt:pct},
    {k:"grain.size",type:"range",label:"Taille des grains",min:0,max:1,step:0.01,fmt:v=>Math.round(40+560*v*v)+" ms"},
    {k:"grain.spread",type:"range",label:"Mémoire : jusqu'où les grains remontent dans le passé",min:0,max:1,step:0.01,fmt:v=>(0.03+6.2*v*v).toFixed(1)+" s"},
-   {k:"grain.pitch",type:"range",label:"Grains à l'octave ou à la quinte",min:0,max:1,step:0.01,fmt:pct}]},
-  {h:"Patine", hf:"patine de bande", items:[
-   {k:"fx.sat",type:"range",label:"Saturation",min:0,max:1,step:0.01,fmt:pct},
-   {k:"fx.wow",type:"range",label:"Ondulation (wow et flutter)",min:0,max:1,step:0.01,fmt:pct},
-   {k:"fx.veil",type:"range",label:"Voile (aigus assourdis)",min:0,max:1,step:0.01,fmt:pct},
-   {k:"fx.hiss",type:"range",label:"Souffle",min:0,max:1,step:0.01,fmt:pct}]}]},
- {num:"VII", title:"Évolution", fr:"", sub:"La pièce respire : l'intensité module la percussion, les nappes, l'éclat du bourdon et la densité.", groups:[
-  {items:[
+   {k:"grain.pitch",type:"range",label:"Grains à l'octave ou à la quinte",min:0,max:1,step:0.01,fmt:pct}]}]},
+ {num:"III", title:"Écriture", fr:"", sub:"Comment la machine compose : sa logique, le caractère de la mélodie, la part de hasard et de mémoire.", groups:[
+  {h:"Logique", hf:"", items:[
+   {k:"mus.logic",type:"select",label:"Logique musicale",opts:[["modal","Modale : la mélodie suit les accords"],["hasard","Hasard (ancienne version)"]]},
+   {k:"mus.harm",type:"select",label:"Harmonie",opts:[["idiome","Idiomatique : les progressions typiques de chaque mode"],["libre","Libre : accords pondérés par le mode"]]},
+   {k:"mus.color",type:"select",label:"Couleur du mode",opts:[["off","Fixe : les gammes choisies"],["tension","Suit la tension (du lydien au locrien)"],["meteo","Suit la météo du lieu"],["les deux","Tension et météo"]]},
+   {k:"mus.crit",type:"range",label:"Exigence : la machine tire plusieurs phrases et garde la meilleure",min:0,max:1,step:0.01,fmt:pct}]},
+  {h:"Caractère de la mélodie", hf:"chaque réglage de base, puis son dosage", items:[
+   {k:"car.grav",type:"range",label:"Gravité : retour vers la tonique",min:0,max:1,step:0.01,fmt:pct},
+   {k:"mel.leap",type:"range",label:"Sauts",min:0,max:1,step:0.01,fmt:pct},
+   {k:"car.aud",type:"range",label:"Audace : taille des sauts",min:0,max:1,step:0.01,fmt:pct},
+   {k:"mel.orn",type:"range",label:"Ornements (appoggiatures)",min:0,max:1,step:0.01,fmt:pct},
+   {k:"car.orn",type:"range",label:"Ornements : appoggiatures et trilles",min:0,max:1,step:0.01,fmt:pct},
+   {k:"car.sil",type:"range",label:"Silences : souffles entre les notes et les phrases",min:0,max:1,step:0.01,fmt:pct}]},
+  {h:"Mémoire", hf:"déjà-vu de la mélodie et des nappes", items:[
+   {k:"mel.deja",type:"range",label:"Mélodie : retour du passé",min:0,max:1,step:0.01,fmt:v=>v<0.01?"jamais":pct(v)},
+   {k:"car.rep",type:"range",label:"Répétition : retour des phrases déjà jouées",min:0,max:1,step:0.01,fmt:pct},
+   {k:"mel.loop",type:"range",label:"Mélodie : longueur de la boucle",min:1,max:8,step:1,fmt:v=>v+(v>1?" phrases":" phrase")},
+   {k:"pad.deja",type:"range",label:"Nappes : retour du passé",min:0,max:1,step:0.01,fmt:v=>v<0.01?"jamais":pct(v)},
+   {k:"pad.loop",type:"range",label:"Nappes : longueur de la boucle",min:1,max:8,step:1,fmt:v=>v+(v>1?" accords":" accord")}]},
+  {h:"Hasard", hf:"", items:[
+   {k:"chance.skip",type:"range",label:"Notes manquantes",min:0,max:1,step:0.01,fmt:pct},
+   {k:"chance.ratchet",type:"range",label:"Roulements : une note répétée vite",min:0,max:1,step:0.01,fmt:pct},
+   {k:"chance.mutate",type:"range",label:"Mutations : une note change de degré",min:0,max:1,step:0.01,fmt:pct},
+   {k:"chance.octave",type:"range",label:"Sauts d'octave imprévus",min:0,max:1,step:0.01,fmt:pct},
+   {k:"chance.rest",type:"range",label:"Silences imprévus entre les phrases",min:0,max:1,step:0.01,fmt:pct}]},
+  {fin:"Registre de Turing", items:[
+   {k:"turing.lock",type:"range",label:"Verrou du registre (forme Turing) : 100 % boucle, 0 % tout change",min:0,max:1,step:0.01,fmt:pct},
+   {k:"turing.len",type:"select",label:"Longueur du registre",opts:[[1,"1 mesure"],[2,"2 mesures"],[4,"4 mesures"]],num:true},
+   {k:"turing.rate",type:"select",label:"Pas du registre",opts:[[1,"Croche"],[2,"Noire"]],num:true}]}]},
+ {num:"IV", title:"Temps long", fr:"", sub:"Comment la pièce avance sur des minutes : sa forme, sa respiration, sa tension, ses dérives.", groups:[
+  {h:"Forme", hf:"", items:[
+   {k:"mus.mode",type:"select",label:"Façon de jouer",opts:[["veillee","Veillée : ne s'arrête jamais, le plan revient en grands cycles"],["piece","Pièce : intro, thème, développement, apogée, retombée, coda, puis fin"]],hint:"Veillée pour le fond sonore d'une partie. Pièce pour une œuvre fermée, à écouter ou à exporter (environ six sections)."},
+   {k:"mus.form",type:"select",label:"Forme de la pièce",opts:[["libre","Libre : phrases et déjà-vu"],["passacaille","Passacaille : une basse qui revient, des variations dessus"],["ostinato","Ostinato : un motif qui tourne"],["rondeau","Rondeau : refrain et couplets"],["theme","Thème : deux phrases qui reviennent, variées selon les sections"],["variations","Thème et variations"],["turing","Machine de Turing : un registre qui boucle et mute"]]},
+   {k:"mus.arc",type:"select",label:"Plan de la pièce",opts:[["aucun","Aucun : des sections égales"],["arche","Arche : intro, thème, développement, apogée, retombée, coda"]]}]},
+  {h:"Respiration", hf:"l'intensité qui monte et descend", items:[
    {k:"form.shape",type:"select",label:"Forme",opts:[["constante","Constante"],["arche","Arche"],["vagues","Vagues"],["escalier","Escalier"]]},
    {k:"form.period",type:"range",label:"Période",min:1,max:10,step:0.5,fmt:v=>v+" min"},
    {k:"form.amount",type:"range",label:"Amplitude",min:0,max:1,step:0.01,fmt:pct},
@@ -406,7 +400,8 @@ const UI=[
    {k:"drift.0.t",type:"select",label:"Dérive 1 : ce qu'elle promène",opts:DRIFT_OPTS},
    {k:"drift.0.t2",type:"select",label:"Dérive 1 : et aussi",opts:DRIFT2_OPTS},
    {k:"drift.0.d",type:"range",label:"Dérive 1 : profondeur",min:0,max:1,step:0.01,fmt:pct},
-   {k:"drift.0.v",type:"range",label:"Dérive 1 : vitesse",min:0,max:1,step:0.01,fmt:pct},
+   {k:"drift.0.v",type:"range",label:"Dérive 1 : vitesse",min:0,max:1,step:0.01,fmt:pct}]},
+  {fin:"Dérives 2, 3 et 4", items:[
    {k:"drift.1.t",type:"select",label:"Dérive 2 : ce qu'elle promène",opts:DRIFT_OPTS},
    {k:"drift.1.t2",type:"select",label:"Dérive 2 : et aussi",opts:DRIFT2_OPTS},
    {k:"drift.1.d",type:"range",label:"Dérive 2 : profondeur",min:0,max:1,step:0.01,fmt:pct},
@@ -419,33 +414,42 @@ const UI=[
    {k:"drift.3.t2",type:"select",label:"Dérive 4 : et aussi",opts:DRIFT2_OPTS},
    {k:"drift.3.d",type:"range",label:"Dérive 4 : profondeur",min:0,max:1,step:0.01,fmt:pct},
    {k:"drift.3.v",type:"range",label:"Dérive 4 : vitesse",min:0,max:1,step:0.01,fmt:pct}]}]},
- {num:"VIII", title:"Boucles, pendules, billes et arbre", fr:"", sub:"Deux voix sans mesure à elles : chacune tourne à son rythme, et les superpositions changent tout le temps. Les boucles font revenir des notes à des intervalles inégaux ; les pendules partent ensemble, s'éparpillent, puis se retrouvent. Le « ? » à côté de chaque réglage l'explique.", groups:[
-  {h:"Boucles de bande", hf:"des notes qui reviennent, chacune à son rythme", items:[
-   {k:"loops.lvl",type:"range",label:"Niveau (0 = absentes)",min:0,max:1,step:0.01,fmt:pct,hint:"Le volume des boucles. À 0, elles sont éteintes."},
-   {k:"loops.inst",type:"select",label:"Instrument",opts:INST_OPTS,hint:"Le son des notes de boucle."},
-   {k:"loops.count",type:"range",label:"Nombre de boucles",min:1,max:5,step:1,fmt:v=>v+(v>1?" boucles":" boucle"),hint:"Chaque boucle est une seule note qui revient à intervalles réguliers. Avec plusieurs boucles de durées différentes (premières entre elles), les notes se superposent autrement à chaque tour : l'ensemble ne se répète presque jamais, comme les boucles de bande d'Eno."},
-   {k:"loops.speed",type:"range",label:"Durée des boucles",min:0.6,max:2,step:0.05,fmt:v=>"× "+v.toFixed(2),hint:"Allonge ou raccourcit toutes les boucles à la fois. Plus c'est grand, plus les notes reviennent rarement."}]},
-  {h:"Pendules", hf:"des notes qui s'éparpillent puis se retrouvent", items:[
-   {k:"pend.lvl",type:"range",label:"Niveau (0 = absents)",min:0,max:1,step:0.01,fmt:pct,hint:"Le volume des pendules. À 0, ils sont éteints."},
-   {k:"pend.inst",type:"select",label:"Instrument",opts:INST_OPTS,hint:"Le son des notes de pendule."},
-   {k:"pend.count",type:"range",label:"Nombre de pendules",min:3,max:10,step:1,fmt:v=>v+" pendules",hint:"Chaque pendule bat à une vitesse un peu différente : 3 battements par période pour le premier, 4 pour le suivant, et ainsi de suite. Ils partent ensemble, se désynchronisent, puis retombent ensemble. On entend des notes qui s'éparpillent puis se rassemblent ; le dessin sous le cercle des hauteurs les montre."},
-   {k:"pend.period",type:"range",label:"Période de resynchronisation",min:8,max:48,step:2,fmt:v=>v+" mesures",hint:"La durée d'un cycle complet, de l'unisson au retour à l'unisson. Plus c'est long, plus l'éparpillement est lent."}]},
-  {h:"Billes", hf:"des notes qui tombent, rebondissent et s'accélèrent", items:[
-   {k:"bille.lvl",type:"range",label:"Niveau (0 = absentes)",min:0,max:1,step:0.01,fmt:pct,hint:"Le volume des billes. À 0, elles sont éteintes."},
-   {k:"bille.inst",type:"select",label:"Instrument",opts:INST_OPTS,hint:"Le son de chaque rebond. Kalimba, verre, carillon et harpe sonnent comme des billes sur une lame."},
-   {k:"bille.count",type:"range",label:"Nombre de billes",min:1,max:6,step:1,fmt:v=>v+(v>1?" billes":" bille"),hint:"Chaque bille tombe d'une hauteur un peu différente : leurs rebonds s'entrecroisent puis se séparent."},
-   {k:"bille.haut",type:"range",label:"Hauteur de chute",min:0.25,max:3,step:0.05,fmt:v=>v.toFixed(2)+" mesure"+(v>=2?"s":""),hint:"Le temps de la première chute. Plus c'est haut, plus les premiers rebonds sont longs et lents."},
-   {k:"bille.rebond",type:"range",label:"Rebond",min:0.4,max:0.92,step:0.01,fmt:pct,hint:"L'énergie gardée à chaque rebond. Bas : quelques rebonds secs. Haut : une longue accélération qui s'éteint comme une bille de verre."},
-   {k:"bille.pause",type:"range",label:"Repos avant de la relâcher",min:0,max:4,step:0.1,fmt:v=>"× "+v.toFixed(1),hint:"Le temps où la bille reste au sol avant d'être relâchée, en multiple de son temps de chute."},
-   {k:"bille.travers",type:"range",label:"Élan de côté",min:0,max:3,step:0.05,fmt:v=>v<0.05?"tout droit":"× "+v.toFixed(2),hint:"La vitesse à laquelle les billes traversent la boîte et ricochent sur les murs. À zéro, elles tombent tout droit."},
-   {k:"bille.mode",type:"select",label:"Notes",opts:[["clavier","Le sol est un clavier : la note dépend de l'endroit du rebond"],["fixe","Une note par bille (de l'accord)"],["descend","Descend la gamme à chaque rebond"]],hint:"Sol-clavier : huit notes de la gamme côte à côte au fond de la boîte, une mélodie naît des trajectoires. Ou une seule note qui rebondit, ou une cascade qui descend."}]},
-  {h:"Arbre", hf:"une ramure qui pousse, que le vent fait tinter", items:[
-   {k:"arbre.lvl",type:"range",label:"Niveau (0 = absent)",min:0,max:1,step:0.01,fmt:pct,hint:"Le volume de l'arbre. À 0, il est absent."},
-   {k:"arbre.inst",type:"select",label:"Son des feuilles",opts:INST_OPTS,hint:"Le son des feuilles qui tintent. Le tronc et les grosses branches sonnent comme des bols, graves et longs."},
-   {k:"arbre.prof",type:"range",label:"Ramure",min:2,max:6,step:1,fmt:v=>v+" étages ("+(Math.pow(2,v))+" feuilles)",hint:"Le nombre d'étages de branches. Plus il y en a, plus la ramure est fine et les feuilles nombreuses et aiguës."},
-   {k:"arbre.vent",type:"range",label:"Vent",min:0,max:1,step:0.01,fmt:v=>v<0.15?"calme":v<0.45?"brise":v<0.75?"vent":"tempête",hint:"La force et la fréquence des rafales. Une brise fait frémir quelques feuilles de temps en temps ; une tempête secoue tout, jusqu'au tronc."},
-   {k:"arbre.pousse",type:"range",label:"Pousse",min:0,max:10,step:0.5,fmt:v=>v<0.25?"déjà grand":v+" min",hint:"Le temps que met l'arbre à grandir depuis le début de la pièce : chaque nouvel étage s'éveille en bourgeons. À zéro, il est déjà grand."},
-   {k:"arbre.harm",type:"select",label:"Accord",opts:[["true","Les feuilles suivent l'accord"],["false","Toute la gamme"]],hint:"Les feuilles tintent sur les notes de l'accord en cours, ou sur toutes les notes de la gamme."}]}]}
+ {num:"V", title:"Son et salle", fr:"", sub:"Le lieu autour de la musique, puis l'espace et la patine du son.", groups:[
+  {h:"Salle", hf:"de la taverne bruyante à la crypte qui goutte", items:[
+   {k:"amb.murmur",type:"range",label:"Murmure de salle",min:0,max:1,step:0.01,fmt:pct},
+   {k:"amb.clink",type:"range",label:"Tintements de verres",min:0,max:1,step:0.01,fmt:pct},
+   {k:"amb.feu",type:"range",label:"Feu de cheminée",min:0,max:1,step:0.01,fmt:pct},
+   {k:"amb.vent",type:"range",label:"Vent",min:0,max:1,step:0.01,fmt:pct},
+   {k:"amb.gouttes",type:"range",label:"Gouttes (crypte)",min:0,max:1,step:0.01,fmt:pct}]},
+  {fin:"Nature", items:[
+   {k:"nature.pluie",type:"range",label:"Pluie",min:0,max:1,step:0.01,fmt:pct},
+   {k:"nature.mer",type:"range",label:"Vagues (mer)",min:0,max:1,step:0.01,fmt:pct},
+   {k:"nature.nuit",type:"range",label:"Nuit (grillons)",min:0,max:1,step:0.01,fmt:pct},
+   {k:"nature.ruisseau",type:"range",label:"Ruisseau",min:0,max:1,step:0.01,fmt:pct},
+   {k:"nature.oiseaux",type:"range",label:"Oiseaux",min:0,max:1,step:0.01,fmt:pct},
+   {k:"nature.grenouilles",type:"range",label:"Grenouilles",min:0,max:1,step:0.01,fmt:pct},
+   {k:"nature.hibou",type:"range",label:"Hibou",min:0,max:1,step:0.01,fmt:pct},
+   {k:"nature.loup",type:"range",label:"Loups",min:0,max:1,step:0.01,fmt:pct},
+   {k:"nature.corbeaux",type:"range",label:"Corbeaux",min:0,max:1,step:0.01,fmt:pct},
+   {k:"nature.chevaux",type:"range",label:"Chevaux",min:0,max:1,step:0.01,fmt:pct},
+   {k:"nature.mouettes",type:"range",label:"Mouettes",min:0,max:1,step:0.01,fmt:pct}]},
+  {h:"Espace", hf:"réverbération et écho", items:[
+   {k:"fx.rev",type:"range",label:"Réverb",min:0,max:1,step:0.01,fmt:pct},
+   {k:"fx.room",type:"select",label:"Acoustique du lieu",opts:[["gen","Générique"],["chapelle","Chapelle de pierre"],["salle","Salle de bois"],["grotte","Grotte"],["plaque","Plaque métallique"]],reverb:true},
+   {k:"fx.size",type:"range",label:"Taille de la salle",min:0.5,max:9,step:0.1,fmt:v=>v.toFixed(1)+" s",reverb:true},
+   {k:"fx.dark",type:"range",label:"Ombre (réverb sourde)",min:0,max:1,step:0.01,fmt:pct,reverb:true}]},
+  {fin:"Réverbération avancée et écho", items:[
+   {k:"fx.algo",type:"select",label:"Type de réverbération",opts:[["vivante","Vivante : la queue bouge et peut scintiller"],["lieu","Lieu : acoustique figée, avec ses premières réflexions"],["plaque","Plaque : la plaque de studio (Dattorro), dense et brillante"],["salle","Salle : la même cuve en plus grand, plus ample"]]},
+   {k:"fx.mod",type:"range",label:"Mouvement de la queue (réverb vivante)",min:0,max:1,step:0.01,fmt:pct},
+   {k:"fx.shim",type:"range",label:"Scintillement : la queue remonte d'une octave",min:0,max:1,step:0.01,fmt:pct},
+   {k:"fx.dly",type:"range",label:"Écho",min:0,max:1,step:0.01,fmt:pct},
+   {k:"fx.dlyDiv",type:"select",label:"Valeur de l'écho",opts:[[1.5,"Croche pointée"],[2,"Noire"],[3,"Noire pointée"]],num:true},
+   {k:"fx.fb",type:"range",label:"Répétitions de l'écho",min:0,max:0.9,step:0.01,fmt:pct}]},
+  {h:"Patine", hf:"patine de bande", items:[
+   {k:"fx.sat",type:"range",label:"Saturation",min:0,max:1,step:0.01,fmt:pct},
+   {k:"fx.wow",type:"range",label:"Ondulation (wow et flutter)",min:0,max:1,step:0.01,fmt:pct},
+   {k:"fx.veil",type:"range",label:"Voile (aigus assourdis)",min:0,max:1,step:0.01,fmt:pct},
+   {k:"fx.hiss",type:"range",label:"Souffle",min:0,max:1,step:0.01,fmt:pct}]}]}
 ];
 
 const CTL=[];
@@ -531,7 +535,7 @@ function buildChapters(){
     ch.groups.forEach(gr=>{
       let container=sec;
       if(gr.fin){ const d=document.createElement("details"); d.className="fin"; const s=document.createElement("summary"); s.textContent=gr.fin; d.appendChild(s); sec.appendChild(d); container=d; }
-      else if(gr.h){ const g=document.createElement("div"); g.className="group"; const h=document.createElement("h3"); h.textContent=gr.h; if(gr.hf){ const f=document.createElement("span"); f.className="fr"; f.textContent=gr.hf; h.appendChild(f); } g.appendChild(h); sec.appendChild(g); container=g; }
+      else if(gr.h){ const g=document.createElement("div"); g.className="group"; if(gr.id) g.id=gr.id; const h=document.createElement("h3"); h.textContent=gr.h; if(gr.hf){ const f=document.createElement("span"); f.className="fr"; f.textContent=gr.hf; h.appendChild(f); } g.appendChild(h); sec.appendChild(g); container=g; }
       const f=document.createElement("div"); f.className="fields"; gr.items.forEach(it=>f.appendChild(mkCtl(it))); container.appendChild(f);
       if(gr.node) container.appendChild(gr.node());
     });
@@ -540,10 +544,58 @@ function buildChapters(){
   buildExport(host);
   foldChapters();
   buildToc();
+  buildPupitre(host);
+}
+/* pupitre : toutes les couches d'un coup d'œil. On allume, on dose, on choisit le son, et « Régler » mène au détail.
+   Chaque commande ici pilote la vraie commande du chapitre Couches, qui reste la seule source. */
+const PUPITRE=[["Bourdon","drone.lvl","drone.timbre","g-drone"],["Mélodie","mel.lvl","mel.inst","g-mel"],["Plain-chant","plain.lvl","chant","g-plain"],
+ ["Canon","canon.lvl","canon.inst","g-canon"],["Nappes","pad.lvl","pad.timbre","g-pad"],["Arpège","arp.lvl","arp.inst","g-arp"],["Percussion","perc.lvl","perc.kit","g-perc"],
+ ["Boucles","loops.lvl","loops.inst","g-loops"],["Pendules","pend.lvl","pend.inst","g-pend"],["Billes","bille.lvl","bille.inst","g-bille"],["Arbre","arbre.lvl","arbre.inst","g-arbre"],
+ ["Nuage de grains","grain.mix","grain.src","g-grain"]];
+const PP_MEM={}, PP_ROWS=[];
+const ctlEl=k=>$("c_"+k.replace(/\./g,"_"));
+function ppGo(gid){
+  const g=$(gid); if(!g) return; const ch=g.closest("details.chap"); if(ch) ch.open=true;
+  g.scrollIntoView({block:"start"}); g.classList.remove("flash"); void g.offsetWidth; g.classList.add("flash");
+}
+function buildPupitre(host){
+  const sec=document.createElement("section"); sec.className="pupitre"; sec.id="pupitre"; sec.setAttribute("aria-label","Pupitre : les couches");
+  sec.innerHTML='<header><h2>Pupitre</h2><p class="sub">Les couches qui sonnent. Touche un nom pour l\'allumer ou l\'éteindre, « Régler » ouvre son détail.</p></header>';
+  const list=document.createElement("div"); list.className="pp-list"; sec.appendChild(list);
+  PUPITRE.forEach(([name,kl,ki,gid])=>{
+    const mainL=ctlEl(kl), mainI=ctlEl(ki); if(!mainL) return;
+    const row=document.createElement("div"); row.className="pp-row";
+    const on=document.createElement("button"); on.type="button"; on.className="pp-on"; on.textContent=name; on.title="Allumer ou éteindre : "+name;
+    const r=document.createElement("input"); r.type="range"; r.min=mainL.min; r.max=mainL.max; r.step=mainL.step; r.setAttribute("aria-label","Niveau : "+name);
+    const o=document.createElement("output"); o.className="pp-v";
+    let sel=null; if(mainI){ sel=document.createElement("select"); sel.innerHTML=mainI.innerHTML; sel.setAttribute("aria-label","Son : "+name); }
+    const go=document.createElement("button"); go.type="button"; go.className="lnk pp-go"; go.textContent="Régler"; go.title="Tous les réglages : "+name;
+    row.append(on,r,o); if(sel) row.appendChild(sel); else row.appendChild(document.createElement("span")); row.appendChild(go); list.appendChild(row);
+    const push=(v,commit)=>{ mainL.value=v; mainL.dispatchEvent(new Event("input")); if(commit) mainL.dispatchEvent(new Event("change")); };
+    const sync=()=>{ const v=+getP(kl)||0; r.value=v; o.textContent=Math.round(v*100)+" %"; const live=v>0.001;
+      on.setAttribute("aria-pressed",live?"true":"false"); row.classList.toggle("off",!live); if(sel){ sel.value=String(getP(ki)); } };
+    r.addEventListener("input",()=>push(r.value,false)); r.addEventListener("change",()=>push(r.value,true));
+    on.onclick=()=>{ const v=+getP(kl)||0;
+      if(v>0.001){ PP_MEM[kl]=v; push(0,true); } else push(PP_MEM[kl]||0.5,true); };
+    if(sel) sel.addEventListener("change",()=>{ mainI.value=sel.value; mainI.dispatchEvent(new Event("change")); });
+    go.onclick=()=>ppGo(gid);
+    mainL.addEventListener("input",sync); if(mainI) mainI.addEventListener("change",sync);
+    PP_ROWS.push(sync); sync();
+  });
+  /* le lieu : pas un seul niveau mais plusieurs sons ; on compte ceux qui sont allumés */
+  const keys=CTL.filter(c=>/^(amb|nature)\./.test(c.it.k));
+  const row=document.createElement("div"); row.className="pp-row pp-lieu";
+  row.innerHTML='<span class="pp-on" aria-hidden="true">Salle et nature</span><span class="pp-count"></span><button type="button" class="lnk pp-go" title="Murmures, feu, vent, pluie, oiseaux…">Régler</button>';
+  const cnt=row.querySelector(".pp-count");
+  const syncL=()=>{ const n=keys.filter(c=>(+getP(c.it.k)||0)>0.001).length; cnt.textContent=n?(n+(n>1?" sons allumés":" son allumé")):"silence"; row.classList.toggle("off",!n); };
+  keys.forEach(c=>c.el.addEventListener("input",syncL));
+  row.querySelector(".pp-go").onclick=()=>{ const ch=$("ch-V"); if(ch){ ch.open=true; ch.scrollIntoView({block:"start"}); } };
+  list.appendChild(row); PP_ROWS.push(syncL); syncL();
+  host.insertBefore(sec,host.firstChild);
 }
 function syncUI(){
   CTL.forEach(({it,el,upd,sync2})=>{ el.value=String(getP(it.k)); if(el.tagName==="SELECT"&&el.value!==String(getP(it.k))){ el.value=""; } upd(); if(sync2) sync2(); });
-  updateTempo(); updateRingCap(); if(typeof curveDraw==="function") curveDraw(); if(typeof jeuSync==="function") jeuSync(); if(typeof atelierSync==="function") atelierSync();
+  PP_ROWS.forEach(f=>f()); updateTempo(); updateRingCap(); if(typeof curveDraw==="function") curveDraw(); if(typeof jeuSync==="function") jeuSync(); if(typeof atelierSync==="function") atelierSync();
 }
 function updateTempo(){ $("tempoNum").textContent=S.tempo; $("tempoCap").textContent="noires par minute · "+S.meter; }
 

@@ -98,6 +98,34 @@ details.fin > summary::before{content:"+"; display:inline-block; width:1.3ch; co
 details.fin[open] > summary::before{content:"−"}
 details.fin > summary::-webkit-details-marker{display:none}
 details.fin .fields{margin-top:var(--sp-md)}
+/* pupitre : une ligne par couche, en tête de Composer */
+.pupitre{padding:0 0 var(--sp-xl); margin:0 0 var(--sp-md); border-bottom:1px solid var(--rule)}
+.pupitre > header{margin-bottom:var(--sp-lg)}
+.pupitre h2{font:italic 400 clamp(1.6rem,3vw,2.1rem)/1.1 var(--display); margin:0}
+.pupitre .sub{font:italic 400 1rem/1.4 var(--body); color:var(--ink-2); margin:var(--sp-xs) 0 0}
+.pp-list{display:grid; gap:2px 0}
+.pp-row{display:grid; grid-template-columns:minmax(8.5rem,10rem) minmax(0,1fr) 4.5ch minmax(8rem,13rem) auto; align-items:center; gap:var(--sp-md); padding:var(--sp-xs) 0; border-bottom:1px dotted var(--rule)}
+.pp-row:last-child{border-bottom:0}
+.pp-on{font:400 .95rem/1.2 var(--caps); letter-spacing:.06em; text-align:left; color:var(--ink); background:none; border:0; padding:var(--sp-xs) 0; cursor:pointer; display:flex; align-items:center; gap:.6em}
+button.pp-on::before{content:""; flex:none; width:9px; height:9px; transform:rotate(45deg); border:1px solid var(--rubric); background:var(--rubric)}
+button.pp-on[aria-pressed="false"]::before{background:transparent}
+.pp-row.off .pp-on{color:var(--ink-2)}
+.pp-row.off input[type=range], .pp-row.off select, .pp-row.off .pp-v{opacity:.45}
+.pp-v{font:400 .9rem/1 var(--caps); color:var(--ink-2); text-align:right; font-variant-numeric:tabular-nums}
+.pp-row select{width:100%; min-width:0}
+.pp-go{white-space:nowrap}
+.pp-lieu .pp-count{grid-column:2 / 5; font:italic 400 1rem/1.2 var(--body); color:var(--ink-2)}
+.pp-lieu .pp-on{cursor:default}
+.group{scroll-margin-top:calc(var(--score-h,0px) + var(--toc-h) + var(--sp-md))}
+.group.flash > h3{animation:ppflash 1.6s var(--ease)}
+@keyframes ppflash{0%,40%{color:var(--rubric)}100%{color:var(--ink-2)}}
+@media (max-width:640px){
+  .pp-row{grid-template-columns:minmax(0,1fr) 4ch minmax(0,8.5rem); gap:0 var(--sp-sm)}
+  .pp-row .pp-on{grid-column:1 / 3; grid-row:1} .pp-row .pp-go{grid-column:3; grid-row:1; justify-self:end}
+  .pp-row input[type=range]{grid-column:1; grid-row:2} .pp-row .pp-v{grid-column:2; grid-row:2}
+  .pp-row select, .pp-row > span:not(.pp-on):not(.pp-count){grid-column:3; grid-row:2}
+  .pp-lieu .pp-count{grid-column:1 / -1; grid-row:2}
+}
 summary:focus-visible, button:focus-visible, select:focus-visible, input:focus-visible{outline:2px solid var(--rubric); outline-offset:3px}
 
 .ctl{display:flex; flex-direction:column; gap:var(--sp-xs); min-width:0}

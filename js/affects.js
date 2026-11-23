@@ -56,10 +56,53 @@ const AFF_KEY=[
 const EMO_TIP={mystérieux:"Ce qu'on ne comprend pas encore : une porte entrouverte, un secret.",fataliste:"Rien ne sera évité : le destin est en marche.",héroïque:"On se redresse et on avance : audace, bannières, courage.",mélancolique:"Une tristesse douce, qu'on garde près de soi.",joyeux:"Fête, rires, chopes levées.",féerique:"Émerveillement, magie légère, un monde qui scintille.",inquiétant:"Quelque chose cloche, sans qu'on sache quoi.",majestueux:"Grandeur, solennité, une salle de trône.",nostalgique:"Le souvenir d'un temps ou d'un lieu perdu.",serein:"Calme, paix, rien ne presse.",tragique:"Le deuil, la perte, le drame qui éclate.",étrange:"Hors des repères : onirique, déroutant, non humain.",sauvage:"Instinct, danse brute, nature sans maître.",sacré:"Chant d'église, rite, recueillement."};
 const AFF={sel:new Set(), open:false};
 const affQuality=iv=>iv.indexOf(4)>=0?"maj":"min";
-/* ce que dégage une couleur : phrase de la gamme, phrase de la tonalité, et le poids de chaque affect (65 % gamme, 35 % tonalité) */
+/* ---------- les émotions sur deux axes, et les indices qui les portent ----------
+   Chaque émotion est placée sur le cercle de Russell (1980) : valence (de -1, déplaisant, à 1, plaisant) et éveil (de 0, calme, à 1, agité).
+   Les émotions perçues en musique se ramènent bien à ces deux axes (Eerola et Vuoskoski, 2011).
+   Ses indices viennent du tableau de Gabrielsson et Lindström (Handbook of Music and Emotion, 2010) et des poids mesurés par
+   Eerola, Friberg et Bresin (2013) : le mode et le tempo d'abord, puis le registre, la nuance, l'articulation et le timbre.
+   Chaque indice va de 0 à 1 : tempo (lent à vif), registre (grave à aigu), densité (rare à continu), lumière (sombre à clair),
+   legato (détaché à lié), tension (consonant à dissonant et nerveux), espace (proche à immense : convention du genre, pas de la recherche). */
+const AFF_VA={
+  mystérieux:{v:-0.05,a:0.4,  c:{tempo:.35,reg:.45,dens:.35,lum:.35,leg:.75,tens:.5, esp:.8}},
+  fataliste: {v:-0.6, a:0.5,  c:{tempo:.4, reg:.25,dens:.5, lum:.25,leg:.6, tens:.6, esp:.6}},
+  héroïque:  {v:0.6,  a:0.75, c:{tempo:.7, reg:.55,dens:.65,lum:.7, leg:.4, tens:.45,esp:.6}},
+  mélancolique:{v:-0.55,a:0.25,c:{tempo:.25,reg:.4, dens:.35,lum:.3, leg:.85,tens:.3, esp:.55}},
+  joyeux:    {v:0.85, a:0.7,  c:{tempo:.8, reg:.7, dens:.7, lum:.85,leg:.3, tens:.2, esp:.35}},
+  féerique:  {v:0.6,  a:0.45, c:{tempo:.5, reg:.85,dens:.5, lum:.85,leg:.55,tens:.25,esp:.75}},
+  inquiétant:{v:-0.65,a:0.7,  c:{tempo:.45,reg:.3, dens:.4, lum:.2, leg:.45,tens:.85,esp:.65}},
+  majestueux:{v:0.45, a:0.55, c:{tempo:.4, reg:.35,dens:.55,lum:.6, leg:.75,tens:.35,esp:.85}},
+  nostalgique:{v:-0.1,a:0.25, c:{tempo:.3, reg:.5, dens:.4, lum:.5, leg:.85,tens:.25,esp:.5}},
+  serein:    {v:0.6,  a:0.1,  c:{tempo:.15,reg:.55,dens:.2, lum:.6, leg:.9, tens:.1, esp:.6}},
+  tragique:  {v:-0.85,a:0.6,  c:{tempo:.35,reg:.3, dens:.5, lum:.2, leg:.7, tens:.75,esp:.7}},
+  étrange:   {v:-0.2, a:0.5,  c:{tempo:.45,reg:.6, dens:.4, lum:.45,leg:.5, tens:.7, esp:.8}},
+  sauvage:   {v:0.1,  a:0.85, c:{tempo:.85,reg:.4, dens:.8, lum:.55,leg:.2, tens:.65,esp:.4}},
+  sacré:     {v:0.3,  a:0.2,  c:{tempo:.2, reg:.4, dens:.3, lum:.45,leg:.95,tens:.2, esp:.95}}
+};
+const AFF_CUES=[["tempo","lent","vif"],["reg","grave","aigu"],["dens","rare","dense"],["lum","sombre","clair"],["leg","détaché","lié"],["tens","consonant","tendu"],["esp","proche","immense"]];
+/* les indices d'un choix d'émotions : la moyenne, et sa traduction en mots pour ce qui s'écarte du milieu */
+function affCues(sel){
+  const c={}; AFF_CUES.forEach(([k])=>{ c[k]=sel.length?sel.reduce((t,e)=>t+((AFF_VA[e]||{c:{}}).c[k]===undefined?0.5:AFF_VA[e].c[k]),0)/sel.length:0.5; });
+  c.v=sel.length?sel.reduce((t,e)=>t+(AFF_VA[e]?AFF_VA[e].v:0),0)/sel.length:0; c.a=sel.length?sel.reduce((t,e)=>t+(AFF_VA[e]?AFF_VA[e].a:0.5),0)/sel.length:0.5;
+  return c;
+}
+const affCueWords=c=>AFF_CUES.filter(([k])=>Math.abs(c[k]-0.5)>=0.15).sort((x,y)=>Math.abs(c[y[0]]-0.5)-Math.abs(c[x[0]]-0.5)).slice(0,4).map(([k,lo,hi])=>c[k]<0.5?lo:hi);
+/* clarté d'un mode, de 0 (sombre) à 1 (clair) : l'ordre mesuré par Temperley et Tan (2013) pour les modes diatoniques,
+   ailleurs une estimation par la tierce, la sixte et la seconde (tierce majeure claire, seconde mineure sombre) */
+const MODE_CLAIR={ionien:1, mixolydien:.8, lydien:.78, dorien:.55, eolien:.35, phrygien:.2, locrien:.05};
+function modeClair(key){
+  if(MODE_CLAIR[key]!==undefined) return MODE_CLAIR[key];
+  const iv=ivOf(S,key), has=x=>iv.some(y=>Math.abs(y-x)<0.3);
+  return Math.max(0,Math.min(1,0.45+(has(4)?0.25:0)-(has(3)&&!has(4)?0.1:0)+(has(9)?0.1:0)-(has(8)&&!has(9)?0.05:0)-(has(1)?0.15:0)-(has(6)?0.05:0)));
+}
+/* ce que dégage une couleur, et le poids de chaque affect :
+   70 % la gamme (son caractère dans la tradition modale), 10 % la clarté du mode face à la valence de l'émotion,
+   10 % le registre que donne la tonique face au registre de l'émotion, 10 % seulement le caractère traditionnel de la tonalité.
+   La recherche ne retrouve presque pas ce dernier en tempérament égal (Powell et Dibben, 2005) : il reste une couleur, plus une règle. */
 function affOf(key,root){
-  const sc=AFF_SC[key]||["",{}], iv=ivOf(S,key), q=affQuality(iv), ka=AFF_KEY[((root%12)+12)%12][q];
-  return {scText:sc[0], keyText:ka[0], q, w:e=>0.65*(sc[1][e]||0)+0.35*(ka[1][e]||0)};
+  const sc=AFF_SC[key]||["",{}], iv=ivOf(S,key), q=affQuality(iv), r=((root%12)+12)%12, ka=AFF_KEY[r][q], cl=modeClair(key), hi=r/11;
+  return {scText:sc[0], keyText:ka[0], q, clair:cl, w:e=>{ const va=AFF_VA[e]; if(!va) return 0.7*(sc[1][e]||0)+0.1*(ka[1][e]||0);
+    return 0.7*(sc[1][e]||0)+0.1*(1-Math.abs(cl-(va.v+1)/2))+0.1*(1-Math.abs(hi-va.c.reg))+0.1*(ka[1][e]||0); }};
 }
 const affTop=(key,root,n)=>{ const a=affOf(key,root); return EMOTIONS.map(e=>[e,a.w(e)]).filter(x=>x[1]>0.08).sort((x,y)=>y[1]-x[1]).slice(0,n).map(x=>x[0]); };
 /* la meilleure tonalité de chaque gamme pour les affects choisis, puis les six meilleures gammes */
@@ -75,7 +118,8 @@ function affSuggest(sel,allow,n){
 function affUpdate(){
   const now=$("affNow"); if(!now) return;
   const key=(typeof curScaleKey==="function"?curScaleKey():S.scales[0])||"mixolydien", a=affOf(key,S.root), nm=(SC[key]||SC.mixolydien).n.toLowerCase();
-  now.innerHTML="<strong>"+NOTES[S.root]+" "+nm+"</strong> : "+a.scText+". <span class=\"aff-k\">Tonalité de "+NOTES[S.root]+" ("+(a.q==="maj"?"plutôt majeure":"plutôt mineure")+") : "+a.keyText+".</span> <em>"+affTop(key,S.root,3).join(" · ")+"</em>";
+  now.innerHTML="<strong>"+NOTES[S.root]+" "+nm+"</strong> : "+a.scText+". <span class=\"aff-k\">Tonalité de "+NOTES[S.root]+" ("+(a.q==="maj"?"plutôt majeure":"plutôt mineure")+") : "+a.keyText+".</span> <em>"+affTop(key,S.root,3).join(" · ")+"</em>"+
+    (AFF.sel.size?' <span class="aff-k">Ce que demandent '+(AFF.sel.size>1?"ces émotions":"cette émotion")+" : "+(affCueWords(affCues([...AFF.sel])).join(", ")||"rien d'extrême")+".</span>":"");
 }
 function affApply(key,root){
   S.root=root; S.scales[0]=key; syncUI(); updateRingCap(); if(live) restartIfLive(0.8);
@@ -84,8 +128,8 @@ function affApply(key,root){
    L'univers donne l'instrumentation, l'espace et le rythme (un de ses préréglages sert de base) ; les affects choisissent la gamme et la tonalité,
    et règlent la tension. La meilleure proposition s'applique tout de suite, les autres sont à un clic. */
 const AFF_MAQAM=["rast","bayati","saba","enharm"];
-/* agitation de chaque affect (0 = calme, 1 = tendu) : règle la tension de départ */
-const AFF_AROUSAL={mystérieux:.5,fataliste:.6,héroïque:.65,mélancolique:.35,joyeux:.55,féerique:.4,inquiétant:.8,majestueux:.6,nostalgique:.3,serein:.2,tragique:.75,étrange:.6,sauvage:.75,sacré:.3};
+/* agitation de chaque affect (0 = calme, 1 = tendu) : l'éveil du cercle de Russell */
+const AFF_AROUSAL=Object.fromEntries(Object.keys(AFF_VA).map(e=>[e,AFF_VA[e].a]));
 const seekUni=()=>{ try{ const v=localStorage.getItem("bourdon.univers"); if(UNIVERS.some(x=>x.id===v)) return v; }catch(e){} return "medieval"; };
 /* propositions : les meilleures gammes pour les affects choisis, chacune sur le préréglage de l'univers qui lui ressemble le plus */
 /* agitation d'un préréglage (0 calme, 1 tendu), d'après sa tension, sa percussion et son tempo */
@@ -98,31 +142,52 @@ function affPropose(uid,sel){
   const used=new Set(), out=[];
   affSuggest(sel,allow,5).forEach(sg=>{
     let best=null; items.forEach(it=>{ if(used.has(it[0])) return; const b=baseOf(it), s=(b.k===sg.key?2:0)+score(b.k,b.r)+2.5*(1-Math.abs(presetArousal(it[1])-selArousal(sel))); if(!best||s>best.s) best={it,s}; });
-    if(!best) best={it:items[0],s:0}; used.add(best.it[0]); out.push({preset:best.it,key:sg.key,root:sg.root,score:sg.score});
+    if(!best) best={it:items[0],s:0}; used.add(best.it[0]);
+    /* la tonalité ne pèse plus guère : quand la tonique de l'ambiance de base fait presque aussi bien, on la garde (ses instruments sont réglés pour elle) */
+    const br=baseOf(best.it).r, sr=score(sg.key,br), root=sr>=sg.score-0.03?br:sg.root;
+    out.push({preset:best.it,key:sg.key,root,score:root===sg.root?sg.score:sr});
   });
   return out;
 }
+/* partir d'une proposition : la gamme et la tonalité choisies, puis les indices des émotions appliqués à l'ambiance de base.
+   Chaque indice déplace le réglage de l'ambiance sans l'écraser, pour qu'elle garde son caractère (son instrumentation, sa mesure). */
 function affStart(pr){
   const over=clone(pr.preset[1]); over.scales=[pr.key,"",""]; over.root=pr.root;
   const sel=[...AFF.sel];
-  /* l'ambiance prise comme base est ramenée vers l'agitation voulue : percussion et densité suivent, sans toucher au tempo ni à la mesure */
-  if(sel.length){ const a=selArousal(sel), k=0.5+a, cl=v=>Math.round(Math.min(1,v)*100)/100;
-    if(over.perc&&over.perc.lvl>0) over.perc.lvl=cl(over.perc.lvl*Math.min(1.3,k));
-    if(over.mel&&over.mel.dens!==undefined) over.mel.dens=cl(over.mel.dens*(0.7+0.6*a)); }
-  if(sel.length) over.tension=Math.round(Math.max(0.1,Math.min(0.9,sel.reduce((t,e)=>t+(AFF_AROUSAL[e]===undefined?0.5:AFF_AROUSAL[e]),0)/sel.length))*100)/100;
+  if(sel.length){ const c=affCues(sel), d=k=>c[k]-0.5, r2=v=>Math.round(v*100)/100, cl=(v,a,b)=>Math.max(a,Math.min(b,v));
+    const base=x=>x===undefined?null:x, D=DEFAULT;
+    /* tempo : l'indice le plus fort avec le mode ; de 20 % plus lent à 20 % plus vif */
+    over.tempo=Math.round(cl((over.tempo||D.tempo)*(1+0.4*d("tempo")),40,180));
+    over.mel=over.mel||{}; over.car=over.car||{}; over.fx=over.fx||{}; over.perc=over.perc||{};
+    /* registre de la mélodie : grave, médium ou aigu */
+    { const rg=base(over.mel.reg)===null?D.mel.reg:over.mel.reg; over.mel.reg=cl(Math.round(rg+2*d("reg")),0,2); }
+    /* densité des notes et de la percussion : l'éveil */
+    { const dn=base(over.mel.dens)===null?D.mel.dens:over.mel.dens; over.mel.dens=r2(cl(dn*(0.6+0.8*c.dens),0.05,1)); }
+    if((over.perc.lvl===undefined?D.perc.lvl:over.perc.lvl)>0) over.perc.lvl=r2(cl((over.perc.lvl===undefined?D.perc.lvl:over.perc.lvl)*(0.5+c.a),0,1));
+    /* lumière : le voile des aigus et l'ombre de la salle ; ±0,25 pour ne pas effacer le son d'une ambiance (les vieux claviers restent voilés) */
+    { const vl=base(over.fx.veil)===null?D.fx.veil:over.fx.veil, dk=base(over.fx.dark)===null?D.fx.dark:over.fx.dark;
+      over.fx.veil=r2(cl(vl-0.5*d("lum"),0,1)); over.fx.dark=r2(cl(dk-0.5*d("lum"),0,1)); }
+    /* articulation : le lié resserre les souffles entre les notes, le détaché les ouvre */
+    { const sl=base(over.car.sil)===null?D.car.sil:over.car.sil; over.car.sil=r2(cl(sl-0.5*d("leg"),0,1)); }
+    /* espace : la réverbération */
+    { const rv=base(over.fx.rev)===null?D.fx.rev:over.fx.rev; over.fx.rev=r2(cl(rv+0.3*d("esp"),0,1)); }
+    /* tension : nervosité et dissonance, d'après l'indice de tension et l'éveil */
+    over.tension=r2(cl(0.6*c.tens+0.4*c.a,0.1,0.9));
+  }
   loadScene(over,null,undefined,{name:pr.preset[0],gloss:pr.preset[2],univ:seekUni()});
   const g=$("presetGloss"); if(g) g.textContent="";
   document.querySelectorAll("#presets .lnk").forEach(x=>x.removeAttribute("aria-current"));
+  affUpdate();
 }
 function affResults(auto){
   const host=$("affRes"); if(!host) return; host.innerHTML="";
   const sel=[...AFF.sel];
   if(!sel.length){ host.appendChild(Object.assign(document.createElement("p"),{className:"hint",textContent:"Facultatif : une ou plusieurs émotions règlent la gamme, la tonalité et la tension. Sans choix, on part de la première ambiance de l'univers."})); return; }
-  const res=affPropose(seekUni(),sel); AFF.props=res;
+  const res=affPropose(seekUni(),sel); AFF.props=res; const cw=affCueWords(affCues(sel));
   res.forEach((r,i)=>{
     const b=document.createElement("button"); b.type="button"; b.className="aff-opt";
     const nm=SC[r.key].n.replace(/\s*\(.*\)/,""), top=affTop(r.key,r.root,3);
-    b.innerHTML='<span class="n">'+nm+" en "+NOTES[r.root]+'</span><span class="t">'+top.join(" · ")+'</span><span class="b">sur l\'ambiance '+r.preset[0]+'</span><span class="s" aria-hidden="true"><i style="width:'+Math.round(Math.min(1,r.score)*100)+'%"></i></span>';
+    b.innerHTML='<span class="n">'+nm+" en "+NOTES[r.root]+'</span><span class="t">'+top.join(" · ")+'</span><span class="b">sur l\'ambiance '+r.preset[0]+(cw.length?" · "+cw.join(", "):"")+'</span><span class="s" aria-hidden="true"><i style="width:'+Math.round(Math.min(1,r.score)*100)+'%"></i></span>';
     b.setAttribute("aria-label","Partir de "+nm+" en "+NOTES[r.root]+", ambiance "+r.preset[0]); b.title="Jouer "+nm+" en "+NOTES[r.root]+" sur l'ambiance "+r.preset[0]+" : "+r.preset[2]+"."; if(i===0) b.setAttribute("aria-current","true");
     b.onclick=()=>{ host.querySelectorAll(".aff-opt").forEach(x=>x.removeAttribute("aria-current")); b.setAttribute("aria-current","true"); affStart(r); };
     host.appendChild(b);
@@ -177,5 +242,7 @@ function affTable(){
   SCALE_GROUPS.forEach(([g,l])=>l.forEach(([k,n])=>{ if(k==="libre") return; const w=AFF_SC[k][1], top=Object.keys(w).sort((a,b)=>w[b]-w[a]).slice(0,3); h+="<tr><th scope=\"row\">"+n+"</th><td>"+AFF_SC[k][0]+"</td><td><em>"+top.join(" · ")+"</em></td></tr>"; }));
   h+='</tbody></table><table class="aff-table"><caption>Tonalités</caption><thead><tr><th>Note</th><th>Plutôt majeure</th><th>Plutôt mineure</th></tr></thead><tbody>';
   AFF_KEY.forEach((k,i)=>{ h+="<tr><th scope=\"row\">"+NOTES[i]+"</th><td>"+k.maj[0]+"</td><td>"+k.min[0]+"</td></tr>"; });
+  h+='</tbody></table><table class="aff-table"><caption>Émotions : valence, éveil et indices (Gabrielsson et Lindström)</caption><thead><tr><th>Émotion</th><th>Valence · éveil</th><th>Ce qu\'elle demande</th></tr></thead><tbody>';
+  EMOTIONS.forEach(e=>{ const va=AFF_VA[e]; if(!va) return; const c=Object.assign({},va.c); h+="<tr><th scope=\"row\">"+e+"</th><td>"+(va.v>=0?"+":"")+va.v.toFixed(2).replace(".",",")+" · "+va.a.toFixed(2).replace(".",",")+"</td><td>"+affCueWords(c).join(", ")+"</td></tr>"; });
   return h+"</tbody></table>";
 }

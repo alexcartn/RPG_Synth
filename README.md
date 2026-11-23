@@ -8,6 +8,55 @@ Usage prévu : composer hors ligne. On règle, on écoute, puis on rend en WAV (
 
 Ouvrir `index.html` dans un navigateur récent (Chrome, Firefox, Safari). Les polices sont dans le dépôt (`fonts/`, licence SIL OFL), aucune requête externe sauf l'encodeur MP3 à la demande.
 
+## Références et chantiers
+
+[REFERENCES.md](REFERENCES.md) rassemble les sources du projet par domaine (émotion musicale, musique sous la voix, musique adaptative, outils de jeu de rôle, composition algorithmique, ambient et dungeon synth, théorie et accordages, synthèse, méthode d'écoute), dit pour chacune ce qu'elle apporte et si elle est déjà exploitée, et classe vingt et un chantiers par utilité à la table.
+
+## À la table : la voix du meneur
+
+Dans la marge, sous Capturer, le bloc « À la table ». Tout est en direct : ni l'export ni la capture n'en tiennent compte.
+
+- Sous la voix : la musique recule d'environ 9 dB, la bande où se joue la compréhension de la parole (1 à 4 kHz, d'après l'indice d'intelligibilité ANSI S3.5) se creuse de 7 dB, la mélodie se fait rare (45 % de notes en moins) et la percussion recule de 6 dB. Les recommandations de mixage pour la télévision placent la musique 10 LU sous un commentaire et une ambiance 15 LU dessous (Torcoli et al., Fraunhofer) ; une mélodie qui chante en même temps que le meneur gêne plus que son niveau ne le laisse croire (masquage informationnel).
+- Micro : s'effacer quand je parle. La page écoute le micro, avec l'annulation d'écho du navigateur ; rien n'est enregistré ni envoyé, le micro n'est relié qu'à un analyseur. La première seconde mesure la pièce. Ensuite, quand le niveau dans la bande de la voix (300 Hz à 3,4 kHz) dépasse le fond de la pièce, musique comprise, pendant 80 ms, la musique s'efface (6, 10 ou 16 dB) ; elle revient après 700 ms de silence, pour ne pas pomper entre deux mots. Un bruit qui monte et ne fait jamais de creux pendant huit secondes n'est pas une voix : le fond se recale et la musique revient. Une jauge montre le niveau du micro et le seuil ; la sensibilité se règle.
+
+## Émotions : valence, éveil et indices
+
+La recherche par émotion (première page) ne repose plus pour un tiers sur les caractères baroques des tonalités, que la recherche ne retrouve presque pas en tempérament égal (Powell et Dibben, 2005).
+
+- Chaque émotion a sa place sur le cercle de Russell (valence, éveil) et ses indices, tirés du tableau de Gabrielsson et Lindström et des poids mesurés par Eerola, Friberg et Bresin (2013) : tempo, registre, densité, lumière, legato, tension, espace.
+- Choisir des émotions règle maintenant le tempo (de 20 % plus lent à 20 % plus vif), le registre de la mélodie, la densité des notes et de la percussion, le voile et l'ombre de la salle (±0,25, pour que les vieux claviers restent voilés), les souffles entre les notes (lié ou détaché), la réverbération et la tension. L'ambiance de base garde son instrumentation et sa mesure.
+- Le choix de la gamme pèse 70 %, la clarté du mode face à la valence 10 % (ordre mesuré par Temperley et Tan, 2013 : ionien, mixolydien et lydien, dorien, éolien, phrygien), le registre que donne la tonique 10 %, le caractère traditionnel de la tonalité 10 % (contre 35 % avant).
+- La lecture sous les propositions dit ce que demandent les émotions choisies (« lent, lié, immense… ») ; la table des affects a une troisième partie, les émotions avec leur valence, leur éveil et leurs indices.
+
+## Enchaînements : changer de scène sur un point de sortie
+
+Séance, Transitus. Comme en musique de jeu (iMUSE, Wwise, FMOD), un changement d'ambiance pendant la lecture peut attendre :
+
+- tout de suite (comme avant), la prochaine mesure, la fin de la phrase en cours, ou le prochain retour de l'harmonie sur la tonique ; jamais plus de huit mesures, ensuite on prend la mesure suivante ;
+- et se ponctuer d'un signal joué dans la tonalité de la nouvelle scène, hors du fondu pour sonner pleinement : cloche grave, roulement de timbale qui monte vers le temps, souffle qui monte, accord qui s'ouvre.
+
+La marge annonce le changement à venir et dans combien de secondes.
+
+## Télécommande et module Foundry VTT
+
+- Bourdon accepte des ordres simples (jouer, arrêter, ambiance, univers, émotions, tension, geste, volume, sous la voix) envoyés par la fenêtre qui l'a ouvert, quand la télécommande est permise (adresse avec `?telecommande=1`, ou case Télécommande dans Séance). Aucun autre message n'est écouté.
+- Une adresse suffit pour ouvrir sur une scène : `?ambiance=Crypta`, `?univers=dark`, `?emotions=mystérieux,sacré`.
+- Le module Foundry VTT (`foundry/`, versions 12 et 13) s'installe par l'adresse de son manifeste, publié avec le site : `https://<utilisateur>.github.io/RPG_Synth/foundry/module.json`. Chaque scène a son ambiance ou ses émotions (onglet Ambiance de la configuration), Bourdon suit la scène active, le combat fait monter la tension et peut lancer un geste, la fin du combat apaise. Les macros passent par `game.bourdon`. Le détail et le protocole sont dans [foundry/README.md](foundry/README.md).
+
+## Dungeon synth : les écoles du genre
+
+L'univers Dungeon synth passe de huit à quinze ambiances. Les nouvelles couvrent les écoles que décrivent Jordan Whiteman (*Dark Dungeon Music*, 2024), le blog d'Andrew Werdna et les guides de Bandcamp Daily, au lieu d'un seul album :
+
+- Spiritus Antiquus : les années 90 sombres, nées du black metal norvégien et de la musique cosmique : nappes de chœur tenues, timbales lentes, mineur harmonique, cor dans une immense chapelle, un peu de souffle de cassette.
+- Agmen Umbrarum : la marche épique : un motif court qui revient sans fin (ostinato, déjà-vu à 0,9), cor et chœurs, caisse claire de marche.
+- Turris Vetus : la tour caverneuse : 44 à la noire, un orgue qui tient dans la grotte, une flûte de loin en loin, grondement et gouttes.
+- Feudum : le fief chaleureux : ionien et mixolydien, luth et flûte à trois temps, le feu dans la salle de bois.
+- Cuniculus : le comfy synth : pentatonique majeure, boîte à musique FM, kalimba, clavier jouet qui ondule, grillons.
+- Memoria : la nostalgie des vieux jeux de rôle et des jeux vidéo des années 80 : synthé doux, piano électrique FM en doubles croches, nappe vectorielle, cloches en canon.
+- Nix Aeterna : le winter synth : clochettes en cascade, chœur lointain, une salle claire et scintillante, le vent.
+
+Chacune a son gain de sonie mesuré hors ligne comme les autres (BS.1770, trois graines, vers -13 LUFS).
+
 ## Studio : composer soi-même (studio.html)
 
 Une page à part, reliée par le lien « Studio » de la barre des modes. Ici rien n'est tiré au hasard : l'outil conseille, tu décides. Le flux suit celui d'Ableton (vue Session, chaînes d'appareils, enregistrement de la Session dans l'arrangement) et le fil des étapes d'une pièce de dungeon synth ou d'ambient.
@@ -115,7 +164,7 @@ L'univers Far West et ses ambiances (Desertum, Saloon, Duellum, Equitatus) sont 
 ## Dungeon synth : accords, arpège, et un univers à part
 
 - Voix d'arpège (Composer, Voix, « Arpège ») : l'accord en cours égrené note à note, en va-et-vient, montant ou en Alberti (grave, aigu, milieu, aigu), en noires, croches ou doubles croches, sur un registre et une étendue choisis, avec l'instrument de son choix. C'est le pilier de l'accompagnement en dungeon synth.
-- Univers « Dungeon synth » (Montagne, Custos, Hiems, Castellum, Silva Antiqua, Vigilia, Regnum Umbrae, Iter Montium) : de vrais enchaînements d'accords (harmonie idiomatique du mode) tenus par une nappe avec sa basse, un arpège qui les égrène, une mélodie simple qui revient (forme en rondeau, déjà-vu élevé), presque pas de bourdon, des timbales lointaines, une grande salle de Dattorro, un peu de souffle et de flottement de bande. Références : Mountain Realm, la scène « comfy » et épique du genre.
+- Univers « Dungeon synth » (Montagne, Custos, Hiems, Castellum, Silva Antiqua, Vigilia, Regnum Umbrae, Iter Montium, puis les sept écoles décrites plus haut) : de vrais enchaînements d'accords (harmonie idiomatique du mode) tenus par une nappe avec sa basse, un arpège qui les égrène, une mélodie simple qui revient (forme en rondeau, déjà-vu élevé), presque pas de bourdon, des timbales lointaines, une grande salle de Dattorro, un peu de souffle et de flottement de bande. Références : Mountain Realm, la scène « comfy » et épique du genre.
 - Le son des vieux claviers (Vigilia, Regnum Umbrae, Iter Montium) : calé par mesure sur un album de dungeon synth à l'ancienne. Chez lui, presque rien au-dessus de 3 à 4 kHz, des notes nettes sans souffle de bande, une vraie ligne de basse sous 120 Hz, des modes mineurs (éolien, dorien, mineur harmonique), 5 à 7 attaques par seconde et presque pas de percussion. D'où : voile vers 3 kHz, ni souffle ni ondulation, réverbération courte et sombre, basse grave, un accord par mesure, arpège en doubles croches. Les cinq ambiances d'origine ont été rapprochées de ce son (moins de bande, plus de basse, timbales discrètes).
 - Octave de la basse (Composer, Couches, Nappes) : médium, une octave au-dessus du bourdon comme avant, ou grave, dans le registre du bourdon (65 à 130 Hz). La basse ne se tait plus sur les accords qui frotteraient contre le bourdon quand le bourdon est éteint.
 - Médiéval repensé dans cette logique : Taberna (taverne au coin du feu, luth en arpège, flûte, foule), Chorea, Tripudium et Turris ont maintenant des accords, une basse et un arpège ; leur bourdon est réduit pour ne plus contredire les accords.
@@ -340,7 +389,8 @@ Des scripts classiques chargés dans l'ordre par `index.html`, sans module ni bu
 3. `js/engine.js` : `buildEngine(ctx, S, opts)`, le moteur. Il fonctionne indifféremment sur un `AudioContext` (lecture en direct) et un `OfflineAudioContext` (export). Un ordonnanceur `schedule(until)` planifie à l'avance bourdon, mélodie, canon, nappes, percussion, lieu, boucles et pendules. Chaque famille a son propre générateur pseudo-aléatoire dérivé de la graine : désactiver une voix ne change pas les autres, ce qui rend les stems cohérents avec le mix.
 4. `js/ui.js` : contrôles générés depuis la structure `UI`, cercle des hauteurs en SVG, lecture en direct.
 5. `js/export.js` : `renderOffline`, `wavFromChannels`, `zipStore`, `midiFile`, code de partage.
-6. `js/main.js` : démarrage.
+6. `js/voix.js` (sous la voix, micro), `js/enchaine.js` (points de sortie, signaux), `js/telecommande.js` (ordres par message et par l'adresse).
+7. `js/main.js` : démarrage.
 
 Points d'attention pour la suite :
 
@@ -360,6 +410,8 @@ npm test
 ```
 
 Il construit la page, lance la lecture, applique chaque préréglage, exécute les exports (mix, boucle, stems, MIDI) et bascule une note du cercle. Il ne juge pas le son : l'écoute reste manuelle.
+
+`tests/table.js` vérifie ce qui sert à la table : la chaîne sous la voix (niveau, creux, mélodie plus rare), l'effacement au micro (pièce calme, parole, court silence, vrai silence, bruit continu), les points de sortie (à venir, sur une barre, huit mesures au plus), la télécommande (ordres, refus, messages étrangers ignorés), les émotions (tempo, densité, tension et articulation suivent l'éveil, la tonalité ne pèse presque plus) et les nouvelles ambiances.
 
 ## Pistes
 

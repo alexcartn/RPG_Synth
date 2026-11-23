@@ -314,7 +314,7 @@ function buildEngine(ctx, S, o){
     B.mel.lvl.gain.value=lv("mel",S.mel.lvl);
     canonG.gain.value=lv("mel",S.canon.lvl);
     B.pad.lvl.gain.value=lv("pad",S.pad.lvl);
-    B.perc.lvl.gain.value=lv("perc",S.perc.lvl);
+    B.perc.lvl.gain.value=lv("perc",S.perc.lvl)*(o.underVoice?1-0.5*clamp(o.underVoice(),0,1):1); /* sous la voix : la percussion, très saillante, recule de 6 dB */
     B.amb.lvl.gain.value=lv("amb",S.amb.lvl===undefined?1:S.amb.lvl);
     B.play.lvl.gain.value=S.play?S.play.lvl:0.8;
     volG.gain.value=S.vol===undefined?1:S.vol; voixEQ.gain.value=-6*clamp((S.fx&&S.fx.voix)||0,0,1); if(texSet) texSet(); normG.gain.value=Math.pow(10,clamp(S.norm||0,-12,12)/20);
@@ -1647,7 +1647,9 @@ function buildEngine(ctx, S, o){
       if(arcRise(cur.mel,bar)){ cur.mel=t0+(Math.floor((cur.mel-t0)/secLen()+1e-6)+1)*secLen(); continue; }
       const sc=secOf(cur.mel), iv=ivOf(S,sc.key), stab=stableOf(iv), I=inten(cur.mel);
       const evo=S.form.shape==="constante"?0:(I-0.5)*S.form.amount;
-      const dens=clamp(S.mel.dens+evo+(tensAt(cur.mel)-0.5)*0.6+(formE()==='passacaille'?0.07*(Math.floor(cpos/4)%6):0)+0.4*dv("densite"),0,1);
+      let dens=clamp(S.mel.dens+evo+(tensAt(cur.mel)-0.5)*0.6+(formE()==='passacaille'?0.07*(Math.floor(cpos/4)%6):0)+0.4*dv("densite"),0,1)
+      /* sous la voix : la mélodie se fait rare, pour ne pas parler en même temps que le meneur (masquage informationnel) */
+      if(o.underVoice) dens*=1-0.45*clamp(o.underVoice(),0,1);
       const shift=arcOn()?Math.round(arcAt(cur.mel)*6):0, lo=12+12*S.mel.reg+shift, hi=lo+12*S.mel.span, pool=poolOf(iv,lo,hi);
       if(!pool.length){cur.mel+=bar; continue;}
       const genRaw=modal()?(()=>genPhraseModal(pool,stab,dens,cur.mel,sc.i)):(()=>genPhrase(pool,stab,dens));

@@ -5,10 +5,10 @@ const CITES=["Le bourdon doit couler.","Un bourdon pour les gouverner tous.","Da
 /* ============================================================
    DÉMARRAGE
    ============================================================ */
-buildRing(); buildChapters(); buildPresets(); seekBuild(); buildJeu(); buildAtelier(); $("reglBtn").onclick=()=>setMode("reglage"); $("atelierBtn").onclick=()=>setMode("atelier"); syncUI(); wxInit(); capFmtBuild(); capUI(); $("capBtn").onclick=()=>{ CAP.on?capStop():capStart(); }; restoreMode(); setMode(MODE);
+buildRing(); buildChapters(); buildPresets(); seekBuild(); buildJeu(); buildAtelier(); $("reglBtn").onclick=()=>setMode("reglage"); $("atelierBtn").onclick=()=>setMode("atelier"); syncUI(); wxInit(); capFmtBuild(); capUI(); voixBuild(); $("capBtn").onclick=()=>{ CAP.on?capStop():capStart(); }; restoreMode(); setMode(MODE);
 document.querySelector("#presets .lnk").setAttribute("aria-current","true");
 /* la partition suit la taille de son cadre et attend que les polices soient chargées */
-vizFit(); veilBuild(); accBuild(); tipInit();
+vizFit(); veilBuild(); accBuild(); tipInit(); enchBuild(); teleBuild(); teleLink();
 /* hauteur du bandeau de partition : sert de décalage à la table des matières et aux ancres */
 { const sc=$("score"), setH=()=>document.documentElement.style.setProperty("--score-h",(sc?sc.offsetHeight:0)+"px"); setH(); if(window.ResizeObserver&&sc) new ResizeObserver(setH).observe(sc); else window.addEventListener("resize",setH); }
 if(window.ResizeObserver) new ResizeObserver(()=>vizFit()).observe($("scoreCv")); else window.addEventListener("resize",vizFit);

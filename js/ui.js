@@ -52,7 +52,7 @@ function defaultQuality(){
 }
 function getQuality(){ try{ const q=localStorage.getItem("bourdon.quality"); if(q==="eco"||q==="high") return q; }catch(e){} return defaultQuality(); }
 const isEco=()=>getQuality()==="eco";
-function engineOpts(dest){ return {onNote:noteFlash, lite:isEco(), rolling:true, dest:dest||(live&&live.out)||null}; }
+function engineOpts(dest){ return {onNote:noteFlash, lite:isEco(), rolling:true, dest:dest||(live&&live.out)||null, underVoice:()=>(typeof VOIX!=="undefined"&&VOIX.under)?1:0}; }
 /* téléphone : le son passe par un vrai lecteur audio. Le système le traite alors comme une musique qui joue :
    il continue écran éteint ou application en arrière-plan, avec les commandes sur l'écran verrouillé. */
 const MOBILE=(()=>{ try{ return matchMedia("(pointer:coarse)").matches; }catch(e){ return false; } })();
@@ -78,7 +78,8 @@ function startLive(opt){
   const AC=window.AudioContext||window.webkitAudioContext;
   /* "playback" : tampons plus grands, moins de réveils du processeur, aucun besoin de latence ici */
   let ctx; try{ ctx=new AC({latencyHint:"playback"}); }catch(e){ ctx=new AC(); }
-  const out=outRoute(ctx), eng=buildEngine(ctx,S,engineOpts(out));
+  /* la sortie passe par la chaîne de la table (sous la voix, effacement au micro), commune à tous les moteurs du fondu enchaîné */
+  const route=outRoute(ctx), out=(typeof voixChain==="function")?voixChain(ctx,route||ctx.destination):route, eng=buildEngine(ctx,S,engineOpts(out));
   live={ctx,eng,out,t0:ctx.currentTime+0.1,olds:[]}; mediaSession(true);
   /* réverbération vivante et grain : branchés dès que le worklet est chargé (quelques millisecondes) */
   if(typeof fxLoad==="function") fxLoad(ctx).then(ok=>{ if(ok&&live&&live.ctx===ctx) live.eng.fxAttach(); });
@@ -105,13 +106,14 @@ function stopLive(){
   { const a=document.getElementById("bgAudio"); if(a) setTimeout(()=>{ if(!live){ try{ a.pause(); a.srcObject=null; }catch(e){} } },1700); }
   olds.forEach(e=>e.stop(ctx.currentTime));
   eng.stop(ctx.currentTime);
+  if(typeof voixDetach==="function") voixDetach();
   setTimeout(()=>{try{ctx.close();}catch(e){}},1600);
   clearInterval(sleep.timer); sleep.endMs=0; sleepNote("");
   setPlayUI(false); updateRingCap(); vizClear(); vizDraw(null); $("pend").parentNode.hidden=true;
 }
 /* fondu enchaîné : un nouveau moteur démarre pendant que l'ancien s'éteint, sans coupure */
-function crossfade(d){
-  const {ctx,eng:old}=live, t=ctx.currentTime+0.05;
+function crossfade(d,tAt){
+  const {ctx,eng:old}=live, t=Math.max(ctx.currentTime+0.05,tAt||0);
   const eng=buildEngine(ctx,S,engineOpts());
   eng.start(t,d,0); eng.schedule(ctx.currentTime+lookahead());
   old.fadeOut(t,d);
@@ -632,7 +634,7 @@ function loadScene(state,btn,fade,info){
   SCENE=info||sceneOf(state)||{name:"",gloss:"",univ:""}; if(live) mediaSession(true);
   document.querySelectorAll("#presets .lnk,#scenes .lnk").forEach(x=>x.removeAttribute("aria-current"));
   if(btn) btn.setAttribute("aria-current","true");
-  syncUI(); restartIfLive(fade||fadeSec());
+  syncUI(); if(live&&typeof enchainer==="function") enchainer(fade||fadeSec()); else restartIfLive(fade||fadeSec());
 }
 function currentUnivers(){ try{ const v=localStorage.getItem("bourdon.univers"); if(UNIVERS.some(x=>x.id===v)) return v; }catch(e){} return "medieval"; }
 function drawPresetRow(){

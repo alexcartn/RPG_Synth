@@ -4,7 +4,7 @@
   "private": true,
   "description": "Bourdon : machine à ambiances modales pour dungeon synth et tavernes",
   "scripts": {
-    "test": "node tests/ui-smoke.js && node tests/musique.js && node tests/studio.js"
+    "test": "node tests/ui-smoke.js && node tests/musique.js && node tests/studio.js && node tests/table.js"
   },
   "devDependencies": {
     "jsdom": "^26.0.0"

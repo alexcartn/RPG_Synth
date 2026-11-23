@@ -36,7 +36,7 @@ h1::first-letter{font:700 1.3em/.7 "UnifrakturCook","IM Fell English",serif; col
 .cols{display:grid; grid-template-columns:minmax(0,1fr) 340px; gap:clamp(24px,5vw,72px); align-items:start}
 .marge{position:sticky; top:calc(var(--score-h,0px) + var(--toc-h) + var(--sp-lg)); max-height:calc(100vh - var(--score-h,0px) - var(--toc-h) - var(--sp-2xl)); overflow-y:auto; overscroll-behavior:contain; scrollbar-width:thin; scrollbar-color:var(--rule) transparent;
   display:flex; flex-direction:column; gap:var(--sp-lg); order:2; padding-bottom:var(--sp-md)}
-.marge .lecture{order:1} .marge .tempo{order:2} .marge .tension{order:3} .marge .sleepbox{order:4} .marge > .presets{order:5} .marge .ringwrap{order:6} .marge .pendwrap{order:7} .marge .seance{order:8}
+.marge .lecture{order:1} .marge .tempo{order:2} .marge .tension{order:3} .marge .voixbox{order:3} .marge .sleepbox{order:4} .marge > .presets{order:5} .marge .ringwrap{order:6} .marge .pendwrap{order:7} .marge .seance{order:8}
 .text{order:1; min-width:0}
 @media (max-width:920px){
   .cols{grid-template-columns:1fr}
@@ -712,6 +712,20 @@ body.atelier .at-kbbar, body.daw .at-kbbar{margin-bottom:var(--sp-xs)}
 .jeu-gest{display:inline-flex; gap:var(--sp-sm); margin-left:var(--sp-lg); padding-left:var(--sp-lg); border-left:1px solid var(--rule)}
 .capbox{display:flex; flex-direction:column; gap:var(--sp-xs); align-items:flex-start; min-width:0}
 .capbox .hint{margin:0; font-size:.85rem; line-height:1.3}
+/* à la table : sous la voix et effacement au micro */
+.voixbox{display:flex; flex-direction:column; gap:var(--sp-xs); align-items:flex-start; min-width:0}
+.voixbox .btn[aria-pressed="true"]{background:var(--rubric); color:var(--parch); border-color:var(--rubric)}
+.voixbox .hint{margin:0; font-size:.85rem; line-height:1.3}
+.voixbox .hint:empty{display:none}
+.voix-more{display:flex; flex-direction:column; gap:var(--sp-xs); width:100%}
+.voix-meter{position:relative; height:8px; width:100%; max-width:220px; border:1px solid var(--ink); --lv:0%; --th:50%}
+.voix-meter i{position:absolute; inset:0 auto 0 0; width:var(--lv); background:var(--ink); opacity:.55; transition:width .04s linear}
+.voix-meter b{position:absolute; top:-3px; bottom:-3px; left:var(--th); width:2px; background:var(--rubric)}
+.voix-meter.on i{background:var(--rubric); opacity:.9}
+.enchbox select{margin-bottom:var(--sp-xs)}
+.enchbox .hint:empty,.telebox .hint:empty{display:none}
+.tele-row{display:flex; gap:var(--sp-xs); align-items:flex-start; font-size:.9rem; line-height:1.3}
+.tele-row input{margin-top:.2em}
 .capbox .btn[aria-pressed="true"]{background:var(--rubric); color:var(--parch); border-color:var(--rubric)}
 
 /* ---------- affectus : table des émotions des gammes et des tonalités ---------- */

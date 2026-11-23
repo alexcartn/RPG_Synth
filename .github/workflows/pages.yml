@@ -39,6 +39,10 @@ jobs:
           cp -r index.html studio.html manifest.webmanifest sw.js css js fonts icons _site/
           rm -f _site/icons/*.svg
           sed -i "s/__VERSION__/${GITHUB_SHA::7}/" _site/sw.js
+          # module Foundry VTT : son manifeste et son archive, installables par l'adresse du manifeste
+          mkdir -p _site/foundry
+          cp foundry/bourdon/module.json _site/foundry/module.json
+          (cd foundry && zip -qr ../_site/foundry/bourdon.zip bourdon)
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

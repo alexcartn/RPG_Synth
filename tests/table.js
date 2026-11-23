@@ -96,6 +96,47 @@ setTimeout(async()=>{
   ck(w.eval(`${JSON.stringify(nouv)}.every(n=>UNIVERS.find(u=>u.id==="dungeon").items.some(i=>i[0]===n))`),'sept écoles du genre dans l\'univers Dungeon synth');
   ck(w.eval(`${JSON.stringify(nouv)}.every(n=>{ const p=PRESETS.find(x=>x[0]===n)[1]; return p.norm!==0; })`),'chacune a son gain de sonie mesuré');
   for(const n of nouv){ const c=w.eval(`(()=>{ const p=PRESETS.find(x=>x[0]===${JSON.stringify(n)}); const e=buildEngine(new AudioContext(),merge(clone(DEFAULT),clone(p[1])),{record:true}); e.start(0,0,0); e.schedule(90); return e.events.length; })()`); ck(c>20,n+' joue ('+c+' notes en 90 s)'); }
+  /* 7. tension harmonique */
+  console.log('tension harmonique');
+  const th=w.eval(`(()=>{ const fifths=r=>{ for(let j=0;j<12;j++){ if(((Math.round(r)-7*j)%12+12)%12===0||((Math.round(r)+7*j)%12+12)%12===0) return j; } return 6; };
+    const run=(tens,tm)=>{ let d=0,n=0,sev=0; for(const sd of [3,5,8]){ const Sx=merge(clone(DEFAULT),{seed:sd,tension:tens,scales:["dorien","",""],mus:{harm:"libre",tharm:tm},pad:{lvl:0.4,voices:3}}); const e=buildEngine(new AudioContext(),Sx,{record:true}); e.start(0,0,0); e.schedule(300);
+      e.chords().forEach(c=>{ const r=c.root!==undefined?c.root:c.iv[c.d%c.iv.length]; d+=fifths(r); n++; if(c.offs.length>=4) sev++; }); } return {dist:d/n, sept:sev/n}; };
+    return {calme:run(0.1,0.8), tendu:run(0.9,0.8), sans:run(0.9,0)}; })()`);
+  console.log('  ',JSON.stringify(th));
+  ck(th.tendu.dist>th.calme.dist+0.4,'en tension, les accords s\'éloignent de la tonique (quintes)');
+  ck(th.tendu.sept>0.9&&th.calme.sept===0,'la tension ajoute la septième, le calme s\'en passe');
+  ck(Math.abs(th.sans.dist-w.eval(`(()=>{ const fifths=r=>{ for(let j=0;j<12;j++){ if(((Math.round(r)-7*j)%12+12)%12===0||((Math.round(r)+7*j)%12+12)%12===0) return j; } return 6; }; let d=0,n=0; for(const sd of [3,5,8]){ const Sx=merge(clone(DEFAULT),{seed:sd,tension:0.5,scales:["dorien","",""],mus:{harm:"libre",tharm:0},pad:{lvl:0.4,voices:3}}); const e=buildEngine(new AudioContext(),Sx,{record:true}); e.start(0,0,0); e.schedule(300); e.chords().forEach(c=>{ d+=fifths(c.iv[c.d%c.iv.length]); n++; }); } return d/n; })()`))<1e-9,'à zéro, la tension ne touche plus l\'harmonie');
+  /* 8. harmonie de cinéma */
+  console.log('harmonie de cinéma');
+  const ci=w.eval(`(()=>{ const out={};
+    for(const k of ["merveilleux","menace","off"]){ let ch=0,tot=0,mIn=0,mN=0; const names={};
+      for(const sd of [2,4,6]){ const Sx=merge(clone(DEFAULT),{seed:sd,tension:0.5,scales:["ionien","",""],mus:{cine:k,cineAmt:0.6},mel:{lvl:0.6,dens:0.8},pad:{lvl:0.4}}); const e=buildEngine(new AudioContext(),Sx,{record:true}); e.start(0,0,0); e.schedule(240);
+        const cs=e.chords(); cs.forEach(c=>{ tot++; if(c.chrom){ ch++; names[c.name]=(names[c.name]||0)+1; } });
+        e.events.filter(x=>x.tr===0).forEach(x=>{ let c=null; for(const z of cs){ if(z.t<=x.t+0.001) c=z; else break; } if(c&&c.chrom){ mN++; const pcs=c.offs.map(o=>((o%12)+12)%12); if(pcs.some(p=>Math.abs(p-(((x.off%12)+12)%12))<0.3)) mIn++; } }); }
+      out[k]={part:ch/tot, mel:mN?mIn/mN:1, noms:names}; }
+    return out; })()`);
+  console.log('  ',JSON.stringify(ci));
+  ck(ci.merveilleux.part>0.08&&ci.menace.part>0.08,'des accords hors de la gamme apparaissent');
+  ck(ci.off.part===0,'sans harmonie de cinéma, aucun');
+  ck(ci.merveilleux.mel>=0.95&&ci.menace.mel>=0.95,'la mélodie se pose sur leurs notes');
+  /* 9. geste surprise */
+  console.log('surprise');
+  w.eval('if(!live) startLive()'); await sleep(200);
+  ck(w.eval('live.eng.gesture("surprise",1)')>0,'le geste Surprise joue');
+  ck(!!d.querySelector('#jeuGest [data-g="surprise"]'),'il a son bouton dans Conduire');
+  /* 10. banc d'écoute */
+  console.log('banc d\'écoute');
+  ck(Math.abs(w.eval('signTest(9,10)')-0.02148)<0.001&&w.eval('signTest(5,10)')===1,'test du signe juste (9 sur 10 : p = 0,021)');
+  d.getElementById('seancePorte').click(); d.getElementById('seanceDistrait').click();
+  const se=w.eval('bancLoad("bourdon.seance")'); ck(se.length===2&&se[0].note==='porte'&&se[0].scene!==undefined,'notes en séance enregistrées avec la scène');
+  w.eval('bancOpen(true)'); d.getElementById('bancF').value='cine'; d.getElementById('bancP').value='Vigilia';
+  await w.eval('bancPrepare()');
+  ck(w.eval('!!BANC.trial&&BANC.trial.preset==="Vigilia"'),'un essai se prépare (deux rendus, même graine)');
+  d.getElementById('bancNA').value='4'; d.getElementById('bancNB').value='2'; d.querySelector('input[name="bancPref"][value="A"]').checked=true;
+  w.eval('bancValidate()');
+  const es=w.eval('bancLoad("bourdon.banc")'); ck(es.length===1&&es[0].pref===es[0].A&&es[0].notes[es[0].A]===4,'l\'essai est gardé, avec ce qu\'étaient A et B');
+  ck(/Bilan/.test(d.getElementById('bancRes').textContent),'le bilan s\'affiche');
+  w.eval('bancOpen(false)');
   w.eval('stopLive()');
  }catch(e){ console.log('EXCEPTION',e&&e.stack||e); fail++; }
  console.log('ERREURS',errs.length?errs:'aucune');

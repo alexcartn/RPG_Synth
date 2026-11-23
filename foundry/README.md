@@ -27,7 +27,7 @@ Le module expose `game.bourdon` :
 game.bourdon.ambiance("Crypta");             // change d'ambiance et lance la lecture
 game.bourdon.emotions(["inquiétant"], "dark"); // part d'émotions, dans un univers
 game.bourdon.tension(0.9);
-game.bourdon.geste("suspense");               // suspense, revelation, apaisement, danger, poursuite, triomphe
+game.bourdon.geste("suspense");               // suspense, revelation, apaisement, surprise, danger, poursuite, triomphe
 game.bourdon.sousLaVoix(true);                // la musique passe sous la voix du meneur
 game.bourdon.volume(0.6);
 game.bourdon.arreter();

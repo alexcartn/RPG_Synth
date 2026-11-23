@@ -173,6 +173,9 @@ function affStart(pr){
     { const rv=base(over.fx.rev)===null?D.fx.rev:over.fx.rev; over.fx.rev=r2(cl(rv+0.3*d("esp"),0,1)); }
     /* tension : nervosité et dissonance, d'après l'indice de tension et l'éveil */
     over.tension=r2(cl(0.6*c.tens+0.4*c.a,0.1,0.9));
+    /* harmonie de cinéma : l'émerveillement appelle les médiantes chromatiques, la menace le pôle hexatonique (Lehman) */
+    { const wM=["féerique","majestueux","héroïque"].filter(e=>sel.includes(e)).length, wN=["inquiétant","tragique","fataliste","étrange"].filter(e=>sel.includes(e)).length;
+      over.mus=over.mus||{}; if(!over.mus.cine||over.mus.cine==="off"){ if(wM>wN) over.mus.cine="merveilleux"; else if(wN>wM) over.mus.cine="menace"; } }
   }
   loadScene(over,null,undefined,{name:pr.preset[0],gloss:pr.preset[2],univ:seekUni()});
   const g=$("presetGloss"); if(g) g.textContent="";

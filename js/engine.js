@@ -1366,15 +1366,29 @@ function buildEngine(ctx, S, o){
   const tonicIx=(pool,i)=>{ let best=i,bd=1e9; pool.forEach((p,j)=>{ if(((p%12)+12)%12===0){ const d=Math.abs(j-i); if(d<bd){bd=d;best=j;} } }); return best; };
   let idiomProg=null; const chordTl=[]; let chordEnd=-1, cpos=0, lastDeg=0, holdDeg=null, prevVoicing=null;
   /* progression en cycles de quatre accords : retour à la tonique, un accord libre, un accord de préparation (sous-tonique, dominante ou sous-dominante), puis la tonique */
-  function nextDegree(n,key){
+  /* tension harmonique (Lerdahl, Tonal Pitch Space ; Lerdahl et Krumhansl, 2007) : la distance d'un accord à la tonique,
+     approchée par le nombre de quintes qui sépare leurs fondamentales, plus un pas si la couleur change, deux si l'accord est diminué.
+     Quand la tension monte, les accords lointains sont préférés ; quand elle descend, ceux qui restent près de la tonique. */
+  const tharmE=()=>clamp(S.mus&&S.mus.tharm!==undefined?S.mus.tharm:0.6,0,1);
+  function chordDist(iv,d){
+    const r=pcOf(degOff(iv,d)), q3=degOff(iv,d+2)-degOff(iv,d), q5=degOff(iv,d+4)-degOff(iv,d), t3=degOff(iv,2)-degOff(iv,0);
+    let k=0; for(let j=0;j<12;j++){ if(pcOf(Math.round(r)-7*j)===0||pcOf(Math.round(r)+7*j)===0){ k=j; break; } }
+    return 2.2*k+(Math.abs(q3-t3)>0.6?1:0)+(Math.abs(q5-7)>0.6?2:0);
+  }
+  let deceive=false;
+  function nextDegree(n,key,t){
     if(holdDeg!==null) return holdDeg%n;
+    const th=(tensAt(t===undefined?t0:t)-0.5)*2*tharmE(), ivK=ivOf(S,key);
+    /* cadence évitée (geste Surprise) : le prochain retour à la tonique est remplacé par le sixième degré */
+    if(deceive&&cpos%4===0){ deceive=false; cpos++; lastDeg=Math.round(n*5/7)%n; return lastDeg; }
     { const F=formE(); if(F==="passacaille"){ const g=[0,n-1,Math.round(n*5/7)%n,Math.round(n*4/7)%n]; lastDeg=g[cpos++%4]; return lastDeg; } if(F==="ostinato"){ const p=cpos++%4; lastDeg=p===3?Math.round(n*4/7)%n:0; return lastDeg; } }
-    if(n===7&&IDIOM[key]&&formE()==="libre"&&harmE()==="idiome"){ const ip=cpos%4, vs=IDIOM[key]; if(ip===0||!idiomProg) idiomProg=vs[Math.floor(R.s()*vs.length)]; if(R.s()<0.62){ cpos++; lastDeg=idiomProg[ip]; return lastDeg; } }
+    if(n===7&&IDIOM[key]&&formE()==="libre"&&harmE()==="idiome"){ const ip=cpos%4, vs=IDIOM[key]; if(ip===0||!idiomProg) idiomProg=vs[Math.floor(R.s()*vs.length)]; if(R.s()<0.62*(1-0.5*Math.max(0,th))){ cpos++; lastDeg=idiomProg[ip]; return lastDeg; } }
     const pos=cpos++%4, s4=Math.round(n*3/7)%n, s5=Math.round(n*4/7)%n, sub=n-1, vi=Math.round(n*5/7)%n, mot=clamp(S.pad.motion,0,1);
-    const pick=(cands)=>{ const tot=cands.reduce((a,c)=>a+c[1],0); let r=R.s()*tot; for(const [d,w] of cands){ r-=w; if(r<=0) return d; } return cands[0][0]; };
+    const tw=d=>th===0?1:Math.exp(th*(chordDist(ivK,d)-4)/4);
+    const pick=(cands)=>{ cands=cands.map(([d,w])=>[d,w*tw(d)]); const tot=cands.reduce((a,c)=>a+c[1],0); let r=R.s()*tot; for(const [d,w] of cands){ r-=w; if(r<=0) return d; } return cands[0][0]; };
     let d;
     if(pos===0) d=0;
-    else if(pos===3) d=pick([[sub,1.0],[s5,0.8],[s4,0.5]]);
+    else if(pos===3) d=pick([[sub,1.0],[s5,0.8*(1+Math.max(0,th))],[s4,0.5]]);
     else{
       const w=0.3+0.7*mot;
       d=pick([[0,0.3+(1-mot)*1.2],[s4,1.4*w],[sub,1.2*w],[vi,1.0*w],[s5,0.9*w],[2%n,0.6*w],[1%n,0.4*w]].filter(c=>c[0]!==lastDeg||c[0]===0));
@@ -1382,8 +1396,13 @@ function buildEngine(ctx, S, o){
     lastDeg=d; return d;
   }
   /* conduite des voix : chaque voix va vers la note de l'accord la plus proche de la précédente */
-  function voice(iv,d,vc){
-    const tones=[degOff(iv,d),degOff(iv,d+2),degOff(iv,d+4),degOff(iv,d+6)], pcs=tones.map(x=>((x%12)+12)%12);
+  function voice(iv,d,vc,soft){
+    const tones=[degOff(iv,d),degOff(iv,d+2),degOff(iv,d+4),degOff(iv,d+6)];
+    if(soft) tones[3]=tones[0]+12; /* tension basse : l'octave à la place de la septième */
+    return voiceTones(tones,vc);
+  }
+  function voiceTones(tones,vc){
+    const pcs=tones.map(x=>((x%12)+12)%12);
     if(!prevVoicing||!prevVoicing.length) return tones.slice(0,vc).map(x=>x+12);
     const cand=[]; pcs.forEach((pc,j)=>{ for(let k=0;k<5;k++){ const x=pc+12*k; if(x>=10&&x<=44) cand.push({x,j}); } });
     const used=new Set(), out=[], usedPc=new Set();
@@ -1394,14 +1413,46 @@ function buildEngine(ctx, S, o){
     for(let j=0;out.length<vc&&j<4;j++){ if(!usedPc.has(j)) out.push(tones[j]+12); }
     return out.sort((a,b)=>a-b);
   }
+  /* harmonie de cinéma (Lehman, Hollywood Harmony, 2018 ; Cohn, Audacious Euphony, 2012) : de temps en temps, sur la deuxième moitié
+     du cycle d'accords, un accord hors de la gamme relié au précédent par une transformation qui garde des notes communes.
+     Merveilleux : médiantes chromatiques majeures (bVI, III, bIII, VI) et le majeur sur la même fondamentale (P).
+     Menace : le mineur sur la même fondamentale (P), le pôle hexatonique (mineur une tierce majeure plus bas), le triton mineur.
+     La mélodie, les boucles et les pendules se posent alors sur les notes de cet accord. Tirage à part : sans cinéma, rien ne change. */
+  const RCINE=mulberry32((seed^0xC1E3A)>>>0);
+  const cineE=t=>{ const c=S.mus&&S.mus.cine; if(!c||c==="off") return null; if(c==="tension"){ const th=tensAt(t); return th>0.6?"menace":th<0.45?"merveilleux":null; } return c; };
+  function cineChord(t,iv,d,vc){
+    const kind=cineE(t); if(!kind||holdDeg!==null) return null;
+    const pos=(cpos-1+4)%4, amt=clamp(S.mus.cineAmt===undefined?0.3:S.mus.cineAmt,0,1), r1=RCINE(), r2=RCINE();
+    if(pos<2||r1>=amt*0.8) return null; /* à 0,3 (défaut), un accord sur huit environ */
+    const pr=Math.round(degOff(iv,d)), maj=Math.abs(degOff(iv,d+2)-degOff(iv,d)-4)<0.6;
+    const opts=kind==="merveilleux"
+      ? (maj?[[8,1,"bVI"],[4,1,"III"],[3,1,"bIII"],[9,1,"VI"]]:[[0,1,"P"],[8,1,"bVI"],[4,1,"III"]])
+      : (maj?[[0,0,"P"],[8,0,"pôle"],[6,0,"triton"]]:[[8,0,"pôle"],[6,0,"triton"],[4,0,"médiante"]]);
+    const inScale=x=>iv.some(y=>Math.abs(pcOf(y)-pcOf(x))<0.3);
+    const cand=opts.map(([sh,mj,nm])=>{ const r=pcOf(pr+sh), tones=[r,r+(mj?4:3),r+7]; return {r,tones,nm,out:tones.some(x=>!inScale(x))}; }).filter(c=>c.out);
+    if(!cand.length) return null;
+    const c=cand[Math.floor(r2*cand.length)], tones=[c.tones[0],c.tones[1],c.tones[2],c.tones[0]+12];
+    return {offs:voiceTones(tones,vc),root:c.r,name:c.nm};
+  }
+  /* pendant un accord de cinéma, une note étrangère à l'accord glisse vers la note de l'accord la plus proche */
+  function chromFix(off,t,prev){ const ch=chordAt(t); if(!ch||!ch.chrom) return off; const pcs=chordPcs(ch), pc=pcOf(off); if(pcs.some(p=>Math.abs(p-pc)<0.3)) return off;
+    /* la plus proche note de l'accord, mais pas la note qu'on vient de jouer : sinon deux voisines se confondent en unisson */
+    const c=[]; for(let dx=-5;dx<=5;dx++){ if(dx===0) continue; const x=Math.round(off)+dx; if(pcs.some(p=>Math.abs(p-pcOf(x))<0.3)) c.push(x); }
+    c.sort((a,b)=>Math.abs(a-off)-Math.abs(b-off)); const ok=c.filter(x=>prev===undefined||Math.abs(x-prev)>0.3); return ok.length?ok[0]:(c[0]===undefined?off:c[0]); }
   function ensureChords(until){
     if(chordEnd<0) chordEnd=t0;
     while(chordEnd<until){
       const t=chordEnd, iv=ivOf(S,secOf(t).key), n=iv.length, stg=clamp(S.pad.stag===undefined?0.5:S.pad.stag,0,1), nb0=Math.max(1,Math.round(S.pad.len*(rcAt(t)<0.45?1+Math.round((0.45-rcAt(t))*5):1))), nb=ambE()*stg>0.05&&R.s()<ambE()*stg*0.6?[Math.max(1,Math.round(nb0/2)),nb0,nb0+1,nb0*2][Math.floor(R.s()*4)]:nb0, len=nb*bar, vc=clamp(Math.round(S.pad.voices),2,o.lite?3:4);
       let dRaw, offs;
-      if(modal()){ dRaw=nextDegree(n,secOf(t).key); { const k1=R.k(), k2=R.k(); if(k1<(((S.chance||{}).mutate)||0)*0.6) dRaw=Math.floor(k2*n); } offs=voice(iv,dRaw%n,vc); prevVoicing=offs; }
+      let extra=null;
+      if(modal()){ dRaw=nextDegree(n,secOf(t).key,t); { const k1=R.k(), k2=R.k(); if(k1<(((S.chance||{}).mutate)||0)*0.6) dRaw=Math.floor(k2*n); }
+        /* couleur : la tension ajoute la septième, le calme la remplace par l'octave */
+        const th=tensAt(t), tm=tharmE(), vcx=(th>0.65&&tm>0.2)?Math.max(vc,o.lite?3:4):vc, soft=th<0.3&&tm>0.2;
+        offs=voice(iv,dRaw%n,vcx,soft);
+        extra=cineChord(t,iv,dRaw%n,vcx); if(extra) offs=extra.offs;
+        prevVoicing=offs; }
       else{ dRaw=recall(memP,nChord++,Math.max(1,Math.round(S.pad.loop)),S.pad.deja,R.s,()=>(R.s()<0.35+0.4*(1-S.pad.motion))?0:Math.floor(R.s()*n)); const d=dRaw%n; offs=[degOff(iv,d),degOff(iv,d+2),degOff(iv,d+4),degOff(iv,d+6)].slice(0,vc).map(x=>x+12); }
-      chordTl.push({t,len,d:dRaw,iv,offs,sched:false}); chordEnd=t+len;
+      chordTl.push(extra?{t,len,d:dRaw,iv,offs,sched:false,chrom:true,root:extra.root,name:extra.name}:{t,len,d:dRaw,iv,offs,sched:false}); chordEnd=t+len;
     }
     if(chordTl.length>80) chordTl.splice(0,chordTl.length-60);
   }
@@ -1675,6 +1726,7 @@ function buildEngine(ctx, S, o){
         if(cMut<(C.mutate||0)){ const ci=Math.max(0,pool.indexOf(nearest(pool,off))); off=pool[clamp(ci+(cDir<0.5?-1:1)*(cMag<0.3?2:1),0,pool.length-1)]; }
         if(cOct<(C.octave||0)){ const up=off+12<=pool[pool.length-1], dn=off-12>=pool[0]; if(up&&(cOd<0.5||!dn)) off+=12; else if(dn) off-=12; }
         const skipped=cSkip<(C.skip||0), rat=cRat<(C.ratchet||0)?2+Math.floor(cRn*2):1;
+        off=chromFix(off,onsets[ni],ni>0?lastOff.v:undefined);
         const tt=onsets[ni], vel=nt.vel, len=Math.max(0.05,Math.min(E*nt.dE*0.92,ni+1<onsets.length?onsets[ni+1]-tt-0.02:1e9));
         if(!skipped&&want("mel")&&S.mel.lvl>0.001){
           const fn=instOf(S.mel.inst,"luth");
@@ -1805,14 +1857,14 @@ function buildEngine(ctx, S, o){
         const put=(t,len,off)=>{ padVoice(t,len,freq(off),S.pad.timbre); rec(2,t,off,len,0.3); if(o.onNote) o.onNote(t,off,"pad",len,0.3); };
         vs.forEach((off,i)=>{
           /* chaque voix entre à son tour ; la voix du milieu change parfois de note en cours d'accord */
-          const dl=qb(stg*ch.len*0.3*(i+R.s()*0.6)/Math.max(1,vs.length-1)), len=Math.max(bar*0.5,ch.len-dl+(R.s()<stg*0.5?bar:0)), mid=i>0&&i<vs.length-1&&R.s()<stg*0.7;
+          const dl=qb(stg*ch.len*0.3*(i+R.s()*0.6)/Math.max(1,vs.length-1)), len=Math.max(bar*0.5,ch.len-dl+(R.s()<stg*0.5?bar:0)), mid=i>0&&i<vs.length-1&&R.s()<stg*0.7&&!ch.chrom;
           if(mid){ const j=ch.iv.map(x=>x+12*Math.round((off-x)/12)).sort((a,b)=>Math.abs(a-off)-Math.abs(b-off)), nb=j.find(x=>x!==off&&Math.abs(x-off)<=3), cut=Math.max(beat,qb(len*(0.4+0.25*R.s()))); if(nb!==undefined&&cut<len-beat/2&&!vs.includes(nb)){ put(ch.t+dl,cut,off); put(ch.t+dl+cut,len-cut,nb); return; } }
           put(ch.t+dl,len,off);
         });
         if(bs>0.02){
           /* octave au-dessus du bourdon (ou dans son registre, sous lui, pour la basse ronde du dungeon synth) ;
              muette quand sa fondamentale frotte contre un bourdon qui sonne (seconde ou septième de la tonique, demi-ton de la quinte) */
-          const root=ch.iv[ch.d%n]||0, pc=pcOf(root), dist=x=>{ const d=Math.abs(pcOf(pc-x)); return Math.min(d,12-d); }, droneOn=S.drone.lvl>0.01, rub=droneOn&&((dist(0)>0&&dist(0)<=2)||(dist(7)>0&&dist(7)<=1)), bo=S.pad.bassOct===0?pc-(S.root+pc>=12?12:0):pc+12; /* grave : toujours entre Do2 et Si2 (65 à 123 Hz), quelle que soit la tonique */
+          const root=ch.root!==undefined?ch.root:(ch.iv[ch.d%n]||0), pc=pcOf(root), dist=x=>{ const d=Math.abs(pcOf(pc-x)); return Math.min(d,12-d); }, droneOn=S.drone.lvl>0.01, rub=droneOn&&((dist(0)>0&&dist(0)<=2)||(dist(7)>0&&dist(7)<=1)), bo=S.pad.bassOct===0?pc-(S.root+pc>=12?12:0):pc+12; /* grave : toujours entre Do2 et Si2 (65 à 123 Hz), quelle que soit la tonique */
           if(!rub){ padVoice(ch.t,ch.len,freq(bo),S.pad.timbre,(0.5+bs)*(S.pad.bassOct===0?3.2:1)); rec(2,ch.t,bo,ch.len,0.3*bs,"bass"); if(o.onNote) o.onNote(ch.t,bo,"pad",ch.len,0.3*bs); }
         }
       }
@@ -1835,7 +1887,7 @@ function buildEngine(ctx, S, o){
         while(lp.next<until){
           const tt=lp.next, iv=ivOf(S,secOf(tt).key), th=FS.theme[0]&&FS.theme[0].notes, li=loopsL.indexOf(lp);
           /* quand un thème existe, chaque boucle en porte une note : le thème se recompose tout seul, à la manière d'Eno */
-          const off=(th&&th.length)?th[(li*2)%th.length].off+12*(lp.oct-1):degOff(iv,lp.deg)+12*lp.oct, vel=lp.vel*(0.85+0.3*R.l());
+          const off=chromFix((th&&th.length)?th[(li*2)%th.length].off+12*(lp.oct-1):degOff(iv,lp.deg)+12*lp.oct,tt), vel=lp.vel*(0.85+0.3*R.l());
           if(R.l()>=(((S.chance||{}).skip)||0)*1.5){
           fn(tt,freq(off),vel,E*10,V.loops.node,lp.pan);
           rec(3,tt,off,E*10,vel);
@@ -2064,6 +2116,19 @@ function buildEngine(ctx, S, o){
       len=bar*(2+2*A); ramp(B.perc.gs.gain,0.05,now,0.5); ramp(B.mel.gs.gain,0.35,now,0.5); ramp(B.pad.gs.gain,1+0.3*A,tq,1.4); ramp(B.drone.gs.gain,1+0.2*A,tq,1.4);
       chord(tq,len,[deg(0),deg(4),deg(0)+12,deg(2)+12]); note(tq+bar,deg(0)+12,0.12,E*10);
       back(["perc","mel","pad","drone"],tq+len);
+    }else if(name==="surprise"){
+      /* surprise (l'attente déjouée de Huron, Sweet Anticipation) : un silence brusque d'un ou deux temps, puis un accord qu'on n'attendait pas,
+         hors de la gamme (médiante chromatique en calme, pôle hexatonique en tension), frappé fort ; la cadence suivante est évitée */
+      const gap=E*2*(big?2:1), ts=tq+gap, th=tensAt(tq), r0=0, dark=th>0.6;
+      len=gap+bar*(1+A);
+      ["mel","pad","perc","drone"].forEach(k=>{ const g=B[k].gs.gain; g.cancelScheduledValues(Math.max(now,tq-0.001)); g.setTargetAtTime(0.0001,tq,0.015); });
+      const root=dark?r0-4:r0-4, tones=dark?[root,root+3,root+7]:[root,root+4,root+7];
+      const tim=S.pad.timbre||"cordes";
+      [tones[0]+12,tones[1]+12,tones[2]+12,tones[0]+24].concat(big?[tones[2]+24]:[]).forEach((x,j)=>bank.pad(tim,ts+j*0.012,bar*(1+A),freq(x),B.play.in,1+0.3*A));
+      bank.perc("taiko","stomp",ts,0.5+0.25*A,B.play.in);
+      note(ts,tones[0]-12,0.28,E*6); if(big) brass(ts,tones[2]+12,0.24,E*6);
+      deceive=true;
+      ["mel","pad","perc","drone"].forEach(k=>ramp(B[k].gs.gain,1,ts+bar*0.5,0.6));
     }else return 0;
     return len;
   }

@@ -31,7 +31,7 @@ function teleRun(m){
   return {ok:false, erreur:"ordre inconnu : "+c};
 }
 const teleState=()=>({joue:!!live, ambiance:(typeof SCENE!=="undefined"&&SCENE.name)||"", univers:(typeof seekUni==="function"?seekUni():""), tension:S.tension, sousLaVoix:!!(typeof VOIX!=="undefined"&&VOIX.under),
-  ambiances:PRESETS.map(p=>p[0]), emotions:EMOTIONS.slice(), gestes:["suspense","revelation","apaisement","danger","poursuite","triomphe"]});
+  ambiances:PRESETS.map(p=>p[0]), emotions:EMOTIONS.slice(), gestes:["suspense","revelation","apaisement","surprise","danger","poursuite","triomphe"]});
 /* le navigateur refuse le son tant qu'on n'a pas cliqué dans la page : on le dit, avec un bouton */
 function teleSound(){
   const n=$("teleNote"); if(!live||!n) return;
@@ -40,7 +40,9 @@ function teleSound(){
 window.addEventListener("message",e=>{
   const m=e.data; if(!m||typeof m!=="object"||m.bourdon!==1||!m.cmd) return;
   if(!TELE.on) return;
-  if(!e.source||!((window.opener&&e.source===window.opener)||(window.parent!==window&&e.source===window.parent))) return; /* seulement la fenêtre qui nous a ouverts, ou la page qui nous intègre */
+  /* seulement la fenêtre qui nous a ouverts, la page qui nous intègre, ou une page de notre propre site (l'extension Owlbear Rodeo y est publiée) */
+  const sameSite=e.origin===location.origin&&location.origin!=="null"&&e.source!==window;
+  if(!e.source||!(sameSite||(window.opener&&e.source===window.opener)||(window.parent!==window&&e.source===window.parent))) return;
   let r; try{ r=teleRun(m); }catch(x){ r={ok:false, erreur:String(x&&x.message||x)}; }
   TELE.from=e.origin; TELE.n++; teleUI();
   try{ e.source.postMessage({bourdon:1, re:m.id===undefined?null:m.id, cmd:m.cmd, ...r, etat:teleState()}, e.origin==="null"?"*":e.origin); }catch(x){}

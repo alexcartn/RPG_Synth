@@ -3,7 +3,7 @@
    La musique sonne sur l'ordinateur du meneur : à la table, c'est ce qu'on veut ; en ligne, partager le son par le logiciel de voix. */
 const MOD = "bourdon";
 const t = (k, d) => (game.i18n?.has?.(`BOURDON.${k}`) ? game.i18n.localize(`BOURDON.${k}`) : d);
-const GESTES = { aucun: "—", suspense: "Suspense", revelation: "Révélation", apaisement: "Apaisement", danger: "Danger", poursuite: "Poursuite", triomphe: "Triomphe" };
+const GESTES = { aucun: "—", suspense: "Suspense", revelation: "Révélation", apaisement: "Apaisement", surprise: "Surprise", danger: "Danger", poursuite: "Poursuite", triomphe: "Triomphe" };
 
 const Bourdon = {
   win: null, ready: false, queue: [], id: 0, state: null,

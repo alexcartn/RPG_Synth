@@ -115,7 +115,7 @@ const DEFAULT = {
   mach:true,
   daw:{sel:0, grid:1, rec:-1, arp:{on:false, mode:"up", rate:0.5, oct:2, gate:0.7}, mix:{mute:{}, solo:{}, pan:{}}, tracks:[]},
   syn:clone(SYN_DEFAULT),
-  mus:{logic:"modal", model:"physique", form:"libre", color:"off", harm:"idiome", arc:"aucun", crit:0.6, mode:"veillee"},
+  mus:{logic:"modal", model:"physique", form:"libre", color:"off", harm:"idiome", arc:"aucun", crit:0.6, mode:"veillee", tharm:0.6, cine:"off", cineAmt:0.3},
   rc:0.5, tex:{lvl:1, sub:0, mid:0, air:0}, chant:"kyrie", plain:{lvl:0, reg:1, slow:1.5},
   car:{grav:0.5, aud:0.5, orn:0.5, sil:0.5, rep:0.5},
   chance:{skip:0.08, ratchet:0.07, mutate:0.12, octave:0.05, rest:0.08},
@@ -547,6 +547,9 @@ const AMBIANCE={
   Machina:{g:"l'usine la nuit : les machines qui tournent seules", o:{rc:0.4, tempo:92, mel:{lvl:0.4, dens:0.4}, perc:{lvl:0.45, shaker:0.4, ghost:0.2}, loops:{lvl:0.3}, fx:{rev:0.35, size:2.5}}},
   Castellum:{g:"le château la nuit : l'orgue, une harpe, la garde qui veille", o:{rc:0.5, tempo:72, perc:{lvl:0.15, shaker:0, ghost:0}, mel:{dens:0.35}}}
 };
+/* harmonie de cinéma : le merveilleux dans la féerie et les montagnes, la menace dans l'horreur et les royaumes d'ombre */
+const PRESET_CINE={"Sylva Magica":"merveilleux","Fata":"merveilleux","Aula Fatarum":"merveilleux","Nix Aeterna":"merveilleux","Montagne":"merveilleux","Memoria":"merveilleux",
+  "Domus Obscura":"menace","Larva":"menace","Sacrificium":"menace","Regnum Umbrae":"menace","Spiritus Antiquus":"menace","Custos":"tension","Agmen Umbrarum":"tension"};
 /* les bêtes de chaque ambiance */
 const PRESET_BEASTS={Nox:{grenouilles:0.4, hibou:0.35}, Pluvia:{grenouilles:0.3}, Silva:{corbeaux:0.12}, Mare:{mouettes:0.3}, "Domus Obscura":{corbeaux:0.2, loup:0.12}, Crypta:{corbeaux:0.1},
   Larva:{hibou:0.2}, Fjordus:{loup:0.2}, Skalda:{loup:0.12}, Bellum:{chevaux:0.2}, Hiems:{loup:0.2}, "Silva Antiqua":{hibou:0.15}, Iter:{chevaux:0.15}, Insidiae:{corbeaux:0.15, hibou:0.15},
@@ -569,6 +572,7 @@ const PRESET_NUEE={"Vacuum":{lvl:0.35,mat:"souffle",dens:0.3,vie:0.7,grav:0.15,h
 UNIVERS.forEach(u=>u.items.forEach(it=>{ const n=PRESET_NUEE[it[0]]; if(n) it[1].nuee=Object.assign({},DEFAULT.nuee,n); }));
 const PRESET_BILLE={"Glacies":{lvl:0.32,inst:"verre",count:2,haut:2,rebond:0.82,pause:1.5}, "Sylva Magica":{lvl:0.3,inst:"kalimba",count:4,haut:1,rebond:0.74}, "Nebula":{lvl:0.28,inst:"fmcloche",count:3,haut:1.5,rebond:0.8,pause:2}, "Meditatio":{lvl:0.25,inst:"kalimba",count:2,haut:2.5,rebond:0.85,pause:2,mode:"descend"}};
 UNIVERS.forEach(u=>u.items.forEach(it=>{ const b=PRESET_BILLE[it[0]]; if(b) it[1].bille=Object.assign({},DEFAULT.bille,b); }));
+UNIVERS.forEach(u=>u.items.forEach(it=>{ const c=PRESET_CINE[it[0]]; if(c){ it[1].mus=Object.assign({},it[1].mus||{},{cine:c}); } }));
 /* liste à plat des préréglages */
 const PRESETS = UNIVERS.flatMap(u=>u.items.map(([n,s,g])=>[n,s,g,u.id]));
 function clone(o){return JSON.parse(JSON.stringify(o));}

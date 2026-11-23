@@ -378,6 +378,9 @@ const UI=[
    {k:"mus.logic",type:"select",label:"Logique musicale",opts:[["modal","Modale : la mélodie suit les accords"],["hasard","Hasard (ancienne version)"]]},
    {k:"mus.harm",type:"select",label:"Harmonie",opts:[["idiome","Idiomatique : les progressions typiques de chaque mode"],["libre","Libre : accords pondérés par le mode"]]},
    {k:"mus.color",type:"select",label:"Couleur du mode",opts:[["off","Fixe : les gammes choisies"],["tension","Suit la tension (du lydien au locrien)"],["meteo","Suit la météo du lieu"],["les deux","Tension et météo"]]},
+   {k:"mus.tharm",type:"range",label:"Tension harmonique",min:0,max:1,step:0.01,fmt:pct,hint:"La tension choisit aussi les accords : quand elle monte, la machine s'éloigne de la tonique (accords lointains, septièmes) ; quand elle descend, elle reste près d'elle (triades, octaves). D'après l'espace des hauteurs de Lerdahl. À zéro, la tension ne touche plus l'harmonie."},
+   {k:"mus.cine",type:"select",label:"Harmonie de cinéma",opts:[["off","Aucune : les accords de la gamme"],["merveilleux","Merveilleux : médiantes chromatiques"],["menace","Menace : pôle hexatonique, triton"],["tension","Selon la tension"]],hint:"De temps en temps, un accord hors de la gamme, relié au précédent par une note commune, comme au cinéma : bVI ou III majeurs pour l'émerveillement, mineur une tierce majeure plus bas ou au triton pour la menace. La mélodie se pose alors sur ses notes."},
+   {k:"mus.cineAmt",type:"range",label:"Fréquence des accords de cinéma",min:0,max:1,step:0.01,fmt:pct},
    {k:"mus.crit",type:"range",label:"Exigence : la machine tire plusieurs phrases et garde la meilleure",min:0,max:1,step:0.01,fmt:pct}]},
   {h:"Caractère de la mélodie", hf:"chaque réglage de base, puis son dosage", items:[
    {k:"car.grav",type:"range",label:"Gravité : retour vers la tonique",min:0,max:1,step:0.01,fmt:pct},

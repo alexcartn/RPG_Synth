@@ -43,6 +43,8 @@ jobs:
           mkdir -p _site/foundry
           cp foundry/bourdon/module.json _site/foundry/module.json
           (cd foundry && zip -qr ../_site/foundry/bourdon.zip bourdon)
+          # extension Owlbear Rodeo : servie telle quelle, installable par l'adresse de son manifeste
+          cp -r owlbear _site/owlbear
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

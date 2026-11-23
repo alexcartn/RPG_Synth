@@ -726,6 +726,21 @@ body.atelier .at-kbbar, body.daw .at-kbbar{margin-bottom:var(--sp-xs)}
 .enchbox .hint:empty,.telebox .hint:empty{display:none}
 .tele-row{display:flex; gap:var(--sp-xs); align-items:flex-start; font-size:.9rem; line-height:1.3}
 .tele-row input{margin-top:.2em}
+/* notes en séance et banc d'écoute */
+.seance-note{display:flex; flex-direction:column; gap:var(--sp-xs); width:100%}
+.seance-btns{display:flex; gap:var(--sp-xs); flex-wrap:wrap}
+.seance-btns .btn{padding:8px 12px; font-size:.85rem}
+.banc{position:fixed; inset:0; z-index:190; display:flex; align-items:flex-start; justify-content:center; padding:var(--sp-xl) 16px; overflow-y:auto; background:var(--parch)}
+.banc[hidden]{display:none}
+.banc-in{width:100%; max-width:860px; display:flex; flex-direction:column; gap:var(--sp-md)}
+.banc-in h2{margin:0; font:400 2rem/1.1 var(--caps); letter-spacing:.06em; color:var(--ink)}
+.banc-row{display:flex; flex-wrap:wrap; gap:var(--sp-sm); align-items:flex-end}
+.banc-row .ctl{min-width:180px; flex:1 1 180px}
+.banc .btn[aria-pressed="true"]{background:var(--rubric); color:var(--parch); border-color:var(--rubric)}
+.banc .btn:disabled{opacity:.45; cursor:default}
+.banc-pref{border:1px solid var(--ink); padding:6px 12px; display:flex; gap:var(--sp-sm); margin:0}
+.banc-pref legend{font:400 .85rem/1 var(--caps); letter-spacing:.08em; padding:0 4px}
+.banc input[type="text"]{font:inherit; padding:6px 8px; border:1px solid var(--ink); background:transparent; color:var(--ink); width:100%; box-sizing:border-box}
 .capbox .btn[aria-pressed="true"]{background:var(--rubric); color:var(--parch); border-color:var(--rubric)}
 
 /* ---------- affectus : table des émotions des gammes et des tonalités ---------- */

@@ -286,7 +286,7 @@ Les ambiances sont réglées et mesurées, pas écoutées à l'aveugle. C'est le
 
 ## Chantiers
 
-Classés par utilité à la table. Les cinq premiers sont faits.
+Classés par utilité à la table. Les dix premiers sont faits.
 
 ### Faits
 
@@ -296,13 +296,14 @@ Classés par utilité à la table. Les cinq premiers sont faits.
 4. Module Foundry VTT et télécommande. Bourdon accepte des ordres simples (jouer, ambiance, émotions, tension, geste, volume, sous la voix) d'une fenêtre qui l'a ouvert ; le module Foundry s'en sert pour suivre la scène active et le combat. Sources : API Foundry, modules VGMusic et Crossblade.
 5. Le dungeon synth élargi. Six ambiances qui couvrent les écoles du genre au lieu d'un seul album : les années 90 sombres, la marche épique, la tour caverneuse, le fief chaleureux, le comfy synth et la nostalgie des vieux jeux. Sources : Whiteman, Werdna, Newsome, section 6.
 
+6. Banc d'écoute et notes en séance. Pendant la partie, « Ça porte » et « Ça distrait » notent l'instant avec la scène, la tension et les émotions. Le banc à l'aveugle rend deux versions d'une même pièce (même graine, une seule différence), les égalise en niveau, les présente en A et B dans un ordre tiré au sort, et fait le bilan par comparaison avec un test du signe. Export CSV, protocole dans [ECOUTE.md](ECOUTE.md). Sources : Bech et Zacharov, MUSHRA, SPECS. L'écoute avec des meneurs reste à faire : l'outil est prêt.
+7. Extension Owlbear Rodeo (`owlbear/`) : chaque scène garde son ambiance dans ses métadonnées, le meneur pilote la tension, les gestes et Sous la voix. Testée avec une imitation du SDK 3.1, pas encore dans une vraie salle.
+8. Geste Surprise : un silence brusque d'un ou deux temps, un accord hors de la gamme frappé fort (bVI majeur en calme, pôle hexatonique mineur en tension), et la cadence suivante évitée (le retour à la tonique remplacé par le sixième degré). Source : Huron.
+9. Tension harmonique : la tension choisit aussi les accords. Leur distance à la tonique (quintes entre les fondamentales, changement de couleur, accord diminué) pèse dans le tirage : loin en tension, près au calme ; la tension ajoute la septième, le calme la remplace par l'octave, et l'harmonie idiomatique cède la moitié de sa place en tension forte. Mesuré : 0,83 quinte de distance moyenne à tension 0,1, 1,31 à tension 0,9. Sources : Lerdahl, Lerdahl et Krumhansl.
+10. Harmonie de cinéma : médiantes chromatiques (bVI, III, bIII, VI) et majeur sur la même fondamentale pour le merveilleux ; mineur sur la même fondamentale, pôle hexatonique et triton pour la menace ; ou selon la tension. Un accord sur huit environ par défaut, toujours relié au précédent ; la mélodie, les boucles et la basse suivent. Les émotions féeriques ou majestueuses l'appellent, les inquiétantes ou tragiques aussi. Sources : Lehman, Cohn.
+
 ### À faire, par ordre d'utilité
 
-6. Écoute à l'aveugle avec des meneurs : cinq ou six meneurs, trois séances, une note « distrait / porte la scène », et un A/B entre logique modale et Hasard. Sources : Bech et Zacharov, MUSHRA, SPECS.
-7. Extension Owlbear Rodeo, sur le même protocole que le module Foundry.
-8. Un geste Surprise (cadence évitée, accord inattendu, silence brusque) : le mécanisme d'attente de Huron, absent des gestes.
-9. Tension harmonique : relier le curseur Tension à la distance harmonique (Lerdahl et Krumhansl, Farbood), pas seulement à la percussion.
-10. Harmonie de cinéma : transformations P, L, R et enchaînements chromatiques pour le merveilleux et la menace (Cohn, Lehman).
 11. Jeu expressif : les règles KTH (arche de phrase, durées, accents) sur la mélodie et l'arpège.
 12. Intonation propre à chaque maqam, import de gammes Scala, export MIDI en MTS au lieu du pitch bend.
 13. Feu, pluie et vent procéduraux (Farnell), au lieu de boucles précalculées.

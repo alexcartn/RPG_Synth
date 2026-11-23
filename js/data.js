@@ -40,11 +40,13 @@ const SCALE_GROUPS = [
     ["enharm","Enharmonique grec ancien",[0,0.5,1,5,7,7.5,8]],
     ["chromgr","Chromatique grec ancien",[0,1,2,5,7,8,9]]]],
   ["Personnel", [
-    ["libre","Libre (dessinée sur le cercle)",null]]]
+    ["libre","Libre (dessinée sur le cercle)",null],
+    ["scala","Gamme Scala importée",null]]]
 ];
 const SC = {};
 SCALE_GROUPS.forEach(([,l])=>l.forEach(([k,n,iv])=>{SC[k]={n,iv};}));
 function ivOf(S,key){
+  if(key==="scala"){ return (S.scala&&S.scala.slots&&S.scala.slots.length)?S.scala.slots:[0,2,4,5,7,9,11]; }
   if(key==="libre"){const a=[], q=S.custom.length>=24; S.custom.forEach((v,i)=>{if(v||i===0)a.push(q?i/2:i);});return a;}
   return (SC[key]||SC.mixolydien).iv;
 }
@@ -68,8 +70,32 @@ const WELL={
   werck:[0,90.225,192.18,294.135,390.225,498.045,588.27,696.09,792.18,888.27,996.09,1092.18],
   kirn:[0,90.225,193.157,294.135,386.314,498.045,590.224,696.578,792.18,889.735,996.09,1088.269]
 };
+/* accord turc d'Arel, Ezgi et Uzdilek : l'octave en 53 commas de Holder (22,64 cents) ; chaque hauteur de la grille à 24 quarts de ton
+   prend sa place dans ce système (seconde du Bayati/Uşşak à 8 commas, tierce et septième du Rast à 17 et 48 commas…).
+   Les mesures de la pratique arabe, elles, restent proches des 24 quarts de ton égaux (tierce du Rast vers 351 cents) : le tempérament égal les rend bien. */
+const AEU={0:0,0.5:2,1:4,1.5:8,2:9,2.5:13,3:13,3.5:17,4:18,4.5:20,5:22,5.5:26,6:26,6.5:29,7:31,7.5:33,8:35,8.5:39,9:40,9.5:44,10:44,10.5:48,11:49,11.5:51};
+/* gamme Scala : chaque degré a sa place symbolique sur la grille à 24 (pour la logique musicale) et sa vraie hauteur en cents (pour le son) */
+function parseScala(text){
+  const lines=String(text).split(/\r?\n/).filter(l=>!/^\s*!/.test(l)), desc=(lines[0]||"").trim(), n=parseInt(lines[1],10);
+  if(!(n>0)) throw new Error("fichier Scala illisible : le nombre de notes manque");
+  const vals=lines.slice(2).map(l=>l.trim().split(/\s+/)[0]).filter(Boolean).slice(0,n).map(v=>{
+    if(v.indexOf(".")>=0) return parseFloat(v);
+    const [a,b]=v.split("/"), q=parseFloat(a)/(b?parseFloat(b):1); if(!(q>0)) throw new Error("valeur illisible : "+v); return 1200*Math.log2(q); });
+  if(vals.length<n||vals.some(x=>!isFinite(x))) throw new Error("fichier Scala incomplet");
+  const per=vals[n-1], cents=[0].concat(vals.slice(0,n-1)).map(c=>((c%per)+per)%per).sort((a,b)=>a-b).filter((c,i,a)=>i===0||c-a[i-1]>0.5);
+  /* places symboliques : la plus proche case libre de la grille à 24 */
+  const used=new Set(), slots=[], map={};
+  cents.forEach(c=>{ let q=Math.round(c/50)/2; const cand=[q,q+0.5,q-0.5,q+1,q-1].filter(x=>x>=0&&x<12&&!used.has(x)); if(!cand.length) return; const x=c===0?0:cand[0]; used.add(x); slots.push(x); map[x]=c; });
+  if(slots.length<cents.length) throw new Error("trop de notes : 24 par octave au plus");
+  return {name:desc||"Scala", slots:slots.sort((a,b)=>a-b), cents:map, period:per, n:cents.length, warn:Math.abs(per-1200)>0.5?"période de "+per.toFixed(1)+" cents, traitée comme une octave":""};
+}
 function mkFreq(S){
   const rootMidi=36+S.root, rootF=S.a4*Math.pow(2,(rootMidi-69)/12), r=RAT[S.temper]||RAT.egal, W=WELL[S.temper];
+  /* turc (53 commas) et Scala : une table de cents depuis la tonique, sur la grille à 24 ; les cases absentes restent au tempérament égal */
+  if(S.temper==="aeu"||(S.temper==="scala"&&S.scala&&S.scala.cents)){
+    const tab=S.temper==="aeu"?Object.fromEntries(Object.entries(AEU).map(([k,v])=>[k,v*1200/53])):S.scala.cents;
+    return off=>{ const oct=Math.floor(off/12), pc=Math.round((off-12*oct)*2)/2, c=tab[pc]!==undefined?tab[pc]:pc*100; return rootF*Math.pow(2,oct+c/1200); };
+  }
   if(W){ const cents=x=>{ const a=S.root+x, o=Math.floor(a/12), p=a-12*o; return W[p]+1200*o-W[S.root]; };
     return off=>{ const lo=Math.floor(off), fr=off-lo; let c=cents(lo); if(fr>1e-9) c+=(cents(lo+1)-c)*fr; return rootF*Math.pow(2,c/1200); }; }
   return off=>{
@@ -115,7 +141,7 @@ const DEFAULT = {
   mach:true,
   daw:{sel:0, grid:1, rec:-1, arp:{on:false, mode:"up", rate:0.5, oct:2, gate:0.7}, mix:{mute:{}, solo:{}, pan:{}}, tracks:[]},
   syn:clone(SYN_DEFAULT),
-  mus:{logic:"modal", model:"physique", form:"libre", color:"off", harm:"idiome", arc:"aucun", crit:0.6, mode:"veillee", tharm:0.6, cine:"off", cineAmt:0.3},
+  mus:{logic:"modal", model:"physique", form:"libre", color:"off", harm:"idiome", arc:"aucun", crit:0.6, mode:"veillee", tharm:0.6, cine:"off", cineAmt:0.3, expr:0.5},
   rc:0.5, tex:{lvl:1, sub:0, mid:0, air:0}, chant:"kyrie", plain:{lvl:0, reg:1, slow:1.5},
   car:{grav:0.5, aud:0.5, orn:0.5, sil:0.5, rep:0.5},
   chance:{skip:0.08, ratchet:0.07, mutate:0.12, octave:0.05, rest:0.08},
@@ -159,7 +185,17 @@ const MEDIEVAL = [
   ["Tripudium", {rc:0.75, car:{grav:0.3, aud:0.7, orn:0.8, sil:0.1, rep:0.65}, mus:{logic:"modal", harm:"idiome", form:"rondeau", arc:"arche"}, seed:905, root:7, scales:["hexacorde","ionien",""], tempo:104, meter:"3/4", swing:0.15,
     perc:{lvl:0.5, shaker:0.45, ghost:0.3}, drone:{lvl:0.15}, mel:{inst:"flute", dens:0.85, leap:0.15, orn:0.2, deja:0.4, loop:2},
     canon:{lvl:0}, pad:{lvl:0.3, timbre:"machine", len:2, voices:3, bass:0.75}, arp:{lvl:0.4, inst:"luth", pat:"alberti", rate:1, reg:1, span:1}, amb:{murmur:0.4, clink:0.6, feu:0.1},
-    fx:{rev:0.35, size:2.4, sat:0.12, wow:0.1, veil:0.25}}, "branle, danse à trois temps"]
+    fx:{rev:0.35, size:2.4, sat:0.12, wow:0.1, veil:0.25}}, "branle, danse à trois temps"],
+  /* danses notées du XIIIe et du XIVe siècle : l'estampie (puncta repris, fins ouverte et close) et la saltarelle (même architecture, rythme sautillant),
+     jouées comme aujourd'hui : flûte ou vièle sur un bourdon de quinte, tambourin, un luth qui marque les temps */
+  ["Estampida", {rc:0.8, car:{grav:0.45, aud:0.5, orn:0.45, sil:0.05, rep:0.9}, mus:{logic:"modal", harm:"idiome", form:"estampie", expr:0.6}, seed:1290, root:2, scales:["dorien","",""], tempo:112, meter:"3/4", swing:0, tension:0.5, sectionBars:16,
+    drone:{lvl:0.35, timbre:"anche", bright:0.4, glide:0.2}, mel:{lvl:0.6, inst:"flute", dens:0.85, reg:1, span:1, leap:0.2, orn:0.3, deja:0, loop:2}, canon:{lvl:0}, pad:{lvl:0},
+    arp:{lvl:0.3, inst:"luth", pat:"vaetvient", rate:1, reg:0, span:1}, perc:{lvl:0.45, kit:"cadre", shaker:0.35, ghost:0.25}, amb:{murmur:0.3, clink:0.3, feu:0.15},
+    fx:{algo:"salle", room:"salle", rev:0.32, size:2.6, dark:0.45, wow:0.05, veil:0.25, sat:0.06}}, "estampie à la cour : flûte sur bourdon, puncta repris, fin ouverte puis close"],
+  ["Saltarellus", {rc:0.85, car:{grav:0.4, aud:0.6, orn:0.35, sil:0.05, rep:0.9}, mus:{logic:"modal", harm:"idiome", form:"saltarelle", expr:0.6}, seed:1390, root:2, scales:["dorien","mixolydien",""], tempo:120, meter:"6/8", swing:0, tension:0.6, sectionBars:16,
+    drone:{lvl:0.35, timbre:"anche", bright:0.5, glide:0.15}, mel:{lvl:0.6, inst:"flute", dens:0.9, reg:1, span:1, leap:0.3, orn:0.25, deja:0, loop:2}, canon:{lvl:0}, pad:{lvl:0},
+    arp:{lvl:0}, perc:{lvl:0.55, kit:"cadre", shaker:0.5, ghost:0.3}, amb:{murmur:0.35, clink:0.35},
+    fx:{algo:"salle", room:"salle", rev:0.3, size:2.4, dark:0.4, wow:0.05, veil:0.2, sat:0.08}}, "saltarelle : la danse sautillante, flûte et tambourin sur un bourdon"]
 ];
 
 /* univers : des ambiances qui ne se limitent pas au Moyen Âge. Chaque entrée : [nom latin, réglages, glose française] */
@@ -493,7 +529,7 @@ const UNIVERS = [
 /* hors du Moyen Âge, un préréglage qui ne cite pas un bruit de lieu n'en veut pas : sans cela, murmure et tintements de taverne s'invitaient dans l'espace ou chez les pirates */
 UNIVERS.forEach(u=>{ if(u.id!=="medieval") u.items.forEach(it=>{ it[1].amb=Object.assign({murmur:0,clink:0,feu:0,vent:0,gouttes:0},it[1].amb||{}); }); });
 /* sonie : gain (dB) de chaque ambiance, mesuré hors ligne (BS.1770, 24 s, après le limiteur) pour viser -13 LUFS (-15 pour Calme) */
-const PRESET_NORM={"Spiritus Antiquus":-5.4,"Agmen Umbrarum":-4.5,"Turris Vetus":-7.2,"Feudum":-5.9,"Cuniculus":-2.7,"Memoria":-4.7,"Nix Aeterna":-5.4,"Taberna":-0.1,"Chorea":-5.0,"Crypta":-3.6,"Scriptorium":-7.9,"Turris":-4.0,"Tripudium":1.2,"Pugna":-4.8,"Iter":-5.4,"Triumphus":-5.0,"Insidiae":-0.5,"Portus":0.5,"Navigium":-4.9,"Tempestas":-5.2,"Thesaurus":-5.1,"Skalda":-3.7,"Bellum":-5.8,"Fjordus":-5.7,"Runae":-2.3,"Fata":-5.1,"Aula Fatarum":-6.1,"Sylva Magica":1.3,"Lullaby":2.2,"Larva":-2.7,"Domus Obscura":-5.7,"Sacrificium":-5.2,"Cella":-4.4,"Desertum":2.7,"Saloon":2.0,"Duellum":-6.1,"Equitatus":-5.9,"Urbs Neon":-2.8,"Machina":0.1,"Datum":-2.0,"Imber Toxicus":-3.6,"Sidera":2.8,"Nebula":-1.5,"Abyssus":-1.5,"Aegyptus":-2.4,"Eremus":-6.0,"Hortus":-5.3,"Bayati":-2.2,"Enharmonia":0.5,"Pluvia":-1.7,"Mare":-0.2,"Silva":-1.9,"Nox":-0.2,"Somnus":0.4,"Meditatio":-1.5,"Labor":-3.6,"Montagne":-5.7,"Hiems":-5.2,"Silva Antiqua":-5.7,"Agora":2.9,"Thermopylae":-1.9,"Odyssea":-0.9,"Hades":-3.3,"Custos":-5.5,"Castellum":-4.8,"Delphi":-2.0,"Sparta":-4.0,"Roma Triumphans":-1.7,"Carcer":-3.8,"Vacuum":-4.1,"Ruinae":-2.4,"Sanctum":-1.6,"Glacies":-3.1,"Vigilia":-4.5,"Regnum Umbrae":-5.5,"Iter Montium":-4.5};
+const PRESET_NORM={"Estampida":-3.5,"Saltarellus":-4.4,"Spiritus Antiquus":-5.4,"Agmen Umbrarum":-4.5,"Turris Vetus":-7.2,"Feudum":-5.9,"Cuniculus":-2.7,"Memoria":-4.7,"Nix Aeterna":-5.4,"Taberna":-0.1,"Chorea":-5.0,"Crypta":-3.6,"Scriptorium":-7.9,"Turris":-4.0,"Tripudium":1.2,"Pugna":-4.8,"Iter":-5.4,"Triumphus":-5.0,"Insidiae":-0.5,"Portus":0.5,"Navigium":-4.9,"Tempestas":-5.2,"Thesaurus":-5.1,"Skalda":-3.7,"Bellum":-5.8,"Fjordus":-5.7,"Runae":-2.3,"Fata":-5.1,"Aula Fatarum":-6.1,"Sylva Magica":1.3,"Lullaby":2.2,"Larva":-2.7,"Domus Obscura":-5.7,"Sacrificium":-5.2,"Cella":-4.4,"Desertum":2.7,"Saloon":2.0,"Duellum":-6.1,"Equitatus":-5.9,"Urbs Neon":-2.8,"Machina":0.1,"Datum":-2.0,"Imber Toxicus":-3.6,"Sidera":2.8,"Nebula":-1.5,"Abyssus":-1.5,"Aegyptus":-2.4,"Eremus":-6.0,"Hortus":-5.3,"Bayati":-2.2,"Enharmonia":0.5,"Pluvia":-1.7,"Mare":-0.2,"Silva":-1.9,"Nox":-0.2,"Somnus":0.4,"Meditatio":-1.5,"Labor":-3.6,"Montagne":-5.7,"Hiems":-5.2,"Silva Antiqua":-5.7,"Agora":2.9,"Thermopylae":-1.9,"Odyssea":-0.9,"Hades":-3.3,"Custos":-5.5,"Castellum":-4.8,"Delphi":-2.0,"Sparta":-4.0,"Roma Triumphans":-1.7,"Carcer":-3.8,"Vacuum":-4.1,"Ruinae":-2.4,"Sanctum":-1.6,"Glacies":-3.1,"Vigilia":-4.5,"Regnum Umbrae":-5.5,"Iter Montium":-4.5};
 /* chaque univers a sa batterie ; un préréglage peut en citer une autre */
 const UNIV_KIT={dark:"taiko", antique:"antique", dungeon:"taiko", medieval:"cadre", aventure:"caisse", pirates:"cadre", nordique:"taiko", feerie:"cadre", horreur:"taiko", cyber:"electro", espace:"electro", orient:"darbouka", nature:"cadre", calme:"cadre"};
 /* réglage fin, ambiance par ambiance : où elle se place entre rituel et chanson, ce qu'elle emprunte aux voix (arpège, plain-chant, voix), le tempérament de son époque, ses bêtes */

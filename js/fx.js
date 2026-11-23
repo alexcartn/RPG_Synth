@@ -336,6 +336,85 @@ function fxWorkletBody(){
     }
   }
   registerProcessor("bourdon-synth",Synth);
+
+  /* lieu procédural, d'après Andy Farnell (Designing Sound, MIT Press, 2010) : feu, vent et gouttes de pluie fabriqués à chaque échantillon,
+     sans boucle qui se répète. Trois sorties stéréo : 0 feu, 1 vent, 2 gouttes. Chaque paramètre change le caractère, pas seulement le niveau
+     (le niveau reste réglé dehors). Tirages déterministes depuis la graine : un export et ses stems restent identiques.
+     Feu : grondement (bruit sous 200 Hz qui vacille), sifflement (bruit aigu par bouffées), craquements (impulsions de bruit résonnant,
+       2 à 27 par seconde selon l'intensité, parfois un gros « pop » grave).
+     Vent : une vitesse qui marche lentement au hasard, avec des rafales ; le souffle passe un filtre dont la fréquence suit la vitesse,
+       et au-dessus d'une certaine vitesse deux sifflements étroits apparaissent (arêtes, fentes).
+     Gouttes : arrivées au hasard (20 à 420 par seconde), chacune un « plic » aigu qui s'éteint en quelques millisecondes ; parfois une goutte
+       dans une flaque, dont la bulle chante en montant (modèle de bulle de Minnaert, van den Doel). */
+  class Lieu extends AudioWorkletProcessor{
+    static get parameterDescriptors(){ return [kr("feu",0,0,1),kr("vent",0,0,1),kr("pluie",0,0,1)]; }
+    constructor(o){ super(); let a=((o&&o.processorOptions&&o.processorOptions.seed)||12345)>>>0;
+      this.rnd=()=>{ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; };
+      const z=()=>({x1:0,x2:0,y1:0,y2:0});
+      this.f={roarL:z(),roarR:z(),flick:0,hissE:0,hiss:z(),cr:[],nextCr:0,
+        v:{speed:0,gust:0,gs:0,bL:z(),bR:z(),w1:z(),w2:z(),pk:0},
+        r:{drops:[],next:0,bub:[],nextB:0}};
+      this.t=0; }
+    /* filtre biquadratique (forme directe I) aux coefficients donnés */
+    static bq(s,c,x){ const y=c[0]*x+c[1]*s.x1+c[2]*s.x2-c[3]*s.y1-c[4]*s.y2; s.x2=s.x1; s.x1=x; s.y2=s.y1; s.y1=y; return y; }
+    static coef(type,f,q){ const w=2*Math.PI*Math.min(f,sampleRate*0.45)/sampleRate, cw=Math.cos(w), al=Math.sin(w)/(2*q); let b0,b1,b2;
+      if(type==="lp"){ b0=(1-cw)/2; b1=1-cw; b2=b0; } else if(type==="hp"){ b0=(1+cw)/2; b1=-(1+cw); b2=b0; } else { b0=al; b1=0; b2=-al; }
+      const a0=1+al; return [b0/a0,b1/a0,b2/a0,-2*cw/a0,(1-al)/a0]; }
+    process(inp,outs,P){
+      const fo=outs[0], wo=outs[1], ro=outs[2], N=fo[0].length, R=this.rnd, F=this.f, sr=sampleRate;
+      const feu=P.feu[0], vent=P.vent[0], pluie=P.pluie[0];
+      for(const o of [fo,wo,ro]) for(const ch of o) ch.fill(0);
+      /* ---------- feu ---------- */
+      if(feu>0.001){
+        if(!F.cRoar) F.cRoar=Lieu.coef("lp",170,0.6); if(!F.cHiss) F.cHiss=Lieu.coef("hp",2400,0.7);
+        const rate=2+25*feu, L=fo[0], Rr=fo[1];
+        for(let i=0;i<N;i++){
+          F.flick+=((R()*2-1)-F.flick)*0.0006; const fl=0.55+0.9*Math.abs(F.flick)*6;
+          const rl=Lieu.bq(F.roarL,F.cRoar,R()*2-1)*fl*1.6, rr=Lieu.bq(F.roarR,F.cRoar,R()*2-1)*fl*1.6;
+          F.hissE+=((R()<0.0004*(0.3+feu)?1:0)-F.hissE)*0.002; const hs=Lieu.bq(F.hiss,F.cHiss,R()*2-1)*F.hissE*0.9*feu;
+          let c=0;
+          if(--F.nextCr<=0){ F.nextCr=Math.floor(-Math.log(1-R()*0.999)/rate*sr);
+            if(F.cr.length<6){ const big=R()<0.05, fq=big?300+R()*400:1500+R()*3500; F.cr.push({cf:Lieu.coef("bp",fq,big?3:6),s:{x1:0,x2:0,y1:0,y2:0},e:(big?1.6:0.5+R())*Math.pow(R(),0.5),d:Math.exp(-1/((big?0.015:0.0015+R()*0.004)*sr)),pan:R()*2-1}); } }
+          let cl=0, cr2=0;
+          for(let k=F.cr.length-1;k>=0;k--){ const q=F.cr[k]; const y=Lieu.bq(q.s,q.cf,(R()*2-1)*q.e)*3; q.e*=q.d; cl+=y*(1-q.pan)*0.5; cr2+=y*(1+q.pan)*0.5; if(q.e<1e-4) F.cr.splice(k,1); }
+          L[i]=(rl+hs+cl)*0.5; Rr[i]=(rr+hs+cr2)*0.5;
+        }
+      }
+      /* ---------- vent ---------- */
+      if(vent>0.001){
+        const V=F.v, L=wo[0], Rr=wo[1];
+        for(let i=0;i<N;i+=32){
+          /* vitesse : base selon le réglage, rafales en marche aléatoire lente */
+          /* rafales : processus d'Ornstein-Uhlenbeck (marche aléatoire rappelée vers zéro), temps propre 3 s, écart 0,6 ; puis lissé sur 0,4 s */
+          { const dt=32/sampleRate; V.gs+=-V.gs*dt/3+0.6*Math.sqrt(2*dt/3)*(R()+R()+R()-1.5)*2; V.gust+=(V.gs-V.gust)*dt/0.4; }
+          V.speed=Math.max(0,Math.min(1.3,0.15+0.75*vent+0.55*vent*V.gust));
+          const sp=V.speed, fc=220+900*sp, q=0.7+1.6*sp, cB=Lieu.coef("bp",fc,q), cB2=Lieu.coef("bp",fc*1.13,q), w1=Lieu.coef("bp",620+1500*sp,28), w2=Lieu.coef("bp",(620+1500*sp)*1.41,34);
+          const amp=Math.pow(sp,1.5)*1.4, wh=Math.max(0,sp-0.55)*Math.max(0,sp-0.55)*2.2, end=Math.min(N,i+32);
+          for(let j=i;j<end;j++){
+            const nL=R()*2-1, nR=R()*2-1, bl=Lieu.bq(V.bL,cB,nL), br=Lieu.bq(V.bR,cB2,nR);
+            const ws=Lieu.bq(V.w1,w1,(nL+nR)*0.5)*wh*4+Lieu.bq(V.w2,w2,nL)*wh*2.5;
+            L[j]=(bl*amp+ws*0.8)*0.6; Rr[j]=(br*amp+ws*1.0)*0.6;
+          }
+        }
+      }
+      /* ---------- gouttes ---------- */
+      if(pluie>0.001){
+        const D=F.r, L=ro[0], Rr=ro[1], rate=20+400*Math.pow(pluie,1.5), brate=0.3+3*pluie;
+        for(let i=0;i<N;i++){
+          if(--D.next<=0){ D.next=Math.floor(-Math.log(1-R()*0.999)/rate*sr);
+            if(D.drops.length<24){ const f=2200+R()*6000; D.drops.push({ph:0,w:2*Math.PI*f/sr,a:0.25*Math.pow(R(),2),d:Math.exp(-1/((0.002+R()*0.006)*sr)),ch:Math.exp(-1/(0.02*sr)),pan:R()*2-1}); } }
+          if(--D.nextB<=0){ D.nextB=Math.floor(-Math.log(1-R()*0.999)/brate*sr);
+            if(D.bub.length<4){ const f=500+R()*700; D.bub.push({ph:0,f,a:0.18*R(),d:Math.exp(-1/((0.012+R()*0.02)*sr)),k:Math.pow(1+0.8*R(),1/(0.03*sr)),pan:R()*2-1}); } }
+          let l=0, r=0;
+          for(let k=D.drops.length-1;k>=0;k--){ const q=D.drops[k]; q.ph+=q.w; q.w*=q.ch>0?1-0.00002:1; const y=Math.sin(q.ph)*q.a; q.a*=q.d; l+=y*(1-q.pan)*0.5; r+=y*(1+q.pan)*0.5; if(q.a<1e-4) D.drops.splice(k,1); }
+          for(let k=D.bub.length-1;k>=0;k--){ const q=D.bub[k]; q.f*=q.k; q.ph+=2*Math.PI*q.f/sr; const y=Math.sin(q.ph)*q.a; q.a*=q.d; l+=y*(1-q.pan)*0.5; r+=y*(1+q.pan)*0.5; if(q.a<1e-4) D.bub.splice(k,1); }
+          L[i]=l; Rr[i]=r;
+        }
+      }
+      this.t+=N; return true;
+    }
+  }
+  registerProcessor("bourdon-lieu",Lieu);
 }
 
 /* charge les processeurs dans un contexte ; la promesse rend true s'ils sont disponibles.

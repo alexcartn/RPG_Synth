@@ -286,7 +286,7 @@ Les ambiances sont réglées et mesurées, pas écoutées à l'aveugle. C'est le
 
 ## Chantiers
 
-Classés par utilité à la table. Les dix premiers sont faits.
+Classés par utilité à la table. Les quinze premiers sont faits.
 
 ### Faits
 
@@ -302,13 +302,14 @@ Classés par utilité à la table. Les dix premiers sont faits.
 9. Tension harmonique : la tension choisit aussi les accords. Leur distance à la tonique (quintes entre les fondamentales, changement de couleur, accord diminué) pèse dans le tirage : loin en tension, près au calme ; la tension ajoute la septième, le calme la remplace par l'octave, et l'harmonie idiomatique cède la moitié de sa place en tension forte. Mesuré : 0,83 quinte de distance moyenne à tension 0,1, 1,31 à tension 0,9. Sources : Lerdahl, Lerdahl et Krumhansl.
 10. Harmonie de cinéma : médiantes chromatiques (bVI, III, bIII, VI) et majeur sur la même fondamentale pour le merveilleux ; mineur sur la même fondamentale, pôle hexatonique et triton pour la menace ; ou selon la tension. Un accord sur huit environ par défaut, toujours relié au précédent ; la mélodie, les boucles et la basse suivent. Les émotions féeriques ou majestueuses l'appellent, les inquiétantes ou tragiques aussi. Sources : Lehman, Cohn.
 
+11. Jeu expressif : règles KTH (aigu plus fort, charge mélodique, contraste des durées, souffle avant les sauts, fin de phrase retenue) sur la mélodie et l'arpège, sans changer les notes. Sources : Friberg, Bresin et Sundberg ; Sundberg pour la charge mélodique.
+12. Accordage turc Arel-Ezgi-Uzdilek (53 commas), import de gammes Scala, MIDI à la hauteur exacte pour tous les accordages, en pitch bend ou en MTS. Les mesures de la pratique arabe restent proches des 24 quarts de ton égaux (tierce du Rast vers 351 cents, [Rast Musicology Journal](https://dergipark.org.tr/en/download/article-file/5923425)) : le tempérament égal les rend déjà. Sources : Signell, Farraj et Abu Shumays, archive Scala, MIDI Tuning Standard.
+13. Feu, vent et pluie procéduraux dans un processeur audio, sans boucle, aux niveaux de l'ancien lieu. Source : Farnell ; van den Doel pour la bulle.
+14. Réverbération du mode économe : le réseau à 8 lignes à retard bouclées existait déjà (la « vivante ») et c'est la moins chère mesurée ; le mode économe l'utilise maintenant pour toutes les réverbérations. Le bruit velours n'a pas été nécessaire. Avec la caisse de résonance partagée des cordes pincées, c'est la réponse aux saccades sur téléphone. Sources : Jot et Chaigne, Välimäki et al.
+15. Estampie et saltarelle : puncta repris, fins ouverte et close communes, rythme sautillant pour la saltarelle ; ambiances Estampida et Saltarellus. Sources : Grocheio, McGee.
+
 ### À faire, par ordre d'utilité
 
-11. Jeu expressif : les règles KTH (arche de phrase, durées, accents) sur la mélodie et l'arpège.
-12. Intonation propre à chaque maqam, import de gammes Scala, export MIDI en MTS au lieu du pitch bend.
-13. Feu, pluie et vent procéduraux (Farnell), au lieu de boucles précalculées.
-14. Réverbération par réseau de délais rebouclés ou bruit velours pour le mode économe (Jot, Välimäki).
-15. Danses médiévales notées : estampie et saltarelle d'après McGee et Grocheio, pour Chorea et Tripudium.
 16. Lieu en trois rôles (fond, signaux, marqueurs) d'après Schafer, et bêtes rangées par bandes d'après Krause.
 17. Mélodies par chaînes de Markov apprises sur un petit corpus modal (Ames), à comparer à l'oreille avec la logique actuelle.
 18. Une grammaire de Lindenmayer pour la mélodie de l'Arbre (Prusinkiewicz).

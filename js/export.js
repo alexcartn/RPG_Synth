@@ -42,19 +42,36 @@ function zipStore(files){
 }
 
 function vlq(n){const b=[n&0x7f]; n>>=7; while(n>0){b.unshift((n&0x7f)|0x80); n>>=7;} return b;}
-function midiFile(events,Sx){
-  const PPQ=480, spq=60/Sx.tempo, base=36+Sx.root, trs=Array.from({length:5+(Sx.daw?Math.min(8,Sx.daw.tracks.length):0)},()=>[]);
+/* micro-intervalles en MIDI : "bend" (note voisine et pitch bend, sur les voix seules ; les nappes sont arrondies) ou
+   "mts" (MIDI Tuning Standard : chaque touche utilisée est réaccordée sur la hauteur exacte, toutes les voix, nappes comprises ;
+   il faut un instrument qui lit les messages d'accord, comme Surge XT, Pianoteq ou ceux qui suivent MTS). Le choix est mémorisé. */
+const midiTun=()=>{ try{ const v=localStorage.getItem("bourdon.miditun"); if(v==="mts"||v==="bend") return v; }catch(e){} return "bend"; };
+function midiFile(events,Sx,opt){
+  const PPQ=480, spq=60/Sx.tempo, trs=Array.from({length:5+(Sx.daw?Math.min(8,Sx.daw.tracks.length):0)},()=>[]);
+  const mode=(opt&&opt.tuning)||midiTun(), fq=mkFreq(Sx), mf=off=>69+12*Math.log2(fq(off)/440);
+  /* MTS : une touche par hauteur exacte ; la touche la plus proche si elle est libre, sinon la voisine libre la plus proche */
+  const keyOf=new Map(), keyUsed=new Map(), tuneKey=p=>{ const id=Math.round(p*1000); if(keyOf.has(id)) return keyOf.get(id);
+    const r=Math.max(0,Math.min(127,Math.round(p))); let k=r; for(let d=0;d<128;d++){ for(const c of [r+d,r-d]){ if(c>=0&&c<128&&!keyUsed.has(c)){ k=c; d=999; break; } } }
+    keyOf.set(id,k); keyUsed.set(k,p); return k; };
   events.forEach(e=>{
-    const n0=base+e.off, rn=Math.round(n0), frac=n0-rn, note=Math.max(0,Math.min(127,rn)), t=Math.round(e.t/spq*PPQ), d=Math.max(30,Math.round(e.dur/spq*PPQ)), vel=Math.max(1,Math.min(127,Math.round(40+e.vel*200)));
-    /* quart de ton : note voisine + pitch bend de 50 cents (plage de 2 demi-tons), sauf sur les nappes qui sont polyphoniques */
-    const bend=(e.tr!==2&&Math.abs(frac)>0.01)?8192+Math.round(frac*4096):undefined;
+    const p=mf(e.off), rn=Math.round(p), frac=p-rn, t=Math.round(e.t/spq*PPQ), d=Math.max(30,Math.round(e.dur/spq*PPQ)), vel=Math.max(1,Math.min(127,Math.round(40+e.vel*200)));
+    let note=Math.max(0,Math.min(127,rn)), bend;
+    if(mode==="mts"&&Math.abs(frac)>0.005) note=tuneKey(p);
+    /* hauteur exacte en pitch bend (plage de 2 demi-tons), sauf sur les nappes qui sont polyphoniques */
+    else if(e.tr!==2&&Math.abs(frac)>0.005) bend=8192+Math.round(frac*4096);
     if(!trs[e.tr]) return;
     trs[e.tr].push({t,on:true,note,vel,bend},{t:t+d,on:false,note,vel:0});
   });
   const m=METERS[Sx.meter], tempoUs=Math.round(60e6/Sx.tempo);
   const hdr=[0x4d,0x54,0x68,0x64,0,0,0,6,0,1,0,6,(PPQ>>8)&255,PPQ&255];
   const chunk=(bytes)=>[0x4d,0x54,0x72,0x6b,(bytes.length>>>24)&255,(bytes.length>>>16)&255,(bytes.length>>>8)&255,bytes.length&255,...bytes];
-  const tempoTrack=[0,0xff,0x51,3,(tempoUs>>16)&255,(tempoUs>>8)&255,tempoUs&255, 0,0xff,0x58,4,m.n,m.d,24,8, 0,0xff,0x2f,0];
+  const tempoTrack=[0,0xff,0x51,3,(tempoUs>>16)&255,(tempoUs>>8)&255,tempoUs&255, 0,0xff,0x58,4,m.n,m.d,24,8];
+  /* MTS, accord de touches en temps réel (F0 7F 7F 08 02 programme n [touche, demi-ton, fraction sur 14 bits]… F7), par paquets de 32 touches */
+  if(keyUsed.size){ const ks=[...keyUsed.entries()];
+    for(let i=0;i<ks.length;i+=32){ const part=ks.slice(i,i+32), body=[0x7f,0x7f,0x08,0x02,0x00,part.length];
+      part.forEach(([k,p])=>{ const sm=Math.max(0,Math.min(127,Math.floor(p))), fr=Math.max(0,Math.min(16383,Math.round((p-sm)*16384))); body.push(k,sm,(fr>>7)&127,fr&127); });
+      body.push(0xf7); tempoTrack.push(0,0xf0,...vlq(body.length),...body); } }
+  tempoTrack.push(0,0xff,0x2f,0);
   const names=["Melodie","Canon","Nappes","Boucles","Pendules"].concat((Sx.daw?Sx.daw.tracks:[]).map((t,i)=>(t.name||"Piste "+(i+1)).normalize("NFD").replace(/[^\x20-\x7e]/g,"")));
   const chOf=i=>i>=9?i+1:i;
   const tracks=[chunk(tempoTrack)];
@@ -149,7 +166,8 @@ function buildExport(host){
       '<div class="ctl"><label for="fmt">Format audio</label><select id="fmt"><option value="wav">WAV 16 bits (sans perte)</option><option value="mp3-320">MP3 320 kb/s</option><option value="mp3-192">MP3 192 kb/s</option><option value="both">WAV et MP3 320 kb/s</option></select><p class="hint">Le MP3 est dix fois plus léger, pratique pour écouter ou envoyer. Pour retravailler dans un logiciel, ou pour une boucle sans couture, garde le WAV : le MP3 ajoute un léger silence en tête.</p></div>'+
       '<div class="ctl"><label class="chk"><span><input type="checkbox" id="xLoop">Boucle sans couture</span></label><p class="hint">Fondu enchaîné de la fin sur le début : le fichier boucle sans clic.</p></div>'+
       '<div class="ctl"><label class="chk"><span><input type="checkbox" id="xStems">Stems séparés</span></label><p class="hint">Bourdon, mélodie et canon, nappes, percussion, lieu, boucles et pendules si activés. Sans compresseur, à sommer dans ton logiciel. 3 minutes maximum.</p></div>'+
-      '<div class="ctl"><label class="chk"><span><input type="checkbox" id="xMidi">Fichier MIDI</span></label><p class="hint">Pistes mélodie, canon, nappes, boucles et pendules. Les tempéraments non égaux ne passent pas en MIDI. Les quarts de ton passent en pitch bend (plage de 2 demi-tons) sauf sur les nappes, où ils sont arrondis.</p></div>'+
+      '<div class="ctl"><label class="chk"><span><input type="checkbox" id="xMidi">Fichier MIDI</span></label><p class="hint">Pistes mélodie, canon, nappes, boucles et pendules, à la hauteur exacte de l\'accordage choisi (tempéraments, quarts de ton, turc, Scala).</p></div>'+
+      '<div class="ctl"><label for="xTun">Micro-intervalles en MIDI</label><select id="xTun"><option value="bend">Pitch bend (voix seules, nappes arrondies)</option><option value="mts">MTS : chaque touche réaccordée (toutes les voix)</option></select><p class="hint">Pitch bend : marche partout, plage de 2 demi-tons à régler sur l\'instrument. MTS (MIDI Tuning Standard) : exact aussi pour les accords, mais il faut un instrument qui lit les messages d\'accord (Surge XT, Pianoteq…). Vaut aussi pour la capture.</p></div>'+
     '</div>'+
     '<div class="row" style="margin-top:24px"><button class="btn main" id="exp" type="button">Rendre et exporter</button></div>'+
     '<p class="status" id="status" role="status" aria-live="polite"></p>'+
@@ -158,6 +176,7 @@ function buildExport(host){
       '<div class="ctl"><label for="codeIn">Coller un code</label><textarea id="codeIn" placeholder="Colle ici un code reçu"></textarea><div class="row"><button class="lnk" id="loadCode" type="button">Charger ces réglages</button></div></div></div></details>';
   host.appendChild(sec);
   $("exp").onclick=doExport;
+  { const x=$("xTun"); if(x){ x.value=midiTun(); x.onchange=()=>{ try{ localStorage.setItem("bourdon.miditun",x.value); }catch(e){} }; } }
   sec.querySelector("details").addEventListener("toggle",()=>{ $("codeOut").value=codeOf(); });
   $("copyCode").onclick=async()=>{ $("codeOut").value=codeOf(); try{ await navigator.clipboard.writeText($("codeOut").value); status("Code copié.","ok"); }catch(e){ $("codeOut").select(); status("Copie automatique refusée : sélectionne le code et copie-le à la main."); } };
   $("loadCode").onclick=()=>{ try{ S=merge(clone(DEFAULT),fromCode($("codeIn").value)); normS(); S.seed=newSeed(); syncUI(); restartIfLive(); status("Réglages chargés.","ok"); }catch(e){ status("Code illisible.","err"); } };

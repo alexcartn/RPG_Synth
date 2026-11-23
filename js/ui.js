@@ -272,7 +272,7 @@ const UI=[
    {k:"meter",type:"select",label:"Mesure",opts:Object.keys(METERS).map(k=>[k,k]),restart:true},
    {k:"swing",type:"range",label:"Swing",min:0,max:1,step:0.01,fmt:pct}]},
   {fin:"Accord et tempérament", items:[
-   {k:"temper",type:"select",label:"Tempérament",opts:[["egal","Égal"],["juste","Juste (intonation pure)"],["pyth","Pythagoricien"],["meso","Mésotonique (quart de comma)"],["werck","Werckmeister III"],["kirn","Kirnberger III"]],restart:true},
+   {k:"temper",type:"select",label:"Tempérament",opts:[["egal","Égal"],["juste","Juste (intonation pure)"],["pyth","Pythagoricien"],["meso","Mésotonique (quart de comma)"],["werck","Werckmeister III"],["kirn","Kirnberger III"],["aeu","Turc (Arel-Ezgi-Uzdilek, 53 commas)"],["scala","Gamme Scala importée"]],restart:true},
    {k:"a4",type:"range",label:"Diapason (La)",min:410,max:450,step:1,fmt:v=>v+" Hz",restart:true}]}]},
  {num:"II", title:"Couches", fr:"", sub:"Ce qui sonne, voix par voix. Le pupitre au-dessus les allume et règle leur niveau ; ici, le détail de chacune.", groups:[
   {h:"Ensemble", hf:"pour toutes les voix", id:"g-ens", items:[
@@ -378,6 +378,7 @@ const UI=[
    {k:"mus.logic",type:"select",label:"Logique musicale",opts:[["modal","Modale : la mélodie suit les accords"],["hasard","Hasard (ancienne version)"]]},
    {k:"mus.harm",type:"select",label:"Harmonie",opts:[["idiome","Idiomatique : les progressions typiques de chaque mode"],["libre","Libre : accords pondérés par le mode"]]},
    {k:"mus.color",type:"select",label:"Couleur du mode",opts:[["off","Fixe : les gammes choisies"],["tension","Suit la tension (du lydien au locrien)"],["meteo","Suit la météo du lieu"],["les deux","Tension et météo"]]},
+   {k:"mus.expr",type:"range",label:"Jeu expressif",min:0,max:1,step:0.01,fmt:pct,hint:"Comment la mélodie et l'arpège sont joués, sans changer les notes : l'aigu un peu plus fort, les notes loin de l'accord appuyées, les brèves détachées, un souffle avant les grands sauts, la fin de phrase retenue. D'après le système de règles du KTH (Friberg, Bresin et Sundberg). À zéro, jeu mécanique."},
    {k:"mus.tharm",type:"range",label:"Tension harmonique",min:0,max:1,step:0.01,fmt:pct,hint:"La tension choisit aussi les accords : quand elle monte, la machine s'éloigne de la tonique (accords lointains, septièmes) ; quand elle descend, elle reste près d'elle (triades, octaves). D'après l'espace des hauteurs de Lerdahl. À zéro, la tension ne touche plus l'harmonie."},
    {k:"mus.cine",type:"select",label:"Harmonie de cinéma",opts:[["off","Aucune : les accords de la gamme"],["merveilleux","Merveilleux : médiantes chromatiques"],["menace","Menace : pôle hexatonique, triton"],["tension","Selon la tension"]],hint:"De temps en temps, un accord hors de la gamme, relié au précédent par une note commune, comme au cinéma : bVI ou III majeurs pour l'émerveillement, mineur une tierce majeure plus bas ou au triton pour la menace. La mélodie se pose alors sur ses notes."},
    {k:"mus.cineAmt",type:"range",label:"Fréquence des accords de cinéma",min:0,max:1,step:0.01,fmt:pct},
@@ -408,7 +409,7 @@ const UI=[
  {num:"IV", title:"Temps long", fr:"", sub:"Comment la pièce avance sur des minutes : sa forme, sa respiration, sa tension, ses dérives.", groups:[
   {h:"Forme", hf:"", items:[
    {k:"mus.mode",type:"select",label:"Façon de jouer",opts:[["veillee","Veillée : ne s'arrête jamais, le plan revient en grands cycles"],["piece","Pièce : intro, thème, développement, apogée, retombée, coda, puis fin"]],hint:"Veillée pour le fond sonore d'une partie. Pièce pour une œuvre fermée, à écouter ou à exporter (environ six sections)."},
-   {k:"mus.form",type:"select",label:"Forme de la pièce",opts:[["libre","Libre : phrases et déjà-vu"],["passacaille","Passacaille : une basse qui revient, des variations dessus"],["ostinato","Ostinato : un motif qui tourne"],["rondeau","Rondeau : refrain et couplets"],["theme","Thème : deux phrases qui reviennent, variées selon les sections"],["variations","Thème et variations"],["turing","Machine de Turing : un registre qui boucle et mute"]]},
+   {k:"mus.form",type:"select",label:"Forme de la pièce",opts:[["libre","Libre : phrases et déjà-vu"],["passacaille","Passacaille : une basse qui revient, des variations dessus"],["ostinato","Ostinato : un motif qui tourne"],["rondeau","Rondeau : refrain et couplets"],["estampie","Estampie : puncta repris, fin ouverte puis close"],["saltarelle","Saltarelle : estampie sur le rythme sautillant"],["theme","Thème : deux phrases qui reviennent, variées selon les sections"],["variations","Thème et variations"],["turing","Machine de Turing : un registre qui boucle et mute"]]},
    {k:"mus.arc",type:"select",label:"Plan de la pièce",opts:[["aucun","Aucun : des sections égales"],["arche","Arche : intro, thème, développement, apogée, retombée, coda"]]}]},
   {h:"Respiration", hf:"l'intensité qui monte et descend", items:[
    {k:"form.shape",type:"select",label:"Forme",opts:[["constante","Constante"],["arche","Arche"],["vagues","Vagues"],["escalier","Escalier"]]},

@@ -16,10 +16,10 @@ const dom=new JSDOM(html,{runScripts:'dangerously',virtualConsole:vc,pretendToBe
 const w=dom.window,d=w.document;
 /* Banc de mesure musical. Les seuils décrivent une musique correcte (accords sur les mesures, danses sur la grille, pas de frottement),
    pas les résultats du moment : s'il échoue, c'est la musique qu'il faut corriger, pas le seuil. */
-const NAMES=(process.argv.slice(2).find(a=>!a.startsWith('--'))||'Taberna,Tripudium,Chorea,Sidera,Somnus,Crypta,Bayati,Scriptorium').split(',');
+const NAMES=(process.argv.slice(2).find(a=>!a.startsWith('--'))||'Taberna,Tripudium,Chorea,Sidera,Somnus,Crypta,Bayati,Scriptorium,Estampida,Saltarellus').split(',');
 const ONLY=process.argv.includes('--print');
 /* depuis les versions ambiance, la taverne, le branle et la gigue sont des ambiances lentes au placement libre : plus aucune danse à caler sur la grille */
-const DANCE=[], SLOW=['Sidera','Somnus','Taberna','Tripudium','Chorea'];
+const DANCE=['Estampida','Saltarellus'], SLOW=['Sidera','Somnus','Taberna','Tripudium','Chorea'];
 setTimeout(()=>{
 
  try{

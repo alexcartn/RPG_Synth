@@ -237,8 +237,12 @@ function buildEngine(ctx, S, o){
      fxAttach() les branche dès que les processeurs sont chargés ; sans eux, la réverbération à convolution reste seule */
   const GR=()=>S.grain||{mix:0};
   let fx=null, built=false;
-  const PLATE_G=3.59, HALL_G=3.56; /* niveaux alignés sur la réverbération vivante (mesuré) */
-  const algoR=()=>!fx?"lieu":(S.fx.algo==="lieu"||S.fx.algo==="plaque"||S.fx.algo==="salle"?S.fx.algo:"vivante");
+  const PLATE_G=3.59, HALL_G=3.56;
+  const LIEU_G={feu:1.9, vent:0.59, pluie:0.69}; /* niveaux du lieu procédural, alignés sur l'ancien (mesuré) */ /* niveaux alignés sur la réverbération vivante (mesuré) */
+  /* mode économe : toutes les réverbérations passent par le réseau à 8 lignes (la « vivante », Jot et Chaigne), la moins chère mesurée :
+     environ 0,7 s de calcul pour 20 s de musique, contre 2,4 à 3 s pour la plaque et la salle de Dattorro et 4 s pour la convolution longue.
+     Les niveaux des trois sont déjà alignés ; l'export, toujours en qualité haute, garde la réverbération choisie. */
+  const algoR=()=>!fx?"lieu":o.lite?"vivante":(S.fx.algo==="lieu"||S.fx.algo==="plaque"||S.fx.algo==="salle"?S.fx.algo:"vivante");
   const vivante=()=>algoR()!=="lieu";
   function fxAttach(){
     if(fx||!ctx.__fx||typeof AudioWorkletNode==="undefined") return !!fx;
@@ -250,6 +254,13 @@ function buildEngine(ctx, S, o){
       const gr=mk("bourdon-grain",{processorOptions:{seed:(seed^0x5EED6A)>>>0}}), grIn=G(1), grOut=G(0), grRev=G(0.6);
       grIn.connect(gr); gr.connect(grOut); grOut.connect(out); grOut.connect(grRev); grRev.connect(revIn);
       fx={vb,vbG,pl,sa,plG,saG,lPl:link(revIn,pl),lSa:link(revIn,sa),gr,grOut,frozen:false,lVb:link(revIn,vb),src:{mel:[link(B.mel.it,grIn)],pad:[link(B.pad.it,grIn)],cycles:[link(B.loops.it,grIn),link(B.pend.it,grIn)]}};
+      /* lieu procédural (Farnell) : il remplace la boucle de feu, le souffle du vent et les boucles de gouttes ; le lit de pluie reste */
+      if(!o.lieuClassique&&want("amb")) try{
+        const li=new AudioWorkletNode(ctx,"bourdon-lieu",{numberOfInputs:0,numberOfOutputs:3,outputChannelCount:[2,2,2],processorOptions:{seed:(seed^0x11E0)>>>0}});
+        oldFire.forEach(n=>{ try{ n.disconnect(); }catch(e){} }); try{ windMod.disconnect(); }catch(e){}
+        const fF=G(LIEU_G.feu), fW=G(LIEU_G.vent), fR=G(LIEU_G.pluie); li.connect(fF,0); li.connect(fW,1); li.connect(fR,2); fF.connect(fireG); fW.connect(windG); fR.connect(natG.pluie);
+        fx.lieu=li;
+      }catch(e){ fx.lieu=null; }
     }catch(e){ fx=null; return false; }
     if(built) setLevels();
     return true;
@@ -322,7 +333,8 @@ function buildEngine(ctx, S, o){
       NATS.forEach(k=>{ if(wa&&mach()&&(nt[k]||0)>0.001) ensureNature(k); });
       /* le lieu reste un fond : les sources continues (pluie, mer, ruisseau, nuit, feu) sont calées au niveau du murmure et du vent, 15 à 20 dB sous la musique */
       natG.pluie.gain.value=0.3; natG.mer.gain.value=(nt.mer||0)*0.3; natG.nuit.gain.value=(nt.nuit||0)*1.2; natG.ruisseau.gain.value=(nt.ruisseau||0)*0.55;
-      if(natB.pluie){ const r=nt.pluie||0; natB.pluie.bg.gain.value=0.22*Math.pow(r,0.7); natB.pluie.ag.gain.value=0.28*r; natB.pluie.bg2.gain.value=0.5*r*r; }
+      if(natB.pluie){ const r=nt.pluie||0, pr=!!(fx&&fx.lieu); natB.pluie.bg.gain.value=0.22*Math.pow(r,0.7); natB.pluie.ag.gain.value=pr?0:0.28*r; natB.pluie.bg2.gain.value=pr?0:0.5*r*r; }
+      if(fx&&fx.lieu){ const P=fx.lieu.parameters, m=mach()&&wa; P.get("feu").value=m?clamp(S.amb.feu||0,0,1):0; P.get("vent").value=m?clamp(ventv(),0,1):0; P.get("pluie").value=m?clamp(nt.pluie||0,0,1):0; }
       birdG.gain.value=(nt.oiseaux||0)*0.9; }
     if(!dynTens()){ /* curseur : valeur fixe ; courbe ou adaptation : le planificateur automatise ces gains */
       const m=tensMul((tens()-0.5)*2), now=ctx.currentTime||0;
@@ -420,7 +432,7 @@ function buildEngine(ctx, S, o){
     if(natB[k]) return; natB[k]=true;
     const out=natG[k], bq=(type,f,q)=>{ const x=ctx.createBiquadFilter(); x.type=type; x.frequency.value=f; if(q) x.Q.value=q; return x; };
     if(k==="pluie"){
-      const bed=natSrc(wb), hp=bq("highpass",900), lp=bq("lowpass",9000), bg=G(0); bed.connect(hp); hp.connect(lp); lp.connect(bg); bg.connect(out);
+      const bed=natSrc(wb), hp=bq("highpass",900), lp=bq("lowpass",9000), bg=G(0), bc=PAN(0); bed.connect(hp); hp.connect(lp); lp.connect(bg); bg.connect(bc); bc.connect(out); /* centré en stéréo : même niveau, que le bus du lieu soit mono ou stéréo */
       const a=natSrc(genDrops(11.3,70,"tick",0x2F6E2B1)), ag=G(0), b2=natSrc(genDrops(13.7,9,"plop",0x4C3B1F7)), bg2=G(0); a.connect(ag); ag.connect(out); b2.connect(bg2); bg2.connect(out);
       natB.pluie={bg,ag,bg2};
     }
@@ -760,10 +772,16 @@ function buildEngine(ctx, S, o){
   const hz=x=>{ const v=Math.sin(x*12.9898)*43758.5453; return v-Math.floor(v); };
   function squeak(t,vel,dst){ const s=ctx.createBufferSource(); s.buffer=wb; const f=ctx.createBiquadFilter(); f.type="bandpass"; f.Q.value=4; f.frequency.setValueAtTime(1300,t-0.06); f.frequency.exponentialRampToValueAtTime(3200,t);
     const e=G(0); e.gain.setValueAtTime(0,t-0.07); e.gain.linearRampToValueAtTime(vel*0.06,t-0.03); e.gain.linearRampToValueAtTime(0,t+0.005); s.connect(f); f.connect(e); e.connect(dst); s.start(Math.max(0,t-0.08),hz(t)*1.5); s.stop(t+0.02); }
+  /* la caisse de résonance est linéaire : un seul jeu de filtres par destination et par instrument suffit, partagé par toutes ses notes
+     (avant, chaque note portait les siens : une quarantaine de notes de harpe en vol, plus de cent filtres) */
+  const bodyBus=new WeakMap(); /* table faible : une destination éphémère (porte passe-bas, une par note) ne reste pas en mémoire */
+  function bodyIn(dst,id){ let m=bodyBus.get(dst); if(!m){ m={}; bodyBus.set(dst,m); } if(!m[id]){ const i=G(1); body(i,BODY[id[0]]).connect(dst); m[id]=i; } return m[id]; }
   function pluck(t,f,vel,dst,pan,spec,gain){
     const pb=pluckBuf(f,vel,spec), x=ctx.createBufferSource(); x.buffer=pb.buf;
-    const e=G(vel*gain), bp=BODY[spec.id[0]]; (bp&&spec.id!=="g"?body(x,bp):x).connect(e);
-    route(e,pan,dst); x.start(t); x.stop(t+pb.dur+0.05);
+    const e=G(vel*gain), bp=BODY[spec.id[0]]; x.connect(e);
+    route(e,pan,bp&&spec.id!=="g"?bodyIn(dst,spec.id[0]):dst); x.start(t);
+    /* mode économe : la queue de la corde, déjà très bas, s'arrête à 2,2 s, en fondu */
+    if(o.lite&&pb.dur>2.4){ const te=t+2.2; e.gain.setValueAtTime(vel*gain,te-0.25); e.gain.linearRampToValueAtTime(0,te); x.stop(te+0.02); } else x.stop(t+pb.dur+0.05);
     if(spec.id!=="o2"&&t>0.1&&hz(t*7.13+f)<0.14) squeak(t,vel,dst);
   }
   const PHYS={
@@ -1158,16 +1176,17 @@ function buildEngine(ctx, S, o){
     }
     else if(timbre==="cordes"){
       /* pupitre de cordes : plusieurs instrumentistes, chacun légèrement faux à sa manière, chacun avec son vibrato (vitesse, ampleur, moment où il s'installe), répartis dans l'espace ; une caisse de bois, l'archet qu'on entend à peine */
-      const base=R.v(), N=o.lite?3:4, sum=G(1), fl=ctx.createBiquadFilter(), wood=ctx.createBiquadFilter(), nasal=ctx.createBiquadFilter();
+      /* économe : deux instrumentistes, sans la respiration de l'archet ni leur place dans l'espace (la nappe garde la sienne) : deux fois moins de nœuds */
+      const base=R.v(), N=o.lite?2:4, sum=G(1), fl=ctx.createBiquadFilter(), wood=ctx.createBiquadFilter(), nasal=ctx.createBiquadFilter();
       fl.type="lowpass"; fl.frequency.value=Math.min(5200,1500+f*2.2); fl.Q.value=0.5;
       wood.type="peaking"; wood.frequency.value=290; wood.gain.value=3; wood.Q.value=1.1; nasal.type="peaking"; nasal.frequency.value=1250; nasal.gain.value=-3; nasal.Q.value=1.2;
       sum.connect(wood); wood.connect(nasal); nasal.connect(fl); fl.connect(e);
       for(let i=0;i<N;i++){
-        const h=k=>hz(base*97.3+i*13.7+k*3.1), det=(h(1)*2-1)*11, x=add("sawtooth",f,det,null), pn=PAN((i/(N-1)*2-1)*0.5), g=G(0.62/Math.sqrt(N)*1.6);
-        x.connect(g); g.connect(pn); pn.connect(sum);
+        const h=k=>hz(base*97.3+i*13.7+k*3.1), det=(h(1)*2-1)*11, x=add("sawtooth",f,det,null), g=G(0.62/Math.sqrt(o.lite?3:N)*1.6*(o.lite?1.22:1));
+        x.connect(g); if(o.lite) g.connect(sum); else{ const pn=PAN((i/(N-1)*2-1)*0.5); g.connect(pn); pn.connect(sum); }
         const vb=ctx.createOscillator(), vg=G(0); vb.frequency.value=4.6+1.6*h(2); vb.connect(vg); vg.connect(x.detune); os.push(vb);
         const on=t+Math.min(a,0.4+0.9*h(3)); vg.gain.setValueAtTime(0,t); vg.gain.setValueAtTime(0,on); vg.gain.linearRampToValueAtTime(5+7*h(4),on+0.8);
-        const sw=ctx.createOscillator(), sg=G(0.12); sw.frequency.value=0.13+0.2*h(5); sw.connect(sg); sg.connect(g.gain); os.push(sw); /* chaque archet respire à son rythme */
+        if(!o.lite){ const sw=ctx.createOscillator(), sg=G(0.12); sw.frequency.value=0.13+0.2*h(5); sw.connect(sg); sg.connect(g.gain); os.push(sw); } /* chaque archet respire à son rythme */
       }
       const ns=ctx.createBufferSource(); ns.buffer=wb; ns.loop=true; const nb=ctx.createBiquadFilter(); nb.type="bandpass"; nb.frequency.value=Math.min(6000,f*5); nb.Q.value=1.4; const ng=G(0.035);
       ns.connect(nb); nb.connect(ng); ng.connect(e); os.push(ns);
@@ -1286,7 +1305,7 @@ function buildEngine(ctx, S, o){
   const stomp=(t,v)=>{ PB=pK; kit().stomp(t,v); }, tap=(t,v)=>{ PB=pT; kit().tap(t,v); }, shaker=(t,v)=>{ PB=pH; kit().shaker(t,v); };
 
   /* ---------- lieu : murmure, tintements, feu, vent, gouttes ---------- */
-  const bands=[];
+  const bands=[], oldFire=[];
   let windBP=null;
   if(want("amb")){
     const nsrc=loopSrc(nb);
@@ -1294,7 +1313,7 @@ function buildEngine(ctx, S, o){
       const bp=ctx.createBiquadFilter(); bp.type="bandpass"; bp.frequency.value=fq; bp.Q.value=q;
       const g=G(0); nsrc.connect(bp); bp.connect(g); g.connect(murG); bands.push({g,cur:0,lvl:lv});
     });
-    const fsrc=loopSrc(nb), flp=ctx.createBiquadFilter(); flp.type="lowpass"; flp.frequency.value=230; const fg=G(0.5); fsrc.connect(flp); flp.connect(fg); fg.connect(fireG);
+    const fsrc=loopSrc(nb), flp=ctx.createBiquadFilter(); flp.type="lowpass"; flp.frequency.value=230; const fg=G(0.5); fsrc.connect(flp); flp.connect(fg); fg.connect(fireG); oldFire.push(fg);
     /* craquements : 12 s de claquements tirés une fois pour toutes, lus en boucle (un seul nœud au lieu de cinq par seconde) */
     const cn=Math.floor(sr*12), cb=ctx.createBuffer(1,cn,sr), cd=cb.getChannelData(0), cr=mulberry32((seed^0x5F3759DF)>>>0);
     for(let t=0.05; t<11.9; t+=-Math.log(1-cr()*0.999)*0.18+0.02){
@@ -1305,7 +1324,7 @@ function buildEngine(ctx, S, o){
         cd[i0+i]+=(big?lp*2:(x-lp))*v*e*e; /* gros : sourd et grave, petits : clairs */
       }
     }
-    const csrc=loopSrc(cb); csrc.connect(fireG);
+    const csrc=loopSrc(cb); csrc.connect(fireG); oldFire.push(csrc);
     const wsrc=loopSrc(nb); windBP=ctx.createBiquadFilter(); windBP.type="bandpass"; windBP.frequency.value=500; windBP.Q.value=0.8;
     wsrc.connect(windBP); windBP.connect(windG);
   }
@@ -1556,6 +1575,35 @@ function buildEngine(ctx, S, o){
     else notes.forEach(n=>{ n.off=pool[clamp(idxOf(n.off)+2,0,pool.length-1)]; });
     return {notes,end,gr:ph.gr,pool};
   }
+  /* ---------- jeu expressif : quelques règles du système KTH (Friberg, Bresin et Sundberg, 2006) ----------
+     Elles ne changent pas les notes, seulement leur jeu, sans aucun tirage : la même pièce garde les mêmes notes.
+     Aigu plus fort (high loud) ; charge mélodique : une note loin de la fondamentale de l'accord, sur le cercle des quintes, est appuyée ;
+     contraste des durées : les notes brèves plus détachées et plus douces, les longues plus pleines ; articulation des sauts : un souffle
+     avant un grand saut ; fin de phrase retenue : la dernière note arrive un peu plus tard et plus doucement (ritardando final).
+     Dosage : Écriture, « Jeu expressif » (0 : mécanique). */
+  const exprE=()=>clamp(S.mus&&S.mus.expr!==undefined?S.mus.expr:0.5,0,1);
+  const KTH_CHARGE=[0,6.5,2,4.5,4,1.5,6,1,5.5,3,3.5,5]; /* charge mélodique par intervalle à la fondamentale (demi-tons), d'après Sundberg */
+  function kthPhrase(notes,onsets,iv){
+    const n=notes.length, x=exprE(), vel=new Array(n).fill(1), len=new Array(n).fill(1);
+    if(!n||x<=0) return {vel,len};
+    const mean=notes.reduce((a,b)=>a+b.off,0)/n;
+    for(let k=0;k<n;k++){
+      const nt=notes[k], ch=chordAt(onsets[k]), root=ch?(ch.root!==undefined?ch.root:ch.iv[ch.d%ch.iv.length]):0;
+      const iv12=((Math.round(nt.off-root)%12)+12)%12, c=KTH_CHARGE[iv12]/6.5;
+      let v=1+0.22*x*(nt.off-mean)/12;          /* aigu plus fort */
+      v*=1+0.12*x*c;                             /* charge mélodique */
+      let l=1+0.06*x*c;
+      if(nt.dE<=1){ v*=1-0.08*x; l*=1-0.18*x; }  /* brèves : détachées */
+      else if(nt.dE>=3){ v*=1+0.06*x; }          /* longues : pleines */
+      if(k+1<n&&Math.abs(notes[k+1].off-nt.off)>=5) l*=1-0.22*x; /* souffle avant un grand saut */
+      vel[k]=clamp(v,0.6,1.45); len[k]=clamp(l,0.5,1.2);
+    }
+    /* fin de phrase retenue : les deux dernières notes arrivent un peu plus tard, la dernière plus doucement ; jamais au-delà de la note qui suit */
+    if(n>=3){ const sh=[0.03,0.07].map(f=>f*x*E); /* 0,07 croche au plus : la note tenue garde 8 % de marge avant la phrase suivante */
+      for(let j=0;j<2;j++){ const k=n-2+j; onsets[k]+=sh[j]; }
+      vel[n-1]*=1-0.12*x; }
+    return {vel,len};
+  }
   function formPhrase(F,gen,pool,startT,dens){
     const k=nPhrase++; if(frozen&&lastPh) return lastPh;
     if(F==="turing") return turingPass(pool,dens,startT);
@@ -1572,6 +1620,20 @@ function buildEngine(ctx, S, o){
       if(role==="développement") return (k%3===0)?varyPhrase(T,2+(k%2),pool):gen();
       if(role==="intro"||role==="coda") return varyPhrase(FS.theme[0],3,pool);
       return (k%2===0)?T:gen();
+    }
+    /* estampie (Grocheio, De musica, vers 1300 ; McGee, Medieval Instrumental Dances, 1989) : une suite de puncta ; chaque punctus est joué deux fois,
+       la première avec une fin ouverte (elle s'arrête sur le deuxième degré, en suspens), la seconde avec une fin close (sur la finale).
+       Les deux fins sont les mêmes pour tous les puncta : c'est la signature de la forme. Saltarelle : la même architecture,
+       sur le rythme sautillant long-bref (noire-croche) des saltarelles italiennes du manuscrit de Londres (Add. 29987). Pas de silence entre les phrases. */
+    if(F==="estampie"||F==="saltarelle"){
+      const iamb=F==="saltarelle", fixR=ph=>{ if(!iamb) return ph; const R2=[2,1,2,1,2,1,3,3]; let e=0; const ns=ph.notes.map((n,i)=>{ const dE=R2[i%R2.length]; const m={...n,e,dE,jit:0}; e+=dE; return m; }); return {...ph,notes:ns,end:e}; };
+      const ending=(ph,deg)=>{ const iv=ivOf(S,secOf(startT).key), tpc=pcOf(degOff(iv,deg)), ns=ph.notes.slice(0,Math.min(4,ph.notes.length)).map(n=>({...n}));
+        const last=ns[ns.length-1]; let best=last.off,bd=99; pool.forEach(x=>{ if(Math.abs(pcOf(x)-tpc)<0.3&&Math.abs(x-last.off)<bd){ bd=Math.abs(x-last.off); best=x; } }); last.off=best; last.dE=Math.max(last.dE,3); last.jit=0;
+        return {...ph,notes:ns,end:last.e+last.dE,gr:0}; };
+      if(!FS.ouv){ FS.ouv=fixR(ending(gen(),1)); FS.clos=fixR(ending(gen(),0)); }
+      const st=k%4; if(st===0){ FS.punct=fixR({...gen(),gr:0}); }
+      if(!FS.punct) FS.punct=fixR({...gen(),gr:0});
+      return st===0||st===2?FS.punct:st===1?FS.ouv:FS.clos;
     }
     if(F==="variations"){ const j=k%4, cyc=Math.floor(k/4); if(!FS.theme[j]) FS.theme[j]=gen(); return cyc===0?FS.theme[j]:varyPhrase(FS.theme[j],cyc,pool); }
     return gen();
@@ -1644,6 +1706,7 @@ function buildEngine(ctx, S, o){
   const cur={mel:0,drone:0,clink:0,perc:0,k:0,pad:0,int:0,fire:0,wind:0,drip:0,bird:0,sec:1,arp:0,aj:0,pl:0,pli:0,plj:0};
   const phBars=new Set(), fillBars=[], melOn=[]; let nuee=null, arbre=null, billes=[], loopsL=[], pendK=[], lastPh=null, lastD=null, frozen=null;
   const lastOff={v:null};
+  const phLog=[]; /* journal des phrases jouées (pour les tests : une phrase rejouée est le même objet) */
   function rec(tr,t,off,dur,vel,tag){ if(o.record||o.rolling) events.push(tag?{tr,t,off,dur,vel,tag}:{tr,t,off,dur,vel}); }
   const ctr={pm:null,pc:null,li:null};
   function canonNote(t,off,vel,len,iv){
@@ -1708,8 +1771,8 @@ function buildEngine(ctx, S, o){
       let fresh=false; const gen0=gen; gen=()=>{ fresh=true; return gen0(); };
       const F0=formE(), FF=(F0==='libre'&&rcAt(cur.mel)>=0.55)?'theme':F0; /* côté chanson, la forme libre devient un thème qui revient */
       let ph=FF==='libre'?recall(memM,nPhrase++,Math.max(1,Math.round(S.mel.loop)),dejaE(),R.m,gen):formPhrase(FF,gen,pool,cur.mel,dens);
-      lastPh=ph;
-      if(ph.pool!==pool||(!fresh&&modal())){ /* rejouée : recaler sur la gamme de la section et sur l'accord du moment */
+      lastPh=ph; phLog.push({t:cur.mel,ph}); if(phLog.length>120) phLog.splice(0,phLog.length-100);
+      if(ph.pool!==pool||(!fresh&&modal()&&FF!=="estampie"&&FF!=="saltarelle")){ /* une danse notée se rejoue telle quelle, sur son bourdon */ /* rejouée : recaler sur la gamme de la section et sur l'accord du moment */
         ph={notes:ph.notes.map(n=>({...n,off:nearest(pool,n.off)})),end:ph.end,gr:ph.gr};
         if(modal()){ /* et sur l'accord du moment : temps forts et dernière note */
           const last=ph.notes.length-1;
@@ -1719,6 +1782,7 @@ function buildEngine(ctx, S, o){
       }
       let t=cur.mel;
       const onsets=ph.notes.map(n=>sw(cur.mel+n.e*E)+(n.jit||0));
+      const XP=kthPhrase(ph.notes,onsets,iv);
       ph.notes.forEach((nt,ni)=>{
         /* chance : tirages toujours faits, même quand la voix est coupée, pour que les rendus restent alignés */
         const C=S.chance||{}, cSkip=R.c(), cMut=R.c(), cDir=R.c(), cMag=R.c(), cOct=R.c(), cOd=R.c(), cRat=R.c(), cRn=R.c();
@@ -1727,7 +1791,7 @@ function buildEngine(ctx, S, o){
         if(cOct<(C.octave||0)){ const up=off+12<=pool[pool.length-1], dn=off-12>=pool[0]; if(up&&(cOd<0.5||!dn)) off+=12; else if(dn) off-=12; }
         const skipped=cSkip<(C.skip||0), rat=cRat<(C.ratchet||0)?2+Math.floor(cRn*2):1;
         off=chromFix(off,onsets[ni],ni>0?lastOff.v:undefined);
-        const tt=onsets[ni], vel=nt.vel, len=Math.max(0.05,Math.min(E*nt.dE*0.92,ni+1<onsets.length?onsets[ni+1]-tt-0.02:1e9));
+        const tt=onsets[ni], vel=nt.vel*XP.vel[ni], len=Math.max(0.05,Math.min(E*nt.dE*0.92*XP.len[ni],ni+1<onsets.length?onsets[ni+1]-tt-0.02:1e9));
         if(!skipped&&want("mel")&&S.mel.lvl>0.001){
           const fn=instOf(S.mel.inst,"luth");
           if((nt.grace||nt.trill)&&pool.length>2&&(S.mel.inst==="luth"||S.mel.inst==="harpe"||S.mel.inst==="carillon"||S.mel.inst==="oud"||S.mel.inst==="kalimba"||S.mel.inst==="guitare"||S.mel.inst==="piano")){
@@ -1840,7 +1904,7 @@ function buildEngine(ctx, S, o){
             const st8=sinceChord%8, lock=0.86+0.12*rcAt(tt); if(hz(tt*5.17+st8)>lock) cur.tma[st8]=Math.floor(hz(tt*9.31)*8);
             seq=[tones[cur.tma[st8]%tones.length]];
           } else if(pat==="vaetvient") seq=tones.concat(tones.slice(1,-1).reverse()); else if(pat==="alberti"){ const n=tones.length; seq=[tones[0],tones[Math.min(n-1,2)],tones[Math.min(n-1,1)],tones[Math.min(n-1,2)]]; }
-          const off=seq.length===1?seq[0]:seq[sinceChord%seq.length], beat=Math.round((tt-t0)/E)%(MD*1)===0, vel=(beat?0.19:0.14)*(0.9+0.2*hz(tt*3.7)), len=st*(A.inst==="harpe"||A.inst==="luth"||A.inst==="kalimba"?3:1.4);
+          const off=seq.length===1?seq[0]:seq[sinceChord%seq.length], beat=Math.round((tt-t0)/E)%(MD*1)===0, vel=(beat?0.19:0.14)*(0.9+0.2*hz(tt*3.7))*(1+0.2*exprE()*((off-(base+top)/2)/12))*(1+0.12*exprE()*Math.sin(Math.PI*clamp((tt-ch.t)/Math.max(st,ch.len),0,1))), len=st*(A.inst==="harpe"||A.inst==="luth"||A.inst==="kalimba"?3:1.4);
           instOf(A.inst||"harpe","harpe")(sw(tt),freq(off),vel,len,V.arp.node,((cur.aj++%2)?0.3:-0.3));
           if(o.onNote) o.onNote(sw(tt),off,"loop",len,vel);
         }
@@ -2180,5 +2244,5 @@ function buildEngine(ctx, S, o){
     perc:(k,part,t,v,dst)=>{ const s=PB; PB=dst; try{ (KITS[k]||KITS.cadre)[part](t,v); } finally{ PB=s; } },
     kpat:KPAT, kits:Object.keys(KITS), noise:()=>wb
   };
-  return {nueeState,arbreState,billeY,bank,pieceEnd:()=>pieceFade,fxAttach,grainFreeze,fxOn:()=>!!fx,start,schedule,setLevels,setReverb,stop,fadeOut,sleepFade,sleepClear,replan,freeze,reroll,gesture,play,synOn,dawOn,dawNote,rackSync,meter,tap:()=>volG,analyser:k=>k==="all"?anaAll:anaSyn,dawReplan,dawPos,pendX,tensNow:()=>tensAt(ctx.currentTime),adaptNow:()=>adaptE(ctx.currentTime),tensPos:()=>{ if(!curveOn()) return -1; const L=Math.max(30,S.curve.dur*60), x=(ctx.currentTime-t0)/L; return S.curve.mode==='loop'?((x%1)+1)%1:clamp(x,0,1); },events,out,master,secAt:t=>secOf(t),bar,E,t0f:()=>t0,chords:()=>chordTl.slice(),phraseBars:()=>[...phBars],fillBars:()=>fillBars.slice()};
+  return {nueeState,arbreState,billeY,bank,pieceEnd:()=>pieceFade,fxAttach,grainFreeze,fxOn:()=>!!fx,start,schedule,setLevels,setReverb,stop,fadeOut,sleepFade,sleepClear,replan,freeze,reroll,gesture,play,synOn,dawOn,dawNote,rackSync,meter,tap:()=>volG,analyser:k=>k==="all"?anaAll:anaSyn,dawReplan,dawPos,pendX,tensNow:()=>tensAt(ctx.currentTime),adaptNow:()=>adaptE(ctx.currentTime),tensPos:()=>{ if(!curveOn()) return -1; const L=Math.max(30,S.curve.dur*60), x=(ctx.currentTime-t0)/L; return S.curve.mode==='loop'?((x%1)+1)%1:clamp(x,0,1); },events,out,master,secAt:t=>secOf(t),bar,E,t0f:()=>t0,chords:()=>chordTl.slice(),phraseBars:()=>[...phBars],phraseLog:()=>{ const ids=new Map(); return phLog.map(x=>{ if(!ids.has(x.ph)) ids.set(x.ph,ids.size); return ids.get(x.ph); }); },fillBars:()=>fillBars.slice()};
 }

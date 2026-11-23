@@ -137,6 +137,36 @@ setTimeout(async()=>{
   const es=w.eval('bancLoad("bourdon.banc")'); ck(es.length===1&&es[0].pref===es[0].A&&es[0].notes[es[0].A]===4,'l\'essai est gardé, avec ce qu\'étaient A et B');
   ck(/Bilan/.test(d.getElementById('bancRes').textContent),'le bilan s\'affiche');
   w.eval('bancOpen(false)');
+  /* 11. jeu expressif */
+  console.log('jeu expressif');
+  const xp=w.eval(`(()=>{ const r={}; for(const x of [0,1]){ const Sx=merge(clone(DEFAULT),{seed:31,mus:{expr:x},mel:{lvl:0.6,dens:0.8}}); const e=buildEngine(new AudioContext(),Sx,{record:true}); e.start(0,0,0); e.schedule(180);
+    const m=e.events.filter(z=>z.tr===0), mean=m.reduce((a,b)=>a+b.vel,0)/m.length, sd=Math.sqrt(m.reduce((a,b)=>a+(b.vel-mean)*(b.vel-mean),0)/m.length);
+    const hi=m.filter(z=>z.off>=24), lo=m.filter(z=>z.off<18), av=l=>l.reduce((a,b)=>a+b.vel,0)/Math.max(1,l.length); r[x]={n:m.length,sd,hiLo:av(hi)/Math.max(1e-9,av(lo)),notes:m.map(z=>z.off).join(",")}; } return r; })()`);
+  console.log('   écart des nuances',xp[0].sd.toFixed(3),'→',xp[1].sd.toFixed(3),'| aigu/grave',xp[0].hiLo.toFixed(2),'→',xp[1].hiLo.toFixed(2));
+  ck(xp[0].notes===xp[1].notes,'le jeu expressif ne change pas les notes');
+  ck(xp[1].sd>xp[0].sd*1.05&&xp[1].hiLo>xp[0].hiLo,'il creuse les nuances et fait l\'aigu plus fort');
+  /* 12. accordages et MIDI */
+  console.log('accordages');
+  const ac=w.eval(`(()=>{ const c=(S2,o)=>1200*Math.log2(mkFreq(S2)(o)/mkFreq(S2)(0)), A={root:0,a4:440,temper:"aeu"};
+    const sc=parseScala("! essai\\nEssai\\n 4\\n 150.0\\n 350.0\\n 3/2\\n 2/1\\n");
+    return {rast:c(A,3.5), bay:c(A,1.5), quinte:c(A,7), slots:sc.slots.join(","), sc:c({root:0,a4:440,temper:"scala",scala:sc},3.5)}; })()`);
+  console.log('  ',JSON.stringify(ac));
+  ck(Math.abs(ac.rast-384.9)<0.2&&Math.abs(ac.bay-181.1)<0.2&&Math.abs(ac.quinte-701.9)<0.2,'turc : tierce du Rast à 17 commas, seconde du Bayati à 8, quinte à 31');
+  ck(ac.slots==='0,1.5,3.5,7'&&Math.abs(ac.sc-350)<0.01,'Scala : chaque degré à sa place sur la grille, à sa hauteur exacte');
+  let bad=false; try{ w.eval('parseScala("rien")'); }catch(e){ bad=true; } ck(bad,'un fichier Scala illisible est refusé');
+  const md=w.eval(`(()=>{ const Sx=merge(clone(DEFAULT),{temper:"aeu",scales:["rast","",""]}); const ev=[{tr:0,t:0,off:3.5,dur:0.5,vel:0.2},{tr:2,t:0,off:10.5,dur:1,vel:0.2},{tr:0,t:1,off:4,dur:0.5,vel:0.2}];
+    const hex=u=>Array.from(u).slice(14).map(x=>x.toString(16).padStart(2,"0")).join(" "), b=hex(midiFile(ev,Sx,{tuning:"bend"})), m=hex(midiFile(ev,Sx,{tuning:"mts"}));
+    return {bend:(b.match(/ e0 /g)||[]).length, mts:/f0 [0-9a-f]{2} 7f 7f 08 02 00/.test(m), mtsBend:(m.match(/ e0 /g)||[]).length}; })()`);
+  console.log('  ',JSON.stringify(md));
+  ck(md.bend>=2,'pitch bend à la hauteur exacte (ici le Rast turc)');
+  ck(md.mts&&md.mtsBend===0,'MTS : un message d\'accord, plus aucun pitch bend');
+  /* 15. estampie */
+  console.log('estampie');
+  const P=w.eval(`(()=>{ const p=PRESETS.find(x=>x[0]==="Estampida"); const Sx=merge(clone(DEFAULT),clone(p[1])); Sx.seed=3;
+    const e=buildEngine(new AudioContext(),Sx,{record:true}); e.start(0,0,0); e.schedule(200); return e.phraseLog().slice(0,12); })()`);
+  console.log('   phrases (une lettre par phrase différente)',P.map(x=>String.fromCharCode(65+x)).join(''));
+  ck(P.length>=12&&P[0]===P[2]&&P[4]===P[6]&&P[8]===P[10]&&P[0]!==P[4],'chaque punctus est joué deux fois, puis un nouveau vient');
+  ck(P[1]===P[5]&&P[3]===P[7]&&P[1]!==P[3],'les fins ouverte et close reviennent, différentes l\'une de l\'autre');
   w.eval('stopLive()');
  }catch(e){ console.log('EXCEPTION',e&&e.stack||e); fail++; }
  console.log('ERREURS',errs.length?errs:'aucune');

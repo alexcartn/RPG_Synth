@@ -35,7 +35,8 @@ const AFF_SC={
   saba:["poignant, deuil, douleur",{tragique:1,mélancolique:.8,fataliste:.6,nostalgique:.5}],
   enharm:["archaïque, étrange, antique",{étrange:1,mystérieux:.8,sacré:.6,fataliste:.4}],
   chromgr:["antique, plaintif, tendu",{tragique:1,mélancolique:.8,étrange:.6,sacré:.5}],
-  libre:["à toi de le dire",{}]
+  libre:["à toi de le dire",{}],
+  scala:["un accordage venu d'ailleurs",{}]
 };
 /* tonalités : du caractère traditionnel des tons, repris librement (inspiration baroque, pas une règle) */
 const AFF_KEY=[
@@ -109,7 +110,7 @@ const affTop=(key,root,n)=>{ const a=affOf(key,root); return EMOTIONS.map(e=>[e,
 function affSuggest(sel,allow,n){
   if(!sel.length) return [];
   const out=[];
-  Object.keys(AFF_SC).filter(k=>k!=="libre"&&SC[k]&&(!allow||allow(k))).forEach(k=>{
+  Object.keys(AFF_SC).filter(k=>k!=="libre"&&k!=="scala"&&SC[k]&&(!allow||allow(k))).forEach(k=>{
     let best=null; for(let r=0;r<12;r++){ const a=affOf(k,r), sc=sel.reduce((s,e)=>s+a.w(e),0)/sel.length; if(!best||sc>best.score) best={key:k,root:r,score:sc}; }
     out.push(best);
   });
@@ -242,7 +243,7 @@ function seekBuild(){
 }
 function affTable(){
   let h='<table class="aff-table"><caption>Gammes</caption><thead><tr><th>Gamme</th><th>Ce qu\'elle dégage</th><th>Affects dominants</th></tr></thead><tbody>';
-  SCALE_GROUPS.forEach(([g,l])=>l.forEach(([k,n])=>{ if(k==="libre") return; const w=AFF_SC[k][1], top=Object.keys(w).sort((a,b)=>w[b]-w[a]).slice(0,3); h+="<tr><th scope=\"row\">"+n+"</th><td>"+AFF_SC[k][0]+"</td><td><em>"+top.join(" · ")+"</em></td></tr>"; }));
+  SCALE_GROUPS.forEach(([g,l])=>l.forEach(([k,n])=>{ if(k==="libre"||k==="scala"||!AFF_SC[k]) return; const w=AFF_SC[k][1], top=Object.keys(w).sort((a,b)=>w[b]-w[a]).slice(0,3); h+="<tr><th scope=\"row\">"+n+"</th><td>"+AFF_SC[k][0]+"</td><td><em>"+top.join(" · ")+"</em></td></tr>"; }));
   h+='</tbody></table><table class="aff-table"><caption>Tonalités</caption><thead><tr><th>Note</th><th>Plutôt majeure</th><th>Plutôt mineure</th></tr></thead><tbody>';
   AFF_KEY.forEach((k,i)=>{ h+="<tr><th scope=\"row\">"+NOTES[i]+"</th><td>"+k.maj[0]+"</td><td>"+k.min[0]+"</td></tr>"; });
   h+='</tbody></table><table class="aff-table"><caption>Émotions : valence, éveil et indices (Gabrielsson et Lindström)</caption><thead><tr><th>Émotion</th><th>Valence · éveil</th><th>Ce qu\'elle demande</th></tr></thead><tbody>';

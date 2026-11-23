@@ -15,7 +15,7 @@ class Ctx{constructor(){this.sampleRate=44100;this.currentTime=0;this.destinatio
  createMediaStreamSource(){return new Node()}
  createAnalyser(){const n=new Node();n.fftSize=1024;n.frequencyBinCount=512;n.getFloatTimeDomainData=a=>{for(let i=0;i<a.length;i++)a[i]=micLevel*Math.sin(i*0.3)};n.getFloatFrequencyData=a=>a.fill(-100);return n}close(){}resume(){}}
 class Off extends Ctx{constructor(c,l,sr){super();this.sampleRate=sr;this._c=c;this._l=l}startRendering(){const b=this.createBuffer(this._c,this._l,this.sampleRate);return Promise.resolve(b)}}
-const dom=new JSDOM(html,{runScripts:'dangerously',virtualConsole:vc,pretendToBeVisual:true,url:'http://localhost/?telecommande=1',beforeParse(w){w.__noWelcome=true;w.TextEncoder=TextEncoder;w.AudioContext=Ctx;w.OfflineAudioContext=Off;
+const dom=new JSDOM(html,{runScripts:'dangerously',virtualConsole:vc,pretendToBeVisual:true,url:'http://localhost/',beforeParse(w){w.__noWelcome=true;w.TextEncoder=TextEncoder;w.AudioContext=Ctx;w.OfflineAudioContext=Off;
   w.HTMLCanvasElement.prototype.getContext=()=>new Proxy({},{get:(t,k)=>k==='measureText'?()=>({width:0}):()=>{},set:()=>true});
   Object.defineProperty(w.navigator,'mediaDevices',{value:{getUserMedia:async()=>({getTracks:()=>[{stop(){}}]})}});}});
 const w=dom.window,d=w.document;
@@ -64,18 +64,6 @@ setTimeout(async()=>{
   w.eval('ENCH.mode="mesure"; ENCH.sting="cloche"; loadScene(PRESETS.find(p=>p[0]==="Crypta")[1],null)');
   ck(w.eval('!!ENCH.pending'),'un changement de scène attend le point de sortie');
   w.eval('ENCH.mode="direct"; ENCH.sting="aucun"; live.ctx.currentTime=0');
-  /* 4. télécommande */
-  console.log('télécommande');
-  ck(w.eval('TELE.on'),'?telecommande=1 la permet');
-  const r1=w.eval('teleRun({cmd:"ambiance",nom:"vigilia"})'); ck(r1.ok&&w.eval('SCENE.name')==='Vigilia','ambiance par son nom (sans tenir compte des majuscules)');
-  ck(!w.eval('teleRun({cmd:"ambiance",nom:"Atlantis"})').ok,'ambiance inconnue refusée');
-  w.eval('teleRun({cmd:"tension",valeur:0.9})'); ck(w.eval('S.tension')===0.9,'tension');
-  w.eval('teleRun({cmd:"emotions",liste:"serein, sacré",univers:"dark"})'); ck(w.eval('AFF.sel.size')===2&&w.eval('seekUni()')==='dark','émotions et univers');
-  ck(w.eval('teleRun({cmd:"geste",nom:"suspense"})').ok,'geste');
-  w.eval('teleRun({cmd:"sousLaVoix",actif:true})'); ck(w.eval('VOIX.under'),'sous la voix'); w.eval('teleRun({cmd:"sousLaVoix",actif:false})');
-  ck(!w.eval('teleRun({cmd:"supprimer"})').ok,'ordre inconnu refusé');
-  w.eval('S.tension=0.3'); w.postMessage({bourdon:1,cmd:'tension',valeur:1},'*'); await sleep(30);
-  ck(w.eval('S.tension')===0.3,'un message qui ne vient pas de la fenêtre qui a ouvert Bourdon est ignoré');
   /* 5. émotions sur deux axes */
   console.log('émotions');
   ck(w.eval('Object.keys(AFF_VA).length===EMOTIONS.length&&EMOTIONS.every(e=>AFF_VA[e])'),'chaque émotion a sa valence, son éveil et ses indices');

@@ -37,12 +37,6 @@ Séance, Transitus. Comme en musique de jeu (iMUSE, Wwise, FMOD), un changement 
 
 La marge annonce le changement à venir et dans combien de secondes.
 
-## Télécommande et module Foundry VTT
-
-- Bourdon accepte des ordres simples (jouer, arrêter, ambiance, univers, émotions, tension, geste, volume, sous la voix) envoyés par la fenêtre qui l'a ouvert, quand la télécommande est permise (adresse avec `?telecommande=1`, ou case Télécommande dans Séance). Aucun autre message n'est écouté.
-- Une adresse suffit pour ouvrir sur une scène : `?ambiance=Crypta`, `?univers=dark`, `?emotions=mystérieux,sacré`.
-- Le module Foundry VTT (`foundry/`, versions 12 et 13) s'installe par l'adresse de son manifeste, publié avec le site : `https://<utilisateur>.github.io/RPG_Synth/foundry/module.json`. Chaque scène a son ambiance ou ses émotions (onglet Ambiance de la configuration), Bourdon suit la scène active, le combat fait monter la tension et peut lancer un geste, la fin du combat apaise. Les macros passent par `game.bourdon`. Le détail et le protocole sont dans [foundry/README.md](foundry/README.md).
-
 ## Dungeon synth : les écoles du genre
 
 L'univers Dungeon synth passe de huit à quinze ambiances. Les nouvelles couvrent les écoles que décrivent Jordan Whiteman (*Dark Dungeon Music*, 2024), le blog d'Andrew Werdna et les guides de Bandcamp Daily, au lieu d'un seul album :
@@ -68,11 +62,7 @@ Les tests disent si la musique est correcte, pas si elle porte une scène. Deux 
 
 - Tension harmonique (Écriture, Musica ; 0,6 par défaut) : la tension choisit aussi les accords, d'après l'espace des hauteurs de Lerdahl. La distance d'un accord à la tonique (nombre de quintes entre leurs fondamentales, plus un pas si la couleur change, deux si l'accord est diminué) pèse dans le tirage : en tension, la machine s'éloigne ; au calme, elle reste près de la tonique. La tension ajoute la septième aux accords, le calme la remplace par l'octave ; en tension forte, les progressions idiomatiques cèdent la moitié de leur place. À tension 0,5, rien ne change. Mesuré sur trois graines de cinq minutes : 0,83 quinte de distance moyenne à la tonique à tension 0,1, 1,31 à tension 0,9.
 - Harmonie de cinéma (Écriture, Musica) : de temps en temps (un accord sur huit à la fréquence par défaut), sur la deuxième moitié du cycle d'accords, un accord hors de la gamme relié au précédent par une note commune. Merveilleux : bVI, III, bIII ou VI majeurs, et le majeur sur la même fondamentale. Menace : le mineur sur la même fondamentale, le pôle hexatonique (mineur une tierce majeure plus bas), le triton. Selon la tension : merveilleux au calme, menace en tension. La mélodie, les boucles et les pendules se posent sur ses notes (99 % mesurés), en évitant la note qu'elles viennent de jouer ; la basse prend sa fondamentale et se tait si elle frotte contre le bourdon. Les ambiances de féerie et de montagne ont le merveilleux, celles d'horreur et d'ombre la menace ; chercher une émotion féerique, majestueuse ou héroïque l'appelle, une émotion inquiétante, tragique, fataliste ou étrange aussi. Sans harmonie de cinéma, la musique est identique note pour note.
-- Geste Surprise (Conduire, et télécommande) : un silence brusque d'un ou deux temps, puis un accord qu'on n'attendait pas, hors de la gamme, frappé fort avec une timbale (bVI majeur au calme, pôle hexatonique mineur en tension) ; la cadence suivante est évitée, le retour à la tonique remplacé par le sixième degré. C'est l'attente déjouée de Huron.
-
-## Extension Owlbear Rodeo
-
-`owlbear/`, publiée avec le site ; adresse du manifeste : `https://<utilisateur>.github.io/RPG_Synth/owlbear/manifest.json`. Chaque scène garde son ambiance (ou ses émotions et sa tension) dans ses métadonnées ; quand on change de scène, Bourdon la joue tant que l'extension est ouverte. Le meneur joue en direct la tension, les gestes et Sous la voix. L'extension étant publiée sur le même site que Bourdon, Bourdon accepte ses ordres. Détails dans [owlbear/README.md](owlbear/README.md).
+- Geste Surprise (Conduire) : un silence brusque d'un ou deux temps, puis un accord qu'on n'attendait pas, hors de la gamme, frappé fort avec une timbale (bVI majeur au calme, pôle hexatonique mineur en tension) ; la cadence suivante est évitée, le retour à la tonique remplacé par le sixième degré. C'est l'attente déjouée de Huron.
 
 ## Jeu expressif, accordages, lieu procédural, danses notées
 
@@ -423,7 +413,7 @@ Des scripts classiques chargés dans l'ordre par `index.html`, sans module ni bu
 3. `js/engine.js` : `buildEngine(ctx, S, opts)`, le moteur. Il fonctionne indifféremment sur un `AudioContext` (lecture en direct) et un `OfflineAudioContext` (export). Un ordonnanceur `schedule(until)` planifie à l'avance bourdon, mélodie, canon, nappes, percussion, lieu, boucles et pendules. Chaque famille a son propre générateur pseudo-aléatoire dérivé de la graine : désactiver une voix ne change pas les autres, ce qui rend les stems cohérents avec le mix.
 4. `js/ui.js` : contrôles générés depuis la structure `UI`, cercle des hauteurs en SVG, lecture en direct.
 5. `js/export.js` : `renderOffline`, `wavFromChannels`, `zipStore`, `midiFile`, code de partage.
-6. `js/voix.js` (sous la voix, micro), `js/enchaine.js` (points de sortie, signaux), `js/telecommande.js` (ordres par message et par l'adresse), `js/banc.js` (notes en séance, banc d'écoute).
+6. `js/voix.js` (sous la voix, micro), `js/enchaine.js` (points de sortie, signaux), `js/banc.js` (notes en séance, banc d'écoute).
 7. `js/main.js` : démarrage.
 
 Points d'attention pour la suite :
@@ -445,7 +435,7 @@ npm test
 
 Il construit la page, lance la lecture, applique chaque préréglage, exécute les exports (mix, boucle, stems, MIDI) et bascule une note du cercle. Il ne juge pas le son : l'écoute reste manuelle.
 
-`tests/table.js` vérifie ce qui sert à la table : la chaîne sous la voix (niveau, creux, mélodie plus rare), l'effacement au micro (pièce calme, parole, court silence, vrai silence, bruit continu), les points de sortie (à venir, sur une barre, huit mesures au plus), la télécommande (ordres, refus, messages étrangers ignorés), les émotions (tempo, densité, tension et articulation suivent l'éveil, la tonalité ne pèse presque plus), les nouvelles ambiances, la tension harmonique (accords plus lointains et septièmes en tension), l'harmonie de cinéma (accords hors de la gamme, mélodie posée sur leurs notes, rien sans elle), le geste Surprise et le banc d'écoute (test du signe, essai à l'aveugle, notes en séance).
+`tests/table.js` vérifie ce qui sert à la table : la chaîne sous la voix (niveau, creux, mélodie plus rare), l'effacement au micro (pièce calme, parole, court silence, vrai silence, bruit continu), les points de sortie (à venir, sur une barre, huit mesures au plus), les émotions (tempo, densité, tension et articulation suivent l'éveil, la tonalité ne pèse presque plus), les nouvelles ambiances, la tension harmonique (accords plus lointains et septièmes en tension), l'harmonie de cinéma (accords hors de la gamme, mélodie posée sur leurs notes, rien sans elle), le geste Surprise et le banc d'écoute (test du signe, essai à l'aveugle, notes en séance).
 
 ## Pistes
 

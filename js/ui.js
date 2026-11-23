@@ -254,7 +254,7 @@ setInterval(()=>{ if(typeof atScaleSync==="function") atScaleSync(); if(live){ c
 
 /* ---------- construction des contrôles ---------- */
 const pct=v=>Math.round(v*100)+" %";
-const INST_OPTS=[["luth","Luth"],["harpe","Harpe"],["flute","Flûte"],["carillon","Carillon"],["orgue","Orgue positif"],["roues","Orgue à roues"],["oud","Oud (corde pincée)"],["ney","Ney (flûte soufflée)"],["kalimba","Kalimba"],["bol","Bol chantant"],["verre","Cloches de verre"],["synthe","Synthé doux"],["archet","Archet (violon, viole)"],["cuivre","Cuivre doux"],["guitare","Guitare (acier)"],["piano","Piano de bastringue"],["fmpiano","Piano électrique (FM)"],["fmcloche","Cloches FM"],["accordeon","Accordéon musette"],["voix","Voix (vocalise)"],["chant","Chant (paroles latines ou grecques)"],["aulos","Aulos (double flûte à anche)"],["lyre","Lyre"],["syrinx","Syrinx (flûte de Pan)"],["cornu","Cornu (cor romain)"],["hydraulis","Hydraulis (orgue à eau)"],["sifflet","Sifflet"],["harmonica","Harmonica"],["basse","Basse synthé (grave)"],["atelier","Synthé perso (Atelier)"]];
+const INST_OPTS=[["luth","Luth"],["harpe","Harpe"],["flute","Flûte"],["carillon","Carillon"],["orgue","Orgue positif"],["roues","Orgue à roues"],["oud","Oud (corde pincée)"],["ney","Ney (flûte soufflée)"],["kalimba","Kalimba"],["bol","Bol chantant"],["verre","Cloches de verre"],["synthe","Synthé doux"],["archet","Archet (violon, viole)"],["cuivre","Cuivre doux"],["guitare","Guitare (acier)"],["piano","Piano de bastringue"],["fmpiano","Piano électrique (FM)"],["fmcloche","Cloches FM"],["accordeon","Accordéon musette"],["voix","Voix (vocalise)"],["chant","Chant (paroles latines ou grecques)"],["aulos","Aulos (double flûte à anche)"],["lyre","Lyre"],["syrinx","Syrinx (flûte de Pan)"],["cornu","Cornu (cor romain)"],["hydraulis","Hydraulis (orgue à eau)"],["vielle","Vielle à roue"],["cornemuse","Cornemuse (chalumeau)"],["sifflet","Sifflet"],["harmonica","Harmonica"],["basse","Basse synthé (grave)"],["atelier","Synthé perso (Atelier)"]];
 const DRIFT_OPTS=[["none","Rien"],["filtre","Éclat du bourdon"],["reverb","Réverbération"],["densite","Densité de la mélodie"],["pan","Place de la mélodie (pan)"],["tension","Tension"],["voile","Voile (aigus)"],["grain","Nuage de grains"]];
 /* seconde cible d'une dérive : la même liste, dans le même sens puis à l'envers */
 const DRIFT2_OPTS=DRIFT_OPTS.concat(DRIFT_OPTS.slice(1).map(([k,l])=>["-"+k,l+", à l'envers"]));
@@ -281,7 +281,7 @@ const UI=[
    {k:"fx.voix",type:"range",label:"Place pour la voix",min:0,max:1,step:0.01,fmt:pct,hint:"Creuse doucement le médium (vers 1,9 kHz) pour que la musique passe sous la voix du meneur de jeu sans la couvrir."}]},
   {h:"Bourdon", hf:"sous-grave, tonique, quinte, octaves", id:"g-drone", items:[
    {k:"drone.lvl",type:"range",label:"Niveau",min:0,max:1,step:0.01,fmt:pct},
-   {k:"drone.timbre",type:"select",label:"Timbre",opts:[["anche","Anche (cornemuse)"],["orgue","Orgue de chambre"],["choeur","Chœur (voyelles)"],["bol","Bol chantant"],["machine","Machine à cordes"],["aulos","Aulos (anche nasillarde)"],["pur","Sinus pur"]],restart:true},
+   {k:"drone.timbre",type:"select",label:"Timbre",opts:[["anche","Anche (cornemuse)"],["orgue","Orgue de chambre"],["choeur","Chœur (voyelles)"],["bol","Bol chantant"],["machine","Machine à cordes"],["aulos","Aulos (anche nasillarde)"],["vielle","Vielle à roue (bourdons et chien)"],["pur","Sinus pur"]],restart:true},
    {k:"drone.bright",type:"range",label:"Éclat",min:0,max:1,step:0.01,fmt:pct,restart:true},
    {k:"drone.glide",type:"range",label:"Quinte mobile",min:0,max:1,step:0.01,fmt:pct},
    {k:"tex.sub",type:"range",label:"Texture : grondement grave",min:0,max:1,step:0.01,fmt:pct,hint:"Un grondement sous 90 Hz et deux sons graves qui battent lentement. Il ne passe jamais dans la réverbération."},
@@ -355,6 +355,7 @@ const UI=[
    {k:"arbre.prof",type:"range",label:"Ramure",min:2,max:6,step:1,fmt:v=>v+" étages ("+(Math.pow(2,v))+" feuilles)",hint:"Le nombre d'étages de branches. Plus il y en a, plus la ramure est fine et les feuilles nombreuses et aiguës."},
    {k:"arbre.vent",type:"range",label:"Vent",min:0,max:1,step:0.01,fmt:v=>v<0.15?"calme":v<0.45?"brise":v<0.75?"vent":"tempête",hint:"La force et la fréquence des rafales. Une brise fait frémir quelques feuilles de temps en temps ; une tempête secoue tout, jusqu'au tronc."},
    {k:"arbre.pousse",type:"range",label:"Pousse",min:0,max:10,step:0.5,fmt:v=>v<0.25?"déjà grand":v+" min",hint:"Le temps que met l'arbre à grandir depuis le début de la pièce : chaque nouvel étage s'éveille en bourgeons. À zéro, il est déjà grand."},
+   {k:"arbre.lecture",type:"select",label:"Mélodie de la ramure",opts:[["les deux","Le vent et la lecture"],["vent","Le vent seul"],["lecture","La lecture seule"]],hint:"La ramure pousse selon une grammaire de Lindenmayer : chaque branche se réécrit en deux, avec un pas en degrés de la gamme. Le vent fait tinter les feuilles qu'il traverse ; la lecture parcourt de temps en temps une branche dans l'ordre de la grammaire, et ses feuilles chantent une phrase semblable à elle-même à toutes les échelles (Prusinkiewicz)."},
    {k:"arbre.harm",type:"select",label:"Accord",opts:[["true","Les feuilles suivent l'accord"],["false","Toute la gamme"]],hint:"Les feuilles tintent sur les notes de l'accord en cours, ou sur toutes les notes de la gamme."}]},
   {h:"Nuée", hf:"des particules de son qui jaillissent et retombent", id:"g-nuee", items:[
    {k:"nuee.lvl",type:"range",label:"Niveau (0 = absente)",min:0,max:1,step:0.01,fmt:pct,hint:"Le volume de la nuée. À 0, elle est absente."},
@@ -375,7 +376,7 @@ const UI=[
    {k:"grain.pitch",type:"range",label:"Grains à l'octave ou à la quinte",min:0,max:1,step:0.01,fmt:pct}]}]},
  {num:"III", title:"Écriture", fr:"", sub:"Comment la machine compose : sa logique, le caractère de la mélodie, la part de hasard et de mémoire.", groups:[
   {h:"Logique", hf:"", items:[
-   {k:"mus.logic",type:"select",label:"Logique musicale",opts:[["modal","Modale : la mélodie suit les accords"],["hasard","Hasard (ancienne version)"]]},
+   {k:"mus.logic",type:"select",label:"Logique musicale",opts:[["modal","Modale : la mélodie suit les accords"],["corpus","Corpus : airs anciens appris (Markov)"],["hasard","Hasard (ancienne version)"]]},
    {k:"mus.harm",type:"select",label:"Harmonie",opts:[["idiome","Idiomatique : les progressions typiques de chaque mode"],["libre","Libre : accords pondérés par le mode"]]},
    {k:"mus.color",type:"select",label:"Couleur du mode",opts:[["off","Fixe : les gammes choisies"],["tension","Suit la tension (du lydien au locrien)"],["meteo","Suit la météo du lieu"],["les deux","Tension et météo"]]},
    {k:"mus.expr",type:"range",label:"Jeu expressif",min:0,max:1,step:0.01,fmt:pct,hint:"Comment la mélodie et l'arpège sont joués, sans changer les notes : l'aigu un peu plus fort, les notes loin de l'accord appuyées, les brèves détachées, un souffle avant les grands sauts, la fin de phrase retenue. D'après le système de règles du KTH (Friberg, Bresin et Sundberg). À zéro, jeu mécanique."},
@@ -449,7 +450,9 @@ const UI=[
    {k:"amb.clink",type:"range",label:"Tintements de verres",min:0,max:1,step:0.01,fmt:pct},
    {k:"amb.feu",type:"range",label:"Feu de cheminée",min:0,max:1,step:0.01,fmt:pct},
    {k:"amb.vent",type:"range",label:"Vent",min:0,max:1,step:0.01,fmt:pct},
-   {k:"amb.gouttes",type:"range",label:"Gouttes (crypte)",min:0,max:1,step:0.01,fmt:pct}]},
+   {k:"amb.gouttes",type:"range",label:"Gouttes (crypte)",min:0,max:1,step:0.01,fmt:pct},
+   {k:"amb.marqueSon",type:"select",label:"Marqueur du lieu",opts:[["aucun","Aucun"],["cloche","Cloche lointaine"],["bord","Cloche de bord"],["cor","Cor dans la vallée"],["gong","Gong"],["felee","Cloche fêlée"]],hint:"Un son rare qui dit où l'on est (Schafer l'appelle soundmark) : deux ou trois fois par quart d'heure, loin, sur la tonique, toujours dans un silence de la mélodie. Les bêtes et les oiseaux attendent eux aussi un silence de la mélodie, et chacun garde sa bande de fréquences pour ne pas couvrir les autres."},
+   {k:"amb.marque",type:"range",label:"Fréquence du marqueur",min:0,max:1,step:0.01,fmt:pct}]},
   {fin:"Nature", items:[
    {k:"nature.pluie",type:"range",label:"Pluie",min:0,max:1,step:0.01,fmt:pct},
    {k:"nature.mer",type:"range",label:"Vagues (mer)",min:0,max:1,step:0.01,fmt:pct},

@@ -93,7 +93,10 @@ setTimeout(async()=>{
   console.log('  ',JSON.stringify(th));
   ck(th.tendu.dist>th.calme.dist+0.4,'en tension, les accords s\'éloignent de la tonique (quintes)');
   ck(th.tendu.sept>0.9&&th.calme.sept===0,'la tension ajoute la septième, le calme s\'en passe');
-  ck(Math.abs(th.sans.dist-w.eval(`(()=>{ const fifths=r=>{ for(let j=0;j<12;j++){ if(((Math.round(r)-7*j)%12+12)%12===0||((Math.round(r)+7*j)%12+12)%12===0) return j; } return 6; }; let d=0,n=0; for(const sd of [3,5,8]){ const Sx=merge(clone(DEFAULT),{seed:sd,tension:0.5,scales:["dorien","",""],mus:{harm:"libre",tharm:0},pad:{lvl:0.4,voices:3}}); const e=buildEngine(new AudioContext(),Sx,{record:true}); e.start(0,0,0); e.schedule(300); e.chords().forEach(c=>{ d+=fifths(c.iv[c.d%c.iv.length]); n++; }); } return d/n; })()`))<1e-9,'à zéro, la tension ne touche plus l\'harmonie');
+  /* à zéro, la tension ne touche plus l'harmonie : mêmes accords aux mêmes instants (le moteur ne garde qu'une fenêtre d'accords, on compare les instants communs) */
+  const same=w.eval(`(()=>{ const run=tens=>{ const Sx=merge(clone(DEFAULT),{seed:3,tension:tens,scales:["dorien","",""],mus:{harm:"libre",tharm:0},pad:{lvl:0.4,voices:3}}); const e=buildEngine(new AudioContext(),Sx,{record:true}); e.start(0,0,0); e.schedule(300); return new Map(e.chords().map(c=>[c.t.toFixed(3),c.d+":"+c.offs.join(",")])); };
+    const a=run(0.5), b=run(0.9); let n=0,eq=0; a.forEach((v,k)=>{ if(b.has(k)){ n++; if(b.get(k)===v) eq++; } }); return {n,eq}; })()`);
+  ck(same.n>20&&same.eq===same.n,'à zéro, la tension ne touche plus l\'harmonie ('+same.eq+'/'+same.n+' accords identiques)');
   /* 8. harmonie de cinéma */
   console.log('harmonie de cinéma');
   const ci=w.eval(`(()=>{ const out={};
@@ -155,6 +158,40 @@ setTimeout(async()=>{
   console.log('   phrases (une lettre par phrase différente)',P.map(x=>String.fromCharCode(65+x)).join(''));
   ck(P.length>=12&&P[0]===P[2]&&P[4]===P[6]&&P[8]===P[10]&&P[0]!==P[4],'chaque punctus est joué deux fois, puis un nouveau vient');
   ck(P[1]===P[5]&&P[3]===P[7]&&P[1]!==P[3],'les fins ouverte et close reviennent, différentes l\'une de l\'autre');
+  /* 16. le lieu en trois rôles */
+  console.log('lieu : signaux et marqueurs');
+  const sg=w.eval(`(()=>{ const Sx=merge(clone(DEFAULT),{seed:12,mel:{lvl:0.6,dens:0.85},nature:{oiseaux:0.8,corbeaux:0.8,loup:0.6,grenouilles:0.8},amb:{marque:0.8,marqueSon:"cloche"}});
+    const e=buildEngine(new AudioContext(),Sx,{record:true}); e.start(0,0,0); e.schedule(300); const sp=e.melSpans(), cs=e.signals();
+    const inMel=cs.filter(c=>sp.some(s=>c.t0<s[1]&&c.t0+0.5>s[0])).length, clash=cs.filter((c,i)=>cs.some((d,j)=>j!==i&&c.lo<d.hi&&c.hi>d.lo&&c.t0<d.t1&&c.t1>d.t0)).length;
+    return {n:cs.length, inMel, clash}; })()`);
+  console.log('  ',JSON.stringify(sg));
+  ck(sg.n>20,'des signaux en nombre');
+  ck(sg.inMel/sg.n<0.35,'la plupart attendent un silence de la mélodie ('+Math.round(100*sg.inMel/sg.n)+' % pendant une phrase)');
+  ck(sg.clash/sg.n<0.15,'deux bêtes de la même bande se chevauchent rarement ('+Math.round(100*sg.clash/sg.n)+' %)');
+  ck(w.eval('PRESETS.find(p=>p[0]==="Taberna")[1].amb.marqueSon')==='cloche'&&w.eval('PRESETS.find(p=>p[0]==="Portus")[1].amb.marqueSon')==='bord','chaque univers a son marqueur (cloche, cloche de bord…)');
+  /* 17. corpus et chaîne de Markov */
+  console.log('corpus');
+  const cp=w.eval(`(()=>{ const r={}; for(const lg of ["corpus","modal"]){ let st=0,n=0,fin=0,ph=0; for(const sd of [4,9]){ const Sx=merge(clone(DEFAULT),{seed:sd,scales:["dorien","",""],mus:{logic:lg},mel:{lvl:0.6,dens:0.7}}); Sx.chance={skip:0,ratchet:0,mutate:0,octave:0,rest:0};
+      const e=buildEngine(new AudioContext(),Sx,{record:true}); e.start(0,0,0); e.schedule(200); const m=e.events.filter(z=>z.tr===0).sort((a,b)=>a.t-b.t);
+      for(let i=1;i<m.length;i++){ n++; if(Math.abs(m[i].off-m[i-1].off)<=2.01) st++; } } r[lg]={pas:st/n}; } return r; })()`);
+  console.log('  ',JSON.stringify(cp));
+  ck(cp.corpus.pas>0.5,'la mélodie apprise avance surtout par degrés conjoints, comme le chant ('+Math.round(100*cp.corpus.pas)+' %, hors Fortuna)');
+  /* 18. arbre : grammaire et lecture */
+  console.log('arbre');
+  const ab=w.eval(`(()=>{ const r={}; for(const lec of ["vent","lecture"]){ const Sx=merge(clone(DEFAULT),{seed:5,arbre:{lvl:0.5,prof:5,vent:lec==="vent"?0.6:0,pousse:0,lecture:lec}});
+      const e=buildEngine(new AudioContext(),Sx,{record:true}); e.start(0,0,0); e.schedule(240); r[lec]=e.events.filter(z=>z.tr===4).length; } return r; })()`);
+  console.log('  ',JSON.stringify(ab));
+  ck(ab.lecture>10,'la lecture de la ramure chante, même sans vent');
+  /* 19. vielle et cornemuse */
+  console.log('vielle et cornemuse');
+  ck(w.eval('INST_OPTS.some(o=>o[0]==="vielle")&&INST_OPTS.some(o=>o[0]==="cornemuse")'),'au choix des instruments');
+  const vc=w.eval(`(()=>{ const out={}; for(const nm of ["Estampida","Saltarellus"]){ const p=PRESETS.find(x=>x[0]===nm); const e=buildEngine(new AudioContext(),merge(clone(DEFAULT),clone(p[1])),{record:true}); e.start(0,0,0); e.schedule(60); out[nm]=e.events.filter(z=>z.tr===0).length; } return out; })()`);
+  ck(vc.Estampida>40&&vc.Saltarellus>40,'Estampida (vielle, bourdons et chien) et Saltarellus (cornemuse) jouent');
+  /* 20. émotions GEMS */
+  console.log('émotions GEMS');
+  ck(w.eval('EMOTIONS.length')===17&&w.eval('["tendre","puissant","transcendant"].every(e=>EMOTIONS.includes(e)&&AFF_VA[e]&&EMO_TIP[e])'),'tendre, puissant, transcendant ajoutés, avec leur place et leurs indices');
+  const tdr=w.eval('affSuggest(["tendre"],k=>AFF_MAQAM.indexOf(k)<0,3).map(r=>r.key)'); console.log('   tendre :',tdr.join(', '));
+  ck(tdr.some(k=>["melo","pentmaj","ionien","lydien","hexacorde"].includes(k)),'la tendresse appelle des gammes douces');
   w.eval('stopLive()');
  }catch(e){ console.log('EXCEPTION',e&&e.stack||e); fail++; }
  console.log('ERREURS',errs.length?errs:'aucune');

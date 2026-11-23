@@ -286,7 +286,7 @@ Les ambiances sont réglées et mesurées, pas écoutées à l'aveugle. C'est le
 
 ## Chantiers
 
-Classés par utilité à la table. Les quinze premiers sont faits.
+Classés par utilité à la table. Les vingt premiers sont traités (deux retirés).
 
 ### Faits
 
@@ -308,11 +308,12 @@ Classés par utilité à la table. Les quinze premiers sont faits.
 14. Réverbération du mode économe : le réseau à 8 lignes à retard bouclées existait déjà (la « vivante ») et c'est la moins chère mesurée ; le mode économe l'utilise maintenant pour toutes les réverbérations. Le bruit velours n'a pas été nécessaire. Avec la caisse de résonance partagée des cordes pincées, c'est la réponse aux saccades sur téléphone. Sources : Jot et Chaigne, Välimäki et al.
 15. Estampie et saltarelle : puncta repris, fins ouverte et close communes, rythme sautillant pour la saltarelle ; ambiances Estampida et Saltarellus. Sources : Grocheio, McGee.
 
+16. Lieu en trois rôles : fond continu ; signaux (bêtes, oiseaux) placés dans les silences de la mélodie et dans leur bande de fréquences ; marqueurs par univers. Sources : Schafer, Krause.
+17. Mélodie par chaîne de Markov d'ordre 2 apprise sur un petit corpus d'airs anciens notés en degrés (logique « Corpus »). Source : Ames.
+18. Grammaire de Lindenmayer pour la ramure de l'arbre, et lecture d'une branche dans l'ordre de la grammaire. Source : Prusinkiewicz.
+19. Vielle à roue (mélodie, bourdons et chien) et cornemuse (chalumeau) en modèle physique. Source : Smith pour les guides d'onde.
+20. Émotions revues avec GEMS : tendre, puissant, transcendant ajoutés. Source : Zentner, Grandjean et Scherer.
+
 ### À faire, par ordre d'utilité
 
-16. Lieu en trois rôles (fond, signaux, marqueurs) d'après Schafer, et bêtes rangées par bandes d'après Krause.
-17. Mélodies par chaînes de Markov apprises sur un petit corpus modal (Ames), à comparer à l'oreille avec la logique actuelle.
-18. Une grammaire de Lindenmayer pour la mélodie de l'Arbre (Prusinkiewicz).
-19. Vielle à roue et cornemuse en modèle physique (Smith), déjà dans les pistes.
-20. Liste des affects revue avec le modèle GEMS (Zentner et al.) : émerveillement, transcendance et puissance manquent sous ces noms.
 21. Mesure de la fatigue : un test qui rend une heure et compte les phrases réentendues, les motifs qui reviennent trop, la variété des accords (Margulis).

@@ -372,7 +372,7 @@ function buildEngine(ctx, S, o){
     setLink(lRev,rev&&!vivante()); setLink(lDly,dly); setLink(lDout,dly);
     if(fx){ const al=algoR(); setLink(fx.lVb,rev&&al==="vivante"); setLink(fx.lPl,rev&&al==="plaque"); setLink(fx.lSa,rev&&al==="salle"); const g=GR(), on=(g.mix||0)>0.001, src=g.src||"mel"; for(const k in fx.src) fx.src[k].forEach(l=>setLink(l,on&&(k===src||src==="tout"))); }
     setLink(lCanon,S.canon.lvl>0.001);
-    { const nt=natv(), wa=want("amb")&&mach(); NATS.forEach(k=>setLink(natL[k],wa&&(nt[k]||0)>0.001)); setLink(lBird,wa&&(nt.oiseaux||0)>0.001); setLink(lBeast,wa&&BEASTS.some(k=>(nt[k]||0)>0.001)); }
+    { const nt=natv(), wa=want("amb")&&mach(); NATS.forEach(k=>setLink(natL[k],wa&&(nt[k]||0)>0.001)); setLink(lBird,wa&&(nt.oiseaux||0)>0.001); setLink(lBeast,wa&&(BEASTS.some(k=>(nt[k]||0)>0.001)||((S.amb.marque||0)>0.001&&(S.amb.marqueSon||"aucun")!=="aucun"))); }
     setLink(lMur,mach()&&S.amb.murmur>0.001); setLink(lFire,mach()&&S.amb.feu>0.001); setLink(lWind,mach()&&ventv()>0.001);
     droneLinks.forEach(l=>setLink(l,mach()&&S.drone.lvl>0.001));
   }
@@ -479,6 +479,18 @@ function buildEngine(ctx, S, o){
       return; }
   }
   /* oiseaux : phrases brèves tirées au hasard (trois "espèces"), planifiées comme les autres événements */
+  /* marqueurs : des sons lointains (filtrés, dans la grande salle), sur la tonique ou la quinte pour rester dans la musique ; tirage à part */
+  const RMQ=mulberry32((seed^0x5A1D)>>>0);
+  function marque(kind,t,v){
+    const lp=ctx.createBiquadFilter(); lp.type="lowpass"; lp.frequency.value=kind==="cor"?1400:3200; const g=G(0.55*v); lp.connect(g); route(g,(RMQ()*2-1)*0.5,beastG);
+    const I=n=>instOf(n,"carillon");
+    if(kind==="cloche"){ for(let i=0;i<3;i++){ I("carillon")(t+i*2.6,freq(-12),0.3,7,lp,0); I("bol")(t+i*2.6,freq(-24),0.22,8,lp,0); } }
+    else if(kind==="bord"){ [0,0.45,1.6,2.05].forEach(d=>I("carillon")(t+d,freq(19),0.22,3,lp,0)); }
+    else if(kind==="cor"){ I("cuivre")(t,freq(-5),0.24,3.2,lp,0); I("cuivre")(t+3.4,freq(-12),0.26,4.5,lp,0); }
+    else if(kind==="gong"){ I("bol")(t,freq(-24),0.34,9,lp,0); I("bol")(t+0.01,freq(-24)*1.47,0.12,7,lp,0); }
+    else if(kind==="felee"){ for(let i=0;i<2;i++){ I("carillon")(t+i*3.1,freq(-11),0.26,6,lp,0); I("carillon")(t+i*3.1+0.004,freq(-11)*1.031,0.2,6,lp,0); } }
+    if(o.onNote) o.onNote(t,-12,"loop",4,0.2);
+  }
   function bird(t){
     const sp=Math.floor(R.t()*3), pan=(R.t()*2-1)*0.8, base=2200+R.t()*2400, n=sp===0?3+Math.floor(R.t()*3):sp===1?6+Math.floor(R.t()*5):2+Math.floor(R.t()*2);
     let tt=t;
@@ -548,6 +560,12 @@ function buildEngine(ctx, S, o){
   }
   /* chuintement d'attaque du tuyau (« chiff ») et souffle du vent */
   const chiff=(t,f,vel,dst)=>noiseHit(t,vel*0.25,Math.min(7000,f*3),0.05,"bandpass",dst,2.5,0.008);
+  /* le chien : une scie à l'octave de la tonique, hachée par un créneau à 45-55 Hz (le chevalet mobile qui frappe la table), filtrée dans le médium */
+  function chien(t,acc){ const d=E*0.6, x=ctx.createOscillator(), am=ctx.createOscillator(), g=G(0.5), amg=G(0.5), bp=ctx.createBiquadFilter(), e=G(0);
+    x.type="sawtooth"; x.frequency.value=freq(12); am.type="square"; am.frequency.value=45+hz(t*1.3)*10; am.connect(amg); amg.connect(g.gain);
+    bp.type="bandpass"; bp.frequency.value=1400; bp.Q.value=1.4; x.connect(g); g.connect(bp); bp.connect(e); e.connect(B.drone.in);
+    e.gain.setValueAtTime(0,t); e.gain.linearRampToValueAtTime(0.16*acc,t+0.012); e.gain.setTargetAtTime(0,t+d*0.5,d*0.25);
+    [x,am].forEach(o=>{ o.start(t); o.stop(t+d+0.2); }); }
   function droneVoice(off,lvl,cut,ty,isFifth){
     const bright=0.5+S.drone.bright*1.5, base=cut*bright, w=3+S.drone.width*14;
     const f=ctx.createBiquadFilter(); f.type="lowpass"; f.frequency.value=base; f.Q.value=0.7; droneFilters.push({f,base});
@@ -561,6 +579,10 @@ function buildEngine(ctx, S, o){
     if(ty==="sine"||ty==="pur"){ mk("sine",1,0,f); }
     else if(ty==="bol"){ mk("sine",1,-w*0.25,f,0.9); mk("sine",1,w*0.25,f,0.9); mk("sine",2.003,0,f,0.28); mk("sine",2.71,w*0.1,f,0.12); }
     else if(ty==="anche"){ mk("sawtooth",1,-w,f); mk("sawtooth",1,w,f); }
+    else if(ty==="vielle"){ /* bourdons de vielle : cordes frottées, nasales et un peu rugueuses (la colophane) */
+      const pk=ctx.createBiquadFilter(); pk.type="peaking"; pk.frequency.value=1000; pk.gain.value=6; pk.Q.value=1.2; pk.connect(f);
+      mk("sawtooth",1,-w*0.4,pk,0.62); mk("sawtooth",1,w*0.4,pk,0.62); f.frequency.value=base*1.5; droneFilters[droneFilters.length-1].base=base*1.5;
+      const ns=ctx.createBufferSource(); ns.buffer=wb; ns.loop=true; const nb2=ctx.createBiquadFilter(); nb2.type="bandpass"; nb2.frequency.value=Math.min(5000,fr0*6); nb2.Q.value=3; const ng=G(0.05); ns.connect(nb2); nb2.connect(ng); ng.connect(pk); oscs.push(ns); }
     else if(ty==="aulos"){ mk("sawtooth",1,-w*0.3,f,0.55); mk("triangle",1,w*0.3,f,0.4); f.frequency.value=base*1.1; droneFilters[droneFilters.length-1].base=base*1.1; }
     else if(ty==="machine"){ mk("sawtooth",1,0,f,0.75); mk("sawtooth",2,0,f,0.38); f.frequency.value=base*2.2; droneFilters[droneFilters.length-1].base=base*2.2; }
     else if(ty==="orgue"){ /* deux rangs de principal, l'un un rien plus haut : la voix céleste */
@@ -795,7 +817,7 @@ function buildEngine(ctx, S, o){
     dur=Math.min(4.2,Math.max(0.3,Math.round(dur*10)/10));
     const key=kind+"|"+Math.round(f*10)+"|"+dur+"|"+Math.round(vel*12), hit=wgCache.get(key);
     if(hit){ wgCache.delete(key); wgCache.set(key,hit); return hit; }
-    const x=kind==="b"?physBowed(sr,f,vel,dur,o2):kind==="r"?physReed(sr,f,vel,dur,o2):physFlute(sr,f,vel,dur,o2), buf=ctx.createBuffer(1,x.length,sr); buf.getChannelData(0).set(x);
+    const x=kind==="b"?physBowed(sr,f,vel,dur,o2):kind==="v"?physBowed(sr,f,vel,dur,Object.assign({},o2,{vib:0,att:0.035})):kind==="r"?physReed(sr,f,vel,dur,o2):kind==="c"?physReed(sr,f,vel,dur,Object.assign({},o2,{vib:0,noise:0.1,att:0.012})) /* plus de pression ou une anche plus raide la ferment : mesuré, plus d'oscillation ; la brillance vient des filtres */:physFlute(sr,f,vel,dur,o2), buf=ctx.createBuffer(1,x.length,sr); buf.getChannelData(0).set(x);
     const rec2={buf,dur}; wgCache.set(key,rec2); if(wgCache.size>40) wgCache.delete(wgCache.keys().next().value); return rec2;
   }
   function wgPlay(kind,t,f,vel,len,dst,pan,o2,gain,scoop){
@@ -806,6 +828,14 @@ function buildEngine(ctx, S, o){
   PHYS.flute=(t,f,vel,len,dst,pan)=>wgPlay("f",t,f,vel,Math.max(0.2,len),dst,pan,{noise:0.12},1.2,false);
   PHYS.ney=(t,f,vel,len,dst,pan)=>wgPlay("f",t,f,vel,Math.max(0.25,len),dst,pan,{noise:0.24,att:0.12,pressure:0.97},1.15,true);
   /* aulos en modèle physique : l'anche et la colonne d'air, un peu de nasal (formant vers 1,2 kHz), prise par en dessous */
+  /* vielle à roue : corde frottée par la roue (modèle d'archet sans vibrato), timbre nasal (bosses vers 1 et 2,6 kHz), petit choc de la touche (tangente) */
+  PHYS.vielle=(t,f,vel,len,dst,pan)=>{ if(f>900) return INST.vielle(t,f,vel,len,dst,pan); const p1=ctx.createBiquadFilter(), p2=ctx.createBiquadFilter(); p1.type="peaking"; p1.frequency.value=1050; p1.gain.value=5; p1.Q.value=1.3; p2.type="peaking"; p2.frequency.value=2600; p2.gain.value=4; p2.Q.value=1.6; p1.connect(p2); p2.connect(dst);
+    wgPlay("v",t,f,vel,Math.max(0.25,len),p1,pan,{},1.7,false); noiseHit(t,vel*0.1,3200,0.012,"bandpass",dst,2); };
+  /* cornemuse : le chalumeau (modèle d'anche, souffle régulier du sac, sans vibrato), rendu brillant par deux bosses de filtre ; le chalumeau ne se détache pas :
+     une note d'agrément aiguë et brève (35 ms) sépare les notes, comme le doigté des sonneurs */
+  PHYS.cornemuse=(t,f,vel,len,dst,pan)=>{ const p1=ctx.createBiquadFilter(), p2=ctx.createBiquadFilter(); p1.type="peaking"; p1.frequency.value=1800; p1.gain.value=5; p1.Q.value=1.2; p2.type="peaking"; p2.frequency.value=3300; p2.gain.value=3; p2.Q.value=1.5; p1.connect(p2); p2.connect(dst);
+    if(hz(t*3.1+f)<0.5&&t>0.05) wgPlay("c",t-0.035,f*Math.pow(2,10/12),vel*0.7,0.2,p1,pan,{},0.7,false);
+    wgPlay("c",t,f,vel,Math.max(0.2,len),p1,pan,{},0.82,false); };
   PHYS.aulos=(t,f,vel,len,dst,pan)=>{ const pk=ctx.createBiquadFilter(); pk.type="peaking"; pk.frequency.value=1200; pk.gain.value=3; pk.Q.value=1.2; pk.connect(dst);
     wgPlay("r",t,f,vel,Math.max(0.2,len),pk,pan,{noise:0.25,att:0.04},0.84,true); noiseHit(t,vel*0.08,1600,Math.min(0.25,len),"bandpass",dst,1.2,0.02); };
   PHYS.syrinx=(t,f,vel,len,dst,pan)=>wgPlay("f",t,f,vel,Math.max(0.2,len),dst,pan,{noise:0.38,att:0.05,pressure:0.95},1.0,true); /* flûte de Pan : beaucoup de souffle, attaque vive */
@@ -892,6 +922,13 @@ function buildEngine(ctx, S, o){
   /* ---------- Antiquité ----------
      aulos : la double flûte à anche des Grecs ; une anche nasillarde (scie et carré mêlés, formants vers 1,1 et 2,6 kHz), prise par en dessous, avec un souffle rauque.
      cornu : le cor romain, un cuivre poussé jusqu'à la saturation. hydraulis : l'orgue à eau, des tuyaux dont l'air tremble et bouillonne. */
+  /* vielle et cornemuse en synthèse classique (ou au-dessus du registre du modèle) */
+  INST.vielle=(t,f,vel,len,dst,pan)=>{ const L=Math.max(0.12,len), a=ctx.createOscillator(), b=ctx.createOscillator(), gb=G(0.35), p1=ctx.createBiquadFilter(), fl=ctx.createBiquadFilter();
+    a.type="sawtooth"; b.type="sawtooth"; a.frequency.value=f; b.frequency.value=f; b.detune.value=7; p1.type="peaking"; p1.frequency.value=1050; p1.gain.value=6; p1.Q.value=1.3; fl.type="lowpass"; fl.frequency.value=clamp(f*8,1800,6500);
+    const e=envA(t,0.03,vel*0.5,0.08,L); a.connect(p1); b.connect(gb); gb.connect(p1); p1.connect(fl); fl.connect(e); route(e,pan,dst); [a,b].forEach(o=>{ o.start(t); o.stop(t+L+0.15); }); };
+  INST.cornemuse=(t,f,vel,len,dst,pan)=>{ const L=Math.max(0.12,len), a=ctx.createOscillator(), b=ctx.createOscillator(), gb=G(0.5), p1=ctx.createBiquadFilter(), fl=ctx.createBiquadFilter();
+    a.type="square"; b.type="sawtooth"; a.frequency.value=f; b.frequency.value=f; p1.type="peaking"; p1.frequency.value=1800; p1.gain.value=6; p1.Q.value=1.2; fl.type="lowpass"; fl.frequency.value=clamp(f*9,2200,7000);
+    const e=envA(t,0.012,vel*0.42,0.04,L); a.connect(p1); b.connect(gb); gb.connect(p1); p1.connect(fl); fl.connect(e); route(e,pan,dst); [a,b].forEach(o=>{ o.start(t); o.stop(t+L+0.1); }); };
   INST.aulos=(t,f,vel,len,dst,pan)=>{
     const L=Math.max(0.12,len), a=ctx.createOscillator(), b=ctx.createOscillator(), gb=G(0.5), fl=ctx.createBiquadFilter(), f1=ctx.createBiquadFilter(), f2=ctx.createBiquadFilter();
     a.type="sawtooth"; b.type="square"; const sc=hz(t*1.7+f)<0.5?0.95:0.985; [a,b].forEach(o=>{ o.frequency.setValueAtTime(f*sc,t); o.frequency.exponentialRampToValueAtTime(f,t+0.08); }); b.detune.value=6;
@@ -1679,6 +1716,50 @@ function buildEngine(ctx, S, o){
     }
     return {notes:tidy(notes,pool,type===3,startT),end:e,gr:R.m(),pool};
   }
+  /* ---------- corpus : une chaîne de Markov d'ordre 2 apprise sur des airs anciens (Charles Ames, « The Markov process as a compositional model », 1989) ----------
+     Les airs sont notés en degrés de la gamme (0 = la finale, 4 = la quinte, -1 = la sous-finale) : ils s'adaptent à tous les modes.
+     Grégorien (les sept airs du plain-chant), Veni Emmanuel, Scarborough Fair, Greensleeves, Drunken Sailor : des transcriptions d'airs du domaine public.
+     L'état est la paire des deux derniers degrés ; sans exemple dans le corpus, on se replie sur le dernier degré seul, puis sur les intervalles du corpus.
+     Les temps forts se calent sur l'accord comme dans la logique modale, la phrase finit sur la finale. Tirage dans le même flux que la mélodie. */
+  const CORPUS=[
+    [2,1,2,0,1,-1,0,0],[2,2,3,2,1,0,1,0],[2,2,1,0,-1,0,1,0],
+    [0,1,2,3,2,1,0],[2,3,4,3,2,1],[3,2,1,0,1,0,0],
+    [0,1,2,3,2],[3,4,3,2,1],[0,1,2,2,1,0],[2,3,2,1,0],[0,2,1,0],[1,2,3,2,1,0,-1,0],[0,1,2,3,4,3,2,1,0],
+    [0,2,4,4,4,3,5,4,3,2],[3,4,2,0,2,3,1,0,-1],[2,3,4,4,4,3,5,4,3,2],[3,4,2,0,2,3,1,0],
+    [0,0,4,4,1,2,1,0],[4,6,7,6,4,5,3,4],[7,7,7,6,4,4,3,2,1,0,-1],[0,4,3,2,1,0,-1,0],
+    [0,2,3,4,5,4,3,1,-1,0,1,2,0,0,-1,0,1,-1,-3],
+    [4,4,4,4,4,4,4,0,2,4],[3,3,3,3,3,3,3,-1,1,3],[4,4,4,4,4,4,5,6,7],[6,4,3,1,0,0]
+  ];
+  const MK=(()=>{ const t2=new Map(), t1=new Map(), steps=[]; const add=(m,k,v)=>{ if(!m.has(k)) m.set(k,[]); m.get(k).push(v); };
+    CORPUS.forEach(ph=>{ for(let i=0;i<ph.length;i++){ if(i>=1){ add(t1,ph[i-1],ph[i]); steps.push(ph[i]-ph[i-1]); } if(i>=2) add(t2,ph[i-2]+","+ph[i-1],ph[i]); } });
+    return {t2,t1,steps}; })();
+  const corpusOn=()=>!!(S.mus&&S.mus.logic==="corpus");
+  function mkNext(a,b,rnd){ const c=MK.t2.get(a+","+b)||MK.t1.get(b); if(c) return c[Math.floor(rnd()*c.length)]; return b+MK.steps[Math.floor(rnd()*MK.steps.length)]; }
+  function genPhraseCorpus(pool,stab,dens,startT,secI){
+    /* la finale de référence : la tonique du milieu du registre */
+    let anc=0, bd=1e9; pool.forEach((p,j)=>{ if(pcOf(p)===0){ const d=Math.abs(j-pool.length*0.4); if(d<bd){ bd=d; anc=j; } } });
+    const start=R.m()<0.6?0:(R.m()<0.5?2:4), len=5+Math.floor(R.m()*(3+5*dens)), degs=[start, mkNext(99,start,R.m)];
+    while(degs.length<len) degs.push(mkNext(degs[degs.length-2],degs[degs.length-1],R.m));
+    /* cadence : l'avant-dernière note voisine de la finale, la dernière sur la finale */
+    const pen=degs[degs.length-2]; degs[degs.length-2]=(pen>=1||pen<=-1)&&Math.abs(pen)<=2?pen:(R.m()<0.6?1:-1); degs[degs.length-1]=0;
+    const slow=slowE(dens), mt=motifFor(secI), durs=dens>0.6?[1,1,2,2,2,3]:[1,2,2,2,3,4], notes=[], lvl=0.35+0.6*R.m(); let e=0, prevIx=-1;
+    for(let k=0;k<degs.length;k++){
+      const tn=startT+e*E, ch=chordAt(tn), strong=Math.round((tn-t0)/E)%2===0;
+      let ix=clamp(anc+Math.round(degs[k]*poolPerOct(pool)/7),0,pool.length-1); /* degré du corpus (sur 7) vers le degré de la gamme jouée */
+      /* temps fort : on se cale sur l'accord, sauf pour une note de passage (approchée et quittée par degré conjoint, dans le même sens),
+         que le chant garde : la caler ferait deux tierces à la place de deux pas */
+      const pas=k>0&&k<degs.length-1&&Math.abs(degs[k]-degs[k-1])===1&&Math.abs(degs[k+1]-degs[k])===1&&Math.sign(degs[k]-degs[k-1])===Math.sign(degs[k+1]-degs[k]);
+      const down=Math.abs((tn-t0)/bar-Math.round((tn-t0)/bar))<0.01; /* le premier temps de la mesure se cale toujours */
+      if(strong&&k<degs.length-1&&(!pas||down)) ix=snapTo(pool,ix,chordPcs(ch),1,prevIx);
+      prevIx=ix;
+      const dE=k<mt.rh.length?mt.rh[k]*(R.m()<slow?2:1):(k===degs.length-1?Math.max(2,durs[Math.floor(R.m()*durs.length)]):durs[Math.floor(R.m()*durs.length)]);
+      const arch=0.5+0.5*Math.sin(Math.PI*(k+0.5)/degs.length), vel=clamp(0.07+0.27*Math.pow(clamp(lvl*(0.45*arch+0.35*(strong?1:0.05)+0.2*R.m()),0,1),1.3),0.06,0.34);
+      notes.push({e,off:pool[ix],dE,vel,grace:R.m()<ornE(),gdir:R.m()<0.5?-1:1,jit:(R.h()-0.5)*(strong?0.008:0.02)}); e+=dE;
+    }
+    return {notes:tidy(notes,pool,true,startT),end:e,gr:R.m(),pool};
+  }
+  /* nombre de degrés par octave dans le réservoir (7 pour un mode, 5 pour une pentatonique) */
+  function poolPerOct(pool){ const pcs=new Set(pool.map(p=>Math.round(pcOf(p)*2))); return pcs.size||7; }
   function genPhrase(pool,stab,dens){
     if(lastOff.v!==null){ let bi=0,bd=1e9; pool.forEach((p,j)=>{const d=Math.abs(p-lastOff.v); if(d<bd){bd=d;bi=j;}}); idx=bi; }
     else idx=Math.floor(pool.length/3);
@@ -1706,7 +1787,25 @@ function buildEngine(ctx, S, o){
   const cur={mel:0,drone:0,clink:0,perc:0,k:0,pad:0,int:0,fire:0,wind:0,drip:0,bird:0,sec:1,arp:0,aj:0,pl:0,pli:0,plj:0};
   const phBars=new Set(), fillBars=[], melOn=[]; let nuee=null, arbre=null, billes=[], loopsL=[], pendK=[], lastPh=null, lastD=null, frozen=null;
   const lastOff={v:null};
-  const phLog=[]; /* journal des phrases jouées (pour les tests : une phrase rejouée est le même objet) */
+  const phLog=[];
+  /* ---------- le lieu en trois rôles (R. Murray Schafer, The Soundscape, 1977) ----------
+     Le fond (tonalité du lieu : murmure, vent, pluie, mer, nuit, grondement) tient sans interruption.
+     Les signaux (bêtes, oiseaux) sont des sons de premier plan : ils attendent un silence de la mélodie (au plus 8 s) pour ne pas parler en même temps qu'elle,
+     et chacun garde sa bande de fréquences, comme dans l'hypothèse des niches acoustiques de Bernie Krause (The Great Animal Orchestra, 2012) :
+     deux bêtes qui chantent dans la même bande ne se recouvrent pas, la seconde attend que la première ait fini.
+     Les marqueurs (soundmarks) : un son rare qui dit où l'on est (cloche, cloche de bord, cor, gong), deux ou trois fois par quart d'heure. */
+  const melSpans=[], calls=[];
+  const NICHE={grenouilles:[700,1500,1.6], hibou:[250,600,2.2], loup:[350,1000,5], corbeaux:[900,2600,1.4], chevaux:[300,1800,1.6], mouettes:[1500,4200,1.6], oiseaux:[2200,7000,2.2], marque:[60,900,9]};
+  function placeSignal(k,t){
+    const nb=NICHE[k]||[0,20000,1.5], dur=nb[2], lim=t+8;
+    let x=t;
+    for(let pass=0;pass<4;pass++){ let moved=false;
+      for(const sp of melSpans){ if(x<sp[1]&&x+Math.min(dur,1.2)>sp[0]-0.3){ if(sp[1]+0.4<=lim){ x=sp[1]+0.4; moved=true; } } }
+      for(const c of calls){ if(c.lo<nb[1]&&c.hi>nb[0]&&x<c.t1&&x+dur>c.t0){ if(c.t1+0.2<=lim){ x=c.t1+0.2; moved=true; } } }
+      if(!moved) break; }
+    calls.push({t0:x,t1:x+dur,lo:nb[0],hi:nb[1]}); if(calls.length>60) calls.splice(0,calls.length-40);
+    return x;
+  } /* journal des phrases jouées (pour les tests : une phrase rejouée est le même objet) */
   function rec(tr,t,off,dur,vel,tag){ if(o.record||o.rolling) events.push(tag?{tr,t,off,dur,vel,tag}:{tr,t,off,dur,vel}); }
   const ctr={pm:null,pc:null,li:null};
   function canonNote(t,off,vel,len,iv){
@@ -1766,7 +1865,7 @@ function buildEngine(ctx, S, o){
       if(o.underVoice) dens*=1-0.45*clamp(o.underVoice(),0,1);
       const shift=arcOn()?Math.round(arcAt(cur.mel)*6):0, lo=12+12*S.mel.reg+shift, hi=lo+12*S.mel.span, pool=poolOf(iv,lo,hi);
       if(!pool.length){cur.mel+=bar; continue;}
-      const genRaw=modal()?(()=>genPhraseModal(pool,stab,dens,cur.mel,sc.i)):(()=>genPhrase(pool,stab,dens));
+      const genRaw=corpusOn()?(()=>genPhraseCorpus(pool,stab,dens,cur.mel,sc.i)):modal()?(()=>genPhraseModal(pool,stab,dens,cur.mel,sc.i)):(()=>genPhrase(pool,stab,dens));
       let gen=()=>bestOf(genRaw,pool,stab);
       let fresh=false; const gen0=gen; gen=()=>{ fresh=true; return gen0(); };
       const F0=formE(), FF=(F0==='libre'&&rcAt(cur.mel)>=0.55)?'theme':F0; /* côté chanson, la forme libre devient un thème qui revient */
@@ -1808,6 +1907,7 @@ function buildEngine(ctx, S, o){
         lastOff.v=off; }
       });
       t=cur.mel+ph.end*E;
+      if(S.mel.lvl>0.001&&want("mel")){ melSpans.push([cur.mel,t]); if(melSpans.length>80) melSpans.splice(0,melSpans.length-60); }
       const bars=Math.ceil((t-t0)/bar-1e-6);
       { const r1=R.c(), r2=R.c(); cur.mel=t0+bar*(bars+Math.round(ph.gr*2*(1.6-1.5*dens)*silE())+(r1<(((S.chance||{}).rest)||0)*2?1+(r2<0.4?1:0):0)); phBars.add(Math.round((cur.mel-t0)/bar)); if(phBars.size>400){ const lo=Math.round((until-t0)/bar)-8; phBars.forEach(b=>{ if(b<lo) phBars.delete(b); }); } }
     }
@@ -1933,6 +2033,10 @@ function buildEngine(ctx, S, o){
         }
       }
     }
+    /* vielle : le chien, la corde trompette qui grésille quand le joueur donne un coup de poignet sur la roue, sur les temps forts de la mesure */
+    if(M&&S.drone.timbre==="vielle"&&S.drone.lvl>0.001&&want("drone")){ if(cur.chien===undefined||cur.chien<t0) cur.chien=t0;
+      while(cur.chien<until){ const t=cur.chien, c=PAT[Math.round((t-t0)/E)%PAT.length]; if(c==="S"||c==="s") chien(sw(t),c==="S"?1:0.65); cur.chien+=E; } }
+    else if(cur.chien!==undefined&&cur.chien<until) cur.chien=t0+Math.ceil((until-t0)/E)*E;
     /* bourdon : la quinte glisse vers un degré voisin */
     while(cur.drone<until){
       if(!M){ cur.drone=until; break; }
@@ -2042,6 +2146,18 @@ function buildEngine(ctx, S, o){
           const t=tg+((n.x-c)*dir+w)*(1.6+1.2*(1-vent))+rr()*0.25, vel=(leaf?0.12:0.09)*str*(1-0.6*dist/w);
           play(n,t,vel,leaf?E*3:E*8); });
         arbre.next=tg+(-Math.log(1-rr()*0.98))/(0.025+0.3*vent); }
+      /* lecture de la ramure : de temps en temps, une branche est lue dans l'ordre de la grammaire (en profondeur, comme on lit la chaîne
+         du L-système) ; ses feuilles donnent une phrase, ses nœuds une note grave. Elle attend un silence de la mélodie. */
+      const LM=A.lecture||"les deux";
+      while(arbre.read<until&&guard++<80){ const t0r=arbre.read, gd=Math.floor(grownAt(t0r));
+        if((LM==="lecture"||LM==="les deux")&&gd>=2){
+          const roots=arbre.nodes.map((n,i)=>i).filter(i=>arbre.nodes[i].d===Math.max(1,gd-3)), r0=roots[Math.floor(rr()*roots.length)], seq=[];
+          const walk=i=>{ const n=arbre.nodes[i]; if(n.d>gd) return; seq.push(n); arbre.nodes.forEach((c,j)=>{ if(c.par===i) walk(j); }); };
+          if(r0!==undefined) walk(r0);
+          let tt=placeSignal("oiseaux",t0r); const st=E*(seq.length>10?1:2);
+          seq.forEach(n=>{ const leaf=n.d>=gd; if(leaf){ play(n,tt,0.1,E*3); tt+=st; } else play(n,tt,0.07,E*6); });
+        }
+        arbre.read=t0r+(25+rr()*35)/(0.4+vent); }
     }
     /* lieu */
     if(!M){ for(const k of ["clink","fire","wind","drip","bird"]) if(cur[k]<until) cur[k]=until; bands.forEach(b=>{ if(b.cur<until) b.cur=until; }); }
@@ -2053,9 +2169,12 @@ function buildEngine(ctx, S, o){
       });
       while(cur.clink<until){ clink(cur.clink); cur.clink+=(18+R.a()*30)/(0.25+S.amb.clink*1.5); }
       cur.fire=until; /* les craquements viennent de la boucle précalculée */
-      while(cur.bird<until){ const t=cur.bird, ov=natv().oiseaux||0; if(ov>0.001) bird(t); cur.bird=t+(7+R.t()*14)/(0.25+ov*1.75); }
+      while(cur.bird<until){ const t=cur.bird, ov=natv().oiseaux||0; if(ov>0.001) bird(placeSignal("oiseaux",t)); cur.bird=t+(7+R.t()*14)/(0.25+ov*1.75); }
       { const nt=natv(); BEASTS.forEach(k=>{ const v=nt[k]||0; if(cur["b_"+k]===undefined) cur["b_"+k]=t0+2+R.t()*BEAST_T[k]*0.4;
-        while(cur["b_"+k]<until){ const t=cur["b_"+k]; if(v>0.001) beast(k,t,v); cur["b_"+k]=t+BEAST_T[k]*(0.5+R.t())/(0.25+v*1.75); } }); }
+        while(cur["b_"+k]<until){ const t=cur["b_"+k]; if(v>0.001) beast(k,placeSignal(k,t),v); cur["b_"+k]=t+BEAST_T[k]*(0.5+R.t())/(0.25+v*1.75); } }); }
+      /* marqueur du lieu : rare, dans un silence de la mélodie */
+      { const mq=S.amb.marque||0, ms=S.amb.marqueSon||"aucun"; if(cur.marque===undefined) cur.marque=t0+20+RMQ()*30;
+        while(cur.marque<until){ const t=cur.marque; if(mq>0.001&&ms!=="aucun") marque(ms,placeSignal("marque",t),mq); cur.marque=t+(70+RMQ()*80)/(0.3+mq); } }
       while(cur.wind<until){
         const t=cur.wind;
         if(windBP){ windBP.frequency.setTargetAtTime(250+R.a()*700,t,2.5); windMod.gain.setTargetAtTime(0.2+R.a()*0.8,t,2.5); }
@@ -2091,12 +2210,21 @@ function buildEngine(ctx, S, o){
   /* arbre : une ramure fractale qui pousse ; tronc et branches graves, feuilles aiguës ; des rafales de vent la traversent */
   function initArbre(t){
     const A=S.arbre||{}, D=clamp(Math.round(A.prof||4),2,6), rr=mulberry32((seed^0x7A3B1E)>>>0), nodes=[];
-    const grow=(par,x,y,ang,len,d,g)=>{ const nx=x+len*Math.sin(ang), ny=y+len*Math.cos(ang), i=nodes.length; nodes.push({x:nx,y:ny,px:x,py:y,par,d,g:Math.min(16,g),hits:[]});
-      if(d<D){ const sp=0.38+0.2*rr(); grow(i,nx,ny,ang-sp*(0.8+0.4*rr()),len*(0.68+0.08*rr()),d+1,g+2); grow(i,nx,ny,ang+sp*(0.8+0.4*rr()),len*(0.68+0.08*rr()),d+1,g+4); } };
-    grow(-1,0,0,0,0.32,0,-7);
+    /* grammaire de Lindenmayer (Prusinkiewicz, « Score generation with L-systems », 1986) : deux symboles, A et B ; chaque branche se réécrit
+       en deux branches, avec un pas en degrés de la gamme pour chacune. Le jeu de règles est tiré à la graine : la ramure, et donc sa mélodie,
+       est semblable à elle-même à toutes les échelles. */
+    const GRAM=[
+      {A:[["A",2],["B",4]], B:[["A",-1],["B",2]]},
+      {A:[["B",4],["A",-3]], B:[["A",1],["B",2]]},
+      {A:[["A",1],["B",3]], B:[["B",-2],["A",4]]},
+      {A:[["B",2],["B",-2]], B:[["A",3],["A",1]]}
+    ], gram=GRAM[Math.floor(rr()*GRAM.length)];
+    const grow=(par,x,y,ang,len,d,g,sym)=>{ const nx=x+len*Math.sin(ang), ny=y+len*Math.cos(ang), i=nodes.length; nodes.push({x:nx,y:ny,px:x,py:y,par,d,g:clamp(g,-10,16),sym,hits:[]});
+      if(d<D){ const sp=0.38+0.2*rr(), [l,r]=gram[sym]; grow(i,nx,ny,ang-sp*(0.8+0.4*rr()),len*(0.68+0.08*rr()),d+1,g+l[1],l[0]); grow(i,nx,ny,ang+sp*(0.8+0.4*rr()),len*(0.68+0.08*rr()),d+1,g+r[1],r[0]); } };
+    grow(-1,0,0,0,0.32,0,-7,"A");
     let x0=1e9,x1=-1e9,y1=0; nodes.forEach(n=>{ x0=Math.min(x0,n.x,n.px); x1=Math.max(x1,n.x,n.px); y1=Math.max(y1,n.y); });
     nodes.forEach(n=>{ const f=v=>(v-x0)/Math.max(1e-6,x1-x0); n.x=f(n.x); n.px=f(n.px); n.y/=y1; n.py/=y1; });
-    arbre={nodes,D,t0:t,rr,next:t+2+rr()*4,budL:0};
+    arbre={nodes,D,t0:t,rr,next:t+2+rr()*4,budL:0,read:t+12+rr()*10,gram:GRAM.indexOf(gram)};
   }
   /* nuée (d'après Emit) : des sources émettent des particules ; chacune est un grain de son court */
   function initNuee(t){ nuee={rr:mulberry32((seed^0x3E51A7)>>>0), next:t+1, parts:[], t0:t}; }
@@ -2244,5 +2372,5 @@ function buildEngine(ctx, S, o){
     perc:(k,part,t,v,dst)=>{ const s=PB; PB=dst; try{ (KITS[k]||KITS.cadre)[part](t,v); } finally{ PB=s; } },
     kpat:KPAT, kits:Object.keys(KITS), noise:()=>wb
   };
-  return {nueeState,arbreState,billeY,bank,pieceEnd:()=>pieceFade,fxAttach,grainFreeze,fxOn:()=>!!fx,start,schedule,setLevels,setReverb,stop,fadeOut,sleepFade,sleepClear,replan,freeze,reroll,gesture,play,synOn,dawOn,dawNote,rackSync,meter,tap:()=>volG,analyser:k=>k==="all"?anaAll:anaSyn,dawReplan,dawPos,pendX,tensNow:()=>tensAt(ctx.currentTime),adaptNow:()=>adaptE(ctx.currentTime),tensPos:()=>{ if(!curveOn()) return -1; const L=Math.max(30,S.curve.dur*60), x=(ctx.currentTime-t0)/L; return S.curve.mode==='loop'?((x%1)+1)%1:clamp(x,0,1); },events,out,master,secAt:t=>secOf(t),bar,E,t0f:()=>t0,chords:()=>chordTl.slice(),phraseBars:()=>[...phBars],phraseLog:()=>{ const ids=new Map(); return phLog.map(x=>{ if(!ids.has(x.ph)) ids.set(x.ph,ids.size); return ids.get(x.ph); }); },fillBars:()=>fillBars.slice()};
+  return {nueeState,arbreState,billeY,bank,pieceEnd:()=>pieceFade,fxAttach,grainFreeze,fxOn:()=>!!fx,start,schedule,setLevels,setReverb,stop,fadeOut,sleepFade,sleepClear,replan,freeze,reroll,gesture,play,synOn,dawOn,dawNote,rackSync,meter,tap:()=>volG,analyser:k=>k==="all"?anaAll:anaSyn,dawReplan,dawPos,pendX,tensNow:()=>tensAt(ctx.currentTime),adaptNow:()=>adaptE(ctx.currentTime),tensPos:()=>{ if(!curveOn()) return -1; const L=Math.max(30,S.curve.dur*60), x=(ctx.currentTime-t0)/L; return S.curve.mode==='loop'?((x%1)+1)%1:clamp(x,0,1); },events,out,master,secAt:t=>secOf(t),bar,E,t0f:()=>t0,chords:()=>chordTl.slice(),phraseBars:()=>[...phBars],signals:()=>calls.map(c=>({...c})), melSpans:()=>melSpans.map(x=>x.slice()), phraseLog:()=>{ const ids=new Map(); return phLog.map(x=>{ if(!ids.has(x.ph)) ids.set(x.ph,ids.size); return ids.get(x.ph); }); },fillBars:()=>fillBars.slice()};
 }

@@ -1,8 +1,8 @@
 "use strict";
 /* ============================================================
-   MODE JEU : un panneau de boutons, un pad XY, le cercle et le clavier pour jouer par-dessus la machine
+   MODE JEU : un panneau de boutons, le cercle et le clavier pour jouer par-dessus la machine
    ============================================================ */
-const JEU={on:false, frozen:false, amp:1, xy:{x:"lum",y:"prof"}, seen:{}};
+const JEU={on:false, frozen:false, amp:1, seen:{}};
 
 /* chaque bouton agit sur un ou deux réglages existants ; replan = voix à replanifier, zero = voix qui s'allume ou s'éteint */
 const DRIFTS=()=>Array.isArray(S.drift)?S.drift:[];
@@ -15,7 +15,7 @@ const KNOBS=[
   {id:"dens",label:"Densité",tip:"Nombre de notes : de rares notes qui passent comme des souvenirs à un chant continu.",get:()=>S.mel.dens,set:v=>{S.mel.dens=v;},keys:["mel.dens"],replan:"mel"},
   {id:"tex",label:"Texture",tip:"Des notes vers le souffle : le nuage de grains, la pierre qui chante et l'air prennent le dessus sur les notes.",get:()=>Math.min(1,((S.grain&&S.grain.mix)||0)/0.7),set:v=>{ S.grain.mix=+(v*0.7).toFixed(3); S.tex=Object.assign({lvl:1,sub:0,mid:0,air:0},S.tex||{}); S.tex.mid=+(v*0.6).toFixed(3); S.tex.air=+(v*0.5).toFixed(3); },keys:["grain.mix","tex.mid","tex.air"]},
   {id:"lieu",label:"Lieu",tip:"Les sons du lieu : vent, pluie, feu, nuit, bêtes. Toujours en fond.",get:()=>Math.min(1,S.amb.lvl===undefined?1:S.amb.lvl),set:v=>{S.amb.lvl=v;},keys:["amb.lvl"]},
-  /* toujours disponibles sur le pad XY et dans Composer */
+  /* disponibles dans Composer */
   {id:"tension",label:"Tension",tip:"Monte : plus de nervosité et de dissonance. Descend : tout se détend.",get:()=>S.tension,set:v=>{S.tension=v; releaseCurve();},keys:["tension"],fmt:v=>tensionWord(v),noKnob:true},
   {id:"bourdon",label:"Bourdon",tip:"Le son continu et grave sur la tonique.",get:()=>S.drone.lvl,set:v=>{S.drone.lvl=v;},keys:["drone.lvl"],noKnob:true},
   {id:"nappes",label:"Nappes",tip:"Les accords tenus en arrière-plan.",get:()=>S.pad.lvl,set:v=>{S.pad.lvl=v;},keys:["pad.lvl"],zero:"pad",noKnob:true},
@@ -77,31 +77,6 @@ function makeKnob(spec){
   paintKnob(el,spec); el._spec=spec; return el;
 }
 
-/* ---------- pad XY ---------- */
-function xyDraw(){
-  const cv=$("xy"); if(!cv||!JEU.on) return;
-  const r=cv.getBoundingClientRect(), dpr=Math.min(2,window.devicePixelRatio||1), W=Math.round(r.width), H=Math.round(r.height); if(!W||!H) return;
-  if(cv.width!==Math.round(W*dpr)||cv.height!==Math.round(H*dpr)){ cv.width=Math.round(W*dpr); cv.height=Math.round(H*dpr); }
-  const c=cv.getContext("2d"), cs=getComputedStyle(document.documentElement), v=n=>cs.getPropertyValue(n).trim();
-  const rub=v("--rubric")||"#a3301c", ink=v("--ink")||"#3a2e22", ink2=v("--ink-2")||"#6b5a46", rule=v("--rule")||"#b8a888", gold="oklch(0.62 0.12 78)";
-  const X=KNOB[JEU.xy.x], Y=KNOB[JEU.xy.y], x=clamp01(X.get())*W, y=(1-clamp01(Y.get()))*H;
-  c.setTransform(dpr,0,0,dpr,0,0); c.clearRect(0,0,W,H);
-  c.strokeStyle=rule; c.lineWidth=1; c.setLineDash([2,4]);
-  [0.25,0.5,0.75].forEach(g=>{ c.beginPath(); c.moveTo(Math.round(g*W)+0.5,0); c.lineTo(Math.round(g*W)+0.5,H); c.moveTo(0,Math.round(g*H)+0.5); c.lineTo(W,Math.round(g*H)+0.5); c.stroke(); });
-  c.setLineDash([]); c.strokeStyle=ink2; c.globalAlpha=0.7; c.beginPath(); c.moveTo(Math.round(x)+0.5,0); c.lineTo(Math.round(x)+0.5,H); c.moveTo(0,Math.round(y)+0.5); c.lineTo(W,Math.round(y)+0.5); c.stroke(); c.globalAlpha=1;
-  c.fillStyle=rub; c.beginPath(); c.arc(x,y,9,0,Math.PI*2); c.fill(); c.strokeStyle=gold; c.lineWidth=2; c.beginPath(); c.arc(x,y,12.5,0,Math.PI*2); c.stroke();
-  c.fillStyle=ink2; c.font='italic 12px "Alegreya", Georgia, serif'; c.textBaseline="alphabetic"; c.textAlign="right"; c.fillText(X.label+" →",W-6,H-6); c.textAlign="left"; c.fillText("↑ "+Y.label,6,15);
-}
-function xyWire(){
-  const cv=$("xy"); let drag=false;
-  const set=(e,final)=>{ const r=cv.getBoundingClientRect(); applyKnob(KNOB[JEU.xy.x],(e.clientX-r.left)/r.width,final); applyKnob(KNOB[JEU.xy.y],1-(e.clientY-r.top)/r.height,final); jeuSync(); };
-  cv.addEventListener("pointerdown",e=>{ cv.setPointerCapture(e.pointerId); drag=true; set(e,false); e.preventDefault(); });
-  cv.addEventListener("pointermove",e=>{ if(drag) set(e,false); });
-  const end=e=>{ if(!drag) return; drag=false; set(e,true); };
-  cv.addEventListener("pointerup",end); cv.addEventListener("pointercancel",end);
-  cv.addEventListener("keydown",e=>{ const dx={ArrowRight:0.03,ArrowLeft:-0.03}[e.key]||0, dy={ArrowUp:0.03,ArrowDown:-0.03}[e.key]||0; if(dx||dy){ applyKnob(KNOB[JEU.xy.x],KNOB[JEU.xy.x].get()+dx,true); applyKnob(KNOB[JEU.xy.y],KNOB[JEU.xy.y].get()+dy,true); jeuSync(); e.preventDefault(); } });
-  if(window.ResizeObserver) new ResizeObserver(()=>xyDraw()).observe(cv);
-}
 
 /* ---------- jouer des notes ---------- */
 const KEYROWS=[["KeyZ","KeyX","KeyC","KeyV","KeyB","KeyN","KeyM","Comma","Period","Slash"],["KeyA","KeyS","KeyD","KeyF","KeyG","KeyH","KeyJ","KeyK","KeyL","Semicolon"],["KeyQ","KeyW","KeyE","KeyR","KeyT","KeyY","KeyU","KeyI","KeyO","KeyP"]];
@@ -139,7 +114,6 @@ function jeuReset(){ JEU.frozen=false; const f=$("jeuFreeze"); if(f) f.setAttrib
 function jeuSync(){
   if(!JEU.on) return;
   document.querySelectorAll("#knobs .knob").forEach(el=>paintKnob(el,el._spec));
-  xyDraw();
   { const h=$("jeuMixer"); if(h&&!h.contains(document.activeElement)) dawMixerDraw(); }
 }
 /* appelée à chaque image : le tableau suit les changements venus d'ailleurs (courbe de tension, scènes) */
@@ -147,7 +121,6 @@ function jeuFrame(){
   if(!JEU.on) return;
   let dirty=false;
   document.querySelectorAll("#knobs .knob").forEach(el=>{ const v=clamp01(el._spec.get()); if(Math.abs((JEU.seen[el._spec.id]??-1)-v)>0.003){ paintKnob(el,el._spec); dirty=true; } });
-  if(dirty) xyDraw();
   /* le mixeur suit les niveaux venus d'ailleurs (préréglages, scènes) et anime les vumètres */
   if((JEU.n=(JEU.n||0)+1)%3===0){
     const h=$("jeuMixer"); if(h&&!h.contains(document.activeElement)){ const sig=JSON.stringify([MACH.map(m=>m[2]?getP(m[2]):0),S.daw.mix,S.daw.tracks.map(t=>[t.name,t.vol,t.pan,t.mute,t.solo])]); if(sig!==JEU.mixSig){ JEU.mixSig=sig; dawMixerDraw(); } }
@@ -179,10 +152,6 @@ function varyBack(){ const p=VARY.stack.pop(); if(!p) return; loadScene(p.s,null
 function setJeu(on){ setMode(on?"jeu":"reglage"); }
 function buildJeu(){
   const kn=$("knobs"); KNOBS.filter(k=>!k.noKnob).forEach(k=>kn.appendChild(makeKnob(k)));
-  const opts=KNOBS.map(k=>'<option value="'+k.id+'">'+k.label+'</option>').join("");
-  $("xSel").innerHTML=opts; $("ySel").innerHTML=opts; $("xSel").value=JEU.xy.x; $("ySel").value=JEU.xy.y;
-  $("xSel").onchange=()=>{ JEU.xy.x=$("xSel").value; xyDraw(); }; $("ySel").onchange=()=>{ JEU.xy.y=$("ySel").value; xyDraw(); };
-  xyWire();
   const pc=$("playCtl");
   pc.appendChild(mkCtl({k:"play.inst",type:"select",label:"Instrument de ton jeu",opts:[["","Comme la mélodie"]].concat(INST_OPTS)}));
   pc.appendChild(mkCtl({k:"play.oct",type:"select",label:"Registre",opts:[[12,"Grave"],[24,"Médium"],[36,"Aigu"],[48,"Très aigu"]],num:true}));

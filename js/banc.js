@@ -10,6 +10,7 @@
    ============================================================ */
 const BANC_F=[
   {id:"logique", n:"Logique modale ou hasard", a:["modale",S=>{S.mus.logic="modal";}], b:["hasard",S=>{S.mus.logic="hasard";}]},
+  {id:"corpus", n:"Corpus d'airs anciens ou logique modale", a:["corpus",S=>{S.mus.logic="corpus";}], b:["modale",S=>{S.mus.logic="modal";}]},
   {id:"tharm", n:"Tension harmonique ou non", a:["tension harmonique",S=>{S.mus.tharm=0.8; S.tension=0.8;}], b:["sans",S=>{S.mus.tharm=0; S.tension=0.8;}]},
   {id:"cine", n:"Harmonie de cinéma ou non", a:["cinéma",S=>{S.mus.cine="merveilleux"; S.mus.cineAmt=0.5;}], b:["sans",S=>{S.mus.cine="off";}]},
   {id:"modele", n:"Modèle physique ou synthèse classique", a:["physique",S=>{S.mus.model="physique";}], b:["classique",S=>{S.mus.model="classique";}]},

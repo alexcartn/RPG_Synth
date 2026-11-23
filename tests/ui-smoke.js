@@ -153,7 +153,7 @@ setTimeout(async()=>{
    AFF.sel.clear(); seekUniverse("espace"); o.espace=S.scales[0]===UNIVERS.find(u=>u.id==="espace").items[0][1].scales[0]; o.cur=document.querySelector('#seekUni .lnk[aria-current]').dataset.id;
    seekUniverse("medieval"); return o; })()`);
    console.log('première page :',JSON.stringify(R));
-   const bad=[]; if(R.chips!==14) bad.push('14 émotions'); if(R.uni!==w.eval('UNIVERS.length')+1) bad.push('tous les univers et le tirage au sort'); if(R.dup!==1||R.inComposer) bad.push('affects en double ou restés dans Composer'); if(!(R.serein<0.3&&R.sombre>0.65)) bad.push('tension suit les affects'); if(R.props<3||R.distinct<3) bad.push('propositions variées'); if(R.maqamEnMedieval) bad.push('quarts de ton hors Orient'); if(!R.espace||R.cur!=='espace') bad.push('univers sans affect');
+   const bad=[]; if(R.chips!==17) bad.push('17 émotions'); if(R.uni!==w.eval('UNIVERS.length')+1) bad.push('tous les univers et le tirage au sort'); if(R.dup!==1||R.inComposer) bad.push('affects en double ou restés dans Composer'); if(!(R.serein<0.3&&R.sombre>0.65)) bad.push('tension suit les affects'); if(R.props<3||R.distinct<3) bad.push('propositions variées'); if(R.maqamEnMedieval) bad.push('quarts de ton hors Orient'); if(!R.espace||R.cur!=='espace') bad.push('univers sans affect');
    if(bad.length){ console.log('ECHEC première page :',bad.join(', ')); process.exit(1); } }
  // capture de la lecture, chance, dérives
  w.eval('S.chance={skip:0.3,ratchet:0.4,mutate:0.5,octave:0.3,rest:0.5}; S.drift[0].d=1; S.drift[0].v=1; live.eng.replan("all"); live.eng.schedule(live.ctx.currentTime+60)');

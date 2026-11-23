@@ -4,36 +4,38 @@
    Chaque gamme et chaque tonalité (majeure ou mineure) porte des affects pondérés ;
    on lit ce que dégage une couleur, ou on cherche la couleur qui dégage une émotion.
    ============================================================ */
-const EMOTIONS=["mystérieux","fataliste","héroïque","mélancolique","joyeux","féerique","inquiétant","majestueux","nostalgique","serein","tragique","étrange","sauvage","sacré"];
+/* quatorze affects de départ, plus trois du modèle GEMS (Zentner, Grandjean et Scherer, 2008 : les neuf émotions vraiment ressenties en musique)
+   qui manquaient sous ce nom : la tendresse, la puissance, la transcendance. L'émerveillement est porté par « féerique », la paix par « serein ». */
+const EMOTIONS=["mystérieux","fataliste","héroïque","mélancolique","joyeux","féerique","inquiétant","majestueux","nostalgique","serein","tragique","étrange","sauvage","sacré","tendre","puissant","transcendant"];
 
 /* gammes : une phrase de caractère, puis le poids de chaque affect (0 à 1) */
 const AFF_SC={
-  ionien:["lumineux, stable, pastoral",{joyeux:1,serein:.8,majestueux:.5,héroïque:.5}],
-  dorien:["noble, chaleureux, médiéval",{nostalgique:.8,mélancolique:.7,majestueux:.5,sacré:.4,sauvage:.2}],
-  phrygien:["sombre, fataliste, menaçant",{fataliste:1,inquiétant:.8,tragique:.7,sauvage:.5,sacré:.3}],
-  lydien:["féerique, rêveur, émerveillé",{féerique:1,serein:.6,joyeux:.6,mystérieux:.4}],
-  mixolydien:["rustique, épique, ouvert",{héroïque:.8,joyeux:.6,sauvage:.6,nostalgique:.4}],
-  eolien:["grave, triste, dramatique",{mélancolique:1,tragique:.6,nostalgique:.6,majestueux:.3}],
+  ionien:["lumineux, stable, pastoral",{joyeux:1,serein:.8,majestueux:.5,héroïque:.5,tendre:0.5,puissant:0.3}],
+  dorien:["noble, chaleureux, médiéval",{nostalgique:.8,mélancolique:.7,majestueux:.5,sacré:.4,sauvage:.2,tendre:0.3,transcendant:0.3}],
+  phrygien:["sombre, fataliste, menaçant",{fataliste:1,inquiétant:.8,tragique:.7,sauvage:.5,sacré:.3,puissant:0.5}],
+  lydien:["féerique, rêveur, émerveillé",{féerique:1,serein:.6,joyeux:.6,mystérieux:.4,transcendant:0.6,tendre:0.4}],
+  mixolydien:["rustique, épique, ouvert",{héroïque:.8,joyeux:.6,sauvage:.6,nostalgique:.4,puissant:0.5}],
+  eolien:["grave, triste, dramatique",{mélancolique:1,tragique:.6,nostalgique:.6,majestueux:.3,tendre:0.4}],
   locrien:["instable, angoissé, abyssal",{inquiétant:1,étrange:.7,tragique:.6,mystérieux:.6,fataliste:.4}],
-  harm:["dramatique, tragique, oriental",{tragique:1,fataliste:.7,majestueux:.6,mystérieux:.4}],
-  melo:["hésitant, élégiaque, tendre",{nostalgique:.8,mélancolique:.7,mystérieux:.4,serein:.3}],
+  harm:["dramatique, tragique, oriental",{tragique:1,fataliste:.7,majestueux:.6,mystérieux:.4,puissant:0.5}],
+  melo:["hésitant, élégiaque, tendre",{nostalgique:.8,mélancolique:.7,mystérieux:.4,serein:.3,tendre:0.6}],
   dorien4:["mystérieux, étrange, tzigane",{mystérieux:1,étrange:.8,sauvage:.5,inquiétant:.4}],
-  phrygdom:["ardent, fataliste, ibérique",{fataliste:.9,sauvage:.8,tragique:.6,héroïque:.5,mystérieux:.4}],
-  lydidom:["malicieux, féerique, tendu",{féerique:.8,étrange:.7,joyeux:.5,mystérieux:.5}],
-  dblharm:["exotique, ensorcelant, byzantin",{mystérieux:.9,fataliste:.7,étrange:.7,sacré:.6,majestueux:.5}],
-  tzigane:["passionné, sombre, nomade",{sauvage:.9,tragique:.7,fataliste:.6,mélancolique:.6}],
-  pentmaj:["ouvert, naïf, serein",{serein:1,joyeux:.7,nostalgique:.4,féerique:.4}],
-  pentmin:["nocturne, simple, ancestral",{mélancolique:.7,sauvage:.6,fataliste:.5,mystérieux:.5,nostalgique:.5}],
-  hirajoshi:["contemplatif, tendu, zen",{mystérieux:.8,sacré:.7,mélancolique:.6,serein:.5,étrange:.5}],
-  insen:["austère, suspendu, ancien",{mystérieux:.8,sacré:.7,fataliste:.5,serein:.4}],
-  hexacorde:["clair, chaste, grégorien",{sacré:.9,serein:.8,nostalgique:.5,majestueux:.4}],
-  organum:["nu, solennel, archaïque",{sacré:1,majestueux:.7,fataliste:.5,mystérieux:.4}],
-  tons:["flottant, onirique, irréel",{étrange:1,féerique:.8,mystérieux:.8,serein:.4}],
+  phrygdom:["ardent, fataliste, ibérique",{fataliste:.9,sauvage:.8,tragique:.6,héroïque:.5,mystérieux:.4,puissant:0.6}],
+  lydidom:["malicieux, féerique, tendu",{féerique:.8,étrange:.7,joyeux:.5,mystérieux:.5,transcendant:0.3}],
+  dblharm:["exotique, ensorcelant, byzantin",{mystérieux:.9,fataliste:.7,étrange:.7,sacré:.6,majestueux:.5,transcendant:0.4,puissant:0.3}],
+  tzigane:["passionné, sombre, nomade",{sauvage:.9,tragique:.7,fataliste:.6,mélancolique:.6,puissant:0.3}],
+  pentmaj:["ouvert, naïf, serein",{serein:1,joyeux:.7,nostalgique:.4,féerique:.4,tendre:0.6}],
+  pentmin:["nocturne, simple, ancestral",{mélancolique:.7,sauvage:.6,fataliste:.5,mystérieux:.5,nostalgique:.5,tendre:0.3}],
+  hirajoshi:["contemplatif, tendu, zen",{mystérieux:.8,sacré:.7,mélancolique:.6,serein:.5,étrange:.5,transcendant:0.5}],
+  insen:["austère, suspendu, ancien",{mystérieux:.8,sacré:.7,fataliste:.5,serein:.4,transcendant:0.6}],
+  hexacorde:["clair, chaste, grégorien",{sacré:.9,serein:.8,nostalgique:.5,majestueux:.4,tendre:0.4,transcendant:0.5}],
+  organum:["nu, solennel, archaïque",{sacré:1,majestueux:.7,fataliste:.5,mystérieux:.4,transcendant:0.8,puissant:0.4}],
+  tons:["flottant, onirique, irréel",{étrange:1,féerique:.8,mystérieux:.8,serein:.4,transcendant:0.6}],
   octa:["tendu, magique, inquiétant",{mystérieux:.9,inquiétant:.8,étrange:.7,féerique:.4}],
-  rast:["fier, noble, majestueux",{majestueux:1,héroïque:.7,joyeux:.5,serein:.5,sacré:.3}],
-  bayati:["intime, nostalgique, tendre",{nostalgique:1,mélancolique:.8,sacré:.4}],
-  saba:["poignant, deuil, douleur",{tragique:1,mélancolique:.8,fataliste:.6,nostalgique:.5}],
-  enharm:["archaïque, étrange, antique",{étrange:1,mystérieux:.8,sacré:.6,fataliste:.4}],
+  rast:["fier, noble, majestueux",{majestueux:1,héroïque:.7,joyeux:.5,serein:.5,sacré:.3,puissant:0.4}],
+  bayati:["intime, nostalgique, tendre",{nostalgique:1,mélancolique:.8,sacré:.4,tendre:0.7}],
+  saba:["poignant, deuil, douleur",{tragique:1,mélancolique:.8,fataliste:.6,nostalgique:.5,tendre:0.3}],
+  enharm:["archaïque, étrange, antique",{étrange:1,mystérieux:.8,sacré:.6,fataliste:.4,transcendant:0.4}],
   chromgr:["antique, plaintif, tendu",{tragique:1,mélancolique:.8,étrange:.6,sacré:.5}],
   libre:["à toi de le dire",{}],
   scala:["un accordage venu d'ailleurs",{}]
@@ -54,7 +56,7 @@ const AFF_KEY=[
   {maj:["dur, éclatant, étrange",{étrange:.6,joyeux:.5}], min:["solitaire, mélancolique",{mélancolique:.9,nostalgique:.5}]}
 ];
 /* ce que chaque émotion veut dire à la table : sert d'infobulle */
-const EMO_TIP={mystérieux:"Ce qu'on ne comprend pas encore : une porte entrouverte, un secret.",fataliste:"Rien ne sera évité : le destin est en marche.",héroïque:"On se redresse et on avance : audace, bannières, courage.",mélancolique:"Une tristesse douce, qu'on garde près de soi.",joyeux:"Fête, rires, chopes levées.",féerique:"Émerveillement, magie légère, un monde qui scintille.",inquiétant:"Quelque chose cloche, sans qu'on sache quoi.",majestueux:"Grandeur, solennité, une salle de trône.",nostalgique:"Le souvenir d'un temps ou d'un lieu perdu.",serein:"Calme, paix, rien ne presse.",tragique:"Le deuil, la perte, le drame qui éclate.",étrange:"Hors des repères : onirique, déroutant, non humain.",sauvage:"Instinct, danse brute, nature sans maître.",sacré:"Chant d'église, rite, recueillement."};
+const EMO_TIP={mystérieux:"Ce qu'on ne comprend pas encore : une porte entrouverte, un secret.",fataliste:"Rien ne sera évité : le destin est en marche.",héroïque:"On se redresse et on avance : audace, bannières, courage.",mélancolique:"Une tristesse douce, qu'on garde près de soi.",joyeux:"Fête, rires, chopes levées.",féerique:"Émerveillement, magie légère, un monde qui scintille.",inquiétant:"Quelque chose cloche, sans qu'on sache quoi.",majestueux:"Grandeur, solennité, une salle de trône.",nostalgique:"Le souvenir d'un temps ou d'un lieu perdu.",serein:"Calme, paix, rien ne presse.",tragique:"Le deuil, la perte, le drame qui éclate.",étrange:"Hors des repères : onirique, déroutant, non humain.",sauvage:"Instinct, danse brute, nature sans maître.",sacré:"Chant d'église, rite, recueillement.",tendre:"La douceur, l'affection, un moment d'intimité.",puissant:"La force qui s'impose : une armée, un dieu, une tempête.",transcendant:"Hors du temps : l'immensité, le ciel, ce qui dépasse.",};
 const AFF={sel:new Set(), open:false};
 const affQuality=iv=>iv.indexOf(4)>=0?"maj":"min";
 /* ---------- les émotions sur deux axes, et les indices qui les portent ----------
@@ -78,7 +80,10 @@ const AFF_VA={
   tragique:  {v:-0.85,a:0.6,  c:{tempo:.35,reg:.3, dens:.5, lum:.2, leg:.7, tens:.75,esp:.7}},
   étrange:   {v:-0.2, a:0.5,  c:{tempo:.45,reg:.6, dens:.4, lum:.45,leg:.5, tens:.7, esp:.8}},
   sauvage:   {v:0.1,  a:0.85, c:{tempo:.85,reg:.4, dens:.8, lum:.55,leg:.2, tens:.65,esp:.4}},
-  sacré:     {v:0.3,  a:0.2,  c:{tempo:.2, reg:.4, dens:.3, lum:.45,leg:.95,tens:.2, esp:.95}}
+  sacré:     {v:0.3,  a:0.2,  c:{tempo:.2, reg:.4, dens:.3, lum:.45,leg:.95,tens:.2, esp:.95}},
+  tendre:    {v:0.6,  a:0.2,  c:{tempo:.25,reg:.6, dens:.3, lum:.55,leg:.9, tens:.1, esp:.45}},
+  puissant:  {v:0.3,  a:0.85, c:{tempo:.6, reg:.25,dens:.7, lum:.5, leg:.5, tens:.6, esp:.7}},
+  transcendant:{v:0.5,a:0.35, c:{tempo:.15,reg:.6, dens:.2, lum:.7, leg:.95,tens:.15,esp:1}}
 };
 const AFF_CUES=[["tempo","lent","vif"],["reg","grave","aigu"],["dens","rare","dense"],["lum","sombre","clair"],["leg","détaché","lié"],["tens","consonant","tendu"],["esp","proche","immense"]];
 /* les indices d'un choix d'émotions : la moyenne, et sa traduction en mots pour ce qui s'écarte du milieu */
@@ -175,7 +180,7 @@ function affStart(pr){
     /* tension : nervosité et dissonance, d'après l'indice de tension et l'éveil */
     over.tension=r2(cl(0.6*c.tens+0.4*c.a,0.1,0.9));
     /* harmonie de cinéma : l'émerveillement appelle les médiantes chromatiques, la menace le pôle hexatonique (Lehman) */
-    { const wM=["féerique","majestueux","héroïque"].filter(e=>sel.includes(e)).length, wN=["inquiétant","tragique","fataliste","étrange"].filter(e=>sel.includes(e)).length;
+    { const wM=["féerique","majestueux","héroïque","transcendant"].filter(e=>sel.includes(e)).length, wN=["inquiétant","tragique","fataliste","étrange"].filter(e=>sel.includes(e)).length;
       over.mus=over.mus||{}; if(!over.mus.cine||over.mus.cine==="off"){ if(wM>wN) over.mus.cine="merveilleux"; else if(wN>wM) over.mus.cine="menace"; } }
   }
   loadScene(over,null,undefined,{name:pr.preset[0],gloss:pr.preset[2],univ:seekUni()});

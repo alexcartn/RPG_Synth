@@ -39,7 +39,7 @@ function physBowed(sr,f,vel,dur,o){
   let sf=0, bo=0, no=0, ph=0, pk=0;
   for(let i=0;i<n;i++){
     let env=i<att?i/att:1; if(i>n-rel) env*=(n-i)/rel;
-    ph+=2*Math.PI*5.2/sr; const bowV=maxV*env*(i>sr*0.3?1+0.012*Math.sin(ph):1);
+    ph+=2*Math.PI*5.2/sr; const bowV=maxV*env*(i>sr*0.3&&o.vib!==0?1+0.012*Math.sin(ph):1); /* vib:0 : la roue de la vielle frotte à vitesse constante */
     sf=(1-Math.abs(pole))*(-bo)*0.95+pole*sf;
     const br=sf, nr=-no, sv=br+nr, vd=bowV-sv;
     let tb=Math.abs(slope*vd+0.2)+0.75; tb=Math.pow(tb,-4); if(tb>1) tb=1;
@@ -59,7 +59,7 @@ function physReed(sr,f,vel,dur,o){
   let x1=0, ph=0, pk=0, dcx=0, dcy=0;
   for(let i=0;i<n;i++){
     let env=i<att?i/att:1; if(i>n-rel) env*=(n-i)/rel;
-    ph+=2*Math.PI*5.3/sr; const vib=i>sr*0.3?0.02*Math.sin(ph):0;
+    ph+=2*Math.PI*5.3/sr; const vib=i>sr*0.3&&o.vib!==0?0.02*Math.sin(ph):0; /* vib:0 : le chalumeau de cornemuse, souffle régulier du sac */
     const bp=maxP*env*(1+noiseG*(rnd()*2-1)*0.2+vib);
     const bo=bore.get(D), fl=0.5*(bo+x1); x1=bo;
     let pd=-0.95*fl-bp, rt=off+slope*pd; if(rt>1) rt=1; if(rt<-1) rt=-1;

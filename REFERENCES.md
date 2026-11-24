@@ -12,10 +12,10 @@ C'est la zone la plus faible du projet au départ : la table Affectus reposait p
 
 ### Modèles de l'émotion
 
-- James A. Russell, « A circumplex model of affect », *Journal of Personality and Social Psychology* 39(6), 1980. Le cercle valence × éveil sur lequel les quatorze affects sont maintenant placés. Utilisé.
+- James A. Russell, « A circumplex model of affect », *Journal of Personality and Social Psychology* 39(6), 1980. Le cercle valence × éveil sur lequel les dix-sept émotions sont maintenant placées. Utilisé.
 - Tuomas Eerola et Jonna K. Vuoskoski, « A comparison of the discrete and dimensional models of emotion in music », *Psychology of Music* 39(1), 2011. Les émotions perçues en musique se ramènent bien à deux dimensions. [PDF](https://is.muni.cz/el/phil/jaro2017/PS_BA007/um/A_comparison_of_the_discrete_and_dimensional_models_of_emotion_in_music.pdf). Utilisé.
 - Julian Cespedes-Guevara et Tuomas Eerola, « Music communicates affects, not basic emotions », *Frontiers in Psychology* 9, 2018 : l'expression musicale repose sur l'éveil et la valence, les catégories viennent après. [PMC](https://pmc.ncbi.nlm.nih.gov/articles/PMC5836201). Utilisé.
-- Marcel Zentner, Didier Grandjean et Klaus R. Scherer, « Emotions evoked by the sound of music », *Emotion* 8(4), 2008. Le modèle GEMS : neuf émotions vraiment ressenties en musique (émerveillement, transcendance, tendresse, nostalgie, paix, puissance, activation joyeuse, tension, tristesse). Une grille pour revoir la liste des quatorze affects. À exploiter.
+- Marcel Zentner, Didier Grandjean et Klaus R. Scherer, « Emotions evoked by the sound of music », *Emotion* 8(4), 2008. Le modèle GEMS : neuf émotions vraiment ressenties en musique (émerveillement, transcendance, tendresse, nostalgie, paix, puissance, activation joyeuse, tension, tristesse). Utilisé : tendre, puissant et transcendant ajoutés (chantier 20).
 
 ### Mécanismes : pourquoi la musique émeut
 
@@ -23,7 +23,7 @@ C'est la zone la plus faible du projet au départ : la table Affectus reposait p
 - Patrik N. Juslin, « From everyday emotions to aesthetic emotions: towards a unified theory of musical emotions », *Physics of Life Reviews* 10(3), 2013. La version complète de BRECVEMA.
 - Patrik N. Juslin, *Musical Emotions Explained*, Oxford University Press, 2019. La synthèse en un livre.
 - Juslin et al., révision de 2022 sur le rôle du contexte d'écoute. [PDF](https://duo.uio.no/bitstream/handle/10852/96023/Juslin%2Bet%2Bal%2B2022.pdf?sequence=1)
-- David Huron, *Sweet Anticipation: Music and the Psychology of Expectation*, MIT Press, 2006. La théorie ITPRA (imagination, tension, prédiction, réaction, évaluation) : l'émotion vient des attentes tenues ou déjouées. C'est le cadre théorique du Déjà-vu, de l'Exigence et des gestes Suspense et Révélation. À exploiter : un geste « surprise » (cadence évitée, accord inattendu) manque.
+- David Huron, *Sweet Anticipation: Music and the Psychology of Expectation*, MIT Press, 2006. La théorie ITPRA (imagination, tension, prédiction, réaction, évaluation) : l'émotion vient des attentes tenues ou déjouées. C'est le cadre théorique du Déjà-vu, de l'Exigence et des gestes Suspense et Révélation. Utilisé aussi pour le geste Surprise (chantier 8).
 - David Huron, *Voice Leading: The Science Behind a Musical Art*, MIT Press, 2016. Pourquoi les règles de conduite des voix tiennent à la perception : éclaire la conduite des nappes et le contrepoint.
 
 ### Les indices : ce qui porte l'émotion
@@ -32,7 +32,7 @@ C'est la zone la plus faible du projet au départ : la table Affectus reposait p
 - Tuomas Eerola, Anders Friberg et Roberto Bresin, « Emotional expression in music: contribution, linearity, and additivity of primary musical cues », *Frontiers in Psychology* 4, 2013. Mesure le poids de chaque indice : le mode et le tempo dominent, puis le registre, la nuance, l'articulation et le timbre. Les poids de la refonte en sont tirés. Utilisé.
 - David Temperley et Daphne Tan, « Emotional connotations of diatonic modes », *Music Perception* 30(3), 2013. Le classement des modes du plus clair au plus sombre (ionien, puis mixolydien et lydien, dorien, éolien, phrygien) : il confirme l'échelle de couleur du mode (`LADDER`). Utilisé.
 - Patrik N. Juslin et John A. Sloboda (dir.), *Handbook of Music and Emotion: Theory, Research, Applications*, Oxford University Press, 2010. Le manuel du domaine.
-- Anders Friberg, Roberto Bresin et Johan Sundberg, « Overview of the KTH rule system for musical performance », *Advances in Cognitive Psychology* 2(2-3), 2006. Les règles de jeu expressif (arche de phrase, notes longues plus longues, accent des sauts) : de quoi rendre la mélodie moins mécanique. À exploiter.
+- Anders Friberg, Roberto Bresin et Johan Sundberg, « Overview of the KTH rule system for musical performance », *Advances in Cognitive Psychology* 2(2-3), 2006. Les règles de jeu expressif (arche de phrase, notes longues plus longues, accent des sauts) : de quoi rendre la mélodie moins mécanique. Utilisé (jeu expressif, chantier 11).
 
 ### Les caractères des tonalités : l'histoire et ses limites
 
@@ -46,8 +46,8 @@ C'est la zone la plus faible du projet au départ : la table Affectus reposait p
 
 - Fred Lerdahl et Ray Jackendoff, *A Generative Theory of Tonal Music*, MIT Press, 1983.
 - Fred Lerdahl, *Tonal Pitch Space*, Oxford University Press, 2001.
-- Fred Lerdahl et Carol L. Krumhansl, « Modeling tonal tension », *Music Perception* 24(4), 2007. Un modèle chiffré de la tension harmonique : de quoi relier le curseur Tension à l'harmonie, pas seulement à la percussion et aux nappes. À exploiter.
-- Morwaread M. Farbood, « A parametric, temporal model of musical tension », *Music Perception* 29(4), 2012. La tension perçue à partir de la nuance, du registre, du tempo, de la densité et de l'harmonie. À exploiter pour les courbes de tension.
+- Fred Lerdahl et Carol L. Krumhansl, « Modeling tonal tension », *Music Perception* 24(4), 2007. Un modèle chiffré de la tension harmonique : de quoi relier le curseur Tension à l'harmonie, pas seulement à la percussion et aux nappes. Utilisé (tension harmonique, chantier 9).
+- Morwaread M. Farbood, « A parametric, temporal model of musical tension », *Music Perception* 29(4), 2012. La tension perçue à partir de la nuance, du registre, du tempo, de la densité et de l'harmonie. En partie : la courbe de tension dessinée existe, mais elle ne règle pas encore ensemble nuance, registre, tempo, densité et harmonie. À exploiter.
 - Carol L. Krumhansl, *Cognitive Foundations of Musical Pitch*, Oxford University Press, 1990. Les profils de tonalité : ils serviraient à mesurer si une mélodie « sonne » dans son mode.
 
 ### Répétition, fatigue et musique de fond
@@ -82,6 +82,7 @@ C'est la zone la plus faible du projet au départ : la table Affectus reposait p
 - Richard Stevens et Dave Raybould, *The Game Audio Tutorial*, Focal Press, 2011.
 - Michael Z. Land et Peter N. McConnell, iMUSE (LucasArts), brevet US 5 315 057, 1994. Le premier système à attendre un point de sortie musical avant de changer de morceau. Utilisé, dans l'esprit, pour les enchaînements.
 - Documentation Audiokinetic Wwise, *Interactive Music* : matrice de transitions, points de sortie, stingers. Documentation FMOD Studio : régions de transition et quantification. Les deux vocabulaires de métier.
+- Le leitmotiv, de Wagner à la musique de jeu : un motif attaché à un personnage ou un lieu, qui revient transformé (Summers, Phillips, ci-dessus). Utilisé (chantier 22).
 - [Wikipédia : Adaptive music](https://en.wikipedia.org/wiki/Adaptive_music)
 
 ---
@@ -114,14 +115,15 @@ C'est la zone la plus faible du projet au départ : la table Affectus reposait p
 
 ### Méthodes précises
 
-- Charles Ames, « The Markov process as a compositional model: a survey and tutorial », *Leonardo* 22(2), 1989. À exploiter : des chaînes de Markov apprises sur de vraies mélodies modales.
-- Przemyslaw Prusinkiewicz, « Score generation with L-systems », ICMC, 1986. À exploiter : l'Arbre pousse en fractale, sa mélodie pourrait suivre une grammaire.
+- Charles Ames, « The Markov process as a compositional model: a survey and tutorial », *Leonardo* 22(2), 1989. Utilisé (logique Corpus, chantier 17).
+- Przemyslaw Prusinkiewicz, « Score generation with L-systems », ICMC, 1986. Utilisé (grammaire de l'Arbre, chantier 18).
 - Godfried Toussaint, « The Euclidean algorithm generates traditional musical rhythms », Bridges, 2005, et *The Geometry of Musical Rhythm*, CRC Press, 2013. Utilisé (rythmes euclidiens).
 - Eric Bjorklund, « The theory of rep-rate pattern generation in the SNS timing system », note technique SNS, 2003 : l'algorithme d'origine des rythmes euclidiens.
 - Tom Whitwell, Turing Machine (Music Thing Modular). Utilisé.
 - Émilie Gillet, Marbles (Mutable Instruments), manuel : le Déjà Vu. Utilisé.
 - Steve Reich, « Music as a Gradual Process », 1968 (dans *Writings on Music*, Oxford University Press, 2002). Le déphasage : la logique des pendules et des boucles.
 - Terry Riley, *In C*, 1964 : des cellules qui se chevauchent librement.
+- Paul Hillier, *Arvo Pärt*, Oxford University Press, 1997. Le tintinnabuli : une voix M qui chante, une voix T qui ne joue que l'accord de tonique. Utilisé (chantier 25).
 
 ### Eno et la lignée des applications
 
@@ -139,6 +141,13 @@ C'est la zone la plus faible du projet au départ : la table Affectus reposait p
 - Strudel et TidalCycles (Alex McLean) : écrire des motifs qui tournent, dans le navigateur.
 - Dillon Bastan, *Inspired by Nature* pour Ableton (Emit, Tree Tone, Bouncy Notes…). Utilisé (Nuée, Arbre, Billes).
 
+### État de l'art, novembre 2026
+
+- Eurorack, Superbooth 2026 : la tendance est au séquenceur qui mêle jeu et génération, avec un hasard qu'on fige et qu'on rejoue. Befaco ARK (chaque piste déterministe, stochastique ou euclidienne), Befaco Random8 (huit tensions aléatoires qui bouclent), KOMA Monoplex (séquenceur mélodique microtonal, départ et longueur modulables), Cre8audio programm et Squarp Core (moteurs génératifs dans un séquenceur). [MusicRadar](https://www.musicradar.com/music-tech/from-stochastic-sequences-to-a-render-farm-of-drums-8-of-our-favourite-eurorack-releases-from-superbooth-2026), [Random8](https://synthanatomy.com/2026/05/befaco-random8-an-8-channel-random-voltage-generator-with-mylar-melodies.html), [Monoplex](https://www.synthtopia.com/content/2026/05/08/koma-monoplex-melodic-microtonal-sequencer-debuts-at-superbooth-2026/). Bourdon a déjà l'essentiel (Turing, Déjà-vu, dérives) ; restent les modes par couche et la fenêtre glissante. À exploiter.
+- Modèles de musique en temps réel : Magenta RealTime 2 (Google, juin 2026), 2,4 milliards de paramètres, environ 200 ms de latence, sur ordinateur et non dans le navigateur ; Lyria RealTime, son pendant en ligne. [Magenta](https://magenta.tensorflow.org/magenta-realtime-2). Ce que Bourdon choisit de ne pas faire : léger, sans échantillons, explicable, hors ligne.
+- Modèles symboliques : orienter l'harmonie d'un transformer en agissant sur ses représentations internes (ISMIR 2026). [arXiv](https://arxiv.org/abs/2610.15957). Ils cherchent le contrôle explicite que Bourdon a par règles.
+- Applications : Wotja 26 (génératif « sans IA »), Endel et Mubert (musique adaptée au contexte). Le même créneau que Bourdon pour le premier ; les deux autres reposent sur des serveurs.
+
 ---
 
 ## 6. Ambient, dark ambient, dungeon synth : la culture des genres
@@ -149,8 +158,9 @@ C'est la zone la plus faible du projet au départ : la table Affectus reposait p
 - David Toop, *Haunted Weather: Music, Silence and Memory*, Serpent's Tail, 2004.
 - Mark Prendergast, *The Ambient Century: From Mahler to Trance*, Bloomsbury, 2000. [Wikipédia](https://en.wikipedia.org/wiki/The_Ambient_Century)
 - Pauline Oliveros, *Deep Listening: A Composer's Sound Practice*, iUniverse, 2005.
-- R. Murray Schafer, *The Soundscape: Our Sonic Environment and the Tuning of the World*, 1977. Tonalité de fond, signaux, marqueurs sonores : exactement les trois rôles du Lieu (murmure, tintements, bruits qui situent). À exploiter.
+- R. Murray Schafer, *The Soundscape: Our Sonic Environment and the Tuning of the World*, 1977. Tonalité de fond, signaux, marqueurs sonores : exactement les trois rôles du Lieu (murmure, tintements, bruits qui situent). Utilisé (lieu en trois rôles, chantier 16).
 - Bernie Krause, *The Great Animal Orchestra*, Little, Brown, 2012. Chaque espèce occupe sa bande de fréquences : de quoi ranger les bêtes de Natura sans qu'elles se masquent.
+- La Monte Young, *The Well-Tuned Piano* (1964-) et la Dream House ; Éliane Radigue, *Trilogie de la mort* (1988-1993) : des bourdons sur la série harmonique, qui évoluent à l'échelle de la minute. Utilisé (série harmonique du bourdon, chantier 27).
 
 ### Dark ambient
 
@@ -180,9 +190,9 @@ C'est la zone la plus faible du projet au départ : la table Affectus reposait p
 
 ### Harmonie et conduite des voix
 
-- Dmitri Tymoczko, *A Geometry of Music: Harmony and Counterpoint in the Extended Common Practice*, Oxford University Press, 2011. Les accords comme points, la conduite des voix comme déplacement. À exploiter pour les nappes.
+- Dmitri Tymoczko, *A Geometry of Music: Harmony and Counterpoint in the Extended Common Practice*, Oxford University Press, 2011. Les accords comme points, la conduite des voix comme déplacement. Utilisé dans l'esprit : les nappes enchaînent leurs accords par le plus court chemin, chaque voix bougeant le moins possible.
 - Richard Cohn, *Audacious Euphony: Chromatic Harmony and the Triad's Second Nature*, Oxford University Press, 2012. Les transformations P, L et R. [Wikipédia](https://en.wikipedia.org/wiki/Neo-Riemannian_theory)
-- Frank Lehman, *Hollywood Harmony: Musical Wonder and the Sound of Cinema*, Oxford University Press, 2018. Les enchaînements chromatiques du merveilleux et de la menace au cinéma : tout ce qui manque pour des accords « épiques » hors du mode. À exploiter.
+- Frank Lehman, *Hollywood Harmony: Musical Wonder and the Sound of Cinema*, Oxford University Press, 2018. Les enchaînements chromatiques du merveilleux et de la menace au cinéma : tout ce qui manque pour des accords « épiques » hors du mode. Utilisé (harmonie de cinéma, chantier 10).
 - Vincent Persichetti, *Twentieth-Century Harmony*, Norton, 1961. Harmonie modale, accords par quartes, pédales.
 - Nicole Biamonte, « Triadic modal and pentatonic patterns in rock music », *Music Theory Spectrum* 32(2), 2010. Les boucles i-bVII-bVI et compagnie, celles du dungeon synth.
 - Johann Joseph Fux, *Gradus ad Parnassum*, 1725 ; Knud Jeppesen, *Counterpoint: The Polyphonic Vocal Style of the Sixteenth Century*, 1931. Le contrepoint de la voix sous la mélodie.
@@ -191,10 +201,11 @@ C'est la zone la plus faible du projet au départ : la table Affectus reposait p
 
 - J. Murray Barbour, *Tuning and Temperament: A Historical Survey*, 1951.
 - Ross W. Duffin, *How Equal Temperament Ruined Harmony (and Why You Should Care)*, Norton, 2007.
-- William A. Sethares, *Tuning, Timbre, Spectrum, Scale*, Springer, 2e éd. 2005. La rugosité dépend du spectre : un accordage peut être accordé au timbre (cloches, bols). À exploiter.
+- William A. Sethares, *Tuning, Timbre, Spectrum, Scale*, Springer, 2e éd. 2005. La rugosité dépend du spectre : un accordage peut être accordé au timbre (cloches, bols). À exploiter : le résonateur et les cloches s'y prêtent.
 - Reinier Plomp et Willem J. M. Levelt, « Tonal consonance and critical bandwidth », *JASA* 38, 1965.
-- Archive Scala (Manuel Op de Coul) : des milliers de gammes au format `.scl`. À exploiter : importer une gamme Scala.
-- MIDI Tuning Standard et MTS-ESP (ODDSound) : exporter les micro-intervalles sans pitch bend. À exploiter.
+- Archive Scala (Manuel Op de Coul) : des milliers de gammes au format `.scl`. Utilisé (import d'une gamme Scala, chantier 12).
+- MIDI Tuning Standard et MTS-ESP (ODDSound) : exporter les micro-intervalles sans pitch bend. Utilisé : export MIDI en MTS (chantier 12). MTS-ESP, l'accord partagé en direct avec les instruments, n'est pas fait.
+- Werner Mohrlok, Hermode Tuning (1990), dans des synthétiseurs et logiciels depuis : le réaccord des accords en temps réel sur des rapports purs. L'idée du juste adaptatif (chantier 23).
 
 ### Maqams et makams
 
@@ -202,7 +213,7 @@ C'est la zone la plus faible du projet au départ : la table Affectus reposait p
 - Scott L. Marcus, *Music in Egypt*, Oxford University Press, 2007.
 - Habib Hassan Touma, *The Music of the Arabs*, Amadeus Press, 1996.
 - Karl Signell, *Makam: Modal Practice in Turkish Art Music*, 1977, et le système Arel-Ezgi-Uzdilek (comma de Holder, 53 divisions de l'octave).
-- Le système à 24 quarts de ton est une convention d'écriture, pas l'intonation jouée, qui varie selon l'époque et la région. [Wikipédia](https://en.wikipedia.org/wiki/Arabic_maqam), [guide Ableton des maqams](https://tuning.ableton.com/arabic-maqam/maqam-guide), [mesures en cents, 2026](https://dergipark.org.tr/en/pub/rastmd/article/1932527). À exploiter : des intonations propres à chaque maqam (tierce du Rast vers 27/22, seconde du Bayati plus basse).
+- Le système à 24 quarts de ton est une convention d'écriture, pas l'intonation jouée, qui varie selon l'époque et la région. [Wikipédia](https://en.wikipedia.org/wiki/Arabic_maqam), [guide Ableton des maqams](https://tuning.ableton.com/arabic-maqam/maqam-guide), [mesures en cents, 2026](https://dergipark.org.tr/en/pub/rastmd/article/1932527). Traité : l'accord turc à 53 commas est là ; les mesures de la pratique arabe restent proches des 24 quarts de ton égaux, que le tempérament égal rend déjà (chantier 12).
 
 ### Antiquité grecque
 
@@ -214,13 +225,14 @@ C'est la zone la plus faible du projet au départ : la table Affectus reposait p
 
 - Christopher Page, *Voices and Instruments of the Middle Ages: Instrumental Practice and Songs in France 1100-1300*, Dent, 1987.
 - Tess Knighton et David Skinner (dir.), *Music and Instruments of the Middle Ages: Essays in Honour of Christopher Page*, Boydell, 2020 (dont Manuel Pedro Ferreira sur les Cantigas, et le chapitre sur les estampies du manuscrit Douce 308). [Cambridge](https://cambridge.org/core/books/music-and-instruments-of-the-middle-ages/estampies-of-douce-308/008263550B9DB54DFA8C1178D7F119D9)
-- Timothy J. McGee, *Medieval Instrumental Dances*, Indiana University Press, 1989. Les estampies et les saltarelles notées : des formes de danse exactes pour Chorea et Tripudium. À exploiter.
+- Timothy J. McGee, *Medieval Instrumental Dances*, Indiana University Press, 1989. Les estampies et les saltarelles notées : des formes de danse exactes pour Chorea et Tripudium. Utilisé (estampie et saltarelle, chantier 15).
 - Richard H. Hoppin, *Medieval Music*, Norton, 1978.
 - Johannes de Grocheio, *De musica*, vers 1300 : la seule description d'époque de l'estampie et de la ductia.
 - Guido d'Arezzo, *Micrologus*, vers 1026 (hexacorde, utilisé) ; *Musica enchiriadis*, IXe siècle (organum, utilisé).
 - *Liber Usualis*, Solesmes, 1961 : les airs grégoriens du Dies irae, du Kyrie, de l'Agnus Dei. Utilisé (plain-chant).
 - Sources jouables : *Cantigas de Santa Maria* (XIIIe siècle), *Llibre Vermell de Montserrat* (XIVe siècle), *Carmina Burana*, la *Symphonia* de Hildegard de Bingen.
 - Interprètes qui servent d'oreille : Ensemble Organum (Marcel Pérès), Sequentia, Hespèrion XXI (Jordi Savall), Clemencic Consort, Estampie.
+- L'isorythmie des motets de Philippe de Vitry et de Guillaume de Machaut (XIVe siècle) : couleur et talea (Hoppin, ci-dessus). Utilisé (chantier 26).
 
 ---
 
@@ -228,7 +240,7 @@ C'est la zone la plus faible du projet au départ : la table Affectus reposait p
 
 ### Modèles physiques
 
-- Julius O. Smith III, *Physical Audio Signal Processing*, W3K, 2010, libre en ligne. [CCRMA](https://ccrma.stanford.edu/~jos/pasp). Utilisé (guides d'onde). À exploiter : vielle à roue et cornemuse.
+- Julius O. Smith III, *Physical Audio Signal Processing*, W3K, 2010, libre en ligne. [CCRMA](https://ccrma.stanford.edu/~jos/pasp). Utilisé (guides d'onde). Vielle à roue et cornemuse faites (chantier 19).
 - Julius O. Smith III, *Introduction to Digital Filters*, *Spectral Audio Signal Processing*, *Mathematics of the DFT*, libres sur le même site.
 - Kevin Karplus et Alex Strong, « Digital synthesis of plucked-string and drum timbres », *Computer Music Journal* 7(2), 1983 ; David A. Jaffe et Julius O. Smith, « Extensions of the Karplus-Strong plucked-string algorithm », même revue, 1983. Utilisé.
 - Michael E. McIntyre, Robert T. Schumacher et James Woodhouse, « On the oscillations of musical instruments », *JASA* 74(5), 1983. Utilisé (archet, anche).
@@ -236,26 +248,27 @@ C'est la zone la plus faible du projet au départ : la table Affectus reposait p
 - Perry R. Cook, *Real Sound Synthesis for Interactive Applications*, A K Peters, 2002. Synthèse modale et sons procéduraux temps réel.
 - Stefan Bilbao, *Numerical Sound Synthesis*, Wiley, 2009.
 - Jean-Marie Adrien, « The missing link: modal synthesis », dans De Poli, Piccialli et Roads (dir.), *Representations of Musical Signals*, MIT Press, 1991. Utilisé (cloches, bols).
+- Émilie Gillet, Rings et Elements (Mutable Instruments, 2014-2015), code libre : résonateur modal, cordes sympathiques, excitateur frappé ou frotté. Utilisé dans l'esprit (résonateur modal, chantier 24).
 
 ### Sons procéduraux
 
-- Andy Farnell, *Designing Sound*, MIT Press, 2010. Feu, pluie, vent, eau, animaux, en Pure Data. [Chapitre pluie et vent](https://mitp-content-server.mit.edu/books/content/sectbyfn/books_pres_0/8375/designing_sound.zip/practical15.html), [entretien](https://designingsound.org/2012/01/18/procedural-audio-interview-with-andy-farnell/). À exploiter : feu et pluie vraiment procéduraux.
+- Andy Farnell, *Designing Sound*, MIT Press, 2010. Feu, pluie, vent, eau, animaux, en Pure Data. [Chapitre pluie et vent](https://mitp-content-server.mit.edu/books/content/sectbyfn/books_pres_0/8375/designing_sound.zip/practical15.html), [entretien](https://designingsound.org/2012/01/18/procedural-audio-interview-with-andy-farnell/). Utilisé (feu, vent et pluie procéduraux, chantier 13).
 - Revue de l'audio procédural, Queen Mary University of London, 2023. [PDF](https://www.eecs.qmul.ac.uk/~josh/documents/2023/Procedural%20audio%20review.pdf)
 
 ### Réverbération
 
 - Manfred R. Schroeder, « Natural sounding artificial reverberation », *JAES* 10(3), 1962.
 - James A. Moorer, « About this reverberation business », *Computer Music Journal* 3(2), 1979.
-- Jean-Marc Jot et Antoine Chaigne, « Digital delay networks for designing artificial reverberators », 90e convention AES, 1991. Les réseaux de délais rebouclés (FDN). À exploiter.
+- Jean-Marc Jot et Antoine Chaigne, « Digital delay networks for designing artificial reverberators », 90e convention AES, 1991. Les réseaux de délais rebouclés (FDN). Utilisé (la réverbération « vivante », seule en mode économe, chantier 14).
 - Jon Dattorro, « Effect Design, Part 1: Reverberator and Other Filters », *JAES* 45(9), 1997. Utilisé.
 - Vesa Välimäki, Julian D. Parker, Lauri Savioja, Julius O. Smith et Jonathan S. Abel, « Fifty Years of Artificial Reverberation », *IEEE Transactions on Audio, Speech, and Language Processing* 20(5), 2012. [DOI](https://doi.org/10.1109/TASL.2012.2189567)
 - Les mêmes, « More Than 50 Years of Artificial Reverberation », AES, 2016 : bruit velours, réseaux de diffusion, réverbération modale. [AES](https://aes2.org/publications/elibrary-page/?id=18061)
-- Matti Karjalainen et Hanna Järveläinen, bruit velours, AES, 2007 ; réverbération par bruit velours entrelacé. [Aalto](https://acris.aalto.fi/ws/portalfiles/portal/94807831/Late_Reverberation_Synthesis_Using_Interleaved_Velvet_Noise_Sequences.pdf). À exploiter : une réverbération plus légère sur téléphone.
+- Matti Karjalainen et Hanna Järveläinen, bruit velours, AES, 2007 ; réverbération par bruit velours entrelacé. [Aalto](https://acris.aalto.fi/ws/portalfiles/portal/94807831/Late_Reverberation_Synthesis_Using_Interleaved_Velvet_Noise_Sequences.pdf). Pas nécessaire : le réseau de lignes à retard suffisait (chantier 14).
 
 ### Oscillateurs, effets, synthèse
 
 - John Chowning, « The synthesis of complex audio spectra by means of frequency modulation », *JAES* 21(7), 1973. Utilisé (FM).
-- Tim Stilson et Julius O. Smith, « Alias-free digital synthesis of classic analog waveforms », ICMC, 1996 ; Vesa Välimäki et Antti Huovilainen, « Antialiasing oscillators in subtractive synthesis », *IEEE Signal Processing Magazine*, 2007. À exploiter pour le synthé de Forger.
+- Tim Stilson et Julius O. Smith, « Alias-free digital synthesis of classic analog waveforms », ICMC, 1996 ; Vesa Välimäki et Antti Huovilainen, « Antialiasing oscillators in subtractive synthesis », *IEEE Signal Processing Magazine*, 2007. Pas nécessaire pour l'instant : les oscillateurs du navigateur sont à bande limitée et les tables d'onde de Forger sont filtrées par octave.
 - Udo Zölzer (dir.), *DAFX: Digital Audio Effects*, Wiley, 2e éd. 2011.
 - Joshua D. Reiss et Andrew McPherson, *Audio Effects: Theory, Implementation and Application*, CRC Press, 2014.
 - Will Pirkle, *Designing Software Synthesizer Plug-ins in C++*, Focal Press, 2014, et *Designing Audio Effect Plugins in C++*, 2e éd. 2019.
@@ -267,6 +280,7 @@ C'est la zone la plus faible du projet au départ : la table Affectus reposait p
 - W3C, *Web Audio API* (spécification) et AudioWorklet ; Hongchan Choi, « AudioWorklet: the future of web audio », ICMC, 2018.
 - Boris Smus, *Web Audio API*, O'Reilly, 2013.
 - Tone.js : à connaître, même si Bourdon s'en passe.
+- W3C Audio Working Group, point de novembre 2025 : la prochaine révision (fin 2026) permettra de choisir la taille du bloc de rendu ; l'état « interrupted » de l'AudioContext (appel entrant, mise en veille) est en essai dans Chrome. [W3C](https://www.w3.org/2025/11/TPAC/demo-audio-wg-update.html). À exploiter sur téléphone.
 
 ---
 
@@ -286,7 +300,7 @@ Les ambiances sont réglées et mesurées, pas écoutées à l'aveugle. C'est le
 
 ## Chantiers
 
-Classés par utilité à la table. Les vingt premiers sont traités (deux retirés), puis six de plus (22 à 27).
+Classés par utilité à la table. Les vingt premiers sont traités (deux retirés), puis sept de plus (22 à 28). L'écoute avec des meneurs reste la priorité : le banc est prêt.
 
 ### Faits
 
@@ -322,6 +336,18 @@ Classés par utilité à la table. Les vingt premiers sont traités (deux retir�
 26. Isorythmie : couleur et talea de longueurs premières entre elles. Sources : Hoppin, *Medieval Music* ; Machaut et Vitry.
 27. Série harmonique du bourdon : partiels 2 à 12 qui entrent et sortent lentement. Sources : La Monte Young, *The Well-Tuned Piano* ; Éliane Radigue.
 
+28. Le leitmotiv au clavier : dans Conduire et la Veillée, les touches 1 à 9 choisissent et appellent le motif de ce numéro.
+
 ### À faire, par ordre d'utilité
 
-21. Mesure de la fatigue : un test qui rend une heure et compte les phrases réentendues, les motifs qui reviennent trop, la variété des accords (Margulis).
+29. Son de Shepard-Risset : une montée qui ne finit jamais, en geste « Angoisse » pour l'horreur et la poursuite.
+30. Modes par couche (déterministe, stochastique, euclidien) et fenêtre de lecture qui glisse sur un motif, pour les boucles et l'arpège. Sources : Befaco ARK, KOMA Monoplex.
+31. Percussions faites au résonateur : tambour sur cadre grave, taiko modal, tambour à cordes ; et un bruit rose ou brun continu.
+32. Chœur formantique qui glisse d'une voyelle à l'autre, et chant diphonique.
+33. Accorder la gamme au timbre des cloches, des bols et du résonateur. Source : Sethares.
+34. Une graine partageable : un lien qui rejoue exactement l'ambiance d'une séance.
+35. Dans le Studio, « propose-moi une variation », qu'on accepte ou qu'on refuse. Sources : Cre8audio programm, Squarp Core.
+36. Sur téléphone, l'état « interrupted » de l'AudioContext (appel entrant, mise en veille). Source : W3C Audio Working Group.
+37. Une courbe de tension qui règle ensemble nuance, registre, tempo, densité et harmonie. Source : Farbood.
+38. Chaque geste de Conduire dit quel mécanisme de l'émotion il active. Source : Juslin et Västfjäll.
+39. Mesure de la fatigue : un test qui rend une heure et compte les phrases réentendues, les motifs qui reviennent trop, la variété des accords (Margulis). Ancien chantier 21.

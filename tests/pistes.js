@@ -71,6 +71,13 @@ setTimeout(async()=>{
   d.getElementById('leitGrab').click();
   ck(w.eval('LEIT.list.length')===2,'le bouton Graver l\'ajoute');
   ck(w.eval('(()=>{ const x=JSON.parse(localStorage.getItem("bourdon.leit")); return x.list.length===2&&!!x.active; })()'),'les motifs sont gardés d\'une séance à l\'autre');
+  /* au clavier : 1 à 9 */
+  w.eval('setMode("jeu")');
+  const kb=w.eval(`(()=>{ live.ctx.currentTime=80; const before=live.eng.leitLog().length; document.dispatchEvent(new KeyboardEvent("keydown",{code:"Digit2",key:"é",bubbles:true})); live.eng.schedule(110); const lg=live.eng.leitLog(); return {active:LEIT.active===LEIT.list[1].id, called:lg.length>before&&lg.slice(before).some(x=>x.call), opt:document.getElementById("leitSel").options[1].textContent}; })()`);
+  ck(kb.active&&kb.called,'touche 2 : le deuxième motif est choisi et appelé');
+  ck(/^2 · /.test(kb.opt),'la liste montre le numéro de chaque motif ('+kb.opt+')');
+  const kb2=w.eval(`(()=>{ const n=live.eng.leitLog().length; document.dispatchEvent(new KeyboardEvent("keydown",{code:"Digit9",bubbles:true})); const i=document.getElementById("leitName"); i.focus(); i.dispatchEvent(new KeyboardEvent("keydown",{code:"Digit1",bubbles:true})); live.eng.schedule(140); return {sel:LEIT.active===LEIT.list[1].id, n:live.eng.leitLog().filter(x=>x.call).length}; })()`);
+  ck(kb2.sel,'un numéro sans motif, ou un chiffre tapé dans un champ, ne fait rien');
   w.eval('LEIT.presence="appel"'); ck(w.eval('leitOpts(true)')===null,'à l\'export, un motif qu\'on appelle seulement n\'est pas joué');
   w.eval('LEIT.presence="rare"'); ck(typeof w.eval('leitOpts(true)')==='function','ses retours, si, ils sont rendus');
   w.eval('stopLive()');

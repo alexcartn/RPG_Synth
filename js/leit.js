@@ -66,7 +66,7 @@ function leitHeard(x){
 function leitUI(){
   const sel=$("leitSel"); if(!sel) return;
   sel.innerHTML=""; if(!LEIT.list.length){ const o=document.createElement("option"); o.value=""; o.textContent="Aucun motif"; sel.appendChild(o); }
-  LEIT.list.forEach(m=>{ const o=document.createElement("option"); o.value=m.id; o.textContent=m.name; sel.appendChild(o); });
+  LEIT.list.forEach((m,i)=>{ const o=document.createElement("option"); o.value=m.id; o.textContent=(i<9?(i+1)+" · ":"")+m.name; sel.appendChild(o); });
   const m=leitCur(); sel.value=m?m.id:"";
   $("leitForm").value=LEIT.form; $("leitPres").value=LEIT.presence;
   $("leitCall").disabled=!m||!live; $("leitDel").disabled=!m; $("leitGrab").disabled=!live;
@@ -87,6 +87,7 @@ function leitBuild(){
       '<div class="ctl"><label for="leitName">Nom</label><input type="text" id="leitName" maxlength="40" placeholder="Le roi-liche, la taverne, l\'ordre du Lys…"></div>'+
       '<div class="ctl"><label for="leitDeg">Degrés</label><input type="text" id="leitDeg" inputmode="numeric" title="1 = la tonique, 5 = la quinte, 8 = l\'octave, 0 = le degré sous la tonique. Le mode de la scène donne les hauteurs." placeholder="1 5 4 3 1"></div>'+
       '<div class="ctl"><label for="leitRh">Durées</label><input type="text" id="leitRh" inputmode="numeric" title="En croches : 1 = croche, 2 = noire, 4 = blanche." placeholder="2 1 1 2 4"></div>'+
+      '<p class="hint">Au clavier, dans Conduire et dans la Veillée : les touches 1 à 9 appellent le motif de ce numéro, sans regarder l\'écran.</p>'+
       '<p class="hint">Les degrés suivent le mode de la scène : le même motif sonne majeur dans la taverne et phrygien dans la crypte.</p>'+
     '</details>'+
     '<p class="hint" id="leitSt" aria-live="polite"></p>';
@@ -98,8 +99,19 @@ function leitBuild(){
   $("leitDraw").onclick=()=>{ leitNew(leitDraw()); const st=$("leitSt"); if(st) st.textContent=live?"Motif tiré : appelle-le pour l'entendre.":"Motif tiré."; };
   $("leitGrab").onclick=()=>{ if(!live) return; const g=live.eng.leitGrab(), st=$("leitSt"); if(!g){ if(st) st.textContent="Pas encore de phrase à graver."; return; } leitNew(g); if(st) st.textContent="La dernière phrase est gravée."; };
   $("leitDel").onclick=()=>{ const m=leitCur(); if(!m) return; LEIT.list=LEIT.list.filter(x=>x!==m); LEIT.active=LEIT.list.length?LEIT.list[LEIT.list.length-1].id:null; leitSave(); leitUI(); };
-  $("leitName").oninput=e=>{ const m=leitCur(); if(!m) return; m.name=e.target.value.trim()||"Motif"; leitSave(); const o=[...$("leitSel").options].find(x=>x.value===m.id); if(o) o.textContent=m.name; };
+  $("leitName").oninput=e=>{ const m=leitCur(); if(!m) return; m.name=e.target.value.trim()||"Motif"; leitSave(); const i=LEIT.list.indexOf(m), o=[...$("leitSel").options].find(x=>x.value===m.id); if(o) o.textContent=(i>=0&&i<9?(i+1)+" · ":"")+m.name; };
   const edit=()=>{ const m=leitCur(); if(!m) return; const p=leitParse($("leitDeg").value,$("leitRh").value); if(!p) return; m.degs=p.degs; m.rh=p.rh; leitSave(); };
   $("leitDeg").onchange=edit; $("leitRh").onchange=edit;
+  document.addEventListener("keydown",leitKeys);
   leitUI();
+}
+/* touches 1 à 9 : choisir le motif de ce numéro et l'appeler (rangée des chiffres, libre dans Conduire : les notes sont sur Z, A et Q) */
+function leitKeys(e){
+  if(!((typeof JEU!=="undefined"&&JEU.on)||(typeof VEIL!=="undefined"&&VEIL.on))||e.repeat||e.ctrlKey||e.metaKey||e.altKey) return;
+  const t=e.target, tg=t&&t.tagName; if(tg==="SELECT"||tg==="TEXTAREA"||(tg==="INPUT"&&t.type!=="range"&&t.type!=="checkbox")) return;
+  const m=/^(?:Digit|Numpad)([1-9])$/.exec(e.code||""); if(!m) return;
+  const it=LEIT.list[+m[1]-1]; if(!it) return;
+  e.preventDefault();
+  if(LEIT.active!==it.id){ LEIT.active=it.id; leitSave(); leitUI(); }
+  leitCallNow();
 }

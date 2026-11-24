@@ -14,6 +14,7 @@ const ICONS={
   danger:'<path d="M12 3L22 20H2z"/><path d="M12 9v5"/><rect class="a" x="10.8" y="16" width="2.4" height="2.4"/>',
   poursuite:'<path d="M3 6l6 6-6 6M10 6l6 6-6 6"/><rect class="a" x="18" y="10.5" width="3" height="3"/>',
   triomphe:'<path d="M3 19h18M4 19L3 8l5 4 4-7 4 7 5-4-1 11"/><rect class="a" x="10.8" y="2" width="2.4" height="2.4"/>',
+  angoisse:'<path d="M3 20h4v-4h4v-4h4V8h4V4"/><rect class="a" x="19.7" y="2.4" width="2.6" height="2.6"/>',
   surprise:'<path d="M12 3v9M5.5 5.5l2.8 2.8M18.5 5.5l-2.8 2.8M3 12h3.5M17.5 12H21"/><rect class="a" x="10.7" y="16.4" width="2.6" height="2.6"/>',
   apaisement:'<path d="M3 9c3-3 6 3 9 0s6 3 9 0M3 15c3-3 6 3 9 0s6 3 9 0"/><rect class="a" x="10.8" y="19" width="2.4" height="2.4"/>',
   jouer:'<path d="M7 4l13 8-13 8z"/><rect class="a" x="3" y="10.5" width="2.5" height="3"/>',

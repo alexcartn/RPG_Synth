@@ -10,7 +10,7 @@ Ouvrir `index.html` dans un navigateur récent (Chrome, Firefox, Safari). Les po
 
 ## Références et chantiers
 
-[REFERENCES.md](REFERENCES.md) rassemble les sources du projet par domaine (émotion musicale, musique sous la voix, musique adaptative, outils de jeu de rôle, composition algorithmique, ambient et dungeon synth, théorie et accordages, synthèse, méthode d'écoute), dit pour chacune ce qu'elle apporte et si elle est déjà exploitée, fait le point sur l'état de l'art en novembre 2026 (Eurorack, modèles en temps réel, Web Audio) et classe les chantiers par utilité à la table : vingt-sept faits, onze à faire.
+[REFERENCES.md](REFERENCES.md) rassemble les sources du projet par domaine (émotion musicale, musique sous la voix, musique adaptative, outils de jeu de rôle, composition algorithmique, ambient et dungeon synth, théorie et accordages, synthèse, méthode d'écoute), dit pour chacune ce qu'elle apporte et si elle est déjà exploitée, fait le point sur l'état de l'art en novembre 2026 (Eurorack, modèles en temps réel, Web Audio) et classe les chantiers par utilité à la table : trente faits, huit à faire.
 
 ## À la table : la voix du meneur
 
@@ -102,6 +102,13 @@ Sur un téléphone, le son peut saccader quand le calcul audio dépasse ce que l
 - Isorythmie (Écriture, Forme de la pièce ; ambiance Ars Nova dans Médiéval) : une couleur, suite de 7 à 13 hauteurs, et une talea, suite de durées avec ses silences, de longueurs premières entre elles (Machaut, Vitry). La couleur continue d'une talea à l'autre : les mêmes hauteurs reviennent sur d'autres durées, jusqu'à ce que les deux cycles se retrouvent. Chaque énoncé dure un nombre exact de mesures. Mesuré : couleur de 9 hauteurs et talea de 4 durées, exactes d'un énoncé à l'autre sur près de 300 notes.
 - Série harmonique du bourdon (Fondations, Réglages du bourdon ; ambiance Harmonia dans Dark ambient) : les partiels 2 à 12 de la tonique grave, en sinus purs, entrent et sortent très lentement, chacun à son rythme (La Monte Young, Éliane Radigue). Ce sont des multiples exacts, septième et onzième harmoniques comprises, hors de toute gamme. Mesuré sur dix minutes : chaque partiel entre et sort, de 4 à 10 sonnent ensemble, jamais tous ni aucun. Tirage propre : à zéro, rien n'est construit.
 - Les trois ambiances ont leur gain de sonie mesuré comme les autres (BS.1770, trois graines) : Ars Nova et Harmonia à -13 LUFS, Lacrimae à -15.
+
+## Angoisse, modes de l'arpège, peaux et cordes, bruit coloré
+
+- Geste Angoisse (Conduire) : un son de Shepard-Risset. Six voix à l'octave montent sans fin ; chacune passe sous une cloche d'amplitude posée sur l'étendue, entre dans le grave sans qu'on l'entende et s'éteint dans l'aigu. L'oreille entend une montée qui ne finit jamais. La mélodie et la percussion reculent, le bourdon monte. Mesuré : six voix toujours à l'octave, chacune ne fait que monter, le retour en bas se fait sous 2 % d'amplitude, la hauteur moyenne de l'ensemble ne bouge que de 0,03 octave. Environ 3 dB au-dessus de la musique pendant le geste.
+- Modes de l'arpège (Composer, Arpège) : Motif (le dessin choisi, comme avant), Stochastique (une note de l'accord tirée, voisine de la précédente le plus souvent, jamais la même deux fois de suite), Euclidien (le dessin, troué : k notes sur huit, réparties au plus juste). Fenêtre glissante : on ne lit que quelques pas du motif, et après deux passages la fenêtre avance d'un pas. Dans l'esprit du Befaco ARK et du KOMA Monoplex (Superbooth 2026). Le mode stochastique a son propre tirage : la mélodie n'en est pas changée.
+- Batterie « Peaux et cordes au résonateur » : un grand tambour grave et un tambour sur cadre aux modes de la membrane circulaire (1 ; 1,59 ; 2,14 ; 2,30…), et un tambour à cordes (tambourin de Gascogne, ttun-ttun basque) aux cordes accordées sur la tonique et la quinte, avec le grésillement des cordes contre la peau. Tout est accordé sur la tonique de la pièce. Même sonie que la batterie qu'elle remplace (mesuré sur Agmen Umbrarum et Taberna).
+- Bruit continu (Son et salle, Lieu) : rose (la même énergie par octave, mesurée à 0,6 dB près) ou brun (plus grave, une chute d'eau lointaine, une soufflerie). Boucle de 12 s raccordée en fondu. À 50 %, un peu au-dessus du vent au même réglage.
 
 ## Studio : composer soi-même (studio.html)
 
@@ -337,7 +344,7 @@ Troisième mode, Forger (interrupteur « Composer · Conduire · Forger » sous 
 - Volume général (pupitre de Composer, Couches, Ensemble) : pour que les ambiances calmes restent calmes. L'export est toujours normalisé en crête.
 - Quarts de ton : quatre gammes à 24 notes par octave (Maqam Rast, Bayati, Saba, enharmonique grec ancien). Une note à un quart de ton est placée au milieu (en proportion) de ses deux voisines, dans le tempérament choisi. Le cercle des hauteurs a 24 positions (les petits points sont les quarts de ton), cliquables pour dessiner une gamme libre ; la gamme libre garde son ancien format à 12 cases tant qu'on n'utilise pas de quart de ton. Une note à un quart de ton s'écrit avec une flèche : Mi↓ est un Mi demi-bémol. En MIDI, elles passent en pitch bend de 50 cents (plage de 2 demi-tons) sur mélodie, canon, boucles et pendules, et sont arrondies sur les nappes, qui sont polyphoniques.
 - Natura : cinq sons de nature (pluie, vagues, nuit avec grillons, ruisseau, oiseaux), chapitre Son et salle. Les textures sont des boucles précalculées construites seulement quand on les active (environ 1 % d'un cœur chacune), les oiseaux sont des phrases tirées au hasard. Un univers Nature les met en avant : Pluvia, Mare, Silva, Nox. Les maqams ont leurs préréglages dans l'univers Orient : Bayati et Enharmonia.
-- Limites connues : les quarts de ton sont ceux de la théorie à 24 notes égales, pas les intonations exactes de chaque maqam ; pas de bruit continu rose ou brun ; la percussion reste le bodhrán et le shaker.
+- Limites connues : les quarts de ton sont ceux de la théorie à 24 notes égales, pas les intonations exactes de chaque maqam.
 
 ## Arranger (retiré)
 

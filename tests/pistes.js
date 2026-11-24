@@ -159,7 +159,59 @@ setTimeout(async()=>{
   ck(hs.moved>=hs.n-1,'chacun entre et sort, à son rythme, en dix minutes');
   ck(hs.min>=1&&hs.max<hs.n,'jamais tous à la fois, jamais aucun (de '+hs.min+' à '+hs.max+' ensemble)');
   ck(hs.off===0,'à zéro, rien n\'est construit');
+  /* 29. Shepard-Risset */
+  console.log('angoisse (Shepard-Risset)');
+  ck(!!d.querySelector('#jeuGest [data-g="angoisse"]'),'le geste Angoisse est dans Conduire');
+  const sh=w.eval(`(()=>{ const e=buildEngine(new AudioContext(),merge(clone(DEFAULT),{seed:2}),{record:true}); e.start(0,0,0); e.schedule(10); const len=e.gesture("angoisse",1); const L=e.shepLog(); if(L.length!==6) return {n:L.length};
+    const n=L[0].f.length; let oct=true, wrapQuiet=true, rises=0, steps=0, gmin=1e9, gmax=0, cmin=1e9, cmax=-1e9;
+    for(let i=1;i<n;i++){ let gs=0, cw=0; L.forEach(v=>{ const a=v.f[i], b=v.f[i-1]; if(a<b){ if(Math.max(v.g[i],v.g[i-1])>0.02) wrapQuiet=false; } else { steps++; if(a>b) rises++; } gs+=v.g[i]; cw+=v.g[i]*Math.log2(v.f[i]); });
+      const r=Math.log2(L[1].f[i]/L[0].f[i]); if(Math.abs(r-Math.round(r))>1e-3) oct=false; gmin=Math.min(gmin,gs); gmax=Math.max(gmax,gs); cmin=Math.min(cmin,cw/gs); cmax=Math.max(cmax,cw/gs); }
+    return {n:L.length,len,oct,wrapQuiet,rise:rises/steps,gratio:gmax/gmin,cspan:cmax-cmin}; })()`);
+  console.log('  ',JSON.stringify(sh));
+  ck(sh.n===6&&sh.oct,'six voix, toujours à l\'octave les unes des autres');
+  ck(sh.rise>0.99,'chacune monte sans cesse');
+  ck(sh.wrapQuiet,'et revient en bas sans qu\'on l\'entende (sous la cloche, moins de 2 %)');
+  ck(sh.gratio<1.6&&sh.cspan<1.2,'l\'ensemble ne monte ni ne baisse vraiment : la hauteur moyenne reste dans une octave ('+sh.cspan.toFixed(2)+'), le niveau stable');
+  /* 30. modes de l'arpège et fenêtre */
+  console.log('arpège : modes et fenêtre');
+  const ar=w.eval(`(()=>{ const run=A=>{ const Sx=merge(clone(DEFAULT),{seed:6,scales:["dorien","",""],arp:Object.assign({lvl:0.5,inst:"harpe",pat:"vaetvient",rate:1,reg:1,span:1},A)}); Sx.chance={skip:0,ratchet:0,mutate:0,octave:0,rest:0}; const nt=[];
+      const e=buildEngine(new AudioContext(),Sx,{record:true,onNote:(t,off,k)=>{ if(k==="loop") nt.push({t,off}); }}); e.start(0,0,0); e.schedule(120); return {nt,E:e.E,ch:e.chords(),t0:e.t0f(),mel:e.events.filter(z=>z.tr===0).map(z=>z.t.toFixed(3)+":"+z.off).join(",")}; };
+    const base=run({}), mot=run({mode:"motif"}), st=run({mode:"stoch"}), eu=run({mode:"eucl",k:3}), wi=run({win:3,pat:"montant"});
+    const pcsAt=(r,t)=>{ let c=r.ch[0]; r.ch.forEach(x=>{ if(x.t<=t+0.002) c=x; }); return c.offs.map(x=>((x%12)+12)%12); };
+    const inCh=r=>r.nt.filter(n=>pcsAt(r,n.t).includes(((n.off%12)+12)%12)).length/r.nt.length;
+    let same=0, near=0; for(let i=1;i<st.nt.length;i++){ if(st.nt[i].off===st.nt[i-1].off) same++; }
+    const per8=[]; for(let b=8;b<200;b+=8){ per8.push(eu.nt.filter(n=>{ const s2=Math.round((n.t-eu.t0)/eu.E); return s2>=b&&s2<b+8; }).length); }
+    let wmax=0; wi.ch.slice(1,10).forEach(c=>{ const ns=wi.nt.filter(n=>n.t>=c.t-0.01&&n.t<c.t+6*wi.E-0.01); wmax=Math.max(wmax,new Set(ns.map(n=>n.off)).size); });
+    return {same:base.nt.length===mot.nt.length&&base.nt.every((n,i)=>n.off===mot.nt[i].off), melSame:base.mel===st.mel, stIn:inCh(st), stRep:same, stN:st.nt.length, eu:[...new Set(per8)], wmax, wiN:wi.nt.length}; })()`);
+  console.log('  ',JSON.stringify(ar));
+  ck(ar.same,'mode Motif : l\'arpège d\'avant, note pour note');
+  ck(ar.stIn===1&&ar.stRep===0&&ar.melSame,'stochastique : toujours dans l\'accord, jamais deux fois la même note de suite, et la mélodie n\'en est pas changée');
+  ck(ar.eu.length===1&&ar.eu[0]===3,'euclidien : trois notes sur huit, à chaque mesure');
+  ck(ar.wiN>20&&ar.wmax<=3,'fenêtre de trois pas : sur six pas, pas plus de trois notes différentes');
+  /* 31. percussions au résonateur, bruit coloré */
+  console.log('peaux et cordes, bruit coloré');
+  const dr=w.eval(`(()=>{ const mag=(buf,fr)=>{ const x=buf.getChannelData(0), N=Math.min(x.length,8192), st=200; let re=0,im=0; for(let i=0;i<N;i++){ const v=x[st+i]||0, wn=0.5-0.5*Math.cos(2*Math.PI*i/N); re+=v*wn*Math.cos(2*Math.PI*fr*i/44100); im+=v*wn*Math.sin(2*Math.PI*fr*i/44100); } return Math.hypot(re,im); };
+    const mk=root=>{ const e=buildEngine(new AudioContext(),merge(clone(DEFAULT),{seed:3,root,perc:{kit:"resonance"}}),{record:true}); e.start(0,0,0); e.schedule(4); return e; };
+    const fold=(f,a,b)=>{ while(f>b) f/=2; while(f<a) f*=2; return f; };
+    const r={}; for(const root of [2,7]){ const e=mk(root), F=mkFreq(merge(clone(DEFAULT),{root})), ft=fold(F(0),42,84), fc=fold(F(0),110,220);
+      const tk=e.bank.drum("taiko",0.8).buf, co=e.bank.drum("cordes",0.8).buf;
+      r[root]={ft:+ft.toFixed(1), tk:mag(tk,ft)/mag(tk,ft*1.3), m2:mag(tk,ft*1.594)/mag(tk,ft*1.8), co5:mag(co,fc*1.5)/mag(co,fc*1.25), co1:mag(co,fc)/mag(co,fc*1.12)}; }
+    let nan=false; const e=mk(2); ["taiko","cordes","cadre"].forEach(k=>{ const x=e.bank.drum(k,1).buf.getChannelData(0); for(let i=0;i<x.length;i+=31) if(!Number.isFinite(x[i])||Math.abs(x[i])>1) nan=true; });
+    const pe=[]; const e2=buildEngine(new AudioContext(),merge(clone(DEFAULT),{seed:3,perc:{lvl:0.6,kit:"resonance"}}),{record:true,onNote:(t,o2,k)=>{ if(k==="stomp"||k==="tap"||k==="shk") pe.push(k); }}); e2.start(0,0,0); e2.schedule(30);
+    const band=(buf,a,b)=>{ let s2=0; for(let f=a;f<b;f+=(b-a)/24) s2+=mag(buf,f)**2; return s2; };
+    const nz={}; for(const col of ["rose","brun"]){ const e3=buildEngine(new AudioContext(),merge(clone(DEFAULT),{seed:3,amb:{bruit:0.6,couleur:col}}),{record:true}); e3.start(0,0,0); e3.setLevels(); const b=e3.bank.noiseBuf(); nz[col]=b?10*Math.log10(band(b,100,200)*100/(band(b,1600,3200)*1600)):null; /* énergie par octave : densité fois largeur de bande */ }
+    const e4=buildEngine(new AudioContext(),merge(clone(DEFAULT),{seed:3}),{record:true}); e4.start(0,0,0); e4.setLevels();
+    return {r,nan,perc:pe.length,kinds:[...new Set(pe)].join(","),nz,off:!e4.bank.noiseBuf()}; })()`);
+  console.log('  ',JSON.stringify(dr));
+  ck(dr.r[2].tk>3&&dr.r[7].tk>3&&dr.r[2].ft!==dr.r[7].ft,'le grand tambour sonne sur la tonique de la pièce, et change avec elle ('+dr.r[2].ft+' puis '+dr.r[7].ft+' Hz)');
+  ck(dr.r[2].m2>2,'avec le deuxième mode de la peau (1,59), qui n\'est pas une harmonique');
+  ck(dr.r[2].co1>2&&dr.r[2].co5>2,'le tambour à cordes sonne la tonique et la quinte');
+  ck(!dr.nan,'aucune valeur folle');
+  ck(dr.perc>20&&dr.kinds.split(",").length>=2,'la batterie « Peaux et cordes » joue ('+dr.perc+' frappes en 30 s)');
+  ck(dr.nz.rose!==null&&Math.abs(dr.nz.rose)<3,'bruit rose : la même énergie par octave (écart de '+(dr.nz.rose||0).toFixed(1)+' dB entre 100-200 Hz et 1,6-3,2 kHz)');
+  ck(dr.nz.brun>dr.nz.rose+6,'bruit brun : bien plus grave ('+(dr.nz.brun||0).toFixed(1)+' dB de plus dans le grave)');
+  ck(dr.off,'à zéro, aucun bruit n\'est fabriqué');
  }catch(e){ console.log('EXCEPTION',e&&e.stack||e); fail++; }
  console.log('ERREURS',errs.length?errs:'aucune');
- console.log(fail||errs.length?'ECHEC pistes':'Pistes (leitmotiv, juste adaptatif, résonateur, tintinnabuli, isorythmie, série harmonique) : tout passe'); process.exit(fail||errs.length?1:0);
+ console.log(fail||errs.length?'ECHEC pistes':'Pistes (chantiers 22 à 31) : tout passe'); process.exit(fail||errs.length?1:0);
 },800);

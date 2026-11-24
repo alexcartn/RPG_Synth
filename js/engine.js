@@ -310,6 +310,20 @@ function buildEngine(ctx, S, o){
   const murG=G(0), fireG=G(0), windG=G(0), dripG=G(0);
   const lMur=link(murG,B.amb.in), lFire=link(fireG,B.amb.in), lWind=link(windG,B.amb.in); dripG.connect(B.amb.in);
   /* sons de nature : chaque lit n'est construit que s'il est utilisé, et débranché quand il retombe à zéro */
+  /* bruit coloré continu : rose (la même énergie par octave, un souffle égal) ou brun (le grave d'une chute d'eau lointaine, d'une soufflerie) ; une boucle de 12 s raccordée en fondu */
+  const noiseG=G(0); noiseG.connect(B.amb.in); let noiseSrc=null, noiseCol=null;
+  function noiseSync(){
+    const lv=clamp((S.amb&&S.amb.bruit)||0,0,1), col=(S.amb&&S.amb.couleur)==="brun"?"brun":"rose";
+    if(lv>0.001&&noiseCol!==col){
+      if(noiseSrc){ try{ noiseSrc.stop(); }catch(e){} const j=starts.indexOf(noiseSrc); if(j>=0) starts.splice(j,1); noiseSrc=null; }
+      const L=sr*12, X=Math.floor(sr*0.5), b=ctx.createBuffer(1,L+X,sr), d=b.getChannelData(0), rr=mulberry32((seed^0xB12B)>>>0); let b0=0,b1=0,b2=0,br=0;
+      for(let i=0;i<L+X;i++){ const w=rr()*2-1; if(col==="rose"){ b0=0.99765*b0+w*0.099046; b1=0.963*b1+w*0.2965164; b2=0.57*b2+w*1.0526913; d[i]=(b0+b1+b2+w*0.1848)*0.11; } else { br=(br+0.02*w)/1.02; d[i]=br*3.2; } }
+      for(let i=0;i<X;i++){ const a=i/X; d[i]=d[i]*a+d[L+i]*(1-a); } /* raccord : la fin se fond dans le début */
+      const b2b=ctx.createBuffer(1,L,sr); b2b.getChannelData(0).set(d.subarray(0,L));
+      noiseSrc=ctx.createBufferSource(); noiseSrc.buffer=b2b; noiseSrc.loop=true; noiseSrc.connect(noiseG); starts.push(noiseSrc); if(started) noiseSrc.start(ctx.currentTime); noiseCol=col;
+    }
+    noiseG.gain.value=lv*(noiseCol==="brun"?0.29:0.26);
+  }
   const NATS=["pluie","mer","nuit","ruisseau"], natG={}, natL={}, natB={}, birdG=G(0), lBird=link(birdG,B.amb.in);
   NATS.forEach(k=>{ natG[k]=G(0); natL[k]=link(natG[k],B.amb.in); });
 
@@ -342,6 +356,7 @@ function buildEngine(ctx, S, o){
     }
     B.loops.lvl.gain.value=lv("loops",S.loops.lvl); B.arp.lvl.gain.value=lv("arp",(S.arp&&S.arp.lvl)||0); B.plain.lvl.gain.value=lv("plain",(S.plain&&S.plain.lvl)||0);
     B.pend.lvl.gain.value=lv("pend",S.pend.lvl); B.bille.lvl.gain.value=lv("bille",(S.bille&&S.bille.lvl)||0); B.arbre.lvl.gain.value=lv("arbre",(S.arbre&&S.arbre.lvl)||0); B.nuee.lvl.gain.value=lv("nuee",(S.nuee&&S.nuee.lvl)||0);
+    noiseSync();
     murG.gain.value=S.amb.murmur; fireG.gain.value=S.amb.feu*0.4; windG.gain.value=ventv()*0.9; dripG.gain.value=S.amb.gouttes*0.8;
     wet.gain.value=S.fx.rev*2;
     if(padC!==padClosed()) padRest(ctx.currentTime||0);
@@ -1336,6 +1351,23 @@ function buildEngine(ctx, S, o){
     x.connect(e); e.connect(PB); x.start(t); x.stop(t+dur+0.05);
   }
   /* peau : modes d'une membrane circulaire (rapports de Bessel), chacun amorti à sa vitesse, avec une chute de hauteur à l'attaque */
+  /* ---------- percussions au résonateur modal : la peau a les modes de la membrane circulaire (1 ; 1,59 ; 2,14 ; 2,30 ; 2,65…, Rossing, The Science of Percussion Instruments),
+     le tambour à cordes (tambourin de Gascogne, ttun-ttun basque) des cordes accordées sur la tonique et la quinte. Accordés sur la tonique de la pièce, rendus et gardés en cache. */
+  const MEMB=[[1,1,1],[1.594,0.7,0.75],[2.136,0.5,0.6],[2.296,0.42,0.55],[2.653,0.34,0.45],[2.918,0.26,0.4],[3.156,0.2,0.35],[3.501,0.16,0.3],[3.6,0.12,0.28],[4.06,0.09,0.24]];
+  const drumCache=new Map();
+  function drumBuf(kind,vel){
+    let ft=freq(0); const band=kind==="taiko"?[42,84]:kind==="cadre"?[150,300]:[110,220]; while(ft>band[1]) ft/=2; while(ft<band[0]) ft*=2;
+    const vq=Math.round(clamp(vel,0,1.5)*4), key=kind+"|"+Math.round(ft*10)+"|"+vq, hit=drumCache.get(key); if(hit) return hit;
+    const vv=vq/4, D=kind==="taiko"?1.6:kind==="cadre"?0.35:0.9, n=Math.floor(sr*D), ex=new Float32Array(n), out=new Float32Array(n), rn=mulberry32((Math.floor(ft*11)^0xD7)>>>0);
+    const ne=Math.floor(sr*(kind==="taiko"?0.006:kind==="cadre"?0.0015:0.0008)), cut=kind==="taiko"?0.15+0.2*vv:0.5+0.3*vv; let lp=0;
+    for(let i=0;i<ne;i++){ lp+=((rn()*2-1)-lp)*cut; ex[i]=lp*(1-i/ne)+(i===0?0.6:0); }
+    if(kind==="cordes"){ [[ft,1],[ft*1.5,0.7],[ft*2,0.5]].forEach(([fs,a])=>{ for(let h=1;h<=10;h++){ const fh=fs*h*(1+0.0008*h*h); if(fh>sr*0.45) break; resoRun(out,ex,n,fh,D*0.55/(1+0.18*(h-1)),a*Math.abs(Math.sin(Math.PI*h*0.13))/Math.pow(h,0.9)); } });
+      for(let i=0;i<n;i++){ const b=Math.max(0,1-i/(sr*0.12)); out[i]+=(rn()*2-1)*0.004*b*Math.abs(out[i])*40; } } /* le grésillement des cordes contre la peau */
+    else MEMB.forEach(([r,a,d])=>{ resoRun(out,ex,n,ft*r,D*0.45*d,a); });
+    let pk=0; for(let i=0;i<n;i++){ const v=out[i]<0?-out[i]:out[i]; if(v>pk) pk=v; } const sc=0.9/(pk||1), nf=Math.floor(sr*0.03); for(let i=0;i<n;i++){ out[i]*=sc*(i>n-nf?(n-i)/nf:1); }
+    const buf=ctx.createBuffer(1,n,sr); buf.getChannelData(0).set(out); const r2={buf,dur:D}; drumCache.set(key,r2); return r2;
+  }
+  function drumPlay(kind,t,v){ const b=drumBuf(kind,v), x=ctx.createBufferSource(); x.buffer=b.buf; const g=G(v*(kind==="taiko"?1.1:kind==="cadre"?0.55:0.6)); x.connect(g); g.connect(PB); x.start(t); x.stop(t+b.dur+0.02); }
   function membrane(t,vel,f0,dec,body){
     [[1,1,1],[1.59,0.75,0.8],[2.14,0.55,0.62],[2.30,0.45,0.55],[2.65,0.35,0.45],[2.92,0.25,0.4]].forEach(([m,a,dm])=>{
       const x=ctx.createOscillator(); x.type="sine"; x.frequency.setValueAtTime(f0*m*1.18,t); x.frequency.exponentialRampToValueAtTime(f0*m,t+0.045);
@@ -1383,6 +1415,10 @@ function buildEngine(ctx, S, o){
       stomp:(t,v)=>{ membrane(t,v*0.95,80,0.5,0.75); noiseHit(t,v*0.25,300,0.05,"lowpass",PB); },
       tap:(t,v)=>{ ping(t,v*0.55,2100,1900,0.005,0.03); ping(t+0.016,v*0.45,2250,2050,0.005,0.03); noiseHit(t,v*0.35,3000,0.025,"bandpass",PB,2); },
       shaker:(t,v)=>metal(t,v*0.5,[1,1.53,2.11],3600,0.22,4000)},
+    resonance:{ /* peaux et cordes au résonateur modal, accordées sur la tonique : grand tambour grave, tambour à cordes (tonique et quinte), tambour sur cadre frappé du doigt */
+      stomp:(t,v)=>drumPlay("taiko",t,v),
+      tap:(t,v)=>drumPlay("cordes",t,v),
+      shaker:(t,v)=>drumPlay("cadre",t,v)},
     bastringue:{ /* caisse au balai, coup de botte sur le plancher, tambourin */
       stomp:(t,v)=>{ ping(t,v*1.1,125,70,0.06,0.2); noiseHit(t,v*0.4,700,0.05,"lowpass",PB); },
       tap:(t,v)=>{ noiseHit(t,v,2600,0.16,"bandpass",PB,0.7,0.012); membrane(t,v*0.35,210,0.1,0.3); },
@@ -1832,6 +1868,7 @@ function buildEngine(ctx, S, o){
     }
     return {notes:tidy(notes,pool,type===3,startT),end:e,gr:R.m(),pool};
   }
+  const RA=mulberry32((seed^0xA77A5)>>>0); /* tirage propre au mode stochastique de l'arpège : les autres modes n'y touchent pas */
   /* ---------- tintinnabuli (Arvo Pärt, à partir de 1976 ; Paul Hillier, Arvo Pärt, Oxford University Press, 1997) ----------
      Sous chaque note de la mélodie (la voix M), une voix T ne joue que les notes de l'accord de tonique de la section : la plus proche au-dessus (supérieure),
      au-dessous (inférieure), en alternance, ou la deuxième au-dessus. « Un plus un égale un » : les deux voix n'en font qu'une. Aucun tirage. */
@@ -2194,14 +2231,22 @@ function buildEngine(ctx, S, o){
         const rt=Number(A.rate)||1, st=E*(rt===2?0.5:rt===0.5?2:1), tt=cur.arp, ch=chordAt(tt+0.001), pcs=chordPcs(ch), base=12*((A.reg===undefined?1:A.reg)), top=base+12*(A.span||1)+7, tones=[];
         for(let x=base;x<=top;x+=0.5){ const pc=((x%12)+12)%12; if(pcs.some(p=>Math.abs(p-pc)<0.01)) tones.push(x); }
         if(tones.length){
-          const sinceChord=Math.max(0,Math.round((tt-ch.t)/st)), pat=A.pat||"vaetvient";
+          const sinceChord=Math.max(0,Math.round((tt-ch.t)/st)), pat=A.pat||"vaetvient", amode=A.mode||"motif";
           let seq=tones;
           if(pat==="turing"||(pat==="auto"&&rcAt(tt)<0.5)){ /* machine de Turing : huit pas d'indices dans l'accord, verrouillés ; de temps en temps un pas se réécrit */
             if(!cur.tma) cur.tma=Array.from({length:8},(_,i)=>Math.floor(hz(seed*0.001+i*3.3)*8));
             const st8=sinceChord%8, lock=0.86+0.12*rcAt(tt); if(hz(tt*5.17+st8)>lock) cur.tma[st8]=Math.floor(hz(tt*9.31)*8);
             seq=[tones[cur.tma[st8]%tones.length]];
           } else if(pat==="vaetvient") seq=tones.concat(tones.slice(1,-1).reverse()); else if(pat==="alberti"){ const n=tones.length; seq=[tones[0],tones[Math.min(n-1,2)],tones[Math.min(n-1,1)],tones[Math.min(n-1,2)]]; }
-          const off=seq.length===1?seq[0]:seq[sinceChord%seq.length], beat=Math.round((tt-t0)/E)%(MD*1)===0, vel=(beat?0.19:0.14)*(0.9+0.2*hz(tt*3.7))*(1+0.2*exprE()*((off-(base+top)/2)/12))*(1+0.12*exprE()*Math.sin(Math.PI*clamp((tt-ch.t)/Math.max(st,ch.len),0,1))), len=st*(A.inst==="harpe"||A.inst==="luth"||A.inst==="kalimba"?3:1.4);
+          /* fenêtre glissante (dans l'esprit du KOMA Monoplex) : on ne lit que W pas du motif ; après deux passages, la fenêtre avance d'un pas */
+          let ai=sinceChord%seq.length; const W=Math.round(A.win||0);
+          if(W>=2&&seq.length>1){ const wl=Math.min(W,seq.length), st0=Math.floor(sinceChord/(wl*2)); ai=(st0+sinceChord%wl)%seq.length; }
+          /* modes par couche (dans l'esprit du Befaco ARK) : motif (le dessin choisi), stochastique (une note de l'accord tirée, voisine de la précédente le plus souvent), euclidien (le dessin, troué : k frappes sur huit) */
+          let rest=false, offS=null;
+          if(amode==="stoch"&&tones.length>1){ const r1=RA(), r2=RA(); const pi=cur.arpI===undefined?Math.floor(tones.length/2):clamp(cur.arpI,0,tones.length-1); let j=r1<0.7?clamp(pi+(r2<0.5?-1:1),0,tones.length-1):Math.floor(r2*tones.length); if(j===pi||tones[j]===cur.arpO) j=clamp(j+(j<tones.length-1?1:-1),0,tones.length-1); if(tones[j]===cur.arpO) j=clamp(j+(j>0?-1:1),0,tones.length-1); cur.arpI=j; offS=tones[j]; cur.arpO=offS; }
+          else if(amode==="eucl"){ const kk=clamp(Math.round(A.k||5),1,8), step=Math.round((tt-t0)/st)%8; rest=((step*kk)%8)>=kk; }
+          if(rest){ cur.arp+=st; continue; }
+          const off=offS!==null?offS:(seq.length===1?seq[0]:seq[ai]), beat=Math.round((tt-t0)/E)%(MD*1)===0, vel=(beat?0.19:0.14)*(0.9+0.2*hz(tt*3.7))*(1+0.2*exprE()*((off-(base+top)/2)/12))*(1+0.12*exprE()*Math.sin(Math.PI*clamp((tt-ch.t)/Math.max(st,ch.len),0,1))), len=st*(A.inst==="harpe"||A.inst==="luth"||A.inst==="kalimba"?3:1.4);
           instOf(A.inst||"harpe","harpe")(sw(tt),fq(off,tt),vel,len,V.arp.node,((cur.aj++%2)?0.3:-0.3));
           if(o.onNote) o.onNote(sw(tt),off,"loop",len,vel);
         }
@@ -2468,6 +2513,7 @@ function buildEngine(ctx, S, o){
 
   /* gestes musicaux, posés sur la prochaine noire : suspense, révélation, danger, poursuite, triomphe, apaisement.
      amp (0 discret, 1 plein, 2 immense) règle la durée, la force et la densité ; renvoie la durée en secondes (0 si rien n'est parti) */
+  const shepLog=[];
   function gesture(name,amp){
     if(!started) return 0;
     const A=[0.6,1,1.7][amp===undefined||amp===null?1:Math.max(0,Math.min(2,Math.round(amp)))];
@@ -2518,6 +2564,22 @@ function buildEngine(ctx, S, o){
       note(ts,tones[0]-12,0.28,E*6); if(big) brass(ts,tones[2]+12,0.24,E*6);
       deceive=true;
       ["mel","pad","perc","drone"].forEach(k=>ramp(B[k].gs.gain,1,ts+bar*0.5,0.6));
+    }else if(name==="angoisse"){
+      /* son de Shepard-Risset (Roger Shepard, 1964 ; Jean-Claude Risset, 1969) : six voix à l'octave qui montent sans fin.
+         Chaque voix passe sous une cloche d'amplitude posée sur l'étendue : elle entre dans le grave sans qu'on l'entende,
+         chante au milieu, s'éteint dans l'aigu et revient en bas. L'oreille entend une montée qui ne finit jamais. Partie de la tonique. */
+      len=bar*(3+3*A); const N=6, T=Math.max(3.5,6-1.4*A); let fmin=freq(0); while(fmin>60) fmin/=2; while(fmin<30) fmin*=2;
+      ramp(B.mel.gs.gain,0.3,now,0.6); ramp(B.perc.gs.gain,0.5,tq,0.6); ramp(B.pad.gs.gain,0.6,tq,1); ramp(B.drone.gs.gain,1+0.3*A,tq,1.2);
+      const sg=G(0), lvl=0.085*(0.75+0.25*A); sg.connect(B.play.in);
+      sg.gain.setValueAtTime(0,tq); sg.gain.linearRampToValueAtTime(lvl,tq+2.5); sg.gain.setValueAtTime(lvl,tq+len-2.5); sg.gain.linearRampToValueAtTime(0,tq+len);
+      const RT=40, n=Math.ceil(len*RT)+1;
+      for(let k=0;k<N;k++){
+        const fc=new Float32Array(n), gc=new Float32Array(n);
+        for(let i=0;i<n;i++){ const p=((k+i/RT/T)%N)/N; fc[i]=fmin*Math.pow(2,N*p); gc[i]=Math.exp(-0.5*Math.pow((p-0.5)/0.17,2)); }
+        const x=ctx.createOscillator(), g=G(0); x.connect(g); g.connect(sg); x.frequency.setValueCurveAtTime(fc,tq,len); g.gain.setValueCurveAtTime(gc,tq,len); x.start(tq); x.stop(tq+len+0.05);
+        if(o.record) shepLog.push({k,t:tq,len,f:fc,g:gc,RT});
+      }
+      back(["mel","perc","pad","drone"],tq+len);
     }else return 0;
     return len;
   }
@@ -2568,6 +2630,7 @@ function buildEngine(ctx, S, o){
     pad:(timbre,t,len,f,dst,vol)=>{ const s=V.pad.node; V.pad.node=dst; try{ padVoice(t,len,f,timbre,vol||1); } finally{ V.pad.node=s; } },
     perc:(k,part,t,v,dst)=>{ const s=PB; PB=dst; try{ (KITS[k]||KITS.cadre)[part](t,v); } finally{ PB=s; } },
     kpat:KPAT, kits:Object.keys(KITS), noise:()=>wb,
+    drum:(kind,vel)=>drumBuf(kind,vel), noiseBuf:()=>noiseSrc&&noiseSrc.buffer,
     reso:(kind,f,vel,len,t)=>resoBuf(kind,f,vel,len,t===undefined?null:symStrings(t,f)) /* pour les tests : le rendu d'une note du résonateur */
   };
   /* appeler le leitmotiv : la phrase en cours s'efface doucement, le motif entre à la mesure suivante */
@@ -2575,5 +2638,5 @@ function buildEngine(ctx, S, o){
     const L=o.leit&&o.leit(); if(!started||!L||!L.motif) return -1;
     L.pending=true; const now=ctx.currentTime; replan("mel",0.25); cur.mel=t0+Math.ceil((now+0.3-t0)/bar)*bar; return cur.mel-now;
   }
-  return {harmState:()=>HS.on?HS.p.map(q=>({k:q.k,f:q.f,v:q.g.gain.value})):[],f0:()=>freq(-12),leitCall,leitGrab,leitLog:()=>leitLog.slice(),nueeState,arbreState,billeY,bank,pieceEnd:()=>pieceFade,fxAttach,grainFreeze,fxOn:()=>!!fx,start,schedule,setLevels,setReverb,stop,fadeOut,sleepFade,sleepClear,replan,freeze,reroll,gesture,play,synOn,dawOn,dawNote,rackSync,meter,tap:()=>volG,analyser:k=>k==="all"?anaAll:anaSyn,dawReplan,dawPos,pendX,tensNow:()=>tensAt(ctx.currentTime),adaptNow:()=>adaptE(ctx.currentTime),tensPos:()=>{ if(!curveOn()) return -1; const L=Math.max(30,S.curve.dur*60), x=(ctx.currentTime-t0)/L; return S.curve.mode==='loop'?((x%1)+1)%1:clamp(x,0,1); },events,out,master,secAt:t=>secOf(t),bar,E,t0f:()=>t0,chords:()=>chordTl.slice(),phraseBars:()=>[...phBars],signals:()=>calls.map(c=>({...c})), melSpans:()=>melSpans.map(x=>x.slice()), phraseLog:()=>{ const ids=new Map(); return phLog.map(x=>{ if(!ids.has(x.ph)) ids.set(x.ph,ids.size); return ids.get(x.ph); }); },fillBars:()=>fillBars.slice()};
+  return {shepLog:()=>shepLog,harmState:()=>HS.on?HS.p.map(q=>({k:q.k,f:q.f,v:q.g.gain.value})):[],f0:()=>freq(-12),leitCall,leitGrab,leitLog:()=>leitLog.slice(),nueeState,arbreState,billeY,bank,pieceEnd:()=>pieceFade,fxAttach,grainFreeze,fxOn:()=>!!fx,start,schedule,setLevels,setReverb,stop,fadeOut,sleepFade,sleepClear,replan,freeze,reroll,gesture,play,synOn,dawOn,dawNote,rackSync,meter,tap:()=>volG,analyser:k=>k==="all"?anaAll:anaSyn,dawReplan,dawPos,pendX,tensNow:()=>tensAt(ctx.currentTime),adaptNow:()=>adaptE(ctx.currentTime),tensPos:()=>{ if(!curveOn()) return -1; const L=Math.max(30,S.curve.dur*60), x=(ctx.currentTime-t0)/L; return S.curve.mode==='loop'?((x%1)+1)%1:clamp(x,0,1); },events,out,master,secAt:t=>secOf(t),bar,E,t0f:()=>t0,chords:()=>chordTl.slice(),phraseBars:()=>[...phBars],signals:()=>calls.map(c=>({...c})), melSpans:()=>melSpans.map(x=>x.slice()), phraseLog:()=>{ const ids=new Map(); return phLog.map(x=>{ if(!ids.has(x.ph)) ids.set(x.ph,ids.size); return ids.get(x.ph); }); },fillBars:()=>fillBars.slice()};
 }

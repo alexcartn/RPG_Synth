@@ -331,10 +331,13 @@ const UI=[
    {k:"arp.pat",type:"select",label:"Motif",opts:[["vaetvient","Va-et-vient"],["montant","Montant"],["alberti","Alberti (grave, aigu, milieu, aigu)"],["turing","Machine de Turing : un motif bouclé qui mute lentement"],["auto","Selon rituel ↔ chanson (Turing côté rituel)"]]},
    {k:"arp.rate",type:"select",num:true,label:"Vitesse",opts:[["0.5","Noires"],["1","Croches"],["2","Doubles croches"]]},
    {k:"arp.reg",type:"range",label:"Registre de l'arpège",min:0,max:2,step:1,fmt:v=>["grave","médium","aigu"][v]},
-   {k:"arp.span",type:"range",label:"Étendue de l'arpège",min:1,max:2,step:1,fmt:v=>v+" octave"+(v>1?"s":"")}]},
+   {k:"arp.span",type:"range",label:"Étendue de l'arpège",min:1,max:2,step:1,fmt:v=>v+" octave"+(v>1?"s":"")},
+   {k:"arp.mode",type:"select",label:"Mode de l'arpège",opts:[["motif","Motif : le dessin choisi"],["stoch","Stochastique : une note de l'accord tirée, voisine le plus souvent"],["eucl","Euclidien : le dessin, troué de silences réguliers"]],hint:"Comme sur un séquenceur à pistes (Befaco ARK) : chaque couche a son mode. Stochastique : l'arpège erre dans l'accord sans motif fixe. Euclidien : k notes sur huit, réparties au plus juste."},
+   {k:"arp.k",type:"range",label:"Notes sur huit (euclidien)",min:1,max:8,step:1,fmt:v=>v+" sur 8"},
+   {k:"arp.win",type:"range",label:"Fenêtre glissante",min:0,max:8,step:1,fmt:v=>v<2?"non":v+" pas",hint:"On ne lit que quelques pas du motif ; après deux passages, la fenêtre avance d'un pas (KOMA Monoplex). Le motif se découvre peu à peu."}]},
   {h:"Percussion", hf:"", id:"g-perc", items:[
    {k:"perc.lvl",type:"range",label:"Percussion",min:0,max:1,step:0.01,fmt:pct},
-   {k:"perc.kit",type:"select",label:"Batterie",opts:[["cadre","Tambour sur cadre"],["caisse","Grosse caisse et caisse claire"],["taiko","Grand tambour, bâton, claquoir"],["darbouka","Darbouka et riqq"],["bastringue","Balais, botte et tambourin"],["electro","Boîte à rythmes"],["antique","Tympanon, crotales, cymbalettes"]]}]},
+   {k:"perc.kit",type:"select",label:"Batterie",opts:[["cadre","Tambour sur cadre"],["caisse","Grosse caisse et caisse claire"],["taiko","Grand tambour, bâton, claquoir"],["darbouka","Darbouka et riqq"],["bastringue","Balais, botte et tambourin"],["electro","Boîte à rythmes"],["antique","Tympanon, crotales, cymbalettes"],["resonance","Peaux et cordes au résonateur (accordées sur la tonique)"]]}]},
   {fin:"Réglages de la percussion", items:[
    {k:"perc.shaker",type:"range",label:"Densité du shaker",min:0,max:1,step:0.01,fmt:pct},
    {k:"perc.ghost",type:"range",label:"Frappes fantômes",min:0,max:1,step:0.01,fmt:pct},
@@ -460,6 +463,8 @@ const UI=[
    {k:"amb.feu",type:"range",label:"Feu de cheminée",min:0,max:1,step:0.01,fmt:pct},
    {k:"amb.vent",type:"range",label:"Vent",min:0,max:1,step:0.01,fmt:pct},
    {k:"amb.gouttes",type:"range",label:"Gouttes (crypte)",min:0,max:1,step:0.01,fmt:pct},
+   {k:"amb.bruit",type:"range",label:"Bruit continu",min:0,max:1,step:0.01,fmt:pct,hint:"Un souffle continu, sans motif : rose (la même énergie par octave, un souffle égal) ou brun (plus grave : une chute d'eau lointaine, une soufflerie)."},
+   {k:"amb.couleur",type:"select",label:"Couleur du bruit",opts:[["rose","Rose"],["brun","Brun"]]},
    {k:"amb.marqueSon",type:"select",label:"Marqueur du lieu",opts:[["aucun","Aucun"],["cloche","Cloche lointaine"],["bord","Cloche de bord"],["cor","Cor dans la vallée"],["gong","Gong"],["felee","Cloche fêlée"]],hint:"Un son rare qui dit où l'on est (Schafer l'appelle soundmark) : deux ou trois fois par quart d'heure, loin, sur la tonique, toujours dans un silence de la mélodie. Les bêtes et les oiseaux attendent eux aussi un silence de la mélodie, et chacun garde sa bande de fréquences pour ne pas couvrir les autres."},
    {k:"amb.marque",type:"range",label:"Fréquence du marqueur",min:0,max:1,step:0.01,fmt:pct}]},
   {fin:"Nature", items:[

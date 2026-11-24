@@ -143,7 +143,7 @@ C'est la zone la plus faible du projet au départ : la table Affectus reposait p
 
 ### État de l'art, novembre 2026
 
-- Eurorack, Superbooth 2026 : la tendance est au séquenceur qui mêle jeu et génération, avec un hasard qu'on fige et qu'on rejoue. Befaco ARK (chaque piste déterministe, stochastique ou euclidienne), Befaco Random8 (huit tensions aléatoires qui bouclent), KOMA Monoplex (séquenceur mélodique microtonal, départ et longueur modulables), Cre8audio programm et Squarp Core (moteurs génératifs dans un séquenceur). [MusicRadar](https://www.musicradar.com/music-tech/from-stochastic-sequences-to-a-render-farm-of-drums-8-of-our-favourite-eurorack-releases-from-superbooth-2026), [Random8](https://synthanatomy.com/2026/05/befaco-random8-an-8-channel-random-voltage-generator-with-mylar-melodies.html), [Monoplex](https://www.synthtopia.com/content/2026/05/08/koma-monoplex-melodic-microtonal-sequencer-debuts-at-superbooth-2026/). Bourdon a déjà l'essentiel (Turing, Déjà-vu, dérives) ; restent les modes par couche et la fenêtre glissante. À exploiter.
+- Eurorack, Superbooth 2026 : la tendance est au séquenceur qui mêle jeu et génération, avec un hasard qu'on fige et qu'on rejoue. Befaco ARK (chaque piste déterministe, stochastique ou euclidienne), Befaco Random8 (huit tensions aléatoires qui bouclent), KOMA Monoplex (séquenceur mélodique microtonal, départ et longueur modulables), Cre8audio programm et Squarp Core (moteurs génératifs dans un séquenceur). [MusicRadar](https://www.musicradar.com/music-tech/from-stochastic-sequences-to-a-render-farm-of-drums-8-of-our-favourite-eurorack-releases-from-superbooth-2026), [Random8](https://synthanatomy.com/2026/05/befaco-random8-an-8-channel-random-voltage-generator-with-mylar-melodies.html), [Monoplex](https://www.synthtopia.com/content/2026/05/08/koma-monoplex-melodic-microtonal-sequencer-debuts-at-superbooth-2026/). Bourdon a l'essentiel (Turing, Déjà-vu, dérives), et depuis les modes de l'arpège et la fenêtre glissante (chantier 30).
 - Modèles de musique en temps réel : Magenta RealTime 2 (Google, juin 2026), 2,4 milliards de paramètres, environ 200 ms de latence, sur ordinateur et non dans le navigateur ; Lyria RealTime, son pendant en ligne. [Magenta](https://magenta.tensorflow.org/magenta-realtime-2). Ce que Bourdon choisit de ne pas faire : léger, sans échantillons, explicable, hors ligne.
 - Modèles symboliques : orienter l'harmonie d'un transformer en agissant sur ses représentations internes (ISMIR 2026). [arXiv](https://arxiv.org/abs/2610.15957). Ils cherchent le contrôle explicite que Bourdon a par règles.
 - Applications : Wotja 26 (génératif « sans IA »), Endel et Mubert (musique adaptée au contexte). Le même créneau que Bourdon pour le premier ; les deux autres reposent sur des serveurs.
@@ -300,7 +300,7 @@ Les ambiances sont réglées et mesurées, pas écoutées à l'aveugle. C'est le
 
 ## Chantiers
 
-Classés par utilité à la table. Les vingt premiers sont traités (deux retirés), puis sept de plus (22 à 28). L'écoute avec des meneurs reste la priorité : le banc est prêt.
+Classés par utilité à la table. Les vingt premiers sont traités (deux retirés), puis dix de plus (22 à 31). L'écoute avec des meneurs reste la priorité : le banc est prêt.
 
 ### Faits
 
@@ -337,12 +337,12 @@ Classés par utilité à la table. Les vingt premiers sont traités (deux retir�
 27. Série harmonique du bourdon : partiels 2 à 12 qui entrent et sortent lentement. Sources : La Monte Young, *The Well-Tuned Piano* ; Éliane Radigue.
 
 28. Le leitmotiv au clavier : dans Conduire et la Veillée, les touches 1 à 9 choisissent et appellent le motif de ce numéro.
+29. Geste Angoisse : son de Shepard-Risset, une montée sans fin. Sources : Roger Shepard, « Circularity in judgments of relative pitch », *JASA* 36, 1964 ; Jean-Claude Risset, 1969.
+30. Modes de l'arpège (motif, stochastique, euclidien) et fenêtre glissante. Sources : Befaco ARK, KOMA Monoplex.
+31. Batterie au résonateur (grand tambour, tambour sur cadre, tambour à cordes accordés sur la tonique) et bruit rose ou brun continu. Source : Thomas D. Rossing, *The Science of Percussion Instruments*, World Scientific, 2000.
 
 ### À faire, par ordre d'utilité
 
-29. Son de Shepard-Risset : une montée qui ne finit jamais, en geste « Angoisse » pour l'horreur et la poursuite.
-30. Modes par couche (déterministe, stochastique, euclidien) et fenêtre de lecture qui glisse sur un motif, pour les boucles et l'arpège. Sources : Befaco ARK, KOMA Monoplex.
-31. Percussions faites au résonateur : tambour sur cadre grave, taiko modal, tambour à cordes ; et un bruit rose ou brun continu.
 32. Chœur formantique qui glisse d'une voyelle à l'autre, et chant diphonique.
 33. Accorder la gamme au timbre des cloches, des bols et du résonateur. Source : Sethares.
 34. Une graine partageable : un lien qui rejoue exactement l'ambiance d'une séance.

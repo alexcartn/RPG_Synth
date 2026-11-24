@@ -289,7 +289,8 @@ const UI=[
    {k:"tex.air",type:"range",label:"Texture : air",min:0,max:1,step:0.01,fmt:pct,hint:"Un souffle aigu dont la couleur se promène lentement."}]},
   {fin:"Réglages du bourdon", items:[
    {k:"drone.width",type:"range",label:"Largeur (désaccord)",min:0,max:1,step:0.01,fmt:pct,restart:true},
-   {k:"drone.drift",type:"range",label:"Dérive",min:0,max:1,step:0.01,fmt:pct,restart:true}]},
+   {k:"drone.drift",type:"range",label:"Dérive",min:0,max:1,step:0.01,fmt:pct,restart:true},
+   {k:"drone.harm",type:"range",label:"Série harmonique",min:0,max:1,step:0.01,fmt:pct,restart:true,hint:"Les partiels 2 à 12 de la tonique grave, en sinus purs, entrent et sortent très lentement (La Monte Young, Éliane Radigue). Septième et onzième harmoniques comprises, hors de toute gamme. Avec le tempérament juste adaptatif, le bourdon s'y accorde."}]},
   {h:"Mélodie", hf:"", id:"g-mel", items:[
    {k:"mel.lvl",type:"range",label:"Niveau",min:0,max:1,step:0.01,fmt:pct},
    {k:"mel.inst",type:"select",label:"Instrument",opts:INST_OPTS},
@@ -311,6 +312,10 @@ const UI=[
    {k:"canon.inst",type:"select",label:"Instrument",opts:INST_OPTS},
    {k:"canon.delay",type:"range",label:"Retard",min:1,max:8,step:1,fmt:v=>v+(v>1?" mesures":" mesure")},
    {k:"canon.shift",type:"select",label:"Transposition",opts:[["uni","Unisson"],["oct+","Octave au-dessus"],["oct-","Octave en dessous"],["q+","Quinte au-dessus"],["q-","Quinte en dessous"],["t+","Tierce au-dessus"],["contre","Contrepoint : tierces et sixtes en mouvement contraire"]]}]},
+  {h:"Tintinnabuli", hf:"la voix de l'accord", id:"g-tint", items:[
+   {k:"tint.lvl",type:"range",label:"Niveau (0 = absent)",min:0,max:1,step:0.01,fmt:pct,hint:"Sous chaque note de la mélodie, une seconde voix ne joue que les notes de l'accord de tonique (Arvo Pärt) : la plus proche au-dessus, au-dessous, en alternance ou la deuxième au-dessus. Sacré, deuil, cathédrale."},
+   {k:"tint.pos",type:"select",label:"Position",opts:[["alt","En alternance"],["sup","Au-dessus"],["inf","Au-dessous"],["sup2","Deuxième au-dessus"]]},
+   {k:"tint.inst",type:"select",label:"Instrument",opts:[["","Comme la mélodie"]].concat(INST_OPTS)}]},
   {h:"Nappes", hf:"accords tenus", id:"g-pad", items:[
    {k:"pad.lvl",type:"range",label:"Niveau",min:0,max:1,step:0.01,fmt:pct},
    {k:"pad.timbre",type:"select",label:"Timbre",opts:[["choeur","Chœur"],["cordes","Cordes"],["orgue","Orgue"],["synthe","Synthé doux"],["verre","Verre"],["grattee","Guitare grattée"],["machine","Machine à cordes"],["roues","Orgue à roues"],["vecteur","Vectorielle (timbres qui tournent)"],["essaim","Essaim de scies"],["phase","Distorsion de phase"],["atelier","Synthé perso (Atelier)"]]},
@@ -414,7 +419,7 @@ const UI=[
  {num:"IV", title:"Temps long", fr:"", sub:"Comment la pièce avance sur des minutes : sa forme, sa respiration, sa tension, ses dérives.", groups:[
   {h:"Forme", hf:"", items:[
    {k:"mus.mode",type:"select",label:"Façon de jouer",opts:[["veillee","Veillée : ne s'arrête jamais, le plan revient en grands cycles"],["piece","Pièce : intro, thème, développement, apogée, retombée, coda, puis fin"]],hint:"Veillée pour le fond sonore d'une partie. Pièce pour une œuvre fermée, à écouter ou à exporter (environ six sections)."},
-   {k:"mus.form",type:"select",label:"Forme de la pièce",opts:[["libre","Libre : phrases et déjà-vu"],["passacaille","Passacaille : une basse qui revient, des variations dessus"],["ostinato","Ostinato : un motif qui tourne"],["rondeau","Rondeau : refrain et couplets"],["estampie","Estampie : puncta repris, fin ouverte puis close"],["saltarelle","Saltarelle : estampie sur le rythme sautillant"],["theme","Thème : deux phrases qui reviennent, variées selon les sections"],["variations","Thème et variations"],["turing","Machine de Turing : un registre qui boucle et mute"]]},
+   {k:"mus.form",type:"select",label:"Forme de la pièce",opts:[["libre","Libre : phrases et déjà-vu"],["passacaille","Passacaille : une basse qui revient, des variations dessus"],["ostinato","Ostinato : un motif qui tourne"],["rondeau","Rondeau : refrain et couplets"],["estampie","Estampie : puncta repris, fin ouverte puis close"],["isorythmie","Isorythmie : une suite de hauteurs et une suite de durées qui se décalent"],["saltarelle","Saltarelle : estampie sur le rythme sautillant"],["theme","Thème : deux phrases qui reviennent, variées selon les sections"],["variations","Thème et variations"],["turing","Machine de Turing : un registre qui boucle et mute"]]},
    {k:"mus.arc",type:"select",label:"Plan de la pièce",opts:[["aucun","Aucun : des sections égales"],["arche","Arche : intro, thème, développement, apogée, retombée, coda"]]}]},
   {h:"Respiration", hf:"l'intensité qui monte et descend", items:[
    {k:"form.shape",type:"select",label:"Forme",opts:[["constante","Constante"],["arche","Arche"],["vagues","Vagues"],["escalier","Escalier"]]},

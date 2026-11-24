@@ -126,10 +126,11 @@ const DEFAULT = {
   temper:"egal", a4:440,
   tempo:120, meter:"4/4", swing:0.1, tension:0.5, vol:1, norm:0,
   perc:{lvl:0.5, shaker:0.55, ghost:0.35, kit:"cadre", eucl:0},
-  drone:{lvl:0.8, timbre:"anche", bright:0.5, width:0.5, drift:0.5, glide:0.5},
+  drone:{lvl:0.8, timbre:"anche", bright:0.5, width:0.5, drift:0.5, glide:0.5, harm:0},
   mel:{lvl:0.6, inst:"luth", lpg:0, dens:0.85, reg:0, span:2, leap:0.2, orn:0.15, deja:0, loop:2},
   canon:{lvl:0, inst:"harpe", delay:2, shift:"oct+"},
   reso:{struct:0.3, bright:0.5, damp:0.4, pos:0.3},
+  tint:{lvl:0, pos:"alt", inst:""},
   pad:{lvl:0.22, timbre:"cordes", len:2, motion:0.5, voices:3, deja:0, loop:2, stag:0.5, bass:0.5, bassOct:12},
   loops:{lvl:0, count:3, inst:"carillon", speed:1},
   arp:{lvl:0, inst:"harpe", pat:"vaetvient", rate:1, reg:1, span:1},
@@ -198,7 +199,11 @@ const MEDIEVAL = [
   ["Saltarellus", {rc:0.85, car:{grav:0.4, aud:0.6, orn:0.35, sil:0.05, rep:0.9}, mus:{logic:"modal", harm:"idiome", form:"saltarelle", expr:0.6}, seed:1390, root:2, scales:["dorien","mixolydien",""], tempo:120, meter:"6/8", swing:0, tension:0.6, sectionBars:16,
     drone:{lvl:0.35, timbre:"anche", bright:0.5, glide:0.15}, mel:{lvl:0.6, inst:"cornemuse", dens:0.9, reg:1, span:1, leap:0.3, orn:0.25, deja:0, loop:2}, canon:{lvl:0}, pad:{lvl:0},
     arp:{lvl:0}, perc:{lvl:0.55, kit:"cadre", shaker:0.5, ghost:0.3}, amb:{murmur:0.35, clink:0.35},
-    fx:{algo:"salle", room:"salle", rev:0.3, size:2.4, dark:0.4, wow:0.05, veil:0.2, sat:0.08}}, "saltarelle : la danse sautillante, cornemuse et tambourin sur son bourdon"]
+    fx:{algo:"salle", room:"salle", rev:0.3, size:2.4, dark:0.4, wow:0.05, veil:0.2, sat:0.08}}, "saltarelle : la danse sautillante, cornemuse et tambourin sur son bourdon"],
+  ["Ars Nova", {rc:0.6, car:{grav:0.5, aud:0.4, orn:0.2, sil:0.2, rep:0.8}, mus:{logic:"modal", harm:"idiome", form:"isorythmie", expr:0.5}, seed:1360, root:2, scales:["dorien","",""], tempo:84, meter:"3/4", swing:0, tension:0.45, sectionBars:16, temper:"pyth",
+    drone:{lvl:0.4, timbre:"orgue", bright:0.35, glide:0.2}, mel:{lvl:0.55, inst:"flute", dens:0.7, reg:1, span:1, leap:0.2, orn:0.1, deja:0, loop:2}, canon:{lvl:0.22, inst:"vielle", delay:2, shift:"q-"}, pad:{lvl:0},
+    arp:{lvl:0}, perc:{lvl:0}, amb:{murmur:0, clink:0, feu:0},
+    fx:{algo:"salle", room:"chapelle", rev:0.5, size:4, dark:0.5, veil:0.3, sat:0.04}}, "ars nova : une suite de hauteurs et une suite de durées qui se décalent, comme dans un motet de Machaut, sur un bourdon d'orgue"]
 ];
 
 /* univers : des ambiances qui ne se limitent pas au Moyen Âge. Chaque entrée : [nom latin, réglages, glose française] */
@@ -219,7 +224,12 @@ const CALME = [
     perc:{lvl:0}, drone:{lvl:0.55, timbre:"orgue", bright:0.3, width:0.3, drift:0.3, glide:0.2},
     mel:{lvl:0.3, inst:"kalimba", lpg:0.6, dens:0.35, reg:1, span:2, leap:0.1, orn:0, deja:0.92, loop:3}, canon:{lvl:0},
     pad:{lvl:0.3, timbre:"synthe", len:4, motion:0.3, voices:3, deja:0.8, loop:4}, amb:{murmur:0.18, clink:0, feu:0, vent:0, gouttes:0},
-    fx:{rev:0.5, size:3.5, dark:0.5, sat:0.05, wow:0.05, veil:0.4, hiss:0}, form:{shape:"constante"}}, "travail et concentration, motifs répétitifs"]
+    fx:{rev:0.5, size:3.5, dark:0.5, sat:0.05, wow:0.05, veil:0.4, hiss:0}, form:{shape:"constante"}}, "travail et concentration, motifs répétitifs"],
+  ["Lacrimae", {car:{grav:0.8, aud:0.1, orn:0, sil:0.7, rep:0.6}, mus:{form:"libre", expr:0.6}, seed:1976, root:9, scales:["eolien","",""], sectionBars:24, tempo:52, temper:"adapt", tension:0.35,
+    perc:{lvl:0}, drone:{lvl:0.3, timbre:"pur", bright:0.2, width:0.3, drift:0.3, glide:0.4},
+    mel:{lvl:0.45, inst:"archet", dens:0.3, reg:1, span:1, leap:0.05, orn:0, deja:0.5, loop:3}, tint:{lvl:0.7, pos:"alt", inst:"harpe"}, canon:{lvl:0},
+    pad:{lvl:0.12, timbre:"cordes", len:8, motion:0.2, voices:3}, amb:{murmur:0, clink:0, feu:0, vent:0, gouttes:0},
+    fx:{rev:0.6, size:8, dark:0.55, room:"chapelle", veil:0.35, hiss:0}}, "tintinnabuli : un archet lent, et la harpe qui ne joue que les notes de l'accord, comme chez Arvo Pärt"]
 ];
 const ESPACE = [
   ["Sidera", {car:{grav:0.6, aud:0.35, orn:0.35, sil:0.7, rep:0.5}, seed:8888, root:0, scales:["lydien","tons",""], sectionBars:24, tempo:44, temper:"juste", tension:0.4, vol:0.6,
@@ -511,7 +521,11 @@ const DARK = [
   ["Glacies", {rc:0.05, seed:2020, root:9, scales:["dorien","pentmin",""], tempo:40, meter:"4/4", tension:0.4, sectionBars:16,
     drone:{lvl:0.3, timbre:"choeur", bright:0.3, drift:0.6}, pad:{lvl:0.2, timbre:"machine", len:8, motion:0.3}, mel:{lvl:0.28, inst:"archet", dens:0.05, reg:1, span:1},
     canon:{lvl:0}, perc:{lvl:0}, tex:{sub:0.3, mid:0.4, air:0.6}, amb:{vent:0.5},
-    fx:{voix:0.4, rev:0.75, size:9, dark:0.45, veil:0.25, shim:0.2}}, "le glacier : le vent, la glace qui chante, un archet perdu"]
+    fx:{voix:0.4, rev:0.75, size:9, dark:0.45, veil:0.25, shim:0.2}}, "le glacier : le vent, la glace qui chante, un archet perdu"],
+  ["Harmonia", {rc:0.05, seed:1969, root:2, scales:["eolien","",""], tempo:40, meter:"4/4", tension:0.4, sectionBars:16, temper:"adapt",
+    drone:{lvl:0.55, timbre:"pur", bright:0.25, drift:0.4, harm:0.9}, pad:{lvl:0.12, timbre:"choeur", len:8, motion:0.2}, mel:{lvl:0},
+    canon:{lvl:0}, perc:{lvl:0}, tex:{sub:0.3, mid:0.15, air:0.2},
+    fx:{voix:0.4, rev:0.7, size:8, dark:0.5, veil:0.3}}, "la série harmonique : les partiels du bourdon entrent et sortent très lentement, comme chez Éliane Radigue"]
 ];
 const UNIVERS = [
   {id:"dungeon", name:"Dungeon synth", tag:"accords, arpèges, flûtes et cordes de vieux claviers : la musique des donjons et des montagnes", items:DUNGEON},
@@ -532,7 +546,7 @@ const UNIVERS = [
 /* hors du Moyen Âge, un préréglage qui ne cite pas un bruit de lieu n'en veut pas : sans cela, murmure et tintements de taverne s'invitaient dans l'espace ou chez les pirates */
 UNIVERS.forEach(u=>{ if(u.id!=="medieval") u.items.forEach(it=>{ it[1].amb=Object.assign({murmur:0,clink:0,feu:0,vent:0,gouttes:0},it[1].amb||{}); }); });
 /* sonie : gain (dB) de chaque ambiance, mesuré hors ligne (BS.1770, 24 s, après le limiteur) pour viser -13 LUFS (-15 pour Calme) */
-const PRESET_NORM={"Estampida":-4.1,"Saltarellus":-4.4,"Spiritus Antiquus":-5.4,"Agmen Umbrarum":-4.5,"Turris Vetus":-7.2,"Feudum":-5.9,"Cuniculus":-2.7,"Memoria":-4.7,"Nix Aeterna":-5.4,"Taberna":-0.1,"Chorea":-5.0,"Crypta":-3.6,"Scriptorium":-6.9,"Turris":-4.0,"Tripudium":1.2,"Pugna":-4.8,"Iter":-5.4,"Triumphus":-5.0,"Insidiae":-0.5,"Portus":0.5,"Navigium":-4.9,"Tempestas":-5.2,"Thesaurus":-5.1,"Skalda":-3.7,"Bellum":-5.8,"Fjordus":-5.7,"Runae":-2.3,"Fata":-5.1,"Aula Fatarum":-6.1,"Sylva Magica":1.3,"Lullaby":2.2,"Larva":-2.7,"Domus Obscura":-5.7,"Sacrificium":-5.2,"Cella":-4.4,"Desertum":2.7,"Saloon":2.0,"Duellum":-6.1,"Equitatus":-5.9,"Urbs Neon":-2.8,"Machina":0.1,"Datum":-2.0,"Imber Toxicus":-3.6,"Sidera":2.8,"Nebula":-1.5,"Abyssus":-1.5,"Aegyptus":-2.4,"Eremus":-6.0,"Hortus":-5.3,"Bayati":-2.2,"Enharmonia":0.5,"Pluvia":-1.7,"Mare":-0.2,"Silva":-1.9,"Nox":-0.2,"Somnus":0.4,"Meditatio":-1.5,"Labor":-3.6,"Montagne":-5.7,"Hiems":-5.2,"Silva Antiqua":-5.7,"Agora":2.9,"Thermopylae":-1.9,"Odyssea":-0.9,"Hades":-3.3,"Custos":-5.5,"Castellum":-4.8,"Delphi":-2.0,"Sparta":-4.0,"Roma Triumphans":-1.7,"Carcer":-3.8,"Vacuum":-4.1,"Ruinae":-2.4,"Sanctum":-1.6,"Glacies":-3.1,"Vigilia":-4.5,"Regnum Umbrae":-5.5,"Iter Montium":-4.5};
+const PRESET_NORM={"Ars Nova":-4.6,"Lacrimae":-5.6,"Harmonia":0.9,"Estampida":-4.1,"Saltarellus":-4.4,"Spiritus Antiquus":-5.4,"Agmen Umbrarum":-4.5,"Turris Vetus":-7.2,"Feudum":-5.9,"Cuniculus":-2.7,"Memoria":-4.7,"Nix Aeterna":-5.4,"Taberna":-0.1,"Chorea":-5.0,"Crypta":-3.6,"Scriptorium":-6.9,"Turris":-4.0,"Tripudium":1.2,"Pugna":-4.8,"Iter":-5.4,"Triumphus":-5.0,"Insidiae":-0.5,"Portus":0.5,"Navigium":-4.9,"Tempestas":-5.2,"Thesaurus":-5.1,"Skalda":-3.7,"Bellum":-5.8,"Fjordus":-5.7,"Runae":-2.3,"Fata":-5.1,"Aula Fatarum":-6.1,"Sylva Magica":1.3,"Lullaby":2.2,"Larva":-2.7,"Domus Obscura":-5.7,"Sacrificium":-5.2,"Cella":-4.4,"Desertum":2.7,"Saloon":2.0,"Duellum":-6.1,"Equitatus":-5.9,"Urbs Neon":-2.8,"Machina":0.1,"Datum":-2.0,"Imber Toxicus":-3.6,"Sidera":2.8,"Nebula":-1.5,"Abyssus":-1.5,"Aegyptus":-2.4,"Eremus":-6.0,"Hortus":-5.3,"Bayati":-2.2,"Enharmonia":0.5,"Pluvia":-1.7,"Mare":-0.2,"Silva":-1.9,"Nox":-0.2,"Somnus":0.4,"Meditatio":-1.5,"Labor":-3.6,"Montagne":-5.7,"Hiems":-5.2,"Silva Antiqua":-5.7,"Agora":2.9,"Thermopylae":-1.9,"Odyssea":-0.9,"Hades":-3.3,"Custos":-5.5,"Castellum":-4.8,"Delphi":-2.0,"Sparta":-4.0,"Roma Triumphans":-1.7,"Carcer":-3.8,"Vacuum":-4.1,"Ruinae":-2.4,"Sanctum":-1.6,"Glacies":-3.1,"Vigilia":-4.5,"Regnum Umbrae":-5.5,"Iter Montium":-4.5};
 /* chaque univers a sa batterie ; un préréglage peut en citer une autre */
 const UNIV_KIT={dark:"taiko", antique:"antique", dungeon:"taiko", medieval:"cadre", aventure:"caisse", pirates:"cadre", nordique:"taiko", feerie:"cadre", horreur:"taiko", cyber:"electro", espace:"electro", orient:"darbouka", nature:"cadre", calme:"cadre"};
 /* réglage fin, ambiance par ambiance : où elle se place entre rituel et chanson, ce qu'elle emprunte aux voix (arpège, plain-chant, voix), le tempérament de son époque, ses bêtes */

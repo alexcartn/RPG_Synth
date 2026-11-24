@@ -634,6 +634,26 @@ function buildEngine(ctx, S, o){
     droneVoice(12,0.09,700,tone,false);
     if(!o.lite) droneVoice(19,0.045,900,tone,false);
   }
+  /* ---------- série harmonique du bourdon (La Monte Young, The Well-Tuned Piano ; Éliane Radigue, Trilogie de la mort) ----------
+     Les partiels 2 à 12 de la tonique grave, en sinus purs, entrent et sortent très lentement, chacun à son rythme (constantes de 6 à 20 s).
+     Ce sont des rapports exacts, septième et onzième harmoniques comprises, hors de toute gamme : avec le tempérament juste adaptatif, la quinte et la tierce du bourdon s'y accordent.
+     Tirage propre : sans série harmonique, rien ne change. */
+  const HS={on:false};
+  if(want("drone")&&S.drone.harm>0.001){
+    const f0=freq(-12), K=o.lite?8:12, hg=G(0.1*S.drone.harm), rh=mulberry32((seed^0x4A3F1)>>>0);
+    droneLinks.push(link(hg,B.drone.in));
+    HS.on=true; HS.g=hg; HS.rh=rh; HS.p=[];
+    for(let k=2;k<=K;k++){ const fk=f0*k; if(fk>5000) break;
+      const x=ctx.createOscillator(); x.frequency.value=fk; const g=G(0), pn=PAN(((k*0.618)%1)*1.2-0.6); x.connect(g); g.connect(pn); pn.connect(hg); starts.push(x);
+      HS.p.push({k,g,f:fk,next:0,amp:Math.pow(k,-0.55)}); }
+  }
+  function harmStep(t){
+    if(!HS.on) return;
+    HS.g.gain.setTargetAtTime(0.1*clamp(S.drone.harm||0,0,1),t,1.5);
+    HS.p.forEach(q=>{ if(t<q.next) return; const r1=HS.rh(), r2=HS.rh(), r3=HS.rh(), r4=HS.rh();
+      const on=q.k<=3?r1<0.8:r1<0.5, v=on?q.amp*(0.45+0.55*r2):0, tc=6+14*r3;
+      q.g.gain.setTargetAtTime(v,t,tc); q.next=t+tc*2+r4*20; });
+  }
 
   applyLinks();
 
@@ -1750,6 +1770,24 @@ function buildEngine(ctx, S, o){
       if(!FS.punct) FS.punct=fixR({...gen(),gr:0});
       return st===0||st===2?FS.punct:st===1?FS.ouv:FS.clos;
     }
+    /* isorythmie (Guillaume de Machaut, Philippe de Vitry ; Hoppin, Medieval Music) : une couleur (une suite de hauteurs) et une talea (une suite de durées, avec ses silences)
+       de longueurs premières entre elles ; la couleur continue d'une talea à l'autre, si bien que les mêmes hauteurs reviennent sur d'autres durées, jusqu'à ce que les deux cycles se retrouvent.
+       La talea est complétée jusqu'à la mesure : chaque énoncé dure un nombre exact de mesures, la reprise est exacte. Les hauteurs sont notées par rapport à la tonique : elles suivent la gamme de la section. */
+    if(F==="isorythmie"){
+      if(!FS.iso){
+        const TAL=[[3,1,2,-2],[2,1,1,2,-2],[4,2,1,1,-4],[3,3,2,-1,1,-2],[2,2,1,3,-2],[6,2,3,1,-4]], tal=TAL[Math.floor(R.m()*TAL.length)].slice(), nt=tal.filter(d=>d>0).length;
+        const sum=tal.reduce((a,d)=>a+Math.abs(d),0), pad=(barE-sum%barE)%barE; if(pad) tal.push(-pad);
+        const gcd=(a,b)=>b?gcd(b,a%b):a, cands=[7,9,11,13].filter(c=>gcd(c,nt)===1), CL=cands[Math.floor(R.m()*cands.length)]||7;
+        const src=gen().notes.concat(gen().notes,gen().notes); let anc=0,bd=1e9; pool.forEach((p,j)=>{ if(pcOf(p)===0){ const d=Math.abs(j-pool.length*0.4); if(d<bd){ bd=d; anc=j; } } });
+        const col=src.slice(0,CL).map(n=>pool.indexOf(nearest(pool,n.off))-anc); while(col.length<CL) col.push(col[col.length%Math.max(1,col.length)]||0);
+        FS.iso={tal,col,ci:0};
+      }
+      const I=FS.iso, notes=[]; let anc=0,bd=1e9; pool.forEach((p,j)=>{ if(pcOf(p)===0){ const d=Math.abs(j-pool.length*0.4); if(d<bd){ bd=d; anc=j; } } });
+      let e=0, k2=0; const nt=I.tal.filter(d=>d>0).length;
+      I.tal.forEach(d=>{ if(d<0){ e+=-d; return; } const ix=clamp(anc+I.col[I.ci++%I.col.length],0,pool.length-1), arch=0.5+0.5*Math.sin(Math.PI*(k2+0.5)/nt); k2++;
+        notes.push({e,off:pool[ix],dE:d,vel:clamp(0.1+0.1*arch+(d>=3?0.04:0),0.06,0.3),grace:false,gdir:1,jit:0}); e+=d; });
+      return {notes,end:e,gr:0,pool,iso:true};
+    }
     if(F==="variations"){ const j=k%4, cyc=Math.floor(k/4); if(!FS.theme[j]) FS.theme[j]=gen(); return cyc===0?FS.theme[j]:varyPhrase(FS.theme[j],cyc,pool); }
     return gen();
   }
@@ -1793,6 +1831,16 @@ function buildEngine(ctx, S, o){
       if(k<n-2&&R.m()<0.3*(1-dens)*silE()) e+=1+Math.floor(R.m()*2); /* un souffle entre deux notes */
     }
     return {notes:tidy(notes,pool,type===3,startT),end:e,gr:R.m(),pool};
+  }
+  /* ---------- tintinnabuli (Arvo Pärt, à partir de 1976 ; Paul Hillier, Arvo Pärt, Oxford University Press, 1997) ----------
+     Sous chaque note de la mélodie (la voix M), une voix T ne joue que les notes de l'accord de tonique de la section : la plus proche au-dessus (supérieure),
+     au-dessous (inférieure), en alternance, ou la deuxième au-dessus. « Un plus un égale un » : les deux voix n'en font qu'une. Aucun tirage. */
+  const tintOn=()=>!!(S.tint&&S.tint.lvl>0.001);
+  function tintNote(off,i,iv){
+    const tri=[degOff(iv,0),degOff(iv,2),degOff(iv,4)].map(x=>Math.round(pcOf(x)*2)/2), isT=x=>tri.indexOf(Math.round(pcOf(x)*2)/2)>=0;
+    const pos=(S.tint&&S.tint.pos)||"alt", up=pos==="sup"||pos==="sup2"||(pos==="alt"&&i%2===0), skip=pos==="sup2"?1:0;
+    let found=0; for(let d=0.5;d<=24;d+=0.5){ const x=up?off+d:off-d; if(isT(x)){ if(found===skip) return x; found++; } }
+    return null;
   }
   /* ---------- corpus : une chaîne de Markov d'ordre 2 apprise sur des airs anciens (Charles Ames, « The Markov process as a compositional model », 1989) ----------
      Les airs sont notés en degrés de la gamme (0 = la finale, 4 = la quinte, -1 = la sous-finale) : ils s'adaptent à tous les modes.
@@ -1984,7 +2032,7 @@ function buildEngine(ctx, S, o){
     dawSchedule(until);
     /* intensité */
     while(cur.int<until){
-      driftStep(2);
+      driftStep(2); harmStep(cur.int);
       const t=cur.int, I=inten(t), A=S.form.shape==="constante"?0:S.form.amount, m=1-A+A*I, ie=S.form.shape==="constante"?0.5:I;
       B.perc.it.gain.setTargetAtTime(m,t,1.2); B.pad.it.gain.setTargetAtTime(0.45+0.55*m,t,1.2);
       droneFilters.forEach(({f,base})=>f.frequency.setTargetAtTime(base*(0.7+0.6*ie)*(adaptOn()?1+S.adapt.amount*(adaptE(t+1)-0.5)*0.6:1)*(1+0.7*dv("filtre")),t,2));
@@ -2019,7 +2067,7 @@ function buildEngine(ctx, S, o){
       let ph=FF==='libre'?recall(memM,nPhrase++,Math.max(1,Math.round(S.mel.loop)),dejaE(),R.m,gen):formPhrase(FF,gen,pool,cur.mel,dens);
       { const LD=leitDue(); if(LD){ ph=leitPhrase(LD.L,LD.call,pool,cur.mel,iv); fresh=true; } }
       lastPh=ph; phLog.push({t:cur.mel,ph}); if(phLog.length>120) phLog.splice(0,phLog.length-100);
-      if(!ph.leit&&(ph.pool!==pool||(!fresh&&modal()&&FF!=="estampie"&&FF!=="saltarelle"))){ /* une danse notée se rejoue telle quelle, sur son bourdon */ /* rejouée : recaler sur la gamme de la section et sur l'accord du moment */
+      if(!ph.leit&&!ph.iso&&(ph.pool!==pool||(!fresh&&modal()&&FF!=="estampie"&&FF!=="saltarelle"))){ /* une danse notée se rejoue telle quelle, sur son bourdon */ /* rejouée : recaler sur la gamme de la section et sur l'accord du moment */
         ph={notes:ph.notes.map(n=>({...n,off:nearest(pool,n.off)})),end:ph.end,gr:ph.gr};
         if(modal()){ /* et sur l'accord du moment : temps forts et dernière note */
           const last=ph.notes.length-1;
@@ -2048,6 +2096,7 @@ function buildEngine(ctx, S, o){
           if(rat>1){ for(let k=0;k<rat;k++) fn(tt+k*len/rat,fq(off,tt),vel*(1-0.17*k),len/rat*0.85,V.mel.node,pan); }
           else fn(tt,fq(off,tt),vel,len,V.mel.node,pan);
           if(S.canon.lvl>0.001) canonNote(cur.mel+nt.e*E,off,vel,len,iv);
+          if(tintOn()){ const tv=tintNote(off,ni,iv); if(tv!==null){ const TL=clamp(S.tint.lvl,0,1); instOf(S.tint.inst||S.mel.inst,"luth")(tt+0.004,fq(tv,tt),vel*(0.35+0.75*TL),len,V.mel.node,-pan*0.6); rec(1,tt,tv,len,vel*(0.35+0.75*TL),"tint"); if(o.onNote) o.onNote(tt,tv,"canon",len,vel*0.8); } }
         } else R.v();
         if(!skipped&&S.mel.lvl>0.001) padOpen(tt,len,vel);
         if(!skipped){ rec(0,tt,off,len,vel); if(S.mel.lvl>0.001) melOn.push(tt);
@@ -2526,5 +2575,5 @@ function buildEngine(ctx, S, o){
     const L=o.leit&&o.leit(); if(!started||!L||!L.motif) return -1;
     L.pending=true; const now=ctx.currentTime; replan("mel",0.25); cur.mel=t0+Math.ceil((now+0.3-t0)/bar)*bar; return cur.mel-now;
   }
-  return {leitCall,leitGrab,leitLog:()=>leitLog.slice(),nueeState,arbreState,billeY,bank,pieceEnd:()=>pieceFade,fxAttach,grainFreeze,fxOn:()=>!!fx,start,schedule,setLevels,setReverb,stop,fadeOut,sleepFade,sleepClear,replan,freeze,reroll,gesture,play,synOn,dawOn,dawNote,rackSync,meter,tap:()=>volG,analyser:k=>k==="all"?anaAll:anaSyn,dawReplan,dawPos,pendX,tensNow:()=>tensAt(ctx.currentTime),adaptNow:()=>adaptE(ctx.currentTime),tensPos:()=>{ if(!curveOn()) return -1; const L=Math.max(30,S.curve.dur*60), x=(ctx.currentTime-t0)/L; return S.curve.mode==='loop'?((x%1)+1)%1:clamp(x,0,1); },events,out,master,secAt:t=>secOf(t),bar,E,t0f:()=>t0,chords:()=>chordTl.slice(),phraseBars:()=>[...phBars],signals:()=>calls.map(c=>({...c})), melSpans:()=>melSpans.map(x=>x.slice()), phraseLog:()=>{ const ids=new Map(); return phLog.map(x=>{ if(!ids.has(x.ph)) ids.set(x.ph,ids.size); return ids.get(x.ph); }); },fillBars:()=>fillBars.slice()};
+  return {harmState:()=>HS.on?HS.p.map(q=>({k:q.k,f:q.f,v:q.g.gain.value})):[],f0:()=>freq(-12),leitCall,leitGrab,leitLog:()=>leitLog.slice(),nueeState,arbreState,billeY,bank,pieceEnd:()=>pieceFade,fxAttach,grainFreeze,fxOn:()=>!!fx,start,schedule,setLevels,setReverb,stop,fadeOut,sleepFade,sleepClear,replan,freeze,reroll,gesture,play,synOn,dawOn,dawNote,rackSync,meter,tap:()=>volG,analyser:k=>k==="all"?anaAll:anaSyn,dawReplan,dawPos,pendX,tensNow:()=>tensAt(ctx.currentTime),adaptNow:()=>adaptE(ctx.currentTime),tensPos:()=>{ if(!curveOn()) return -1; const L=Math.max(30,S.curve.dur*60), x=(ctx.currentTime-t0)/L; return S.curve.mode==='loop'?((x%1)+1)%1:clamp(x,0,1); },events,out,master,secAt:t=>secOf(t),bar,E,t0f:()=>t0,chords:()=>chordTl.slice(),phraseBars:()=>[...phBars],signals:()=>calls.map(c=>({...c})), melSpans:()=>melSpans.map(x=>x.slice()), phraseLog:()=>{ const ids=new Map(); return phLog.map(x=>{ if(!ids.has(x.ph)) ids.set(x.ph,ids.size); return ids.get(x.ph); }); },fillBars:()=>fillBars.slice()};
 }

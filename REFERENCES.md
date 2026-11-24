@@ -286,7 +286,7 @@ Les ambiances sont réglées et mesurées, pas écoutées à l'aveugle. C'est le
 
 ## Chantiers
 
-Classés par utilité à la table. Les vingt premiers sont traités (deux retirés), puis trois de plus (22 à 24).
+Classés par utilité à la table. Les vingt premiers sont traités (deux retirés), puis six de plus (22 à 27).
 
 ### Faits
 
@@ -317,6 +317,10 @@ Classés par utilité à la table. Les vingt premiers sont traités (deux retir�
 22. Leitmotiv : un motif par personnage, lieu ou faction, gravé, tiré ou écrit, qui suit la table et revient transformé selon la scène (apaisé, menaçant, tendu, glorieux, lointain). Sources : Phillips, Summers, section 3.
 23. Juste adaptatif : chaque accord pur sur sa fondamentale, chaque fondamentale pure sur la tonique du bourdon. Sources : Barbour, Duffin ; le Hermode Tuning pour l'idée.
 24. Résonateur modal (frappé, frotté, cordes sympathiques). Sources : Adrien ; Rings et Elements de Mutable Instruments (Émilie Gillet).
+
+25. Tintinnabuli : une voix qui ne joue que l'accord de tonique sous la mélodie. Source : Paul Hillier, *Arvo Pärt*, Oxford University Press, 1997.
+26. Isorythmie : couleur et talea de longueurs premières entre elles. Sources : Hoppin, *Medieval Music* ; Machaut et Vitry.
+27. Série harmonique du bourdon : partiels 2 à 12 qui entrent et sortent lentement. Sources : La Monte Young, *The Well-Tuned Piano* ; Éliane Radigue.
 
 ### À faire, par ordre d'utilité
 

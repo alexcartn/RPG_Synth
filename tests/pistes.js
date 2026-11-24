@@ -118,7 +118,41 @@ setTimeout(async()=>{
   ck(!rs.nan,'aucune valeur folle');
   const pl=w.eval(`(()=>{ const Sx=merge(clone(DEFAULT),{seed:5,mel:{lvl:0.6,inst:"sympa"},arp:{lvl:0.4,inst:"reso"},pad:{lvl:0.3}}); const e=buildEngine(new AudioContext(),Sx,{record:true}); e.start(0,0,0); e.schedule(30); return e.events.filter(z=>z.tr===0).length; })()`);
   ck(pl>5,'la mélodie aux cordes sympathiques et l\'arpège au résonateur jouent');
+  /* tintinnabuli */
+  console.log('tintinnabuli');
+  const tn=w.eval(`(()=>{ const r={}; for(const pos of ["off","sup","inf","alt","sup2"]){ const Sx=merge(clone(DEFAULT),{seed:13,scales:["eolien","",""],mel:{lvl:0.6,dens:0.6},tint:{lvl:pos==="off"?0:0.6,pos:pos==="off"?"alt":pos}}); Sx.chance={skip:0,ratchet:0,mutate:0,octave:0,rest:0};
+      const e=buildEngine(new AudioContext(),Sx,{record:true}); e.start(0,0,0); e.schedule(120); const m=e.events.filter(z=>z.tr===0).sort((a,b)=>a.t-b.t), t=e.events.filter(z=>z.tag==="tint").sort((a,b)=>a.t-b.t);
+      const tri=[0,3,7], inT=t.every(z=>tri.includes(((Math.round(z.off)%12)+12)%12)); let up=0,dn=0,alt=0;
+      t.forEach((z,i)=>{ const mm=m.find(x=>Math.abs(x.t+0.004-z.t)<0.0005||Math.abs(x.t-z.t)<0.006); if(!mm) return; if(z.off>mm.off) up++; else dn++; });
+      r[pos]={sig:m.map(z=>z.t.toFixed(3)+":"+z.off).join(","), n:m.length, nt:t.length, inT, up, dn}; } return r; })()`);
+  console.log('  ',JSON.stringify(Object.fromEntries(Object.entries(tn).map(([k,v])=>[k,{n:v.n,nt:v.nt,inT:v.inT,up:v.up,dn:v.dn}]))));
+  ck(tn.off.nt===0&&tn.sup.sig===tn.off.sig,'la voix T ne change pas une note de la mélodie');
+  ck(tn.sup.nt===tn.sup.n&&tn.sup.inT,'une note de l\'accord de tonique sous chaque note de la mélodie, et seulement celles-là');
+  ck(tn.sup.dn===0&&tn.sup2.dn===0&&tn.inf.up===0,'au-dessus, au-dessous, comme demandé');
+  ck(tn.alt.up>0&&tn.alt.dn>0&&Math.abs(tn.alt.up-tn.alt.dn)<=tn.alt.nt*0.2,'en alternance : une fois au-dessus, une fois au-dessous');
+  /* isorythmie */
+  console.log('isorythmie');
+  const iso=w.eval(`(()=>{ const Sx=merge(clone(DEFAULT),{seed:21,scales:["dorien","",""],mus:{form:"isorythmie"},mel:{lvl:0.6,dens:0.6},tempo:90}); Sx.chance={skip:0,ratchet:0,mutate:0,octave:0,rest:0};
+    const e=buildEngine(new AudioContext(),Sx,{record:true}); e.start(0,0,0); e.schedule(400); const m=e.events.filter(z=>z.tr===0).sort((a,b)=>a.t-b.t);
+    const per=a=>{ for(let p=2;p<=20;p++){ let ok=true; for(let i=p;i<a.length;i++) if(a[i]!==a[i-p]){ ok=false; break; } if(ok) return p; } return 0; };
+    const offs=m.map(z=>z.off), iois=m.slice(1).map((z,i)=>Math.round((z.t-m[i].t)/e.E));
+    const starts=[...new Set(e.phraseBars())]; return {n:m.length, col:per(offs), tal:per(iois), E:e.E, bar:e.bar}; })()`);
+  console.log('  ',JSON.stringify(iso));
+  ck(iso.n>40&&iso.col>=7&&iso.tal>=3,'une couleur de '+iso.col+' hauteurs et une talea de '+iso.tal+' durées, chacune exacte d\'un énoncé à l\'autre');
+  ck(iso.col!==iso.tal&&iso.col%iso.tal!==0,'les deux cycles se décalent : les mêmes hauteurs reviennent sur d\'autres durées');
+  /* série harmonique */
+  console.log('série harmonique');
+  const hs=w.eval(`(()=>{ const Sx=merge(clone(DEFAULT),{seed:4,drone:{lvl:0.6,harm:0.8}}); const c=new AudioContext(); const e=buildEngine(c,Sx,{record:true}); e.start(0,0,0);
+    const f0=e.f0(), st=e.harmState(), ints=st.every(q=>Math.abs(q.f/f0-q.k)<1e-9); const on=st.map(()=>new Set()), cnt=[];
+    for(let t=10;t<=600;t+=10){ e.schedule(t); const s2=e.harmState(); s2.forEach((q,i)=>on[i].add(q.v>0.001)); cnt.push(s2.filter(q=>q.v>0.001).length); }
+    const e0=buildEngine(new AudioContext(),merge(clone(DEFAULT),{seed:4,drone:{lvl:0.6,harm:0}}),{record:true}); e0.start(0,0,0);
+    return {n:st.length, ks:st.map(q=>q.k).join(","), ints, moved:on.filter(x=>x.size===2).length, min:Math.min(...cnt), max:Math.max(...cnt), off:e0.harmState().length}; })()`);
+  console.log('  ',JSON.stringify(hs));
+  ck(hs.n>=8&&hs.ints,'les partiels '+hs.ks+' : des multiples exacts de la tonique grave');
+  ck(hs.moved>=hs.n-1,'chacun entre et sort, à son rythme, en dix minutes');
+  ck(hs.min>=1&&hs.max<hs.n,'jamais tous à la fois, jamais aucun (de '+hs.min+' à '+hs.max+' ensemble)');
+  ck(hs.off===0,'à zéro, rien n\'est construit');
  }catch(e){ console.log('EXCEPTION',e&&e.stack||e); fail++; }
  console.log('ERREURS',errs.length?errs:'aucune');
- console.log(fail||errs.length?'ECHEC pistes':'Leitmotiv, juste adaptatif, résonateur : tout passe'); process.exit(fail||errs.length?1:0);
+ console.log(fail||errs.length?'ECHEC pistes':'Pistes (leitmotiv, juste adaptatif, résonateur, tintinnabuli, isorythmie, série harmonique) : tout passe'); process.exit(fail||errs.length?1:0);
 },800);

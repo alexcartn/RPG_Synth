@@ -286,7 +286,7 @@ Les ambiances sont réglées et mesurées, pas écoutées à l'aveugle. C'est le
 
 ## Chantiers
 
-Classés par utilité à la table. Les vingt premiers sont traités (deux retirés).
+Classés par utilité à la table. Les vingt premiers sont traités (deux retirés), puis trois de plus (22 à 24).
 
 ### Faits
 
@@ -313,6 +313,10 @@ Classés par utilité à la table. Les vingt premiers sont traités (deux retir�
 18. Grammaire de Lindenmayer pour la ramure de l'arbre, et lecture d'une branche dans l'ordre de la grammaire. Source : Prusinkiewicz.
 19. Vielle à roue (mélodie, bourdons et chien) et cornemuse (chalumeau) en modèle physique. Source : Smith pour les guides d'onde.
 20. Émotions revues avec GEMS : tendre, puissant, transcendant ajoutés. Source : Zentner, Grandjean et Scherer.
+
+22. Leitmotiv : un motif par personnage, lieu ou faction, gravé, tiré ou écrit, qui suit la table et revient transformé selon la scène (apaisé, menaçant, tendu, glorieux, lointain). Sources : Phillips, Summers, section 3.
+23. Juste adaptatif : chaque accord pur sur sa fondamentale, chaque fondamentale pure sur la tonique du bourdon. Sources : Barbour, Duffin ; le Hermode Tuning pour l'idée.
+24. Résonateur modal (frappé, frotté, cordes sympathiques). Sources : Adrien ; Rings et Elements de Mutable Instruments (Émilie Gillet).
 
 ### À faire, par ordre d'utilité
 

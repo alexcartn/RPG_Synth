@@ -1069,6 +1069,66 @@ function buildEngine(ctx, S, o){
   PHYS.kalimba=(t,f,vel,len,dst,pan)=>{ modalPlay("kalimba",t,f,vel,dst,pan,1.35); };
   PHYS.verre=(t,f,vel,len,dst,pan)=>modalPlay("verre",t,f,vel,dst,pan,1.1);
   PHYS.bol=(t,f,vel,len,dst,pan)=>modalPlay("bol",t,f,vel,dst,pan,1.1);
+  /* ---------- résonateur modal (dans l'esprit de Rings et d'Elements, Mutable Instruments ; Adrien, « The missing link: modal synthesis ») ----------
+     Un excitateur (un coup de bruit bref, ou un archet de bruit tenu) passe dans une banque de résonateurs à deux pôles accordés sur la note.
+     Structure : de la corde (partiels harmoniques) à la barre et à la cloche (rapports 1 ; 2,76 ; 5,40 ; 8,93, ceux de la barre libre).
+     Brillance : la part des partiels aigus et la dureté du coup. Amortissement : la durée de résonance. Position : où l'on frappe,
+     qui creuse certains partiels (frapper au milieu éteint les partiels pairs).
+     Cordes sympathiques : la note passe ensuite dans quatre cordes accordées sur l'accord du moment, qui ne répondent qu'aux partiels qu'elles partagent avec elle : un halo dans le mode.
+     Rendus hors du fil audio et gardés en cache, comme les cloches. */
+  const RSO=()=>Object.assign({struct:0.3,bright:0.5,damp:0.4,pos:0.3},S.reso||{});
+  const resoCache=new Map();
+  function resoModes(f,P){
+    const s=clamp(P.struct,0,1), br=clamp(P.bright,0,1), nyq=Math.min(sr*0.45,16000), K=o.lite?12:24, rr=mulberry32((Math.floor(f*13)^0x7E50)>>>0), md=[];
+    for(let k=1;k<=K;k++){
+      const bar=Math.pow((2*k+1)/3,2), r=(1-s)*k+s*bar+(s>0.45&&k>1?(rr()-0.5)*0.08*s*k:0), fk=f*r; if(fk>nyq) break;
+      const pos=Math.abs(Math.sin(Math.PI*k*clamp(P.pos,0.02,0.98))), a=(0.15+0.85*pos)*Math.pow(k,-(1.7-1.3*br));
+      md.push([fk,a]);
+    }
+    return md;
+  }
+  function resoRun(out,inp,n,fk,tau,g){
+    const w=2*Math.PI*fk/sr, rp=Math.exp(-1/(sr*Math.max(0.005,tau))), c1=2*rp*Math.cos(w), c2=-rp*rp, gn=g*(1-rp)*2;
+    let y1=0,y2=0, quiet=0;
+    for(let i=0;i<n;i++){ const x=inp[i]; const y=c1*y1+c2*y2+gn*x; y2=y1; y1=y; out[i]+=y;
+      if(x===0){ if(y<1e-6&&y>-1e-6) { if(++quiet>256) break; } else quiet=0; } }
+  }
+  function resoBuf(kind,f,vel,len,strings){
+    const P=RSO(), vq=Math.round(clamp(vel*4,0,1)*4), lq=kind==="frotte"?Math.round(clamp(len,0.2,8)*4)/4:0;
+    const key=kind+"|"+Math.round(f*10)+"|"+vq+"|"+lq+"|"+[P.struct,P.bright,P.damp,P.pos].map(x=>Math.round(x*20)).join(",")+"|"+(strings?strings.map(x=>Math.round(x)).join(","):"");
+    const hit=resoCache.get(key); if(hit){ resoCache.delete(key); resoCache.set(key,hit); return hit; }
+    const vv=vq/4, dm=clamp(P.damp,0,1), T=(0.35+5.5*Math.pow(1-dm,1.6))*clamp(Math.pow(330/f,0.3),0.5,1.7);
+    const dur=Math.min(10,(kind==="frotte"?lq:0)+T*1.3+(strings?1.5:0)), n=Math.floor(sr*dur), ex=new Float32Array(n), out=new Float32Array(n), rn=mulberry32((Math.floor(f*7)^0x4E5)>>>0);
+    /* excitateur : un coup (bruit bref, plus dur et plus brillant quand on frappe fort) ou un archet (bruit tenu, avec une attaque) */
+    const cut=Math.min(0.95,0.08+0.6*P.bright+0.25*vv); let lp=0;
+    if(kind==="frotte"){ const nb=Math.floor(sr*lq), na=Math.floor(sr*0.08), nr=Math.floor(sr*0.15);
+      for(let i=0;i<nb+nr&&i<n;i++){ lp+=((rn()*2-1)-lp)*cut; const e=i<na?i/na:i<nb?1:1-(i-nb)/nr; ex[i]=lp*e*0.06; } }
+    else { const ne=Math.max(8,Math.floor(sr*(0.0006+0.004*(1-P.bright)*(1-0.5*vv)))); for(let i=0;i<ne;i++){ lp+=((rn()*2-1)-lp)*cut; ex[i]=lp*(1-i/ne)*(i<4?1.6:1); } }
+    resoModes(f,P).forEach(([fk,a],j)=>{ const tau=T/(1+j*(0.55-0.45*P.bright)); resoRun(out,ex,n,fk,tau,a); });
+    if(strings&&strings.length){ /* cordes sympathiques : elles reçoivent la note, pas l'excitateur */
+      const src=Float32Array.from(out), sym=new Float32Array(n);
+      strings.forEach(fs=>{ for(let h=1;h<=6;h++){ const fh=fs*h; if(fh>Math.min(sr*0.45,12000)) break; resoRun(sym,src,n,fh,T*1.6/(1+0.25*(h-1)),0.9/h); } });
+      let ps=0,pm=0; for(let i=0;i<n;i++){ const a=Math.abs(sym[i]), b=Math.abs(out[i]); if(a>ps) ps=a; if(b>pm) pm=b; }
+      const k=ps>0?0.45*pm/ps:0; for(let i=0;i<n;i++) out[i]+=sym[i]*k;
+    }
+    let pk=0; for(let i=0;i<n;i++){ const v=out[i]<0?-out[i]:out[i]; if(v>pk) pk=v; }
+    const nf=Math.floor(sr*0.05), sc=0.9/(pk||1); for(let i=0;i<n;i++){ let v=out[i]*sc; if(i>n-nf) v*=(n-i)/nf; out[i]=v; }
+    const buf=ctx.createBuffer(1,n,sr); buf.getChannelData(0).set(out);
+    const r2={buf,dur}; resoCache.set(key,r2); if(resoCache.size>(o.lite?32:72)) resoCache.delete(resoCache.keys().next().value); return r2;
+  }
+  function resoPlay(kind,t,f,vel,len,dst,pan,gain,strings){
+    const b=resoBuf(kind,f,vel,len,strings), x=ctx.createBufferSource(); x.buffer=b.buf; const e=G(vel*gain); x.connect(e); route(e,pan,dst); x.start(t); x.stop(t+b.dur+0.05);
+  }
+  /* les cordes sympathiques prennent l'accord du moment, autour de la note : la fondamentale, puis les autres notes de l'accord */
+  function symStrings(t,f){
+    const ch=chordAt(t); if(!ch) return [];
+    const pcs=[...new Set(chordPcs(ch).map(p=>Math.round(p*2)/2))].slice(0,4), f0=freq(0), out=[];
+    pcs.forEach(p=>{ let best=0,bd=1e9; for(let oc=-3;oc<=5;oc++){ const off=p+12*oc, fx=fq(off,t), d=Math.abs(Math.log2(fx/f)-0.2); if(d<bd){ bd=d; best=fx; } } if(best>f0*0.24) out.push(best); });
+    return out;
+  }
+  INST.reso=(t,f,vel,len,dst,pan)=>resoPlay("frappe",t,f,vel,len,dst,pan,0.5);
+  INST.resoarchet=(t,f,vel,len,dst,pan)=>resoPlay("frotte",t,f,vel,Math.max(0.3,len),dst,pan,0.48);
+  INST.sympa=(t,f,vel,len,dst,pan)=>resoPlay("frappe",t,f,vel,len,dst,pan,0.48,symStrings(t,f));
   /* bruits de jeu des vents et de l'archet : le souffle qui s'échappe à la fin de la note, le crin qui accroche à l'attaque */
   { const fl=PHYS.flute, ny=PHYS.ney, ar=PHYS.archet;
     const breath=(t,f,vel,len,dst,q)=>noiseHit(t+Math.max(0.15,len),vel*q,Math.min(8000,f*2.6),0.16,"bandpass",dst,1.1,0.03);
@@ -1081,7 +1141,7 @@ function buildEngine(ctx, S, o){
     INST.accordeon=(t,f,vel,len,dst,pan)=>{ ac(t,f,vel,len,dst,pan); noiseHit(t,vel*0.12,3200,0.01,"bandpass",dst,2); noiseHit(t+Math.max(0.15,len),vel*0.08,900,0.12,"bandpass",dst,0.8,0.02); }; }
   const instRaw=(name,fb)=>(physOn()&&PHYS[name])||INST[name]||INST[fb||"luth"];
   /* porte passe-bas (à la manière d'une vactrol) : sur les sons pincés et frappés, le filtre se referme avec le son, plus vite quand la porte est réglée haut ; un son boisé, rond */
-  const LPGI={lyre:1,luth:1,harpe:1,oud:1,guitare:1,kalimba:1,carillon:1,verre:1,bol:1,piano:1};
+  const LPGI={lyre:1,luth:1,harpe:1,oud:1,guitare:1,kalimba:1,carillon:1,verre:1,bol:1,piano:1,reso:1,sympa:1};
   const instOf=(name,fb)=>{ const fn=instRaw(name,fb), a=(S.mel&&S.mel.lpg)||0; if(a<0.01||!LPGI[name]) return fn;
     return (t,f,vel,len,dst,pan)=>{ const lp=ctx.createBiquadFilter(); lp.type="lowpass"; lp.Q.value=0.4; const v=Math.min(1,vel*4), c0=Math.min(16000,f*(3+26*v)), c1=Math.max(120,f*1.1), tau=0.05+0.6*(1-a);
       lp.frequency.setValueAtTime(c0,t); lp.frequency.setTargetAtTime(c1,t+0.004,tau); lp.connect(dst); fn(t,f,vel*(1+0.35*a),len,lp,pan); }; };
@@ -1513,6 +1573,24 @@ function buildEngine(ctx, S, o){
     if(chordTl.length>80) chordTl.splice(0,chordTl.length-60);
   }
   function chordAt(t){ ensureChords(t+0.01); let c=chordTl[0]; for(const x of chordTl){ if(x.t<=t) c=x; else break; } return c; }
+  /* ---------- intonation juste adaptative (dans l'esprit du Hermode Tuning) ----------
+     Tempérament « Juste adaptatif » : chaque note d'un accord tenu prend un rapport pur sur la fondamentale de l'accord
+     (tierce majeure 5/4, mineure 6/5, quinte 3/2, septième mineure 16/9…), et la fondamentale elle-même un rapport pur sur la tonique, celle du bourdon
+     (quinte 3/2, quarte 4/3, sixte 5/3, sous-tonique 16/9…). Les notes hors de l'accord gardent l'intonation juste depuis la tonique.
+     L'accord ne bat plus contre lui-même ni contre le bourdon ; la tonique ne bouge jamais, rien ne dérive d'un accord à l'autre.
+     Les notes en quarts de ton gardent leur hauteur. Rapports : Barbour, Tuning and Temperament ; Duffin. */
+  const jiOn=S.temper==="adapt";
+  const JI_IV=[1,16/15,9/8,6/5,5/4,4/3,64/45,3/2,8/5,5/3,16/9,15/8], JI_ROOT=RAT.adapt;
+  const c12=(r,k)=>1200*Math.log2(r)-100*k;
+  function jiC(off,t){
+    if(!jiOn||t===undefined||t===null||Math.abs(off-Math.round(off))>1e-6) return 0;
+    const ch=chordAt(t); if(!ch) return 0;
+    const root=ch.root!==undefined?ch.root:degOff(ch.iv,ch.d%ch.iv.length); if(Math.abs(root-Math.round(root))>1e-6) return 0;
+    const p=pcOf(Math.round(off)); if(chordPcs(ch).every(x=>Math.abs(x-p)>0.01)) return 0;
+    const rp=pcOf(Math.round(root)), ip=pcOf(Math.round(off)-Math.round(root));
+    return c12(JI_ROOT[rp],rp)+c12(JI_IV[ip],ip)-c12(JI_ROOT[p],p); /* l'écart à ce que donne déjà la gamme juste depuis la tonique */
+  }
+  const fq=(off,t)=>{ const c=jiC(off,t); return c?freq(off)*Math.pow(2,c/1200):freq(off); };
 
   /* ---------- mélodie modale : motif de la section, phrases en question et réponse, accents sur les accords ---------- */
   let motif=null, motifSec=-1, nPh=0;
@@ -1782,6 +1860,75 @@ function buildEngine(ctx, S, o){
     return {notes,end:e,gr:R.m(),pool};
   }
 
+  /* ---------- leitmotiv : un motif attaché à un personnage, un lieu, une faction, qui revient transformé selon la scène ----------
+     Le motif est noté en degrés (0 = la tonique, 7 = l'octave, sur une gamme de sept degrés) et en durées (en croches) : il prend le mode de la scène.
+     Ce qui fait un leitmotiv, c'est le contour et le rythme qu'on reconnaît ; la scène le colore (Wagner ; en musique de jeu : Phillips, Summers).
+     Transformations : tel quel ; lointain (la tête seule, doucement) ; apaisé (augmenté, deux fois plus lent) ; tendu (la tête en marche qui monte, en valeurs brèves) ;
+     menaçant (renversé, une octave plus bas) ; glorieux (plus fort, la dernière note tenue). Selon la scène : la tension, la couleur du mode et le moment de la pièce choisissent.
+     La transposition est choisie pour que les temps forts tombent sur l'accord, le plus près possible de la tonique.
+     Le motif a son propre tirage : sans leitmotiv, la musique est identique note pour note. */
+  const RL=mulberry32((seed^0x1E17A0)>>>0), leitLog=[]; let leitN=0, leitLast=-99;
+  const LEIT_FORMS=["tel","lointain","apaise","tendu","menace","glorieux"];
+  function leitDue(){
+    const L=o.leit&&o.leit(); if(!L||!L.motif||!Array.isArray(L.motif.degs)||L.motif.degs.length<2||frozen) return null;
+    leitN++; const r=RL();
+    if(L.pending){ L.pending=false; leitLast=leitN; return {L,call:true}; }
+    const p={rare:0.12,souvent:0.3}[L.presence]||0;
+    if(p>0&&leitN-leitLast>=3&&r<p){ leitLast=leitN; return {L,call:false}; }
+    return null;
+  }
+  function leitForm(L,call,t,iv){
+    const r=RL();
+    if(L.form&&L.form!=="auto"&&LEIT_FORMS.indexOf(L.form)>=0) return L.form;
+    if(!call&&r<0.5) return "lointain"; /* un retour de lui-même : souvent un souvenir */
+    const th=tensAt(t), dark=iv.indexOf(4)<0&&iv.indexOf(3)>=0, cine=cineE(t), si=secOf(t);
+    if(th>0.65) return (dark||cine==="menace")?"menace":"tendu";
+    if(th<0.35) return "apaise";
+    if(!dark&&si.role==="apogée") return "glorieux";
+    return "tel";
+  }
+  function leitPhrase(L,call,pool,startT,iv){
+    const m=L.motif, form=leitForm(L,call,startT,iv), ppo=poolPerOct(pool);
+    let degs=m.degs.map(x=>Math.round(x)), rh=degs.map((x,i)=>clamp(Math.round((m.rh&&m.rh[i])||2),1,16)), vm=1, hold=1;
+    if(form==="lointain"){ const k=Math.max(3,Math.ceil(degs.length*0.6)); degs=degs.slice(0,Math.min(k,degs.length)); rh=rh.slice(0,degs.length); vm=0.55; hold=2; }
+    else if(form==="apaise"){ rh=rh.map(x=>x*2); vm=0.8; }
+    else if(form==="tendu"){ const h=Math.min(3,degs.length), hd=degs.slice(0,h), hr=rh.slice(0,h).map(x=>Math.max(1,Math.round(x/2)));
+      degs=hd.concat(hd.map(x=>x+1),degs.map(x=>x+2)); rh=hr.concat(hr,rh.map(x=>Math.max(1,Math.round(x/2)))); vm=1.1; hold=2; }
+    else if(form==="menace"){ const d0=degs[0]; degs=degs.map(x=>d0-(x-d0)-7); vm=1.05; }
+    else if(form==="glorieux"){ vm=1.25; hold=3; }
+    /* degrés sur sept vers les degrés de la gamme jouée, autour de la tonique du milieu du registre */
+    let anc=0, bd=1e9; pool.forEach((p,j)=>{ if(pcOf(p)===0){ const d=Math.abs(j-pool.length*0.4); if(d<bd){ bd=d; anc=j; } } });
+    const rel=degs.map(x=>Math.round(x*ppo/7));
+    const ons=[]; { let e=0; rh.forEach((d,i)=>{ ons.push(e); e+=d; }); }
+    let best=0, bs=-1e9;
+    for(const tr of [0,-1,1,-2,2,-3,3,-ppo,ppo]){
+      const ixs=rel.map(x=>anc+x+tr); let lo=Math.min(...ixs), hi=Math.max(...ixs), sh=0;
+      if(lo<0) sh=-lo; else if(hi>pool.length-1) sh=pool.length-1-hi;
+      if(lo+sh<0||hi+sh>pool.length-1) sh=0;
+      let sc=-0.75*Math.abs(tr)-(sh?0.3:0)-(form==="menace"&&tr>0?2:0);
+      ixs.forEach((ix,k)=>{ const j=clamp(ix+sh,0,pool.length-1), tn=startT+ons[k]*E, strong=Math.round((tn-t0)/E)%2===0; if(strong&&chordPcs(chordAt(tn)).indexOf(pcOf(pool[j]))>=0) sc+=1; });
+      if(sc>bs){ bs=sc; best=tr+sh; }
+    }
+    const n=degs.length, notes=[];
+    for(let k=0;k<n;k++){
+      const ix=clamp(anc+rel[k]+best,0,pool.length-1), arch=0.5+0.5*Math.sin(Math.PI*(k+0.5)/n), last=k===n-1;
+      notes.push({e:ons[k],off:pool[ix],dE:last?Math.max(rh[k],Math.round(rh[k]*hold)):rh[k],vel:clamp((0.15+0.11*arch)*vm,0.06,0.36),grace:false,gdir:1,jit:0});
+    }
+    const end=notes[n-1].e+notes[n-1].dE;
+    leitLog.push({t:startT,form,call,name:m.name||"",n}); if(leitLog.length>60) leitLog.splice(0,leitLog.length-40);
+    if(o.onLeit) o.onLeit({t:startT,form,call,name:m.name||""});
+    return {notes,end,gr:0.5,pool,leit:form};
+  }
+  /* graver : la dernière phrase entendue devient un motif (degrés sur sept, durées en croches) */
+  function leitGrab(){
+    const now=ctx.currentTime; let x=null; for(let i=phLog.length-1;i>=0;i--){ if(phLog[i].t<=now+0.01&&phLog[i].ph.notes.length>=2){ x=phLog[i]; break; } }
+    if(!x) return null;
+    const iv=ivOf(S,secOf(x.t).key), n=iv.length, ns=x.ph.notes.slice(0,10);
+    const kOf=off=>{ let bk=0,bd=1e9; for(let k=-4*n;k<=6*n;k++){ const d=Math.abs(degOff(iv,k)-off); if(d<bd){ bd=d; bk=k; } } return bk; };
+    const ks=ns.map(nt=>kOf(nt.off)), base=n*Math.floor(ks[0]/n);
+    const degs=ks.map(k=>Math.round((k-base)*7/n)), rh=ns.map((nt,i)=>clamp(Math.round(i+1<ns.length?ns[i+1].e-nt.e:nt.dE),1,8));
+    return {degs,rh};
+  }
   /* ---------- ordonnanceur ---------- */
   let pieceFade=0;
   const cur={mel:0,drone:0,clink:0,perc:0,k:0,pad:0,int:0,fire:0,wind:0,drip:0,bird:0,sec:1,arp:0,aj:0,pl:0,pli:0,plj:0};
@@ -1806,7 +1953,7 @@ function buildEngine(ctx, S, o){
     calls.push({t0:x,t1:x+dur,lo:nb[0],hi:nb[1]}); if(calls.length>60) calls.splice(0,calls.length-40);
     return x;
   } /* journal des phrases jouées (pour les tests : une phrase rejouée est le même objet) */
-  function rec(tr,t,off,dur,vel,tag){ if(o.record||o.rolling) events.push(tag?{tr,t,off,dur,vel,tag}:{tr,t,off,dur,vel}); }
+  function rec(tr,t,off,dur,vel,tag){ if(!(o.record||o.rolling)) return; const e=tag?{tr,t,off,dur,vel,tag}:{tr,t,off,dur,vel}; if(jiOn){ const c=jiC(off,t); if(c) e.ji=c; } events.push(e); }
   const ctr={pm:null,pc:null,li:null};
   function canonNote(t,off,vel,len,iv){
     const n=iv.length, wide=poolOf(iv,-24,72), k=wide.indexOf(off); if(k<0) return;
@@ -1820,14 +1967,14 @@ function buildEngine(ctx, S, o){
         if(gap===third||gap===sixth) sc+=2; if(ctr.li===gap&&(gap===fifth||gap===n)) sc-=4; sc+=R.v()*0.5; if(sc>bs){ bs=sc; best=i; } });
       const off2=wide[best]; ctr.pm=off; ctr.pc=off2; ctr.li=k-best;
       const tt=sw(t)+0.012;
-      instOf(S.canon.inst,"harpe")(tt,freq(off2),vel*0.85,len,V.canon.node,0.32+(R.v()*2-1)*0.18);
+      instOf(S.canon.inst,"harpe")(tt,fq(off2,tt),vel*0.85,len,V.canon.node,0.32+(R.v()*2-1)*0.18);
       rec(1,tt,off2,len,vel*0.85); if(o.onNote) o.onNote(tt,off2,"canon",len,vel*0.85);
       return;
     }
     const shifts={"uni":0,"oct+":n,"oct-":-n,"q+":Math.round(n*4/7),"q-":-Math.round(n*4/7),"t+":Math.round(n*2/7)};
     const k2=clamp(k+(shifts[S.canon.shift]||0),0,wide.length-1), off2=wide[k2];
     const tt=sw(t+S.canon.delay*bar);
-    instOf(S.canon.inst,"harpe")(tt,freq(off2),vel*0.9,len,V.canon.node,0.32+(R.v()*2-1)*0.18);
+    instOf(S.canon.inst,"harpe")(tt,fq(off2,tt),vel*0.9,len,V.canon.node,0.32+(R.v()*2-1)*0.18);
     rec(1,tt,off2,len,vel*0.9);
     if(o.onNote) o.onNote(tt,off2,"canon",len,vel*0.9);
   }
@@ -1870,8 +2017,9 @@ function buildEngine(ctx, S, o){
       let fresh=false; const gen0=gen; gen=()=>{ fresh=true; return gen0(); };
       const F0=formE(), FF=(F0==='libre'&&rcAt(cur.mel)>=0.55)?'theme':F0; /* côté chanson, la forme libre devient un thème qui revient */
       let ph=FF==='libre'?recall(memM,nPhrase++,Math.max(1,Math.round(S.mel.loop)),dejaE(),R.m,gen):formPhrase(FF,gen,pool,cur.mel,dens);
+      { const LD=leitDue(); if(LD){ ph=leitPhrase(LD.L,LD.call,pool,cur.mel,iv); fresh=true; } }
       lastPh=ph; phLog.push({t:cur.mel,ph}); if(phLog.length>120) phLog.splice(0,phLog.length-100);
-      if(ph.pool!==pool||(!fresh&&modal()&&FF!=="estampie"&&FF!=="saltarelle")){ /* une danse notée se rejoue telle quelle, sur son bourdon */ /* rejouée : recaler sur la gamme de la section et sur l'accord du moment */
+      if(!ph.leit&&(ph.pool!==pool||(!fresh&&modal()&&FF!=="estampie"&&FF!=="saltarelle"))){ /* une danse notée se rejoue telle quelle, sur son bourdon */ /* rejouée : recaler sur la gamme de la section et sur l'accord du moment */
         ph={notes:ph.notes.map(n=>({...n,off:nearest(pool,n.off)})),end:ph.end,gr:ph.gr};
         if(modal()){ /* et sur l'accord du moment : temps forts et dernière note */
           const last=ph.notes.length-1;
@@ -1884,7 +2032,7 @@ function buildEngine(ctx, S, o){
       const XP=kthPhrase(ph.notes,onsets,iv);
       ph.notes.forEach((nt,ni)=>{
         /* chance : tirages toujours faits, même quand la voix est coupée, pour que les rendus restent alignés */
-        const C=S.chance||{}, cSkip=R.c(), cMut=R.c(), cDir=R.c(), cMag=R.c(), cOct=R.c(), cOd=R.c(), cRat=R.c(), cRn=R.c();
+        const C=ph.leit?{}:(S.chance||{}) /* le leitmotiv échappe à Fortuna : on doit le reconnaître */, cSkip=R.c(), cMut=R.c(), cDir=R.c(), cMag=R.c(), cOct=R.c(), cOd=R.c(), cRat=R.c(), cRn=R.c();
         let off=nt.off;
         if(cMut<(C.mutate||0)){ const ci=Math.max(0,pool.indexOf(nearest(pool,off))); off=pool[clamp(ci+(cDir<0.5?-1:1)*(cMag<0.3?2:1),0,pool.length-1)]; }
         if(cOct<(C.octave||0)){ const up=off+12<=pool[pool.length-1], dn=off-12>=pool[0]; if(up&&(cOd<0.5||!dn)) off+=12; else if(dn) off-=12; }
@@ -1894,11 +2042,11 @@ function buildEngine(ctx, S, o){
         if(!skipped&&want("mel")&&S.mel.lvl>0.001){
           const fn=instOf(S.mel.inst,"luth");
           if((nt.grace||nt.trill)&&pool.length>2&&(S.mel.inst==="luth"||S.mel.inst==="harpe"||S.mel.inst==="carillon"||S.mel.inst==="oud"||S.mel.inst==="kalimba"||S.mel.inst==="guitare"||S.mel.inst==="piano")){
-            const gi=clamp(pool.indexOf(off)+nt.gdir,0,pool.length-1); if(nt.trill){ fn(tt-0.16,freq(pool[gi]),vel*0.42,0.07,V.mel.node,0); fn(tt-0.08,freq(off),vel*0.5,0.07,V.mel.node,0); } fn(tt-0.07+(nt.trill?0.0:0),freq(pool[gi]),vel*0.55,0.08,V.mel.node,0);
+            const gi=clamp(pool.indexOf(off)+nt.gdir,0,pool.length-1); if(nt.trill){ fn(tt-0.16,freq(pool[gi]),vel*0.42,0.07,V.mel.node,0); fn(tt-0.08,fq(off,tt),vel*0.5,0.07,V.mel.node,0); } fn(tt-0.07+(nt.trill?0.0:0),freq(pool[gi]),vel*0.55,0.08,V.mel.node,0);
           }
           const pan=clamp(-0.12+(R.v()*2-1)*0.2+0.8*dv("pan"),-1,1);
-          if(rat>1){ for(let k=0;k<rat;k++) fn(tt+k*len/rat,freq(off),vel*(1-0.17*k),len/rat*0.85,V.mel.node,pan); }
-          else fn(tt,freq(off),vel,len,V.mel.node,pan);
+          if(rat>1){ for(let k=0;k<rat;k++) fn(tt+k*len/rat,fq(off,tt),vel*(1-0.17*k),len/rat*0.85,V.mel.node,pan); }
+          else fn(tt,fq(off,tt),vel,len,V.mel.node,pan);
           if(S.canon.lvl>0.001) canonNote(cur.mel+nt.e*E,off,vel,len,iv);
         } else R.v();
         if(!skipped&&S.mel.lvl>0.001) padOpen(tt,len,vel);
@@ -2005,7 +2153,7 @@ function buildEngine(ctx, S, o){
             seq=[tones[cur.tma[st8]%tones.length]];
           } else if(pat==="vaetvient") seq=tones.concat(tones.slice(1,-1).reverse()); else if(pat==="alberti"){ const n=tones.length; seq=[tones[0],tones[Math.min(n-1,2)],tones[Math.min(n-1,1)],tones[Math.min(n-1,2)]]; }
           const off=seq.length===1?seq[0]:seq[sinceChord%seq.length], beat=Math.round((tt-t0)/E)%(MD*1)===0, vel=(beat?0.19:0.14)*(0.9+0.2*hz(tt*3.7))*(1+0.2*exprE()*((off-(base+top)/2)/12))*(1+0.12*exprE()*Math.sin(Math.PI*clamp((tt-ch.t)/Math.max(st,ch.len),0,1))), len=st*(A.inst==="harpe"||A.inst==="luth"||A.inst==="kalimba"?3:1.4);
-          instOf(A.inst||"harpe","harpe")(sw(tt),freq(off),vel,len,V.arp.node,((cur.aj++%2)?0.3:-0.3));
+          instOf(A.inst||"harpe","harpe")(sw(tt),fq(off,tt),vel,len,V.arp.node,((cur.aj++%2)?0.3:-0.3));
           if(o.onNote) o.onNote(sw(tt),off,"loop",len,vel);
         }
         cur.arp+=st;
@@ -2018,7 +2166,7 @@ function buildEngine(ctx, S, o){
       ch.sched=true; lastD=ch.d;
       if(M&&want("pad")&&S.pad.lvl>0.001){
         const stg=clamp(S.pad.stag===undefined?0.5:S.pad.stag,0,1)*ambE(), bs=clamp(S.pad.bass===undefined?0.5:S.pad.bass,0,1), n=ch.iv.length, beat=2*E, qb=x=>Math.round(x/beat)*beat, vs=ch.offs.slice().sort((a,b)=>a-b);
-        const put=(t,len,off)=>{ padVoice(t,len,freq(off),S.pad.timbre); rec(2,t,off,len,0.3); if(o.onNote) o.onNote(t,off,"pad",len,0.3); };
+        const put=(t,len,off)=>{ padVoice(t,len,fq(off,t+0.001),S.pad.timbre); rec(2,t,off,len,0.3); if(o.onNote) o.onNote(t,off,"pad",len,0.3); };
         vs.forEach((off,i)=>{
           /* chaque voix entre à son tour ; la voix du milieu change parfois de note en cours d'accord */
           const dl=qb(stg*ch.len*0.3*(i+R.s()*0.6)/Math.max(1,vs.length-1)), len=Math.max(bar*0.5,ch.len-dl+(R.s()<stg*0.5?bar:0)), mid=i>0&&i<vs.length-1&&R.s()<stg*0.7&&!ch.chrom;
@@ -2029,7 +2177,7 @@ function buildEngine(ctx, S, o){
           /* octave au-dessus du bourdon (ou dans son registre, sous lui, pour la basse ronde du dungeon synth) ;
              muette quand sa fondamentale frotte contre un bourdon qui sonne (seconde ou septième de la tonique, demi-ton de la quinte) */
           const root=ch.root!==undefined?ch.root:(ch.iv[ch.d%n]||0), pc=pcOf(root), dist=x=>{ const d=Math.abs(pcOf(pc-x)); return Math.min(d,12-d); }, droneOn=S.drone.lvl>0.01, rub=droneOn&&((dist(0)>0&&dist(0)<=2)||(dist(7)>0&&dist(7)<=1)), bo=S.pad.bassOct===0?pc-(S.root+pc>=12?12:0):pc+12; /* grave : toujours entre Do2 et Si2 (65 à 123 Hz), quelle que soit la tonique */
-          if(!rub){ padVoice(ch.t,ch.len,freq(bo),S.pad.timbre,(0.5+bs)*(S.pad.bassOct===0?3.2:1)); rec(2,ch.t,bo,ch.len,0.3*bs,"bass"); if(o.onNote) o.onNote(ch.t,bo,"pad",ch.len,0.3*bs); }
+          if(!rub){ padVoice(ch.t,ch.len,fq(bo,ch.t+0.001),S.pad.timbre,(0.5+bs)*(S.pad.bassOct===0?3.2:1)); rec(2,ch.t,bo,ch.len,0.3*bs,"bass"); if(o.onNote) o.onNote(ch.t,bo,"pad",ch.len,0.3*bs); }
         }
       }
     }
@@ -2057,7 +2205,7 @@ function buildEngine(ctx, S, o){
           /* quand un thème existe, chaque boucle en porte une note : le thème se recompose tout seul, à la manière d'Eno */
           const off=chromFix((th&&th.length)?th[(li*2)%th.length].off+12*(lp.oct-1):degOff(iv,lp.deg)+12*lp.oct,tt), vel=lp.vel*(0.85+0.3*R.l());
           if(R.l()>=(((S.chance||{}).skip)||0)*1.5){
-          fn(tt,freq(off),vel,E*10,V.loops.node,lp.pan);
+          fn(tt,fq(off,tt),vel,E*10,V.loops.node,lp.pan);
           rec(3,tt,off,E*10,vel);
           if(o.onNote) o.onNote(tt,off,"loop",E*10,vel); }
           lp.next+=lp.len;
@@ -2076,7 +2224,7 @@ function buildEngine(ctx, S, o){
           /* les pendules sonnent les notes de l'accord en cours, comme des cloches qui ponctuent */
           const cpc=chordPcs(chordAt(tt)), iv=ivOf(S,secOf(tt).key), cand=[]; for(let x=12;x<36;x+=0.5){ const pc=((x%12)+12)%12; if(cpc.some(p=>Math.abs(p-pc)<0.01)) cand.push(x); }
           const off=cand.length?cand[i%cand.length]:degOff(iv,i)+12, vel=0.17-0.07*i/N;
-          fn(tt,freq(off),vel,E*6,V.pend.node,(i/Math.max(1,N-1)*2-1)*0.85);
+          fn(tt,fq(off,tt),vel,E*6,V.pend.node,(i/Math.max(1,N-1)*2-1)*0.85);
           rec(4,tt,off,E*6,vel);
           if(o.onNote) o.onNote(tt,off,"pend",E*6,vel);
         }
@@ -2245,7 +2393,7 @@ function buildEngine(ctx, S, o){
     }
   }
   /* replan : coupe les notes déjà planifiées d'une voix et en planifie de nouvelles tout de suite, avec les réglages actuels */
-  function replan(what){
+  function replan(what,tcM){
     if(!started) return;
     const now=ctx.currentTime, all=what==="all";
     const kill=(name,tc)=>{
@@ -2254,7 +2402,7 @@ function buildEngine(ctx, S, o){
       newGen(name);
     };
     if(all){ for(const k in COL) delete COL[k]; FS.ref.length=0; FS.theme.length=0; FS.ost=null; FS.ostN=0; TM.steps=null; ctr.pm=ctr.pc=ctr.li=null; }
-    if(all||what==="mel"){ kill("mel"); kill("canon"); padRest(now); cur.mel=t0+Math.ceil((now+0.04-t0)/E)*E; }
+    if(all||what==="mel"){ kill("mel",tcM); kill("canon",tcM); padRest(now); cur.mel=t0+Math.ceil((now+0.04-t0)/E)*E; }
     if(all||what==="pad"){ kill("pad",0.15); while(chordTl.length&&chordTl[chordTl.length-1].t>=now) chordTl.pop(); chordEnd=now+0.04; }
     if(all||what==="loops"){ kill("loops",0.05); initLoops(now); }
     if(all||what==="plain"){ kill("plain",0.05); cur.pl=t0+Math.ceil((now+0.05-t0)/bar)*bar; cur.plj=0; }
@@ -2370,7 +2518,13 @@ function buildEngine(ctx, S, o){
     inst:name=>instOf(name,"luth"),
     pad:(timbre,t,len,f,dst,vol)=>{ const s=V.pad.node; V.pad.node=dst; try{ padVoice(t,len,f,timbre,vol||1); } finally{ V.pad.node=s; } },
     perc:(k,part,t,v,dst)=>{ const s=PB; PB=dst; try{ (KITS[k]||KITS.cadre)[part](t,v); } finally{ PB=s; } },
-    kpat:KPAT, kits:Object.keys(KITS), noise:()=>wb
+    kpat:KPAT, kits:Object.keys(KITS), noise:()=>wb,
+    reso:(kind,f,vel,len,t)=>resoBuf(kind,f,vel,len,t===undefined?null:symStrings(t,f)) /* pour les tests : le rendu d'une note du résonateur */
   };
-  return {nueeState,arbreState,billeY,bank,pieceEnd:()=>pieceFade,fxAttach,grainFreeze,fxOn:()=>!!fx,start,schedule,setLevels,setReverb,stop,fadeOut,sleepFade,sleepClear,replan,freeze,reroll,gesture,play,synOn,dawOn,dawNote,rackSync,meter,tap:()=>volG,analyser:k=>k==="all"?anaAll:anaSyn,dawReplan,dawPos,pendX,tensNow:()=>tensAt(ctx.currentTime),adaptNow:()=>adaptE(ctx.currentTime),tensPos:()=>{ if(!curveOn()) return -1; const L=Math.max(30,S.curve.dur*60), x=(ctx.currentTime-t0)/L; return S.curve.mode==='loop'?((x%1)+1)%1:clamp(x,0,1); },events,out,master,secAt:t=>secOf(t),bar,E,t0f:()=>t0,chords:()=>chordTl.slice(),phraseBars:()=>[...phBars],signals:()=>calls.map(c=>({...c})), melSpans:()=>melSpans.map(x=>x.slice()), phraseLog:()=>{ const ids=new Map(); return phLog.map(x=>{ if(!ids.has(x.ph)) ids.set(x.ph,ids.size); return ids.get(x.ph); }); },fillBars:()=>fillBars.slice()};
+  /* appeler le leitmotiv : la phrase en cours s'efface doucement, le motif entre à la mesure suivante */
+  function leitCall(){
+    const L=o.leit&&o.leit(); if(!started||!L||!L.motif) return -1;
+    L.pending=true; const now=ctx.currentTime; replan("mel",0.25); cur.mel=t0+Math.ceil((now+0.3-t0)/bar)*bar; return cur.mel-now;
+  }
+  return {leitCall,leitGrab,leitLog:()=>leitLog.slice(),nueeState,arbreState,billeY,bank,pieceEnd:()=>pieceFade,fxAttach,grainFreeze,fxOn:()=>!!fx,start,schedule,setLevels,setReverb,stop,fadeOut,sleepFade,sleepClear,replan,freeze,reroll,gesture,play,synOn,dawOn,dawNote,rackSync,meter,tap:()=>volG,analyser:k=>k==="all"?anaAll:anaSyn,dawReplan,dawPos,pendX,tensNow:()=>tensAt(ctx.currentTime),adaptNow:()=>adaptE(ctx.currentTime),tensPos:()=>{ if(!curveOn()) return -1; const L=Math.max(30,S.curve.dur*60), x=(ctx.currentTime-t0)/L; return S.curve.mode==='loop'?((x%1)+1)%1:clamp(x,0,1); },events,out,master,secAt:t=>secOf(t),bar,E,t0f:()=>t0,chords:()=>chordTl.slice(),phraseBars:()=>[...phBars],signals:()=>calls.map(c=>({...c})), melSpans:()=>melSpans.map(x=>x.slice()), phraseLog:()=>{ const ids=new Map(); return phLog.map(x=>{ if(!ids.has(x.ph)) ids.set(x.ph,ids.size); return ids.get(x.ph); }); },fillBars:()=>fillBars.slice()};
 }

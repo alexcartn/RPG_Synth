@@ -54,7 +54,7 @@ function midiFile(events,Sx,opt){
     const r=Math.max(0,Math.min(127,Math.round(p))); let k=r; for(let d=0;d<128;d++){ for(const c of [r+d,r-d]){ if(c>=0&&c<128&&!keyUsed.has(c)){ k=c; d=999; break; } } }
     keyOf.set(id,k); keyUsed.set(k,p); return k; };
   events.forEach(e=>{
-    const p=mf(e.off), rn=Math.round(p), frac=p-rn, t=Math.round(e.t/spq*PPQ), d=Math.max(30,Math.round(e.dur/spq*PPQ)), vel=Math.max(1,Math.min(127,Math.round(40+e.vel*200)));
+    const p=mf(e.off)+(e.ji||0)/100, rn=Math.round(p), frac=p-rn, t=Math.round(e.t/spq*PPQ), d=Math.max(30,Math.round(e.dur/spq*PPQ)), vel=Math.max(1,Math.min(127,Math.round(40+e.vel*200)));
     let note=Math.max(0,Math.min(127,rn)), bend;
     if(mode==="mts"&&Math.abs(frac)>0.005) note=tuneKey(p);
     /* hauteur exacte en pitch bend (plage de 2 demi-tons), sauf sur les nappes qui sont polyphoniques */
@@ -93,7 +93,7 @@ async function renderOffline(Sx,dur,o,onProg){
   const sr=44100, tail=o.loop?8:0, total=dur+tail;
   const ctx=new OfflineAudioContext(2,Math.ceil(sr*total),sr);
   if(typeof fxLoad==="function") await fxLoad(ctx);
-  const eng=buildEngine(ctx,Sx,{solo:o.solo,noComp:o.noComp,record:o.record});
+  const eng=buildEngine(ctx,Sx,{solo:o.solo,noComp:o.noComp,record:o.record,leit:o.leit!==undefined?o.leit:((typeof leitOpts==="function")?leitOpts(true):null)});
   eng.start(0,o.loop?0.05:5,o.loop?0:total);
   eng.schedule(total);
   /* points de contrôle : le rendu s'interrompt brièvement pour annoncer sa progression */

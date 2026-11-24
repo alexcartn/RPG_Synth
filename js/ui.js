@@ -52,7 +52,7 @@ function defaultQuality(){
 }
 function getQuality(){ try{ const q=localStorage.getItem("bourdon.quality"); if(q==="eco"||q==="high") return q; }catch(e){} return defaultQuality(); }
 const isEco=()=>getQuality()==="eco";
-function engineOpts(dest){ return {onNote:noteFlash, lite:isEco(), rolling:true, dest:dest||(live&&live.out)||null, underVoice:()=>(typeof VOIX!=="undefined"&&VOIX.under)?1:0}; }
+function engineOpts(dest){ return {onNote:noteFlash, lite:isEco(), rolling:true, dest:dest||(live&&live.out)||null, underVoice:()=>(typeof VOIX!=="undefined"&&VOIX.under)?1:0, leit:(typeof leitOpts==="function")?leitOpts():null, onLeit:x=>{ if(typeof leitHeard==="function") leitHeard(x); }}; }
 /* téléphone : le son passe par un vrai lecteur audio. Le système le traite alors comme une musique qui joue :
    il continue écran éteint ou application en arrière-plan, avec les commandes sur l'écran verrouillé. */
 const MOBILE=(()=>{ try{ return matchMedia("(pointer:coarse)").matches; }catch(e){ return false; } })();
@@ -254,7 +254,7 @@ setInterval(()=>{ if(typeof atScaleSync==="function") atScaleSync(); if(live){ c
 
 /* ---------- construction des contrôles ---------- */
 const pct=v=>Math.round(v*100)+" %";
-const INST_OPTS=[["luth","Luth"],["harpe","Harpe"],["flute","Flûte"],["carillon","Carillon"],["orgue","Orgue positif"],["roues","Orgue à roues"],["oud","Oud (corde pincée)"],["ney","Ney (flûte soufflée)"],["kalimba","Kalimba"],["bol","Bol chantant"],["verre","Cloches de verre"],["synthe","Synthé doux"],["archet","Archet (violon, viole)"],["cuivre","Cuivre doux"],["guitare","Guitare (acier)"],["piano","Piano de bastringue"],["fmpiano","Piano électrique (FM)"],["fmcloche","Cloches FM"],["accordeon","Accordéon musette"],["voix","Voix (vocalise)"],["chant","Chant (paroles latines ou grecques)"],["aulos","Aulos (double flûte à anche)"],["lyre","Lyre"],["syrinx","Syrinx (flûte de Pan)"],["cornu","Cornu (cor romain)"],["hydraulis","Hydraulis (orgue à eau)"],["vielle","Vielle à roue"],["cornemuse","Cornemuse (chalumeau)"],["sifflet","Sifflet"],["harmonica","Harmonica"],["basse","Basse synthé (grave)"],["atelier","Synthé perso (Atelier)"]];
+const INST_OPTS=[["luth","Luth"],["reso","Résonateur frappé"],["resoarchet","Résonateur frotté"],["sympa","Cordes sympathiques"],["harpe","Harpe"],["flute","Flûte"],["carillon","Carillon"],["orgue","Orgue positif"],["roues","Orgue à roues"],["oud","Oud (corde pincée)"],["ney","Ney (flûte soufflée)"],["kalimba","Kalimba"],["bol","Bol chantant"],["verre","Cloches de verre"],["synthe","Synthé doux"],["archet","Archet (violon, viole)"],["cuivre","Cuivre doux"],["guitare","Guitare (acier)"],["piano","Piano de bastringue"],["fmpiano","Piano électrique (FM)"],["fmcloche","Cloches FM"],["accordeon","Accordéon musette"],["voix","Voix (vocalise)"],["chant","Chant (paroles latines ou grecques)"],["aulos","Aulos (double flûte à anche)"],["lyre","Lyre"],["syrinx","Syrinx (flûte de Pan)"],["cornu","Cornu (cor romain)"],["hydraulis","Hydraulis (orgue à eau)"],["vielle","Vielle à roue"],["cornemuse","Cornemuse (chalumeau)"],["sifflet","Sifflet"],["harmonica","Harmonica"],["basse","Basse synthé (grave)"],["atelier","Synthé perso (Atelier)"]];
 const DRIFT_OPTS=[["none","Rien"],["filtre","Éclat du bourdon"],["reverb","Réverbération"],["densite","Densité de la mélodie"],["pan","Place de la mélodie (pan)"],["tension","Tension"],["voile","Voile (aigus)"],["grain","Nuage de grains"]];
 /* seconde cible d'une dérive : la même liste, dans le même sens puis à l'envers */
 const DRIFT2_OPTS=DRIFT_OPTS.concat(DRIFT_OPTS.slice(1).map(([k,l])=>["-"+k,l+", à l'envers"]));
@@ -272,7 +272,7 @@ const UI=[
    {k:"meter",type:"select",label:"Mesure",opts:Object.keys(METERS).map(k=>[k,k]),restart:true},
    {k:"swing",type:"range",label:"Swing",min:0,max:1,step:0.01,fmt:pct}]},
   {fin:"Accord et tempérament", items:[
-   {k:"temper",type:"select",label:"Tempérament",opts:[["egal","Égal"],["juste","Juste (intonation pure)"],["pyth","Pythagoricien"],["meso","Mésotonique (quart de comma)"],["werck","Werckmeister III"],["kirn","Kirnberger III"],["aeu","Turc (Arel-Ezgi-Uzdilek, 53 commas)"],["scala","Gamme Scala importée"]],restart:true},
+   {k:"temper",type:"select",label:"Tempérament",opts:[["egal","Égal"],["juste","Juste (intonation pure)"],["adapt","Juste adaptatif (chaque accord pur sur le bourdon)"],["pyth","Pythagoricien"],["meso","Mésotonique (quart de comma)"],["werck","Werckmeister III"],["kirn","Kirnberger III"],["aeu","Turc (Arel-Ezgi-Uzdilek, 53 commas)"],["scala","Gamme Scala importée"]],restart:true},
    {k:"a4",type:"range",label:"Diapason (La)",min:410,max:450,step:1,fmt:v=>v+" Hz",restart:true}]}]},
  {num:"II", title:"Couches", fr:"", sub:"Ce qui sonne, voix par voix. Le pupitre au-dessus les allume et règle leur niveau ; ici, le détail de chacune.", groups:[
   {h:"Ensemble", hf:"pour toutes les voix", id:"g-ens", items:[
@@ -297,7 +297,11 @@ const UI=[
    {k:"mel.reg",type:"select",label:"Registre",opts:[[0,"Grave"],[1,"Médium"],[2,"Aigu"]],num:true},
    {k:"mel.lpg",type:"range",label:"Porte passe-bas",min:0,max:1,step:0.01,fmt:pct,hint:"Sur les sons pincés et frappés (luth, harpe, oud, guitare, kalimba, carillon, verre, bol, piano) : le filtre se referme avec le son, qui devient boisé et rond. Vaut pour la mélodie, le canon, les boucles et les pendules."}]},
   {fin:"Réglages de la mélodie", items:[
-   {k:"mel.span",type:"range",label:"Étendue",min:1,max:3,step:1,fmt:v=>v+(v>1?" octaves":" octave")}]},
+   {k:"mel.span",type:"range",label:"Étendue",min:1,max:3,step:1,fmt:v=>v+(v>1?" octaves":" octave")},
+   {k:"reso.struct",type:"range",label:"Résonateur : structure",min:0,max:1,step:0.01,fmt:pct,hint:"Pour le résonateur frappé, frotté et les cordes sympathiques (mélodie, canon, boucles, arpège…). À gauche une corde, au milieu un métal, à droite une barre ou une cloche."},
+   {k:"reso.bright",type:"range",label:"Résonateur : brillance",min:0,max:1,step:0.01,fmt:pct,hint:"La part des partiels aigus et la dureté du coup."},
+   {k:"reso.damp",type:"range",label:"Résonateur : amortissement",min:0,max:1,step:0.01,fmt:pct,hint:"Haut : le son s'éteint vite, comme étouffé. Bas : il résonne longtemps."},
+   {k:"reso.pos",type:"range",label:"Résonateur : position",min:0,max:1,step:0.01,fmt:pct,hint:"Où l'on frappe : près du bord, tous les partiels ; au milieu, les partiels pairs s'éteignent, le son se creuse."}]},
   {h:"Plain-chant", hf:"l'air grégorien du texte", id:"g-plain", items:[
    {k:"plain.lvl",type:"range",label:"Plain-chant",min:0,max:1,step:0.01,fmt:pct,hint:"Une voix qui chante le vrai air grégorien du texte choisi (Dies irae, Kyrie…), syllabe par syllabe, avec des respirations entre les phrases."},
    {k:"chant",type:"select",label:"Texte du chant",opts:[["kyrie","Kyrie eleison"],["alleluia","Alleluia"],["diesirae","Dies irae"],["sanctus","Sanctus"],["agnus","Agnus Dei"],["gloria","Gloria in excelsis"],["paian","Péan grec (Iè paian)"]],hint:"Les paroles que chante l'instrument « Chant », une syllabe par note."},

@@ -107,6 +107,7 @@ function jeuState(){
   { const g=$("jeuGel"); if(g){ g.disabled=!live; if(!live){ JEU.gel=false; g.setAttribute("aria-pressed","false"); } } }
   const f=$("jeuFreeze"), rr=$("jeuReroll"); if(f) f.disabled=!live; if(rr) rr.disabled=!live; document.querySelectorAll("#jeuGest [data-g]").forEach(b=>{ b.disabled=!live; if(!live) b.setAttribute("aria-pressed","false"); });
   if(!live){ JEU.frozen=false; if(f) f.setAttribute("aria-pressed","false"); }
+  if(typeof leitUI==="function") leitUI();
 }
 /* ampleur des gestes : discret, plein, immense */
 function jeuAmpUI(){ document.querySelectorAll("#jeuAmp .lnk").forEach(b=>{ if(+b.dataset.amp===JEU.amp) b.setAttribute("aria-current","true"); else b.removeAttribute("aria-current"); }); }

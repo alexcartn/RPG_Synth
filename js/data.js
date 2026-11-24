@@ -63,6 +63,8 @@ const RAT = {
   egal: Array.from({length:12},(_,i)=>Math.pow(2,i/12)),
   juste:[1,16/15,9/8,6/5,5/4,4/3,45/32,3/2,8/5,5/3,9/5,15/8],
   pyth:[1,256/243,9/8,32/27,81/64,4/3,729/512,3/2,128/81,27/16,16/9,243/128],
+  /* juste adaptatif : la gamme juste depuis la tonique (sous-tonique 16/9, quarte de la quarte, celle des progressions modales) ; le moteur réaccorde chaque accord sur sa fondamentale */
+  adapt:[1,16/15,9/8,6/5,5/4,4/3,45/32,3/2,8/5,5/3,16/9,15/8],
   meso:[1,1.04490,1.11803,1.19628,1.25,1.33748,1.39754,1.49535,1.5625,1.67185,1.78885,1.86920]
 };
 /* tempéraments de clavier : écarts en cents depuis do ; comme sur un orgue accordé ainsi, chaque tonalité a sa couleur */
@@ -127,6 +129,7 @@ const DEFAULT = {
   drone:{lvl:0.8, timbre:"anche", bright:0.5, width:0.5, drift:0.5, glide:0.5},
   mel:{lvl:0.6, inst:"luth", lpg:0, dens:0.85, reg:0, span:2, leap:0.2, orn:0.15, deja:0, loop:2},
   canon:{lvl:0, inst:"harpe", delay:2, shift:"oct+"},
+  reso:{struct:0.3, bright:0.5, damp:0.4, pos:0.3},
   pad:{lvl:0.22, timbre:"cordes", len:2, motion:0.5, voices:3, deja:0, loop:2, stag:0.5, bass:0.5, bassOct:12},
   loops:{lvl:0, count:3, inst:"carillon", speed:1},
   arp:{lvl:0, inst:"harpe", pat:"vaetvient", rate:1, reg:1, span:1},

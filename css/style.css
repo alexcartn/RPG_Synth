@@ -1149,3 +1149,14 @@ body.playing .veil-open{box-shadow:3px 3px 0 var(--rubric)}
 @media (max-width:760px){ .vl-mixbody{flex-direction:column} .vl-play{flex:none; padding-left:0; border-left:0; border-top:1px solid var(--rule); padding-top:var(--sp-md)} .vl-mix{max-height:62vh; overflow-y:auto} .vl-vol input[type=range]{width:84px} }
 
 .vl-play h4:not(:first-child){margin-top:var(--sp-md)}
+/* leitmotiv : dans la barre de Conduire */
+.leit{flex:1 1 100%; display:flex; flex-wrap:wrap; align-items:center; gap:var(--sp-sm) var(--sp-md); padding-top:var(--sp-md); border-top:1px dashed var(--rule)}
+.leit > select{width:auto; flex:0 1 auto; min-width:12ch; max-width:100%}
+.leit .leit-more{flex:1 1 100%}
+.leit .leit-more summary{cursor:pointer; color:var(--ink-2); font-style:italic; width:max-content}
+.leit .leit-more .row{gap:var(--sp-sm) var(--sp-lg); margin:var(--sp-sm) 0}
+.leit .leit-more .ctl{display:grid; grid-template-columns:7ch minmax(0,32ch); align-items:baseline; gap:var(--sp-md); margin-top:var(--sp-xs)}
+.leit .leit-more .ctl input{width:100%}
+.leit .hint{flex:1 1 100%; margin:0}
+.leit .hint:empty{display:none}
+@media (max-width:600px){ .leit > select{flex:1 1 100%} .leit .leit-more .ctl{grid-template-columns:1fr} }

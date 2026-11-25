@@ -10,8 +10,15 @@ function fxWorkletBody(){
 
   /* réverbération : réseau de 8 lignes à retard bouclées (matrice de Hadamard), amorties, aux longueurs
      modulées lentement ; un décaleur d'octave réinjecté donne le scintillement */
+  /* chambres : six manières de colorer le même réseau, d'après la pédale Rooms de Death By Audio (2020).
+     mode 0 : réverb vivante seule. 1 pièce : prédélai à droite seulement, l'image s'élargit. 2 écho : un écho réinjecté nourrit la salle.
+     3 crête : la queue passe par un passe-bande résonant, accordé par le moteur sur la tonique ou une quinte : la salle chante.
+     4 porte : la queue se ferme peu après chaque attaque ; tout en haut de la profondeur, elle ne se ferme plus et se fige.
+     5 onde : la queue ondule en hauteur (vibrato). 6 gong : repliement (à gauche) ou modulation en anneau (à droite), net au milieu.
+     « fr » et « dp » sont les deux boutons de la pédale (0 à 1), « hz » la fréquence accordée (crête, gong), « dt » le temps de l'écho. */
   class Verb extends AudioWorkletProcessor{
-    static get parameterDescriptors(){ return [kr("decay",3,0.2,30),kr("damp",0.5,0,1),kr("mod",0.5,0,1),kr("shimmer",0,0,1),kr("pre",0,0,0.25)]; }
+    static get parameterDescriptors(){ return [kr("decay",3,0.2,30),kr("damp",0.5,0,1),kr("mod",0.5,0,1),kr("shimmer",0,0,1),kr("pre",0,0,0.25),
+      kr("mode",0,0,6),kr("fr",0.5,0,1),kr("dp",0.3,0,1),kr("hz",440,20,12000),kr("dt",0.3,0.01,1.6)]; }
     constructor(){
       super();
       const k=sampleRate/44100;
@@ -26,12 +33,30 @@ function fxWorkletBody(){
       this.pSize=pow2(Math.ceil(0.26*sampleRate)); this.pBuf=[new Float32Array(this.pSize),new Float32Array(this.pSize)]; this.pW=0;
       this.sW=Math.round(0.085*sampleRate); this.sSize=pow2(this.sW+8); this.sBuf=new Float32Array(this.sSize); this.sI=0; this.sP=0; this.sLp=0; this.sHp=0; this.fb=0;
       this.depth=40*k; this.quiet=1e9;
+      /* chambres */
+      this.rpSize=pow2(Math.ceil(0.07*sampleRate)); this.rpBuf=new Float32Array(this.rpSize); this.rpW=0;
+      this.eSize=pow2(Math.ceil(1.7*sampleRate)); this.eBuf=new Float32Array(this.eSize); this.eW=0; this.eLp=0;
+      this.sv=new Float32Array(4);
+      this.envF=0; this.envS=0; this.hold=0; this.gg=1;
+      this.vSize=pow2(Math.ceil(0.03*sampleRate)); this.vBuf=[new Float32Array(this.vSize),new Float32Array(this.vSize)]; this.vW=0; this.vPh=0;
+      this.rPh=0; this.shL=0; this.shR=0; this.shC=0;
     }
     process(inputs,outputs,P){
       const inp=inputs[0], out=outputs[0], oL=out[0], oR=out[1]||out[0], n=oL.length, iL=inp[0], iR=inp[1]||inp[0];
       /* rien n'entre et la queue est éteinte : on ne calcule plus */
       if(!iL&&this.quiet>sampleRate*2) return true;
-      const sr=sampleRate, T=P.decay[0], c=1-0.78*P.damp[0], dep=this.depth*P.mod[0], sh=P.shimmer[0]*0.42, pre=Math.min(this.pSize-2,Math.round(P.pre[0]*sr));
+      const sr=sampleRate, md=Math.round(P.mode[0]), fr=P.fr[0], dp=P.dp[0];
+      /* porte tout en haut : la queue se fige (décroissance très longue, entrée presque fermée) */
+      const fz=md===4&&dp>0.8?(dp-0.8)/0.2:0, inG=1/Math.sqrt(1+15*fz); /* l'énergie tenue reste celle d'avant : entrée réduite d'autant que la queue s'allonge */
+      const T=P.decay[0]*(1+15*fz), c=1-0.78*P.damp[0], dep=this.depth*P.mod[0]*(md===5?1+3*dp:1), sh=P.shimmer[0]*0.42, pre=Math.min(this.pSize-2,Math.round(P.pre[0]*sr));
+      /* réglages propres à chaque mode, calculés une fois par bloc */
+      const dR=md===1?Math.min(this.rpSize-2,Math.round(dp*0.06*sr)):0;
+      const eD=md===2?Math.max(1,Math.min(this.eSize-2,Math.round(P.dt[0]*sr))):0, eFb=0.88*dp, eM=this.eSize-1;
+      let sk=0,sa1=0,sa2=0,sa3=0,sC=0;
+      if(md===3){ const q=0.7+30*dp*dp, gw=Math.tan(Math.PI*Math.min(P.hz[0],sr*0.45)/sr); sk=1/q; sa1=1/(1+gw*(gw+sk)); sa2=gw*sa1; sa3=gw*sa2; sC=Math.pow(10,(8.5*(1-Math.exp(-(q-0.2)/3.5))+5*Math.max(0,Math.min(1,Math.log2(P.hz[0]/500))))/20); /* le passe-bande ôte de l'énergie : on la rend (mesuré sur des notes et un bourdon) */ }
+      const holdN=Math.round((0.04+1.2*Math.min(dp,0.8)/0.8)*sr);
+      const vRate=0.15*Math.pow(2,fr*5.5), vDep=dp*0.0045*sr, vBase=0.002*sr, vM=this.vSize-1;
+      const rg=md===6?Math.max(0,2*dp-1):0, al=md===6?Math.max(0,1-2*dp):0, rInc=2*Math.PI*P.hz[0]/sr, shInc=Math.min(0.9,P.hz[0]*8/sr);
       const g=this._g||(this._g=new Float32Array(8)); for(let i=0;i<8;i++) g[i]=Math.pow(10,-3*this.len[i]/(T*sr));
       /* modulation : la longueur de chaque ligne glisse d'un bout du bloc à l'autre */
       for(let i=0;i<8;i++){ const a=this.len[i]+dep*Math.sin(this.ph[i]); this.ph[i]+=2*Math.PI*this.rate[i]*n/sr; if(this.ph[i]>6.2831853) this.ph[i]-=6.2831853; const b=this.len[i]+dep*Math.sin(this.ph[i]); this.dm[i]=a; this.ds[i]=(b-a)/n; }
@@ -40,6 +65,19 @@ function fxWorkletBody(){
       for(let s=0;s<n;s++){
         let xl=iL?iL[s]:0, xr=iL?iR[s]:0;
         if(pre>0){ const pb=this.pBuf, pm=this.pSize-1; pb[0][this.pW]=xl; pb[1][this.pW]=xr; const r=(this.pW-pre)&pm; xl=pb[0][r]; xr=pb[1][r]; this.pW=(this.pW+1)&pm; }
+        let eo=0, eo2=0;
+        if(md!==0){
+          if(md===2){ /* écho : les répétitions s'assombrissent et saturent doucement en boucle, puis entrent dans la salle */
+            const e=this.eBuf[(this.eW-eD)&eM]; this.eLp+=(e-this.eLp)*0.3; const m=(xl+xr)*0.5+eFb*this.eLp;
+            this.eBuf[this.eW]=m>1.5?1:m<-1.5?-1:m-0.1481*m*m*m; eo=e; eo2=this.eBuf[(this.eW-(eD>>1)-eD)&eM]*eFb; this.eW=(this.eW+1)&eM;
+            xl+=0.8*eo; xr+=0.8*eo2;
+          } else if(md===4){ /* porte : chaque attaque ouvre la queue pour un temps donné */
+            const a=Math.abs(xl)+Math.abs(xr); this.envF+=(a-this.envF)*(a>this.envF?0.0225:0.0011); this.envS+=(this.envF-this.envS)*0.000075;
+            if(this.envF>1.6*this.envS+1e-4) this.hold=holdN; else if(this.hold>0) this.hold--;
+            const tg=fz>0||this.hold>0?1:0; this.gg+=(tg-this.gg)*(tg>this.gg?0.005:0.0008);
+            xl*=inG; xr*=inG;
+          }
+        }
         xl+=this.fb; xr+=this.fb;
         /* diffusion : quatre passe-tout en série par canal */
         for(let ch=0;ch<2;ch++){
@@ -52,7 +90,7 @@ function fxWorkletBody(){
           let rp=w-d; if(rp<0) rp+=size; const i0=rp|0, fr=rp-i0, b=buf[i], a0=b[i0&mask], a1=b[(i0+1)&mask];
           lp[i]+=((a0+(a1-a0)*fr)-lp[i])*c; v[i]=lp[i];
         }
-        const yl=(v[0]-v[2]+v[4]-v[6])*0.5, yr=(v[1]-v[3]+v[5]-v[7])*0.5;
+        let yl=(v[0]-v[2]+v[4]-v[6])*0.5, yr=(v[1]-v[3]+v[5]-v[7])*0.5;
         /* Hadamard 8x8 en trois passes */
         for(let h=1;h<8;h<<=1) for(let i=0;i<8;i+=h<<1) for(let j=i;j<i+h;j++){ const a=v[j], b=v[j+h]; v[j]=a+b; v[j+h]=a-b; }
         for(let i=0;i<8;i++) buf[i][w]=(i&1?xr:xl)+v[i]*0.35355339*g[i];
@@ -67,6 +105,27 @@ function fxWorkletBody(){
           this.fb=y>1?1:y<-1?-1:y;
           this.sI=(this.sI+1)&sM; this.sP=p+1/sW; if(this.sP>=1) this.sP-=1;
         } else this.fb=0;
+        if(md>=1){
+          if(md===1){ const rm=this.rpSize-1; this.rpBuf[this.rpW]=yr; yr=this.rpBuf[(this.rpW-dR)&rm]; this.rpW=(this.rpW+1)&rm; } /* pièce : la sortie droite arrive plus tard */
+          else if(md===2){ yl+=0.45*eo; yr+=0.45*eo2; }
+          else if(md===3){ /* crête : passe-bande à état variable (forme trapézoïdale), gain unité au sommet ; un peu de salle reste autour */
+            const S=this.sv;
+            let v3=yl-S[1], v1=sa1*S[0]+sa2*v3, v2=S[1]+sa2*S[0]+sa3*v3; S[0]=2*v1-S[0]; S[1]=2*v2-S[1]; yl=0.2*yl+sk*v1*sC;
+            v3=yr-S[3]; v1=sa1*S[2]+sa2*v3; v2=S[3]+sa2*S[2]+sa3*v3; S[2]=2*v1-S[2]; S[3]=2*v2-S[3]; yr=0.2*yr+sk*v1*sC;
+          } else if(md===4){ yl*=this.gg; yr*=this.gg; }
+          else if(md===5){ /* onde : deux lignes courtes balancées en quadrature */
+            const vb=this.vBuf; vb[0][this.vW]=yl; vb[1][this.vW]=yr;
+            const rd=(b,d)=>{ let p=this.vW-d; const i=Math.floor(p), f=p-i; return b[i&vM]+(b[(i-1)&vM]-b[i&vM])*f; };
+            yl=rd(vb[0],vBase+vDep*(1+Math.sin(this.vPh))); yr=rd(vb[1],vBase+vDep*(1+Math.cos(this.vPh)));
+            this.vW=(this.vW+1)&vM; this.vPh+=2*Math.PI*vRate/sr; if(this.vPh>6.2831853) this.vPh-=6.2831853;
+          } else if(md===6){ /* gong : échantillonneur bloqué à la fréquence choisie (repliement), ou multiplication par un sinus (anneau) */
+            this.shC+=shInc; if(this.shC>=1){ this.shC-=1; this.shL=yl; this.shR=yr; }
+            if(al>0){ yl+=(this.shL-yl)*al; yr+=(this.shR-yr)*al; }
+            if(rg>0){ const sn=Math.sin(this.rPh)*1.4142; yl+=(yl*sn-yl)*rg; yr+=(yr*Math.cos(this.rPh)*1.4142-yr)*rg; }
+            this.rPh+=rInc; if(this.rPh>6.2831853) this.rPh-=6.2831853;
+          }
+          if(md===3||md===4&&fz>0){ yl=yl>2?2:yl<-2?-2:yl; yr=yr>2?2:yr<-2?-2:yr; }
+        }
         oL[s]=yl; if(oR!==oL) oR[s]=yr;
         const m=yl<0?-yl:yl; if(m>peak) peak=m;
       }
@@ -415,6 +474,26 @@ function fxWorkletBody(){
     }
   }
   registerProcessor("bourdon-lieu",Lieu);
+
+  /* égaliseur de niveau : entrée 0 = le signal avant l'effet, entrée 1 = après ; la sortie est l'entrée 1 ramenée à l'énergie de l'entrée 0.
+     Les deux énergies sont suivies sur environ une demi-seconde ; dans le silence, le gain reste où il était. Sert à la fuzz. */
+  class Match extends AudioWorkletProcessor{
+    constructor(){ super(); this.er=0; this.ep=0; this.g=1; this.a=1-Math.exp(-1/(0.5*sampleRate)); }
+    process(inputs,outputs){
+      const r=inputs[0], q=inputs[1], out=outputs[0], n=out[0].length, a=this.a;
+      if(!q||!q[0]){ for(const ch of out) ch.fill(0); return true; }
+      const r0=r&&r[0], r1=r&&(r[1]||r[0]), q0=q[0], q1=q[1]||q[0], o0=out[0], o1=out[1]||out[0];
+      let er=this.er, ep=this.ep, g=this.g;
+      for(let s=0;s<n;s++){
+        const x=r0?(r0[s]*r0[s]+r1[s]*r1[s])*0.5:0, y=(q0[s]*q0[s]+q1[s]*q1[s])*0.5;
+        er+=(x-er)*a; ep+=(y-ep)*a;
+        if(s===0||s===n>>1){ if(er>1e-9&&ep>1e-9){ const t=Math.sqrt(er/ep); g+=((t<0.03?0.03:t>12?12:t)-g)*0.08; } }
+        o0[s]=q0[s]*g; if(o1!==o0) o1[s]=q1[s]*g;
+      }
+      this.er=er; this.ep=ep; this.g=g; return true;
+    }
+  }
+  registerProcessor("bourdon-match",Match);
 }
 
 /* charge les processeurs dans un contexte ; la promesse rend true s'ils sont disponibles.

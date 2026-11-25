@@ -252,6 +252,11 @@ C'est la zone la plus faible du projet au départ : la table Affectus reposait p
 - Les mêmes, « More Than 50 Years of Artificial Reverberation », AES, 2016 : bruit velours, réseaux de diffusion, réverbération modale. [AES](https://aes2.org/publications/elibrary-page/?id=18061)
 - Matti Karjalainen et Hanna Järveläinen, bruit velours, AES, 2007 ; réverbération par bruit velours entrelacé. [Aalto](https://acris.aalto.fi/ws/portalfiles/portal/94807831/Late_Reverberation_Synthesis_Using_Interleaved_Velvet_Noise_Sequences.pdf). À exploiter : une réverbération plus légère sur téléphone.
 
+### Pédales d'effets
+
+- Death By Audio (Oliver Ackermann, Brooklyn puis Queens, depuis 2002), pages des pédales et notices. [Catalogue](https://deathbyaudio.com/collections/all-pedals). Utilisé : la Rooms (six algorithmes, deux boutons dont le rôle change, d'où la réverbération Chambres) et la Fuzz War (gain par étages, filtre « multi-courbes », écrêtage, d'où la fuzz). À exploiter : l'Echo Dream 2 et la Micro Dream (la puce de délai poussée au-delà de ses limites aux temps longs), la Supersonic Fuzz Gun (biais, porte, auto-oscillation), la Crossover Fuzz (deux bandes saturées séparément), la Total Sonic Annihilation 2 (réinjection d'une boucle d'effets), la Reverberation Machine (ressort saturé), la Moonbeam Phaser (oscillateur jusqu'à 130 Hz, vers l'anneau), la Disturbance (oscillateur figé).
+- Description communautaire du circuit de la Fuzz War : cinq étages de gain, un filtre à la Big Muff, un étage d'écrêtage et un dernier étage de gain. [effectslayouts](https://effectslayouts.blogspot.com/2016/07/death-by-audio-fuzz-war.html)
+
 ### Oscillateurs, effets, synthèse
 
 - John Chowning, « The synthesis of complex audio spectra by means of frequency modulation », *JAES* 21(7), 1973. Utilisé (FM).

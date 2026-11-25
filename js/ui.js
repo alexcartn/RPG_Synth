@@ -471,12 +471,20 @@ const UI=[
    {k:"fx.size",type:"range",label:"Taille de la salle",min:0.5,max:9,step:0.1,fmt:v=>v.toFixed(1)+" s",reverb:true},
    {k:"fx.dark",type:"range",label:"Ombre (réverb sourde)",min:0,max:1,step:0.01,fmt:pct,reverb:true}]},
   {fin:"Réverbération avancée et écho", items:[
-   {k:"fx.algo",type:"select",label:"Type de réverbération",opts:[["vivante","Vivante : la queue bouge et peut scintiller"],["lieu","Lieu : acoustique figée, avec ses premières réflexions"],["plaque","Plaque : la plaque de studio (Dattorro), dense et brillante"],["salle","Salle : la même cuve en plus grand, plus ample"]]},
+   {k:"fx.algo",type:"select",label:"Type de réverbération",opts:[["vivante","Vivante : la queue bouge et peut scintiller"],["lieu","Lieu : acoustique figée, avec ses premières réflexions"],["plaque","Plaque : la plaque de studio (Dattorro), dense et brillante"],["salle","Salle : la même cuve en plus grand, plus ample"],["chambres","Chambres : six modes de pédale"]]},
+   {k:"fx.rmode",type:"select",label:"Mode des chambres",opts:[["piece","Pièce : l'image s'élargit"],["echo","Écho : calé sur le tempo"],["crete","Crête : la salle chante"],["porte","Porte : coupée, ou figée"],["onde","Onde : la queue ondule"],["gong","Gong : repliement ou anneau"]],hint:"Ne s'entend qu'avec le type « Chambres ». D'après la pédale Rooms de Death By Audio : deux boutons dont le rôle change avec le mode. Pièce : la sortie droite arrive plus tard. Écho : un écho calé sur le tempo nourrit la salle. Crête : un filtre résonant accordé sur la tonique. Porte : la queue se coupe après chaque attaque ; tout en haut, elle se fige. Onde : la queue ondule en hauteur. Gong : repliement ou modulation en anneau, accordés sur la tonique."},
+   {k:"fx.rfr",type:"range",label:"Chambres : fréquence",min:0,max:1,step:0.01,fmt:pct,hint:"Pièce et porte : couleur de la queue. Écho : valeur de note. Crête : harmonique de la tonique où se pose le filtre. Onde : vitesse. Gong : fréquence de modulation, accordée sur la tonique."},
+   {k:"fx.rdp",type:"range",label:"Chambres : profondeur",min:0,max:1,step:0.01,fmt:pct,hint:"Pièce : prédélai de droite. Écho : répétitions. Crête : résonance. Porte : temps d'ouverture, puis gel tout en haut. Onde : ampleur du vibrato. Gong : du repliement (gauche) à l'anneau (droite), net au milieu."},
    {k:"fx.mod",type:"range",label:"Mouvement de la queue (réverb vivante)",min:0,max:1,step:0.01,fmt:pct},
    {k:"fx.shim",type:"range",label:"Scintillement : la queue remonte d'une octave",min:0,max:1,step:0.01,fmt:pct},
    {k:"fx.dly",type:"range",label:"Écho",min:0,max:1,step:0.01,fmt:pct},
    {k:"fx.dlyDiv",type:"select",label:"Valeur de l'écho",opts:[[1.5,"Croche pointée"],[2,"Noire"],[3,"Noire pointée"]],num:true},
    {k:"fx.fb",type:"range",label:"Répétitions de l'écho",min:0,max:0.9,step:0.01,fmt:pct}]},
+  {fin:"Fuzz", items:[
+   {k:"fuzz.mix",type:"range",label:"Fuzz : mélange",min:0,max:1,step:0.01,fmt:pct,hint:"D'après la Fuzz War de Death By Audio : une fuzz sur le bourdon et les nappes, avant la réverbération. À zéro, elle est débranchée."},
+   {k:"fuzz.amt",type:"range",label:"Fuzz : gain",min:0,max:1,step:0.01,fmt:pct,hint:"Du simple filtre (tout en bas, la wah bloquée) à l'amplificateur, à la saturation, puis à la fuzz pleine. Le volume est rattrapé tout seul."},
+   {k:"fuzz.tone",type:"range",label:"Fuzz : tonalité",min:0,max:1,step:0.01,fmt:pct,hint:"Le filtre de la pédale : des graves profonds (à gauche) aux aigus criards (à droite)."},
+   {k:"fuzz.src",type:"select",label:"Fuzz : sur quelles voix",opts:[["les deux","Bourdon et nappes"],["bourdon","Bourdon seul"],["nappes","Nappes seules"]]}]},
   {h:"Patine", hf:"patine de bande", items:[
    {k:"fx.sat",type:"range",label:"Saturation",min:0,max:1,step:0.01,fmt:pct},
    {k:"fx.wow",type:"range",label:"Ondulation (wow et flutter)",min:0,max:1,step:0.01,fmt:pct},

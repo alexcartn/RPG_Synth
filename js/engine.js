@@ -188,11 +188,47 @@ function buildEngine(ctx, S, o){
   const dOut=G(0), pL=PAN(-0.7), pR=PAN(0.7);
   dl.connect(pL); dr.connect(pR); pL.connect(dOut); pR.connect(dOut); const lDout=link(dOut,out);
 
+  /* ---------- fuzz, d'après la Fuzz War de Death By Audio ----------
+     Trois boutons sur la pédale : Fuzz (le gain, de l'amplificateur à la fuzz pleine), Tone (un filtre actif « multi-courbes »,
+     des graves profonds aux aigus criards) et Volume. Le circuit : plusieurs étages de gain, le filtre, puis un écrêtage dur.
+     Fuzz au minimum, il ne reste que le filtre : la wah bloquée. Ici le volume est rattrapé tout seul, et un mélange
+     permet de garder un peu du son propre. Elle se place sur le bourdon et les nappes, avant la réverbération, comme une pédale devant l'ampli. */
+  const FZ_SOFT=(()=>{ const n=2048, c=new Float32Array(n), b=0.15, t0=Math.tanh(b); for(let i=0;i<n;i++){ const x=i/(n-1)*2-1; c[i]=(Math.tanh(1.6*x+b)-t0)/(1+t0); } return c; })();
+  const FZ_HARD=(()=>{ const n=2048, c=new Float32Array(n); for(let i=0;i<n;i++){ const x=(i/(n-1)*2-1)*1.25, a=Math.abs(x); c[i]=Math.sign(x)*(a<0.55?a:a>1.05?0.8:0.55+(a-0.55)-(a-0.55)*(a-0.55)); } return c; })();
+  function fuzzUnit(src){
+    const sum=G(1), dry=G(1), pre=G(1), s1=ctx.createWaveShaper(), hpf=ctx.createBiquadFilter(), pkf=ctx.createBiquadFilter(), lpf=ctx.createBiquadFilter(), g2=G(1), s2=ctx.createWaveShaper(), post=ctx.createBiquadFilter(), dc=ctx.createBiquadFilter(), mk=G(0);
+    s1.curve=FZ_SOFT; s2.curve=FZ_HARD; s1.oversample=o.lite?"none":"2x"; s2.oversample=o.lite?"2x":"4x";
+    hpf.type="highpass"; hpf.Q.value=0.7; pkf.type="peaking"; pkf.Q.value=1.4; pkf.gain.value=9; lpf.type="lowpass"; lpf.Q.value=0.8;
+    post.type="lowpass"; post.frequency.value=7200; post.Q.value=0.6; dc.type="highpass"; dc.frequency.value=30; dc.Q.value=0.6;
+    src.connect(dry); dry.connect(sum);
+    pre.connect(s1); s1.connect(hpf); hpf.connect(pkf); pkf.connect(lpf); lpf.connect(g2); g2.connect(s2); s2.connect(post); post.connect(dc); dc.connect(mk); mk.connect(sum);
+    const lIn=link(src,pre);
+    let match=null, last=null, lRef=null;
+    /* avec les worklets : le niveau est égalé en continu sur le signal propre, quelle que soit la voix ou son niveau */
+    function attach(mkNode){ if(match) return; try{ match=mkNode(); dc.disconnect(mk); lRef={from:src,to:match,on:false}; dc.connect(match,0,1); match.connect(mk); if(last) set(last[0],last[1]); }catch(e){ match=null; } }
+    function set(F,on){
+      last=[F,on];
+      const mix=on?clamp(F.mix||0,0,1):0, amt=clamp(F.amt===undefined?0.6:F.amt,0,1), tone=clamp(F.tone===undefined?0.5:F.tone,0,1);
+      setLink(lIn,mix>0.001); if(lRef&&lRef.on!==(mix>0.001)){ lRef.on=mix>0.001; if(lRef.on) src.connect(match,0,0); else try{ src.disconnect(match); }catch(e){} }
+      if(mix<=0.001){ dry.gain.value=1; mk.gain.value=0; return; }
+      /* gain : un demi au minimum (le filtre seul, presque propre), environ 46 dB tout en haut */
+      pre.gain.value=0.5*Math.pow(10,amt*2.3); g2.gain.value=1+5*amt;
+      /* tonalité : la bosse glisse de 150 Hz à 3,6 kHz, encadrée par un passe-haut et un passe-bas qui la suivent */
+      const fc=150*Math.pow(2,tone*4.6); pkf.frequency.value=fc; hpf.frequency.value=Math.max(30,fc/3.2); lpf.frequency.value=Math.min(16000,fc*3.5);
+      /* niveau rattrapé : égalé par le worklet (un peu en dessous, la fuzz écrasée paraît plus forte à énergie égale) ;
+         sans worklet, une estimation grossière */
+      const comp=match?0.8:0.12/(0.12+amt*0.9);
+      dry.gain.value=Math.cos(mix*Math.PI/2); mk.gain.value=Math.sin(mix*Math.PI/2)*comp;
+    }
+    return {out:sum,set,attach};
+  }
+
   /* bus */
   function bus(rev,dly,eq){
     const lvl=G(1), rq=G(1), br=G(1), dk=G(1), tm=G(1), gs=G(1), it=G(1), pn=PAN(0); lvl.connect(rq); rq.connect(br); br.connect(dk); dk.connect(tm); tm.connect(gs);
     /* égaliseur de la voix : un passe-haut pour laisser le grave au bourdon, une bosse ou un creux pour lui faire sa place */
-    let head=gs, hp=null, pk=null;
+    let head=gs, hp=null, pk=null, fz=null;
+    if(eq&&eq.fz){ fz=fuzzUnit(gs); head=fz.out; }
     if(eq&&eq.hp){ hp=ctx.createBiquadFilter(); hp.type="highpass"; hp.frequency.value=eq.hp; hp.Q.value=0.6; head.connect(hp); head=hp; }
     if(eq&&eq.pk){ pk=ctx.createBiquadFilter(); pk.type="peaking"; pk.frequency.value=eq.pk[0]; pk.gain.value=eq.pk[1]; pk.Q.value=eq.pk[2]||1; head.connect(pk); head=pk; }
     /* compression douce : la voix garde un niveau égal (le gain rattrape ce qu'elle perd) */
@@ -211,16 +247,17 @@ function buildEngine(ctx, S, o){
     head.connect(it); it.connect(pn); pn.connect(out);
     const rs=G(rev); it.connect(rs); rs.connect(eq&&eq.room?room:revHP); if(eq&&eq.room){ const rl=G(eq.longRev||0); it.connect(rl); rl.connect(revHP); }
     if(dly){const ds=G(dly); it.connect(ds); ds.connect(dIn);}
-    return {in:lvl, lvl, rq, br, dk, tm, gs, it, pn, hp, ens, eq:eq||{}};
+    return {in:lvl, lvl, rq, br, dk, tm, gs, it, pn, hp, ens, fz, eq:eq||{}};
   }
   /* le grave est au bourdon ; la mélodie a un peu de présence, les nappes un creux dans le bas-médium pour ne pas l'empâter, la percussion sa petite pièce */
-  const B={drone:bus(0.45,0.1,{pk:[2600,-2,0.8],ens:true,mono:true}), mel:bus(0.9,1,{hp:140,pk:[2800,2,0.9],comp:[-26,2.5,3]}), pad:bus(0.8,0.6,{hp:170,pk:[380,-3,1],comp:[-30,2,2],ens:true}), perc:bus(0.4,0,{hp:30,room:true,longRev:0.06}),
+  const B={drone:bus(0.45,0.1,{pk:[2600,-2,0.8],ens:true,mono:true,fz:true}), mel:bus(0.9,1,{hp:140,pk:[2800,2,0.9],comp:[-26,2.5,3]}), pad:bus(0.8,0.6,{hp:170,pk:[380,-3,1],comp:[-30,2,2],ens:true,fz:true}), perc:bus(0.4,0,{hp:30,room:true,longRev:0.06}),
     amb:bus(0.3,0,{hp:110}), loops:bus(0.9,0.8,{hp:190}), arp:bus(0.8,0.45,{hp:110}), plain:bus(0.95,0.2,{hp:80}), pend:bus(0.9,0.7,{hp:190}), bille:bus(0.85,0.6,{hp:180}), arbre:bus(0.95,0.45,{hp:120}), nuee:bus(1,0.5,{hp:200}), play:bus(0.85,0.9,{hp:60}), daw:bus(0.7,0.6,{hp:40})};
   /* une voix jouée à la basse garde son grave */
   function eqSync(){ const lo=(n,inst)=>{ const h=B[n].hp; if(h) h.frequency.value=inst?35:B[n].eq.hp; };
     lo("mel",S.mel.inst==="basse"||S.canon.inst==="basse"); lo("loops",S.loops.inst==="basse"); lo("pend",S.pend.inst==="basse"); lo("bille",S.bille&&S.bille.inst==="basse");
     lo("pad",S.pad.bassOct===0&&S.pad.bass>0.02); if(B.pad.hp&&S.pad.bassOct===0&&S.pad.bass>0.02) B.pad.hp.frequency.value=45; /* basse grave : le passe-haut des nappes la laisserait muette */
-    if(B.pad.ens) B.pad.ens.set(S.pad.timbre==="machine"); if(B.drone.ens) B.drone.ens.set(S.drone.timbre==="machine"); }
+    if(B.pad.ens) B.pad.ens.set(S.pad.timbre==="machine"); if(B.drone.ens) B.drone.ens.set(S.drone.timbre==="machine");
+    { const F=S.fuzz||{}, v=F.src||"les deux"; B.drone.fz.set(F,v!=="nappes"); B.pad.fz.set(F,v!=="bourdon"); } }
   const canonG=G(0); const lCanon=link(canonG,B.mel.it);
   /* liens entre voix : chaque note de la mélodie ouvre le filtre des nappes, qui se referme ensuite */
   const padF=ctx.createBiquadFilter(); padF.type="lowpass"; padF.Q.value=0.9; padF.frequency.value=20000; padF.connect(B.pad.lvl); B.pad.in=padF;
@@ -242,7 +279,14 @@ function buildEngine(ctx, S, o){
   /* mode économe : toutes les réverbérations passent par le réseau à 8 lignes (la « vivante », Jot et Chaigne), la moins chère mesurée :
      environ 0,7 s de calcul pour 20 s de musique, contre 2,4 à 3 s pour la plaque et la salle de Dattorro et 4 s pour la convolution longue.
      Les niveaux des trois sont déjà alignés ; l'export, toujours en qualité haute, garde la réverbération choisie. */
-  const algoR=()=>!fx?"lieu":o.lite?"vivante":(S.fx.algo==="lieu"||S.fx.algo==="plaque"||S.fx.algo==="salle"?S.fx.algo:"vivante");
+  const algoR=()=>!fx?"lieu":S.fx.algo==="chambres"?"chambres":o.lite?"vivante":(S.fx.algo==="lieu"||S.fx.algo==="plaque"||S.fx.algo==="salle"?S.fx.algo:"vivante");
+  /* chambres (d'après la pédale Rooms de Death By Audio) : le même réseau que la vivante, coloré par un des six modes ; il reste léger, donc permis en mode économe.
+     Les fréquences sont accordées : la crête se pose sur un harmonique de la tonique (octaves et quintes seulement, jamais de frottement),
+     le gong module à un multiple de la tonique, l'écho tombe sur une valeur de note du tempo. */
+  const RMODE={piece:1,echo:2,crete:3,porte:4,onde:5,gong:6};
+  const CRETE=[1,2,3,4,6,8,12,16,24], GONG=[0.5,1,1.5,2,3,4,6,8,12], ECHO=[1,1.5,2,3,4,6];
+  function roomsHz(){ const m=S.fx.rmode, f=clamp(S.fx.rfr===undefined?0.5:S.fx.rfr,0,1), r=freq(0); if(m==="crete") return r*CRETE[Math.round(f*(CRETE.length-1))]; if(m==="gong") return r*GONG[Math.round(f*(GONG.length-1))]; return 440; }
+  const roomsDt=()=>clamp(E*ECHO[Math.round(clamp(S.fx.rfr===undefined?0.5:S.fx.rfr,0,1)*(ECHO.length-1))],0.02,1.6);
   const vivante=()=>algoR()!=="lieu";
   function fxAttach(){
     if(fx||!ctx.__fx||typeof AudioWorkletNode==="undefined") return !!fx;
@@ -253,6 +297,7 @@ function buildEngine(ctx, S, o){
       const pl=mk("bourdon-plate",{processorOptions:{size:1}}), sa=mk("bourdon-plate",{processorOptions:{size:1.45}}), plG=G(1), saG=G(1); pl.connect(plG); plG.connect(wet); sa.connect(saG); saG.connect(wet);
       const gr=mk("bourdon-grain",{processorOptions:{seed:(seed^0x5EED6A)>>>0}}), grIn=G(1), grOut=G(0), grRev=G(0.6);
       grIn.connect(gr); gr.connect(grOut); grOut.connect(out); grOut.connect(grRev); grRev.connect(revIn);
+      [B.drone.fz,B.pad.fz].forEach(f=>f&&f.attach(()=>new AudioWorkletNode(ctx,"bourdon-match",{numberOfInputs:2,numberOfOutputs:1,outputChannelCount:[2],channelCount:2,channelCountMode:"explicit"})));
       fx={vb,vbG,pl,sa,plG,saG,lPl:link(revIn,pl),lSa:link(revIn,sa),gr,grOut,frozen:false,lVb:link(revIn,vb),src:{mel:[link(B.mel.it,grIn)],pad:[link(B.pad.it,grIn)],cycles:[link(B.loops.it,grIn),link(B.pend.it,grIn)]}};
       /* lieu procédural (Farnell) : il remplace la boucle de feu, le souffle du vent et les boucles de gouttes ; le lit de pluie reste */
       if(!o.lieuClassique&&want("amb")) try{
@@ -348,9 +393,13 @@ function buildEngine(ctx, S, o){
     if(fx){
       const rm=ROOMS[S.fx.room]||ROOMS.gen, T=clamp(S.fx.size,0.4,o.lite?5:9)/rm.dec, g=GR(), set=(nd,k,v)=>{ const p=nd.parameters.get(k); if(p) p.value=v; };
       const damp=clamp(0.12+0.75*S.fx.dark-0.3*(rm.br-1),0,1);
-      set(fx.vb,"decay",T); set(fx.vb,"damp",damp); set(fx.vb,"mod",S.fx.mod===undefined?0.5:S.fx.mod); set(fx.vb,"shimmer",S.fx.shim||0); set(fx.vb,"pre",rm.pre);
+      const ch=algoR()==="chambres", md=ch?(RMODE[S.fx.rmode]||1):0, rf=clamp(S.fx.rfr===undefined?0.5:S.fx.rfr,0,1);
+      /* pièce et porte : le premier bouton règle la couleur de la queue, comme sur la pédale */
+      const vDamp=(md===1||md===4)?clamp(damp+(0.5-rf)*0.8,0,1):damp;
+      set(fx.vb,"decay",T); set(fx.vb,"damp",vDamp); set(fx.vb,"mod",S.fx.mod===undefined?0.5:S.fx.mod); set(fx.vb,"shimmer",S.fx.shim||0); set(fx.vb,"pre",rm.pre);
+      set(fx.vb,"mode",md); set(fx.vb,"fr",rf); set(fx.vb,"dp",clamp(S.fx.rdp===undefined?0.3:S.fx.rdp,0,1)); set(fx.vb,"hz",roomsHz()); set(fx.vb,"dt",roomsDt());
       /* niveau : même énergie que la réponse à convolution (mesuré sur la réponse impulsionnelle du réseau) */
-      fx.vbG.gain.value=1/Math.sqrt(0.5*Math.pow(T,0.43)*Math.pow((1-0.78*damp)/0.61,1.35));
+      fx.vbG.gain.value=1/Math.sqrt(0.5*Math.pow(T,0.43)*Math.pow((1-0.78*vDamp)/0.61,1.35));
       [fx.pl,fx.sa].forEach(nd=>{ set(nd,"decay",T); set(nd,"damp",damp); set(nd,"pre",rm.pre); });
       fx.plG.gain.value=PLATE_G*Math.pow(T,-0.5); fx.saG.gain.value=HALL_G*Math.pow(T,-0.5);
       set(fx.gr,"dens",g.dens===undefined?0.45:g.dens); set(fx.gr,"size",g.size===undefined?0.5:g.size); set(fx.gr,"spread",g.spread===undefined?0.4:g.spread); set(fx.gr,"pitch",g.pitch===undefined?0.3:g.pitch);
@@ -370,7 +419,7 @@ function buildEngine(ctx, S, o){
     setLink(lWowIn,wow); setLink(lWowOut,wow); setLink(lWowBy,!wow);
     setLink(lHiss,S.fx.hiss>0.001);
     setLink(lRev,rev&&!vivante()); setLink(lDly,dly); setLink(lDout,dly);
-    if(fx){ const al=algoR(); setLink(fx.lVb,rev&&al==="vivante"); setLink(fx.lPl,rev&&al==="plaque"); setLink(fx.lSa,rev&&al==="salle"); const g=GR(), on=(g.mix||0)>0.001, src=g.src||"mel"; for(const k in fx.src) fx.src[k].forEach(l=>setLink(l,on&&(k===src||src==="tout"))); }
+    if(fx){ const al=algoR(); setLink(fx.lVb,rev&&(al==="vivante"||al==="chambres")); setLink(fx.lPl,rev&&al==="plaque"); setLink(fx.lSa,rev&&al==="salle"); const g=GR(), on=(g.mix||0)>0.001, src=g.src||"mel"; for(const k in fx.src) fx.src[k].forEach(l=>setLink(l,on&&(k===src||src==="tout"))); }
     setLink(lCanon,S.canon.lvl>0.001);
     { const nt=natv(), wa=want("amb")&&mach(); NATS.forEach(k=>setLink(natL[k],wa&&(nt[k]||0)>0.001)); setLink(lBird,wa&&(nt.oiseaux||0)>0.001); setLink(lBeast,wa&&(BEASTS.some(k=>(nt[k]||0)>0.001)||((S.amb.marque||0)>0.001&&(S.amb.marqueSon||"aucun")!=="aucun"))); }
     setLink(lMur,mach()&&S.amb.murmur>0.001); setLink(lFire,mach()&&S.amb.feu>0.001); setLink(lWind,mach()&&ventv()>0.001);

@@ -47,4 +47,24 @@ console.log('égaliseur de niveau de la fuzz');
     m.process([[ref,ref],[proc,proc]],[o]); if(b*N>sr*1.5) for(let i=0;i<N;i++){ eo+=o[0][i]*o[0][i]; er+=ref[i]*ref[i]; } }
   const d=10*Math.log10(eo/er); ck(Math.abs(d)<1,'une fuzz 46 dB plus forte revient au niveau du propre ('+d.toFixed(2)+' dB)'); }
 { const m=new M(), o=[new Float32Array(N),new Float32Array(N)], z=new Float32Array(N); for(let b=0;b<400;b++) m.process([[z,z],[z,z]],[o]); ck(o[0].every(x=>x===0)&&Number.isFinite(m.g),'silence : sortie nulle, gain stable'); }
+console.log('pédales d\'insert, écho zone rouge, ressort saturé');
+{ const P2=procs['bourdon-pedale'], Z=procs['bourdon-zr'], R=procs['bourdon-ressort'];
+  if(!P2||!Z||!R){ console.log('  ECHEC processeur absent'); fail++; }
+  else {
+  const runP=(C,opt,p,X)=>{ const v=new C({processorOptions:opt}), P={}; C.parameterDescriptors.forEach(d=>P[d.name]=[p[d.name]!==undefined?p[d.name]:d.defaultValue]);
+    const L=new Float32Array(X.length), Rr=new Float32Array(X.length); for(let b=0;b*N<X.length;b++){ const xi=X.subarray(b*N,b*N+N), o=[new Float32Array(N),new Float32Array(N)]; v.process([[xi,xi]],[o],P); L.set(o[0],b*N); Rr.set(o[1],b*N); } return {L,R:Rr}; };
+  const lv=(a,s0,s1)=>{ let t=0,c=0; for(let i=Math.floor(s0*sr);i<Math.floor(s1*sr);i++){ t+=a[i]*a[i]; c++; } return 10*Math.log10(t/c+1e-30); };
+  const Xp=sig(10,10), x0=lv(Xp,3,10);
+  const cas=[['fgun',{a:1,b:0.85}],['fgun',{e:1,a:0.7}],['cross',{a:0.2,c:1,b:1}],['bits',{a:0,b:0}],['bits',{a:1,b:1}],['filt',{a:0.3,b:1,c:0.5,d:1,e:1}]];
+  for(const [k,p] of cas){ const o=runP(P2,{kind:k},Object.assign({mix:1},p),Xp), d=lv(o.L,3,10)-x0; ck(o.L.every(Number.isFinite)&&Math.abs(d)<4,k+' '+JSON.stringify(p)+' : fini, niveau du son propre à 4 dB près ('+d.toFixed(1)+' dB)'); }
+  { const o=runP(P2,{kind:'fgun'},{mix:0},Xp); let e=0; for(let i=0;i<Xp.length;i++) e+=Math.abs(o.L[i]-Xp[i]); ck(e/Xp.length<1e-6,'mélange à zéro : le son passe intact'); }
+  { const Y=sig(12,6), q=runP(P2,{kind:'fgun'},{mix:1,a:0.8,b:0.9},Y), n=runP(P2,{kind:'fgun'},{mix:1,a:0.8,b:0.5},Y); ck(Number.isFinite(lv(q.L,7,11)),'porte : reste finie dans le silence'); }
+  const Y=sig(12,6);
+  { const o=runP(Z,{},{time:1,fb:1.05,shape:1,mdep:1,fuzz:1},Y); let pk=0; for(const x of o.L) pk=Math.max(pk,Math.abs(x)); ck(o.L.every(Number.isFinite)&&pk<1.5,'zone rouge à fond : s\'emballe sans exploser (crête '+pk.toFixed(2)+')'); }
+  { const B=new Float32Array(Math.ceil(2*sr/N)*N); for(let k=0;k<sr*0.1;k++) B[Math.floor(0.1*sr)+k]=0.2*Math.sin(2*Math.PI*3000*k/sr);
+    const e=(T)=>{ const o=runP(Z,{},{time:T,fb:0,mdep:0},B); return lv(o.L,0.12+T,0.18+T); }, c=e(0.2), l=e(1);
+    ck(l<c-6,'zone rouge : plus long, plus abîmé (un aigu à 3 kHz revient '+(c-l).toFixed(1)+' dB plus bas à 1 s qu\'à 0,2 s)'); }
+  { const o=runP(R,{},{alt:0.5,decay:0.6},Y); ck(o.L.every(Number.isFinite)&&lv(o.L,6.3,7.5)>-70&&lv(o.L,6.3,7.5)<lv(o.L,2,6),'ressort : une queue après le silence, plus basse que le son'); }
+  }
+}
 console.log(fail?'ECHEC pédales':'Pédales : tout passe'); process.exit(fail?1:0);

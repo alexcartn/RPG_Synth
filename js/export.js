@@ -94,7 +94,7 @@ async function renderOffline(Sx,dur,o,onProg){
   const ctx=new OfflineAudioContext(2,Math.ceil(sr*total),sr);
   if(typeof fxLoad==="function") await fxLoad(ctx);
   const eng=buildEngine(ctx,Sx,{solo:o.solo,noComp:o.noComp,record:o.record});
-  eng.start(0,o.loop?0.05:5,o.loop?0:total);
+  eng.start(0,o.fadeIn!==undefined?o.fadeIn:(o.loop?0.05:5),o.loop?0:total);
   eng.schedule(total);
   /* points de contrôle : le rendu s'interrompt brièvement pour annoncer sa progression */
   if(onProg&&ctx.suspend){

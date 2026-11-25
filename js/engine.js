@@ -121,7 +121,8 @@ function buildEngine(ctx, S, o){
   starts.push(wowL1,wowL2);
   const veil=ctx.createBiquadFilter(); veil.type="lowpass"; veil.Q.value=0.5;
   const master=G(0);
-  out.connect(sat); const voixEQ=ctx.createBiquadFilter(); voixEQ.type="peaking"; voixEQ.frequency.value=1900; voixEQ.Q.value=0.8; voixEQ.gain.value=0; veil.connect(voixEQ); voixEQ.connect(master);
+  /* point d'insertion sur tout le mélange, avant la patine */
+  const mI={iIn:G(1),iOut:G(1),chain:[],sig:""}; out.connect(mI.iIn); mI.iIn.connect(mI.iOut); mI.iOut.connect(sat); const voixEQ=ctx.createBiquadFilter(); voixEQ.type="peaking"; voixEQ.frequency.value=1900; voixEQ.Q.value=0.8; voixEQ.gain.value=0; veil.connect(voixEQ); voixEQ.connect(master);
   const lWowIn=link(sat,wowD), lWowOut=link(wowD,veil), lWowBy=link(sat,veil);
   const volG=G(1); volG.connect(o.dest||ctx.destination); /* téléphone : la sortie passe par un lecteur audio (arrière-plan) */
   const sleepG=G(1); sleepG.connect(volG);
@@ -193,6 +194,7 @@ function buildEngine(ctx, S, o){
      des graves profonds aux aigus criards) et Volume. Le circuit : plusieurs étages de gain, le filtre, puis un écrêtage dur.
      Fuzz au minimum, il ne reste que le filtre : la wah bloquée. Ici le volume est rattrapé tout seul, et un mélange
      permet de garder un peu du son propre. Elle se place sur le bourdon et les nappes, avant la réverbération, comme une pédale devant l'ampli. */
+  const PED_KINDS=["fgun","cross","bits","filt"]; /* ordre de la chaîne quand plusieurs pédales sont sur la même voix : les fuzz, les bits, puis le filtre */
   const FZ_SOFT=(()=>{ const n=2048, c=new Float32Array(n), b=0.15, t0=Math.tanh(b); for(let i=0;i<n;i++){ const x=i/(n-1)*2-1; c[i]=(Math.tanh(1.6*x+b)-t0)/(1+t0); } return c; })();
   const FZ_HARD=(()=>{ const n=2048, c=new Float32Array(n); for(let i=0;i<n;i++){ const x=(i/(n-1)*2-1)*1.25, a=Math.abs(x); c[i]=Math.sign(x)*(a<0.55?a:a>1.05?0.8:0.55+(a-0.55)-(a-0.55)*(a-0.55)); } return c; })();
   function fuzzUnit(src){
@@ -229,6 +231,8 @@ function buildEngine(ctx, S, o){
     /* égaliseur de la voix : un passe-haut pour laisser le grave au bourdon, une bosse ou un creux pour lui faire sa place */
     let head=gs, hp=null, pk=null, fz=null;
     if(eq&&eq.fz){ fz=fuzzUnit(gs); head=fz.out; }
+    /* point d'insertion des pédales (table de montage) : direct tant qu'aucune n'est posée sur cette voix */
+    const ins={iIn:G(1),iOut:G(1),chain:[],sig:""}; head.connect(ins.iIn); ins.iIn.connect(ins.iOut); head=ins.iOut;
     if(eq&&eq.hp){ hp=ctx.createBiquadFilter(); hp.type="highpass"; hp.frequency.value=eq.hp; hp.Q.value=0.6; head.connect(hp); head=hp; }
     if(eq&&eq.pk){ pk=ctx.createBiquadFilter(); pk.type="peaking"; pk.frequency.value=eq.pk[0]; pk.gain.value=eq.pk[1]; pk.Q.value=eq.pk[2]||1; head.connect(pk); head=pk; }
     /* compression douce : la voix garde un niveau égal (le gain rattrape ce qu'elle perd) */
@@ -249,7 +253,7 @@ function buildEngine(ctx, S, o){
     let ds=null; if(dly){ ds=G(dly); it.connect(ds); ds.connect(dIn); }
     /* envois : la table de montage les règle voix par voix, en multiple du dosage d'origine (1 = tel que réglé ici) */
     const send=(r,d)=>{ rs.gain.value=rev*r; if(rl) rl.gain.value=(eq.longRev||0)*r; if(ds) ds.gain.value=dly*d; };
-    return {in:lvl, lvl, rq, br, dk, tm, gs, it, pn, hp, ens, fz, send, eq:eq||{}};
+    return {in:lvl, lvl, rq, br, dk, tm, gs, it, pn, hp, ens, fz, send, ins, eq:eq||{}};
   }
   /* le grave est au bourdon ; la mélodie a un peu de présence, les nappes un creux dans le bas-médium pour ne pas l'empâter, la percussion sa petite pièce */
   const B={drone:bus(0.45,0.1,{pk:[2600,-2,0.8],ens:true,mono:true,fz:true}), mel:bus(0.9,1,{hp:140,pk:[2800,2,0.9],comp:[-26,2.5,3]}), pad:bus(0.8,0.6,{hp:170,pk:[380,-3,1],comp:[-30,2,2],ens:true,fz:true}), perc:bus(0.4,0,{hp:30,room:true,longRev:0.06}),
@@ -299,8 +303,12 @@ function buildEngine(ctx, S, o){
       const pl=mk("bourdon-plate",{processorOptions:{size:1}}), sa=mk("bourdon-plate",{processorOptions:{size:1.45}}), plG=G(1), saG=G(1); pl.connect(plG); plG.connect(wet); sa.connect(saG); saG.connect(wet);
       const gr=mk("bourdon-grain",{processorOptions:{seed:(seed^0x5EED6A)>>>0}}), grIn=G(1), grOut=G(0), grRev=G(0.6);
       grIn.connect(gr); gr.connect(grOut); grOut.connect(out); grOut.connect(grRev); grRev.connect(revIn);
+      /* pédales d'insert (une de chaque genre, posée sur une voix ou sur le mélange), écho zone rouge et ressort saturé */
+      const ped={}; PED_KINDS.forEach(k=>{ ped[k]=mk("bourdon-pedale",{processorOptions:{kind:k}}); });
+      const zr=mk("bourdon-zr"), zrG=G(0); zr.connect(zrG); zrG.connect(out);
+      const spr=mk("bourdon-ressort"), sprG=G(0); spr.connect(sprG); sprG.connect(out);
       [B.drone.fz,B.pad.fz].forEach(f=>f&&f.attach(()=>new AudioWorkletNode(ctx,"bourdon-match",{numberOfInputs:2,numberOfOutputs:1,outputChannelCount:[2],channelCount:2,channelCountMode:"explicit"})));
-      fx={vb,vbG,pl,sa,plG,saG,lPl:link(revIn,pl),lSa:link(revIn,sa),gr,grOut,frozen:false,lVb:link(revIn,vb),src:{mel:[link(B.mel.it,grIn)],pad:[link(B.pad.it,grIn)],cycles:[link(B.loops.it,grIn),link(B.pend.it,grIn)]}};
+      fx={ped,zr,zrG,lZr:link(dIn,zr),spr,sprG,lSpr:link(revHP,spr),vb,vbG,pl,sa,plG,saG,lPl:link(revIn,pl),lSa:link(revIn,sa),gr,grOut,frozen:false,lVb:link(revIn,vb),src:{mel:[link(B.mel.it,grIn)],pad:[link(B.pad.it,grIn)],cycles:[link(B.loops.it,grIn),link(B.pend.it,grIn)]}};
       /* lieu procédural (Farnell) : il remplace la boucle de feu, le souffle du vent et les boucles de gouttes ; le lit de pluie reste */
       if(!o.lieuClassique&&want("amb")) try{
         const li=new AudioWorkletNode(ctx,"bourdon-lieu",{numberOfInputs:0,numberOfOutputs:3,outputChannelCount:[2,2,2],processorOptions:{seed:(seed^0x11E0)>>>0}});
@@ -417,12 +425,32 @@ function buildEngine(ctx, S, o){
     hissG.gain.value=S.fx.hiss*0.03;
     applyLinks();
   }
+  /* pédales : chaque genre au plus une fois, sur la voix ou le mélange choisi ; les points d'insertion qui changent sont recâblés en deux temps
+     (tout débrancher, puis rebrancher) pour qu'une pédale qui passe d'une voix à l'autre ne soit jamais coupée par l'ancienne */
+  function pedRoute(){
+    if(!fx||!fx.ped) return;
+    const hosts=Object.assign({master:mI},Object.fromEntries(Object.keys(B).map(n=>[n,B[n].ins]))), want={};
+    PED_KINDS.forEach(k=>{ const P=S[k]; if(!P||!P.src||P.src==="aucune"||!((P.mix||0)>0.001)||!hosts[P.src]) return; (want[P.src]=want[P.src]||[]).push(k); });
+    const ch=Object.keys(hosts).filter(n=>hosts[n].sig!==(want[n]||[]).join(","));
+    ch.forEach(n=>{ const h=hosts[n]; try{ h.iIn.disconnect(); }catch(e){} h.chain.forEach(k=>{ try{ fx.ped[k].disconnect(); }catch(e){} }); });
+    ch.forEach(n=>{ const h=hosts[n], L=want[n]||[]; let prev=h.iIn; L.forEach(k=>{ prev.connect(fx.ped[k]); prev=fx.ped[k]; }); prev.connect(h.iOut); h.chain=L; h.sig=L.join(","); });
+  }
+  function pedParams(){
+    if(!fx||!fx.ped) return;
+    const set=(nd,k,v)=>{ const p=nd.parameters.get(k); if(p) p.value=v; }, num=(v,d)=>v===undefined?d:+v;
+    const M={fgun:F=>[F.amt,F.bias,F.dens,F.filt,F.mode==="oscillation"?1:0],cross:F=>[F.freq,F.res,F.gain,F.bal,0],bits:F=>[F.rate,F.bits,0,0,0],filt:F=>[F.freq,F.res,F.mode==="bande"?0.5:F.mode==="haut"?1:0,F.drive,F.sweep]};
+    PED_KINDS.forEach(k=>{ const F=S[k]||{}, v=M[k](F), nd=fx.ped[k]; set(nd,"mix",clamp(num(F.mix,0.6),0,1)); ["a","b","c","d","e"].forEach((n,i)=>set(nd,n,clamp(num(v[i],0.5),0,1))); });
+    const Z=S.zr||{}; set(fx.zr,"time",clamp(E*num(Z.div,2),0.02,1.6)); set(fx.zr,"fb",clamp(num(Z.fb,0.45),0,1.05)); set(fx.zr,"mdep",num(Z.mdep,0.3)); set(fx.zr,"mspd",num(Z.mspd,0.3)); set(fx.zr,"shape",Z.shape==="carre"?1:0); set(fx.zr,"fuzz",num(Z.fuzz,0));
+    fx.zrG.gain.value=clamp(num(Z.mix,0),0,1);
+    const R=S.spr||{}; set(fx.spr,"alt",num(R.alt,0.3)); set(fx.spr,"tone",R.tone==="clair"?1:0); set(fx.spr,"decay",num(R.decay,0.5));
+    fx.sprG.gain.value=clamp(num(R.mix,0),0,1)*1.2;
+  }
   function applyLinks(){
     const wow=S.fx.wow>0.001, rev=S.fx.rev>0.001, dly=S.fx.dly>0.001;
     setLink(lWowIn,wow); setLink(lWowOut,wow); setLink(lWowBy,!wow);
     setLink(lHiss,S.fx.hiss>0.001);
     setLink(lRev,rev&&!vivante()); setLink(lDly,dly); setLink(lDout,dly);
-    if(fx){ const al=algoR(); setLink(fx.lVb,rev&&(al==="vivante"||al==="chambres")); setLink(fx.lPl,rev&&al==="plaque"); setLink(fx.lSa,rev&&al==="salle"); const g=GR(), on=(g.mix||0)>0.001, src=g.src||"mel"; for(const k in fx.src) fx.src[k].forEach(l=>setLink(l,on&&(k===src||src==="tout"))); }
+    if(fx){ pedParams(); pedRoute(); setLink(fx.lZr,((S.zr&&S.zr.mix)||0)>0.001); setLink(fx.lSpr,((S.spr&&S.spr.mix)||0)>0.001); const al=algoR(); setLink(fx.lVb,rev&&(al==="vivante"||al==="chambres")); setLink(fx.lPl,rev&&al==="plaque"); setLink(fx.lSa,rev&&al==="salle"); const g=GR(), on=(g.mix||0)>0.001, src=g.src||"mel"; for(const k in fx.src) fx.src[k].forEach(l=>setLink(l,on&&(k===src||src==="tout"))); }
     setLink(lCanon,S.canon.lvl>0.001);
     { const nt=natv(), wa=want("amb")&&mach(); NATS.forEach(k=>setLink(natL[k],wa&&(nt[k]||0)>0.001)); setLink(lBird,wa&&(nt.oiseaux||0)>0.001); setLink(lBeast,wa&&(BEASTS.some(k=>(nt[k]||0)>0.001)||((S.amb.marque||0)>0.001&&(S.amb.marqueSon||"aucun")!=="aucun"))); }
     setLink(lMur,mach()&&S.amb.murmur>0.001); setLink(lFire,mach()&&S.amb.feu>0.001); setLink(lWind,mach()&&ventv()>0.001);

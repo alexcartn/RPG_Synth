@@ -258,6 +258,8 @@ const INST_OPTS=[["luth","Luth"],["harpe","Harpe"],["flute","Flûte"],["carillon
 const DRIFT_OPTS=[["none","Rien"],["filtre","Éclat du bourdon"],["reverb","Réverbération"],["densite","Densité de la mélodie"],["pan","Place de la mélodie (pan)"],["tension","Tension"],["voile","Voile (aigus)"],["grain","Nuage de grains"]];
 /* seconde cible d'une dérive : la même liste, dans le même sens puis à l'envers */
 const DRIFT2_OPTS=DRIFT_OPTS.concat(DRIFT_OPTS.slice(1).map(([k,l])=>["-"+k,l+", à l'envers"]));
+/* où poser une pédale : une voix, ou tout le mélange */
+const PED_SRC=[["aucune","Débranchée"],["drone","Bourdon"],["mel","Mélodie et canon"],["pad","Nappes"],["arp","Arpège"],["perc","Percussion"],["plain","Plain-chant"],["loops","Boucles"],["pend","Pendules"],["bille","Billes"],["arbre","Arbre"],["nuee","Nuée"],["master","Tout le mélange"]];
 const SCALE_OPTS=SCALE_GROUPS.map(([g,l])=>[g,l.map(([k,n])=>[k,n])]);
 const UI=[
  {num:"I", title:"Fondations", fr:"", sub:"Dans quoi on joue : tonalité, gammes, tempo et mesure. Le reste se pose dessus.", groups:[
@@ -485,6 +487,43 @@ const UI=[
    {k:"fuzz.amt",type:"range",label:"Fuzz : gain",min:0,max:1,step:0.01,fmt:pct,hint:"Du simple filtre (tout en bas, la wah bloquée) à l'amplificateur, à la saturation, puis à la fuzz pleine. Le volume est rattrapé tout seul."},
    {k:"fuzz.tone",type:"range",label:"Fuzz : tonalité",min:0,max:1,step:0.01,fmt:pct,hint:"Le filtre de la pédale : des graves profonds (à gauche) aux aigus criards (à droite)."},
    {k:"fuzz.src",type:"select",label:"Fuzz : sur quelles voix",opts:[["les deux","Bourdon et nappes"],["bourdon","Bourdon seul"],["nappes","Nappes seules"]]}]},
+  {fin:"Pédales sur une voix", items:[
+   {k:"fgun.src",type:"select",label:"Fuzz à porte : sur",opts:PED_SRC,hint:"D'après la Supersonic Fuzz Gun de Death By Audio : une fuzz dont la porte crache sur les fins de note, ou qui oscille toute seule. Une seule fuzz à porte : choisis la voix, ou tout le mélange."},
+   {k:"fgun.mix",type:"range",label:"Fuzz à porte : mélange",min:0,max:1,step:0.01,fmt:pct},
+   {k:"fgun.amt",type:"range",label:"Fuzz à porte : fuzz",min:0,max:1,step:0.01,fmt:pct},
+   {k:"fgun.bias",type:"range",label:"Fuzz à porte : biais",min:0,max:1,step:0.01,fmt:pct,hint:"Le transistor déréglé : loin du milieu, l'écrêtage devient bancal et la porte crache davantage."},
+   {k:"fgun.dens",type:"range",label:"Fuzz à porte : densité",min:0,max:1,step:0.01,fmt:pct,hint:"Une bosse résonante avant l'écrêtage, de 150 Hz à 2,4 kHz ; en mode oscillation, la hauteur du sifflement."},
+   {k:"fgun.filt",type:"range",label:"Fuzz à porte : filtre",min:0,max:1,step:0.01,fmt:pct,hint:"Le passe-bas de sortie, de 800 Hz à 12,8 kHz."},
+   {k:"fgun.mode",type:"select",label:"Fuzz à porte : mode",opts:[["porte","Porte"],["oscillation","Oscillation"]]},
+   {k:"cross.src",type:"select",label:"Fuzz à deux bandes : sur",opts:PED_SRC,hint:"D'après la Crossover Fuzz de Death By Audio : le grave et l'aigu séparés, chacun saturé de son côté, avec une résonance."},
+   {k:"cross.mix",type:"range",label:"Fuzz à deux bandes : mélange",min:0,max:1,step:0.01,fmt:pct},
+   {k:"cross.freq",type:"range",label:"Fuzz à deux bandes : croisement",min:0,max:1,step:0.01,fmt:pct,hint:"La fréquence où le grave et l'aigu se séparent, de 60 Hz à 6 kHz."},
+   {k:"cross.res",type:"range",label:"Fuzz à deux bandes : résonance",min:0,max:1,step:0.01,fmt:pct},
+   {k:"cross.gain",type:"range",label:"Fuzz à deux bandes : gain",min:0,max:1,step:0.01,fmt:pct},
+   {k:"cross.bal",type:"range",label:"Fuzz à deux bandes : équilibre",min:0,max:1,step:0.01,fmt:pct,hint:"À gauche le grave saturé, à droite l'aigu."},
+   {k:"bits.src",type:"select",label:"8 bits : sur",opts:PED_SRC,hint:"D'après la Robot de Death By Audio : moins d'échantillons et moins de bits, le repliement des vieilles puces."},
+   {k:"bits.mix",type:"range",label:"8 bits : mélange",min:0,max:1,step:0.01,fmt:pct},
+   {k:"bits.rate",type:"range",label:"8 bits : fréquence de la puce",min:0,max:1,step:0.01,fmt:pct,hint:"De 400 Hz (tout se replie) à 19 kHz (presque propre)."},
+   {k:"bits.bits",type:"range",label:"8 bits : finesse",min:0,max:1,step:0.01,fmt:pct,hint:"De 2 à 12 bits."},
+   {k:"filt.src",type:"select",label:"Filtre résonant : sur",opts:PED_SRC,hint:"D'après l'Evil Filter de Death By Audio : passe-bas, passe-bande ou passe-haut, résonance jusqu'au sifflement, un drive avant le filtre, et un balayage lent."},
+   {k:"filt.mix",type:"range",label:"Filtre résonant : mélange",min:0,max:1,step:0.01,fmt:pct},
+   {k:"filt.freq",type:"range",label:"Filtre résonant : fréquence",min:0,max:1,step:0.01,fmt:pct,hint:"De 40 Hz à 10 kHz."},
+   {k:"filt.res",type:"range",label:"Filtre résonant : résonance",min:0,max:1,step:0.01,fmt:pct},
+   {k:"filt.mode",type:"select",label:"Filtre résonant : type",opts:[["bas","Passe-bas"],["bande","Passe-bande"],["haut","Passe-haut"]]},
+   {k:"filt.drive",type:"range",label:"Filtre résonant : drive",min:0,max:1,step:0.01,fmt:pct},
+   {k:"filt.sweep",type:"range",label:"Filtre résonant : balayage",min:0,max:1,step:0.01,fmt:pct,hint:"La fréquence monte et descend lentement (un tour en 14 s), jusqu'à deux octaves de chaque côté."}]},
+  {fin:"Écho zone rouge et ressort saturé", items:[
+   {k:"zr.mix",type:"range",label:"Écho zone rouge",min:0,max:1,step:0.01,fmt:pct,hint:"D'après l'Echo Dream 2 et la Micro Dream de Death By Audio : il reçoit les mêmes envois que l'écho. Plus il est long, plus la puce est poussée : grain, repliement, souffle."},
+   {k:"zr.div",type:"select",label:"Écho zone rouge : valeur",opts:[[1,"Croche"],[1.5,"Croche pointée"],[2,"Noire"],[3,"Noire pointée"],[4,"Blanche"],[6,"Blanche pointée"]],num:true},
+   {k:"zr.fb",type:"range",label:"Écho zone rouge : répétitions",min:0,max:1.05,step:0.01,fmt:pct,hint:"Au-delà de 100 %, il s'emballe et oscille, la saturation de la boucle le retient."},
+   {k:"zr.mdep",type:"range",label:"Écho zone rouge : profondeur",min:0,max:1,step:0.01,fmt:pct},
+   {k:"zr.mspd",type:"range",label:"Écho zone rouge : vitesse",min:0,max:1,step:0.01,fmt:pct},
+   {k:"zr.shape",type:"select",label:"Écho zone rouge : forme",opts:[["sinus","Sinus"],["carre","Carré"]]},
+   {k:"zr.fuzz",type:"range",label:"Écho zone rouge : fuzz",min:0,max:1,step:0.01,fmt:pct,hint:"Une fuzz sur les répétitions."},
+   {k:"spr.mix",type:"range",label:"Ressort saturé",min:0,max:1,step:0.01,fmt:pct,hint:"D'après la Reverberation Machine de Death By Audio : trois ressorts d'ampli, poussés dans le rouge. Il reçoit les mêmes envois que la grande salle."},
+   {k:"spr.alt",type:"range",label:"Ressort saturé : altitude",min:0,max:1,step:0.01,fmt:pct,hint:"La saturation à l'entrée et à la sortie des ressorts."},
+   {k:"spr.tone",type:"select",label:"Ressort saturé : couleur",opts:[["sombre","Sombre"],["clair","Clair"]]},
+   {k:"spr.decay",type:"range",label:"Ressort saturé : durée",min:0,max:1,step:0.01,fmt:pct}]},
   {h:"Patine", hf:"patine de bande", items:[
    {k:"fx.sat",type:"range",label:"Saturation",min:0,max:1,step:0.01,fmt:pct},
    {k:"fx.wow",type:"range",label:"Ondulation (wow et flutter)",min:0,max:1,step:0.01,fmt:pct},

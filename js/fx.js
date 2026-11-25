@@ -494,6 +494,137 @@ function fxWorkletBody(){
     }
   }
   registerProcessor("bourdon-match",Match);
+
+  /* pédales d'insert, d'après Death By Audio : une seule classe, le genre choisi à la création.
+     Paramètres communs : mix (mélange, en puissance constante) et a, b, c, d, e (0 à 1), dont le sens change avec le genre.
+     fgun (Supersonic Fuzz Gun) : a fuzz, b biais, c densité (bosse résonante avant l'écrêtage ; en oscillation, sa fréquence), d filtre de sortie, e 0 porte / 1 oscillation.
+     cross (Crossover Fuzz) : a fréquence de croisement, b résonance, c gain, d équilibre grave/aigu ; chaque bande est saturée à part.
+     bits (Robot) : a fréquence d'échantillonnage (400 Hz à 19 kHz), b nombre de bits (2 à 12) : le repliement des vieilles puces.
+     filt (Evil Filter) : a fréquence, b résonance (jusqu'au sifflement), c 0 passe-bas / 0,5 passe-bande / 1 passe-haut, d drive avant le filtre, e balayage lent.
+     Le niveau du son traité est égalé en continu sur le son propre (énergie suivie sur une demi-seconde), comme la fuzz. */
+  class Pedal extends AudioWorkletProcessor{
+    static get parameterDescriptors(){ return [kr("mix",0.6,0,1),kr("a",0.5,0,1),kr("b",0.5,0,1),kr("c",0.5,0,1),kr("d",0.5,0,1),kr("e",0,0,1)]; }
+    constructor(o){
+      super(); this.kind=(o&&o.processorOptions&&o.processorOptions.kind)||"fgun";
+      this.s=[new Float32Array(8),new Float32Array(8)]; this.er=0; this.ep=0; this.g=1; this.al=1-Math.exp(-1/(0.5*sampleRate));
+      this.ph=0; this.lfo=0; this.env=[0,0]; this.envS=[0,0]; this.gg=[1,1]; this.hold=[0,0]; this.hc=0; this.dc=[0,0]; this.dcx=[0,0];
+    }
+    /* filtre à état variable (forme trapézoïdale), état dans st[i], st[i+1] ; rend passe-bas, passe-bande, passe-haut */
+    svf(st,i,x,gw,k){ const a1=1/(1+gw*(gw+k)), a2=gw*a1, a3=gw*a2, v3=x-st[i+1], v1=a1*st[i]+a2*v3, v2=st[i+1]+a2*st[i]+a3*v3; st[i]=2*v1-st[i]; st[i+1]=2*v2-st[i+1]; return [v2,v1,x-k*v1-v2]; }
+    process(inputs,outputs,P){
+      const inp=inputs[0], out=outputs[0], n=out[0].length, sr=sampleRate;
+      if(!inp||!inp[0]){ for(const ch of out) ch.fill(0); return true; }
+      const mix=P.mix[0], A=P.a[0], Bp=P.b[0], C=P.c[0], Dp=P.d[0], Ep=P.e[0], wet=Math.sin(mix*Math.PI/2), dry=Math.cos(mix*Math.PI/2);
+      const nc=Math.min(out.length,2), K=this.kind;
+      /* réglages du bloc */
+      let gw=0,k=1,G=1,fo=1,bias=0,thr=0,gw2=0,shInc=0,q=1,mode=0;
+      if(K==="fgun"){ const fc=150*Math.pow(2,C*4); gw=Math.tan(Math.PI*fc/sr); k=1/(0.7+6*C); G=2*Math.pow(10,A*2.4); fo=1-Math.exp(-2*Math.PI*800*Math.pow(2,Dp*4)/sr); bias=(Bp-0.5)*1.2; thr=0.12+0.9*Math.abs(Bp-0.5); this.ph+=0; }
+      else if(K==="cross"){ const fc=60*Math.pow(100,A); gw=Math.tan(Math.PI*Math.min(fc,sr*0.4)/sr); gw2=Math.tan(Math.PI*Math.min(fc*1.5,sr*0.45)/sr); k=1/(0.7+9.3*Bp*Bp); G=1+199*C*C; }
+      else if(K==="bits"){ shInc=Math.min(1,400*Math.pow(2,A*5.57)/sr); q=Math.pow(2,2+Math.round(Bp*10)-1); } /* les pas se règlent sur le niveau du moment : même un son faible garde ses marches */
+      else if(K==="filt"){ this.lfo+=2*Math.PI*0.07*n/sr; if(this.lfo>6.2831853) this.lfo-=6.2831853; const fc=40*Math.pow(250,A)*Math.pow(2,2*Ep*Math.sin(this.lfo)); gw=Math.tan(Math.PI*Math.min(fc,sr*0.45)/sr); k=1/(0.5+24.5*Bp*Bp); G=1+19*Dp*Dp; mode=C<0.25?0:C<0.75?1:2; }
+      const oscInc=2*Math.PI*(75*Math.pow(2,C*4))/sr, osc=K==="fgun"&&Ep>=0.5;
+      let er=this.er, ep=this.ep, g=this.g; const al=this.al;
+      for(let s=0;s<n;s++){
+        let xe=0, ye=0; const sn=osc?Math.sin(this.ph):0; if(osc){ this.ph+=oscInc; if(this.ph>6.2831853) this.ph-=6.2831853; }
+        for(let ch=0;ch<nc;ch++){
+          const x=(inp[ch]||inp[0])[s], st=this.s[ch]; let y=x;
+          if(K==="fgun"){
+            const f=this.svf(st,0,x,gw,k); let z=(x+2*C*f[1])*G+bias+(osc?0.35*sn:0);
+            z=z>1?1:z<-1?-1:z;
+            /* porte : elle s'ouvre sur l'attaque et se ferme vite quand le son retombe, d'où le crachotement */
+            const a=Math.abs(x); this.env[ch]+=(a-this.env[ch])*(a>this.env[ch]?0.02:0.0015); this.envS[ch]+=(this.env[ch]-this.envS[ch])*0.00002;
+            if(!osc){ const open=this.env[ch]>this.envS[ch]*thr+1e-5; this.gg[ch]+=((open?1:0)-this.gg[ch])*(open?0.05:0.02); z*=this.gg[ch]; }
+            st[2]+=(z-st[2])*fo; st[3]+=(st[2]-st[3])*fo; y=st[3];
+          } else if(K==="cross"){
+            const lo=this.svf(st,0,x,gw,k)[0], hi=this.svf(st,2,x,gw2,k)[2];
+            y=(1-Dp)*Math.tanh(G*lo)+Dp*Math.tanh(G*hi);
+          } else if(K==="bits"){
+            const a=Math.abs(x); st[2]=a>st[2]?a:st[2]*0.99995+1e-7; st[1]+=shInc; if(st[1]>=1){ st[1]-=1; const e=st[2]||1e-3; st[0]=Math.round(x/e*q)/q*e; } y=st[0];
+          } else if(K==="filt"){
+            const xd=G>1.01?Math.tanh(G*x)/Math.tanh(G):x, f=this.svf(st,0,xd+(Bp>0.92?1e-4*(Math.random()-0.5):0),gw,k);
+            y=f[mode]; y=y>1.5?1.5:y<-1.5?-1.5:y;
+          }
+          /* sans composante continue */
+          const d=y-this.dcx[ch]+0.995*this.dc[ch]; this.dcx[ch]=y; this.dc[ch]=d; y=d;
+          xe+=x*x; ye+=y*y; st[7]=y;
+        }
+        er+=(xe/nc-er)*al; ep+=(ye/nc-ep)*al;
+        if((s&31)===0&&er>1e-10&&ep>1e-10){ const t=0.85*Math.sqrt(er/ep); g+=((t<0.03?0.03:t>12?12:t)-g)*0.05; }
+        for(let ch=0;ch<out.length;ch++){ const x=(inp[Math.min(ch,inp.length-1)]||inp[0])[s], y=this.s[Math.min(ch,nc-1)][7]; out[ch][s]=dry*x+wet*g*y; }
+      }
+      this.er=er; this.ep=ep; this.g=g; return true;
+    }
+  }
+  registerProcessor("bourdon-pedale",Pedal);
+
+  /* écho zone rouge, d'après l'Echo Dream 2 et la Micro Dream : plus le temps est long, plus la puce est poussée,
+     d'où une ligne qui s'échantillonne plus bas, s'assombrit et souffle ; la réinjection sature doucement et peut monter jusqu'à l'oscillation ;
+     modulation sinus ou carrée ; une fuzz après l'écho, sur les répétitions. */
+  class EchoZR extends AudioWorkletProcessor{
+    static get parameterDescriptors(){ return [kr("time",0.4,0.02,1.6),kr("fb",0.45,0,1.05),kr("mdep",0.3,0,1),kr("mspd",0.3,0,1),kr("shape",0,0,1),kr("fuzz",0,0,1)]; }
+    constructor(){ super(); this.size=1<<17; this.buf=new Float32Array(this.size); this.w=0; this.lp=0; this.hold=0; this.hc=0; this.ph=0; this.rnd=12345; this.quiet=1e9; this.dm=0; }
+    process(inputs,outputs,P){
+      const inp=inputs[0], out=outputs[0], n=out[0].length, sr=sampleRate, iL=inp&&inp[0], iR=inp&&(inp[1]||inp[0]);
+      if(!iL&&this.quiet>sr*8) { for(const ch of out) ch.fill(0); return true; }
+      const T=P.time[0], fb=P.fb[0], deg=Math.max(0,Math.min(1,(T-0.25)/0.75)), hInc=1/(1+deg*5), lpc=0.5-0.42*deg, nz=0.004*deg;
+      const dep=P.mdep[0]*0.012*sr, spd=0.1*Math.pow(60,P.mspd[0]), sq=P.shape[0]>0.5, fz=P.fuzz[0], fG=1+fz*25, fzc=t=>t*(1-fz)+fz*0.15*Math.tanh(fG*t);
+      const M=this.size-1, b=this.buf; let peak=0;
+      for(let s=0;s<n;s++){
+        const x=iL?(iL[s]+iR[s])*0.5:0;
+        this.ph+=2*Math.PI*spd/sr; if(this.ph>6.2831853) this.ph-=6.2831853;
+        let m=Math.sin(this.ph); if(sq) m=Math.max(-1,Math.min(1,m*8));
+        this.dm+=(m-this.dm)*0.002;
+        const d=Math.max(2,T*sr+dep*(1+this.dm)), rp=this.w-d, i0=Math.floor(rp), fr=rp-i0;
+        let y=b[i0&M]+(b[(i0+1)&M]-b[i0&M])*fr;
+        /* la puce poussée : échantillonnée plus bas, assombrie, avec du souffle */
+        this.hc+=hInc; if(this.hc>=1){ this.hc-=1; this.hold=y; } y=this.hold;
+        this.lp+=(y-this.lp)*lpc; y=this.lp;
+        this.rnd=(this.rnd*1103515245+12345)&0x7fffffff; y+=nz*(this.rnd/0x7fffffff-0.5);
+        const v=x+fb*y; b[this.w]=v>1.2?1.2:v<-1.2?-1.2:Math.tanh(v);
+        this.w=(this.w+1)&M;
+        let o=fz>0.01?fzc(y):y;
+        const rpR=rp-0.007*sr, j=Math.floor(rpR); let yr=b[j&M];
+        if(fz>0.01) yr=fzc(yr);
+        out[0][s]=o; if(out[1]) out[1][s]=yr;
+        const a=o<0?-o:o; if(a>peak) peak=a;
+      }
+      if(iL||peak>1e-5) this.quiet=0; else this.quiet+=n;
+      return true;
+    }
+  }
+  registerProcessor("bourdon-zr",EchoZR);
+
+  /* ressort saturé, d'après la Reverberation Machine : trois ressorts (une ligne bouclée chacun, longue de 33 à 46 ms),
+     dont la boucle passe par six passe-tout du premier ordre (la dispersion qui fait le « boing »), amortie, sombre ou claire ;
+     l'altitude sature l'entrée et la sortie. */
+  class Spring extends AudioWorkletProcessor{
+    static get parameterDescriptors(){ return [kr("alt",0.3,0,1),kr("tone",0,0,1),kr("decay",0.5,0,1)]; }
+    constructor(){ super(); const k=sampleRate/44100; this.len=[1455,1720,2030].map(x=>Math.round(x*k)); this.b=this.len.map(l=>new Float32Array(l+8)); this.w=[0,0,0];
+      this.ap=this.len.map(()=>new Float32Array(12)); this.lp=[0,0,0]; this.hp=0; this.quiet=1e9; }
+    process(inputs,outputs,P){
+      const inp=inputs[0], out=outputs[0], n=out[0].length, sr=sampleRate, iL=inp&&inp[0], iR=inp&&(inp[1]||inp[0]);
+      if(!iL&&this.quiet>sr*6){ for(const ch of out) ch.fill(0); return true; }
+      const alt=P.alt[0], dG=1+alt*8, T=1.5+P.decay[0]*4, lc=P.tone[0]>0.5?0.6:0.22, oG=1+alt*2;
+      const g=this.len.map(l=>Math.pow(10,-3*l/(T*sr))), A=0.62; let peak=0;
+      for(let s=0;s<n;s++){
+        let x=iL?(iL[s]+iR[s])*0.5:0;
+        this.hp+=(x-this.hp)*0.02; x=x-this.hp; x=Math.tanh(dG*x)/Math.sqrt(dG);
+        const y=[0,0,0];
+        for(let i=0;i<3;i++){
+          const L=this.len[i], bf=this.b[i]; let r=this.w[i]-L; if(r<0) r+=L+8; let v=bf[r];
+          const ap=this.ap[i];
+          for(let q=0;q<6;q++){ const xp=ap[2*q], yp=ap[2*q+1], o=-A*v+xp+A*yp; ap[2*q]=v; ap[2*q+1]=o; v=o; }
+          this.lp[i]+=(v-this.lp[i])*lc; v=this.lp[i];
+          y[i]=v; bf[this.w[i]]=x+g[i]*v; this.w[i]=(this.w[i]+1)%(L+8);
+        }
+        const l=Math.tanh(oG*(y[0]+0.6*y[1]))/oG, r=Math.tanh(oG*(y[2]+0.6*y[1]))/oG;
+        out[0][s]=l; if(out[1]) out[1][s]=r; const a=l<0?-l:l; if(a>peak) peak=a;
+      }
+      if(iL||peak>1e-5) this.quiet=0; else this.quiet+=n;
+      return true;
+    }
+  }
+  registerProcessor("bourdon-ressort",Spring);
 }
 
 /* charge les processeurs dans un contexte ; la promesse rend true s'ils sont disponibles.

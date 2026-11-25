@@ -179,6 +179,17 @@ setTimeout(async()=>{
  // toggle ring note, libre
  d.querySelectorAll('.note-g')[3].dispatchEvent(new w.Event('click'));
  console.log('scale0 apres clic',w.eval('S.scales[0]'),'custom',w.eval('JSON.stringify(S.custom)'));
+ // table de montage : exhaustive (chaque réglage de Composer y a sa place), et chaque bloc s'ouvre
+ {const miss=JSON.parse(w.eval('JSON.stringify(montMissing())'));
+  if(miss.length){ console.log('ECHEC table de montage : réglages sans place',miss); process.exit(1); }
+  d.getElementById('montBtn').click(); await new Promise(r=>setTimeout(r,200));
+  const cards=[...d.querySelectorAll('#montage .mt-card')]; cards.forEach(c=>c.click());
+  ['mtAddVoice','mtAddSpace','mtAddMvt'].forEach(id=>d.getElementById(id).click());
+  d.querySelector('#mtLanes .mt-plus').click();
+  const it=d.querySelector('#mtPanel .mt-ci .btn:not([disabled])'); if(it) it.click();
+  console.log('table de montage :',w.eval('montKeyCount()'),'réglages, aucun manquant,',cards.length,'blocs ouverts');
+  d.getElementById('reglBtn').click(); }
  console.log('ERREURS',errs.length?errs:'aucune');
+ if(errs.length) process.exit(1);
  process.exit(0);
 },500);

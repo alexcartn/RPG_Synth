@@ -12,6 +12,18 @@ Ouvrir `index.html` dans un navigateur récent (Chrome, Firefox, Safari). Les po
 
 [REFERENCES.md](REFERENCES.md) rassemble les sources du projet par domaine (émotion musicale, musique sous la voix, musique adaptative, outils de jeu de rôle, composition algorithmique, ambient et dungeon synth, théorie et accordages, synthèse, méthode d'écoute), dit pour chacune ce qu'elle apporte et si elle est déjà exploitée, et classe vingt et un chantiers par utilité à la table.
 
+## Table de montage (Monter)
+
+La machine ouverte, en pedalboard : un quatrième mode à côté de Conduire, Composer et Forger, et une porte « Ouvrir la table de montage » sur l'accueil. Le son s'y lit de gauche à droite.
+
+- En haut, l'intention (les émotions, partagées avec Conduire : elles marquent les blocs qui leur vont, et « Proposer une ambiance » charge la meilleure de l'univers) et l'écriture : fondations, pulsation, logique, harmonie, caractère, mémoire, hasard, registre de Turing, gestes.
+- Puis une ligne par voix qui sonne (bourdon, textures, mélodie, plain-chant, canon, nappes, arpège, percussion, boucles, pendules, billes, arbre, nuée, salle, nature) : la voix et son instrument, son niveau qui bat pendant la lecture, les pédales posées sur elle (fuzz sur le bourdon et les nappes, porte passe-bas sur la mélodie, le canon, les boucles et les pendules, ensemble avec le timbre « machine »), et ses envois vers la salle et l'écho.
+- À droite, les salles et échos partagés (réverbération et ses cinq types dont les chambres, écho, nuage de grains), le master (patine, place pour la voix, volume et qualité, compresseur et limiteur avec le gain de sonie), et les sorties (écoute et veillée, à la table, capture, export, ambiances enregistrées).
+- En bas, les mouvements : tension, forme, respiration, courbe, adaptation, couleur du mode, lien mélodie → nappes, les quatre dérives.
+- Toucher un bloc ouvre ses réglages dans le panneau de droite, avec ce qu'il fait et d'où il vient ; une voix s'écoute seule, se coupe, se retire. « + » ouvre le catalogue de ce qu'on peut brancher à cet endroit, les blocs conseillés par les émotions choisies d'abord ; ce qui n'existe pas encore (fuzz à porte, fuzz à deux bandes, 8 bits, filtre résonant, écho zone rouge, ressort saturé) y figure, marqué « à venir ».
+- Rien n'est dupliqué : chaque réglage de la table pilote la vraie commande de Composer, qui reste la seule source (relance, replanification et réverbération suivent). La table est exhaustive par construction : `montMissing()` liste les réglages de Composer sans place sur la table, et le test d'interface échoue s'il en reste un. Elle porte aujourd'hui 202 réglages, ceux de Composer plus ceux de la page (qualité, extinction, micro, capture, export, fondu, point de sortie et signal des enchaînements), plus la place dans le stéréo de chaque voix et un accès au synthé de Forger.
+- Nouveau dans le moteur : les envois par voix (`S.envoi`, en multiple du dosage d'origine : 100 % garde le son de l'ambiance), réglables sur chaque ligne jusqu'à 200 % vers la salle et 300 % vers l'écho.
+
 ## Pédales : la réverbération Chambres et la fuzz (d'après Death By Audio)
 
 Deux effets inspirés des pédales de Death By Audio (Brooklyn, depuis 2002), dans Composer, chapitre V (Son et salle), sous Espace.

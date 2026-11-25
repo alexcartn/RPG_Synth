@@ -602,15 +602,16 @@ function atelierSync(){
 function setMode(m){
   if(m==="daw") m="jeu"; /* le mode Arranger a été retiré : le Studio le remplace */
   const old=MODE; MODE=m;
-  const jeu=m==="jeu", at=m==="atelier", dw=m==="daw";
-  JEU.on=jeu; document.body.classList.toggle("jeu",jeu); document.body.classList.toggle("atelier",at); document.body.classList.toggle("daw",dw);
-  $("jeu").hidden=!jeu; if($("atelier")) $("atelier").hidden=!at; if($("daw")) $("daw").hidden=!dw;
+  const jeu=m==="jeu", at=m==="atelier", dw=m==="daw", mt=m==="montage";
+  JEU.on=jeu; document.body.classList.toggle("jeu",jeu); document.body.classList.toggle("atelier",at); document.body.classList.toggle("daw",dw); document.body.classList.toggle("montage",mt);
+  if(mt&&typeof montEnter==="function") montEnter();
+  $("jeu").hidden=!jeu; if($("atelier")) $("atelier").hidden=!at; if($("daw")) $("daw").hidden=!dw; if($("montage")) $("montage").hidden=!mt;
   const rw=document.querySelector(".ringwrap"); if(rw) (jeu?$("ringSlot"):document.querySelector(".marge")).appendChild(rw);
-  $("reglBtn").setAttribute("aria-pressed",(!jeu&&!at&&!dw)?"true":"false"); if($("dawBtn")) $("dawBtn").setAttribute("aria-pressed",dw?"true":"false");
-  if(!jeu&&!at&&!dw&&typeof PP_ROWS!=="undefined") PP_ROWS.forEach(f=>f());
+  $("reglBtn").setAttribute("aria-pressed",(!jeu&&!at&&!dw&&!mt)?"true":"false"); if($("montBtn")) $("montBtn").setAttribute("aria-pressed",mt?"true":"false"); if($("dawBtn")) $("dawBtn").setAttribute("aria-pressed",dw?"true":"false");
+  if(!jeu&&!at&&!dw&&!mt&&typeof PP_ROWS!=="undefined") PP_ROWS.forEach(f=>f());
   $("jeuBtn").setAttribute("aria-pressed",jeu?"true":"false");
   $("atelierBtn").setAttribute("aria-pressed",at?"true":"false");
-  const mh=$("modeHint"); if(mh) mh.textContent=jeu?"Conduire : la machine joue, tu la pilotes en direct avec des boutons, un pad, le cercle des hauteurs et des gestes musicaux.":dw?"Arranger : des pistes qui bouclent par-dessus la machine, écrites au piano roll ou enregistrées au clavier, avec un mixeur pour tout équilibrer.":at?"Forger : tu construis ton synthé et tu le joues au clavier, dans la gamme du thème, avec ou sans la machine.":"Composer : tout ce qui fait la pièce, chapitre par chapitre. Ouvre un chapitre pour le régler.";
+  const mh=$("modeHint"); if(mh) mh.textContent=mt?"Monter : la machine ouverte. Les voix, leurs pédales, les salles, le master et les sorties, de gauche à droite ; on branche et on débranche.":jeu?"Conduire : la machine joue, tu la pilotes en direct avec des boutons, un pad, le cercle des hauteurs et des gestes musicaux.":dw?"Arranger : des pistes qui bouclent par-dessus la machine, écrites au piano roll ou enregistrées au clavier, avec un mixeur pour tout équilibrer.":at?"Forger : tu construis ton synthé et tu le joues au clavier, dans la gamme du thème, avec ou sans la machine.":"Composer : tout ce qui fait la pièce, chapitre par chapitre. Ouvre un chapitre pour le régler.";
   try{ localStorage.setItem("bourdon.mode2",m); }catch(e){}
   if((old==="atelier"&&!at)||(old==="daw"&&!dw)) atReleaseAll();
   if(old==="daw"&&!dw) dawLeave();
@@ -622,5 +623,5 @@ function setMode(m){
 function restoreMode(){
   /* première visite : on arrive sur Conduire (une ambiance, Jouer, quelques boutons) */
   let m="jeu"; try{ m=localStorage.getItem("bourdon.mode2")||"jeu"; }catch(e){}
-  if(m==="jeu"||m==="atelier"||m==="reglage") MODE=m;
+  if(m==="jeu"||m==="atelier"||m==="reglage"||m==="montage") MODE=m;
 }

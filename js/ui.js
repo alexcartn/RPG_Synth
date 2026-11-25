@@ -635,7 +635,7 @@ function buildPupitre(host){
 }
 function syncUI(){
   CTL.forEach(({it,el,upd,sync2})=>{ el.value=String(getP(it.k)); if(el.tagName==="SELECT"&&el.value!==String(getP(it.k))){ el.value=""; } upd(); if(sync2) sync2(); });
-  PP_ROWS.forEach(f=>f()); updateTempo(); updateRingCap(); if(typeof curveDraw==="function") curveDraw(); if(typeof jeuSync==="function") jeuSync(); if(typeof atelierSync==="function") atelierSync();
+  PP_ROWS.forEach(f=>f()); updateTempo(); updateRingCap(); if(typeof curveDraw==="function") curveDraw(); if(typeof jeuSync==="function") jeuSync(); if(typeof atelierSync==="function") atelierSync(); if(typeof montSync==="function") montSync();
 }
 function updateTempo(){ $("tempoNum").textContent=S.tempo; $("tempoCap").textContent="noires par minute · "+S.meter; }
 

@@ -5,7 +5,7 @@ const CITES=["Le bourdon doit couler.","Un bourdon pour les gouverner tous.","Da
 /* ============================================================
    DÉMARRAGE
    ============================================================ */
-buildRing(); buildChapters(); buildPresets(); seekBuild(); buildJeu(); buildAtelier(); $("reglBtn").onclick=()=>setMode("reglage"); $("atelierBtn").onclick=()=>setMode("atelier"); syncUI(); wxInit(); capFmtBuild(); capUI(); voixBuild(); $("capBtn").onclick=()=>{ CAP.on?capStop():capStart(); }; restoreMode(); setMode(MODE);
+buildRing(); buildChapters(); buildPresets(); seekBuild(); buildJeu(); buildAtelier(); $("reglBtn").onclick=()=>setMode("reglage"); $("atelierBtn").onclick=()=>setMode("atelier"); $("montBtn").onclick=()=>setMode("montage"); syncUI(); wxInit(); capFmtBuild(); capUI(); voixBuild(); $("capBtn").onclick=()=>{ CAP.on?capStop():capStart(); }; restoreMode(); setMode(MODE);
 document.querySelector("#presets .lnk").setAttribute("aria-current","true");
 /* la partition suit la taille de son cadre et attend que les polices soient chargées */
 vizFit(); veilBuild(); accBuild(); tipInit(); enchBuild(); bancBuild(); scalaBuild();

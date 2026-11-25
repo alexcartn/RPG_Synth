@@ -245,9 +245,11 @@ function buildEngine(ctx, S, o){
       wet.connect(sum); head=sum; ens={set:on=>{ wet.gain.value=on?0.62:0; dry.gain.value=(on?0.55:1)*dn; }};
     }
     head.connect(it); it.connect(pn); pn.connect(out);
-    const rs=G(rev); it.connect(rs); rs.connect(eq&&eq.room?room:revHP); if(eq&&eq.room){ const rl=G(eq.longRev||0); it.connect(rl); rl.connect(revHP); }
-    if(dly){const ds=G(dly); it.connect(ds); ds.connect(dIn);}
-    return {in:lvl, lvl, rq, br, dk, tm, gs, it, pn, hp, ens, fz, eq:eq||{}};
+    const rs=G(rev); it.connect(rs); rs.connect(eq&&eq.room?room:revHP); let rl=null; if(eq&&eq.room){ rl=G(eq.longRev||0); it.connect(rl); rl.connect(revHP); }
+    let ds=null; if(dly){ ds=G(dly); it.connect(ds); ds.connect(dIn); }
+    /* envois : la table de montage les règle voix par voix, en multiple du dosage d'origine (1 = tel que réglé ici) */
+    const send=(r,d)=>{ rs.gain.value=rev*r; if(rl) rl.gain.value=(eq.longRev||0)*r; if(ds) ds.gain.value=dly*d; };
+    return {in:lvl, lvl, rq, br, dk, tm, gs, it, pn, hp, ens, fz, send, eq:eq||{}};
   }
   /* le grave est au bourdon ; la mélodie a un peu de présence, les nappes un creux dans le bas-médium pour ne pas l'empâter, la percussion sa petite pièce */
   const B={drone:bus(0.45,0.1,{pk:[2600,-2,0.8],ens:true,mono:true,fz:true}), mel:bus(0.9,1,{hp:140,pk:[2800,2,0.9],comp:[-26,2.5,3]}), pad:bus(0.8,0.6,{hp:170,pk:[380,-3,1],comp:[-30,2,2],ens:true,fz:true}), perc:bus(0.4,0,{hp:30,room:true,longRev:0.06}),
@@ -366,6 +368,7 @@ function buildEngine(ctx, S, o){
   function setLevels(){
     const lv=(n,v)=>(want(n)&&mach()&&mixOn(n))?v:0;
     { const pp=(DAW().mix||{}).pan||{}; ["drone","mel","pad","perc","loops","pend","bille","arbre","nuee","amb"].forEach(n=>{ const p=B[n].pn.pan; if(p) p.value=clamp(pp[n]||0,-1,1); }); }
+    { const ev=S.envoi||{}; for(const n in B){ const e=ev[n]||{}; B[n].send(clamp(e.rev===undefined?1:e.rev,0,2),clamp(e.dly===undefined?1:e.dly,0,3)); } }
     B.drone.lvl.gain.value=lv("drone",S.drone.lvl);
     B.mel.lvl.gain.value=lv("mel",S.mel.lvl);
     canonG.gain.value=lv("mel",S.canon.lvl);

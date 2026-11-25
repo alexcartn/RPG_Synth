@@ -12,7 +12,7 @@ const ACC_STEPS=[
   {sel:"#knobs", t:"Les boutons", x:"Six boutons pour l'écoute : Profondeur, Lumière, Mouvement, Densité, Texture, Lieu. Tourne-les en direct. Glisse vers le haut ou le bas, ou utilise la molette et les flèches du clavier."},
   {sel:"#jeuGest", t:"Les gestes", x:"Suspense, Révélation, Apaisement : un geste pour infléchir la pièce en direct, quand la partie bascule. L'ampleur règle sa force."},
   {sel:"#studioLnk", t:"Studio", x:"Pour composer toi-même au lieu de laisser la machine décider : tu choisis la gamme, poses tes accords, empiles nappe, bourdon et arpège, écris ta mélodie, puis arranges et exportes en MP3. Le studio te conseille à chaque étape, à la manière d'Ableton (vue Session, effets en chaîne)."},
-  {sel:"#modes", t:"Aller plus loin", x:"Composer : tous les réglages, et Capturer pour garder une prise en WAV, MP3 ou MIDI. Forger : ton propre synthé. Veillée : la machine en grand, à regarder en fond."}
+  {sel:"#modes", t:"Aller plus loin", x:"Monter : la table de montage, la machine ouverte de gauche à droite, où l'on branche voix, pédales, salles et sorties. Composer : tous les réglages, et Capturer pour garder une prise en WAV, MP3 ou MIDI. Forger : ton propre synthé. Veillée : la machine en grand, à regarder en fond."}
 ];
 const accSeen=()=>{ try{ return localStorage.getItem(ACC.key)==="1"; }catch(e){ return false; } };
 const accMark=()=>{ try{ localStorage.setItem(ACC.key,"1"); }catch(e){} };
@@ -74,7 +74,7 @@ function tourEnd(silent){
 
 function accBuild(){
   const w=$("welcome"); if(!w) return;
-  $("wlTour").onclick=tourStart; $("wlListen").onclick=accListen; $("wlSkip").onclick=()=>{ accClose(); const b=$("helpBtn"); if(b) b.focus({preventScroll:true}); };
+  $("wlTour").onclick=tourStart; $("wlListen").onclick=accListen; if($("wlBuild")) $("wlBuild").onclick=()=>{ accClose(); setMode("montage"); }; $("wlSkip").onclick=()=>{ accClose(); const b=$("helpBtn"); if(b) b.focus({preventScroll:true}); };
   const h=$("helpBtn"); if(h) h.onclick=accOpen;
   document.addEventListener("keydown",e=>{
     if(e.key==="Escape"){ if(ACC.tour){ tourEnd(); e.preventDefault(); } else if(ACC.on){ accClose(); e.preventDefault(); } }

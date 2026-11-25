@@ -115,8 +115,8 @@ function fxWorkletBody(){
           } else if(md===4){ yl*=this.gg; yr*=this.gg; }
           else if(md===5){ /* onde : deux lignes courtes balancées en quadrature */
             const vb=this.vBuf; vb[0][this.vW]=yl; vb[1][this.vW]=yr;
-            const rd=(b,d)=>{ let p=this.vW-d; const i=Math.floor(p), f=p-i; return b[i&vM]+(b[(i-1)&vM]-b[i&vM])*f; };
-            yl=rd(vb[0],vBase+vDep*(1+Math.sin(this.vPh))); yr=rd(vb[1],vBase+vDep*(1+Math.cos(this.vPh)));
+            let pq=this.vW-(vBase+vDep*(1+Math.sin(this.vPh))), iq=Math.floor(pq), fq=pq-iq; yl=vb[0][iq&vM]+(vb[0][(iq-1)&vM]-vb[0][iq&vM])*fq;
+            pq=this.vW-(vBase+vDep*(1+Math.cos(this.vPh))); iq=Math.floor(pq); fq=pq-iq; yr=vb[1][iq&vM]+(vb[1][(iq-1)&vM]-vb[1][iq&vM])*fq;
             this.vW=(this.vW+1)&vM; this.vPh+=2*Math.PI*vRate/sr; if(this.vPh>6.2831853) this.vPh-=6.2831853;
           } else if(md===6){ /* gong : échantillonneur bloqué à la fréquence choisie (repliement), ou multiplication par un sinus (anneau) */
             this.shC+=shInc; if(this.shC>=1){ this.shC-=1; this.shL=yl; this.shR=yr; }
@@ -168,9 +168,9 @@ function fxWorkletBody(){
         this.bw+=(x-this.bw)*0.9995; x=this.bw;
         for(let q=0;q<4;q++){ const L=this.ap[q], d=this.rd(L,L.n), y=d-this.apG[q]*x; this.wr(L,x+this.apG[q]*y); x=y; }
         this.ph+=2*Math.PI*1/sampleRate; if(this.ph>6.2831853) this.ph-=6.2831853;
-        const nx=[0,0];
+        const nx=this.nx||(this.nx=new Float64Array(2)), fbk=this.fbk;
         for(let b=0;b<2;b++){
-          let y=x+this.fbk[1-b];
+          let y=x+fbk[1-b];
           /* passe-tout modulé (lecture interpolée) */
           const L=this.mA[b], m=L.b.length-1, dl=this.mN[b]+this.ex*Math.sin(this.ph+b*1.7), di=dl|0, fr=dl-di;
           const a0=L.b[(L.w-di)&m], a1=L.b[(L.w-di-1)&m], dv=a0+(a1-a0)*fr, z=dv+0.7*y; L.b[L.w]=y-0.7*z; L.w=(L.w+1)&m; y=z;
@@ -179,8 +179,9 @@ function fxWorkletBody(){
           const A=this.a2[b], d2=this.rd(A,A.n), y2=d2+0.5*y; this.wr(A,y-0.5*y2); y=y2;
           this.wr(this.d2[b],y); nx[b]=this.rd(this.d2[b],this.d2[b].n)*g;
         }
-        this.fbk=nx;
-        let l=0,r=0; for(const [sg,i,d] of this.tL) l+=sg*this.rd(srcs[i],d); for(const [sg,i,d] of this.tR) r+=sg*this.rd(srcs[i],d);
+        fbk[0]=nx[0]; fbk[1]=nx[1];
+        /* sans itérateur ni déstructuration : rien n'est alloué par échantillon (le ramasse-miettes faisait craquer le son) */
+        let l=0,r=0; const tL=this.tL, tR=this.tR; for(let q=0;q<tL.length;q++){ const t=tL[q]; l+=t[0]*this.rd(srcs[t[1]],t[2]); } for(let q=0;q<tR.length;q++){ const t=tR[q]; r+=t[0]*this.rd(srcs[t[1]],t[2]); }
         l*=0.6; r*=0.6; oL[s]=l; if(oR!==oL) oR[s]=r; const m=l<0?-l:l; if(m>peak) peak=m;
       }
       if(iL||peak>1e-5) this.quiet=0; else this.quiet+=n;
@@ -505,12 +506,13 @@ function fxWorkletBody(){
   class Pedal extends AudioWorkletProcessor{
     static get parameterDescriptors(){ return [kr("mix",0.6,0,1),kr("a",0.5,0,1),kr("b",0.5,0,1),kr("c",0.5,0,1),kr("d",0.5,0,1),kr("e",0,0,1)]; }
     constructor(o){
-      super(); this.kind=(o&&o.processorOptions&&o.processorOptions.kind)||"fgun";
+      super(); this.kind=(o&&o.processorOptions&&o.processorOptions.kind)||"fgun"; this.o=new Float64Array(3);
       this.s=[new Float32Array(8),new Float32Array(8)]; this.er=0; this.ep=0; this.g=1; this.al=1-Math.exp(-1/(0.5*sampleRate));
       this.ph=0; this.lfo=0; this.env=[0,0]; this.envS=[0,0]; this.gg=[1,1]; this.hold=[0,0]; this.hc=0; this.dc=[0,0]; this.dcx=[0,0];
     }
     /* filtre à état variable (forme trapézoïdale), état dans st[i], st[i+1] ; rend passe-bas, passe-bande, passe-haut */
-    svf(st,i,x,gw,k){ const a1=1/(1+gw*(gw+k)), a2=gw*a1, a3=gw*a2, v3=x-st[i+1], v1=a1*st[i]+a2*v3, v2=st[i+1]+a2*st[i]+a3*v3; st[i]=2*v1-st[i]; st[i+1]=2*v2-st[i+1]; return [v2,v1,x-k*v1-v2]; }
+    /* rien n'est alloué ici : les trois sorties vont dans this.o (passe-bas, passe-bande, passe-haut) */
+    svf(st,i,x,gw,k){ const a1=1/(1+gw*(gw+k)), a2=gw*a1, a3=gw*a2, v3=x-st[i+1], v1=a1*st[i]+a2*v3, v2=st[i+1]+a2*st[i]+a3*v3; st[i]=2*v1-st[i]; st[i+1]=2*v2-st[i+1]; const o=this.o; o[0]=v2; o[1]=v1; o[2]=x-k*v1-v2; return o; }
     process(inputs,outputs,P){
       const inp=inputs[0], out=outputs[0], n=out[0].length, sr=sampleRate;
       if(!inp||!inp[0]){ for(const ch of out) ch.fill(0); return true; }
@@ -536,7 +538,7 @@ function fxWorkletBody(){
             if(!osc){ const open=this.env[ch]>this.envS[ch]*thr+1e-5; this.gg[ch]+=((open?1:0)-this.gg[ch])*(open?0.05:0.02); z*=this.gg[ch]; }
             st[2]+=(z-st[2])*fo; st[3]+=(st[2]-st[3])*fo; y=st[3];
           } else if(K==="cross"){
-            const lo=this.svf(st,0,x,gw,k)[0], hi=this.svf(st,2,x,gw2,k)[2];
+            const lo=this.svf(st,0,x,gw,k)[0], hi=this.svf(st,2,x,gw2,k)[2]; /* [0] lu avant le second appel, qui réécrit this.o */
             y=(1-Dp)*Math.tanh(G*lo)+Dp*Math.tanh(G*hi);
           } else if(K==="bits"){
             const a=Math.abs(x); st[2]=a>st[2]?a:st[2]*0.99995+1e-7; st[1]+=shInc; if(st[1]>=1){ st[1]-=1; const e=st[2]||1e-3; st[0]=Math.round(x/e*q)/q*e; } y=st[0];
@@ -605,11 +607,11 @@ function fxWorkletBody(){
       const inp=inputs[0], out=outputs[0], n=out[0].length, sr=sampleRate, iL=inp&&inp[0], iR=inp&&(inp[1]||inp[0]);
       if(!iL&&this.quiet>sr*6){ for(const ch of out) ch.fill(0); return true; }
       const alt=P.alt[0], dG=1+alt*8, T=1.5+P.decay[0]*4, lc=P.tone[0]>0.5?0.6:0.22, oG=1+alt*2;
-      const g=this.len.map(l=>Math.pow(10,-3*l/(T*sr))), A=0.62; let peak=0;
+      const g=this.g||(this.g=new Float64Array(3)); for(let i=0;i<3;i++) g[i]=Math.pow(10,-3*this.len[i]/(T*sr)); const A=0.62; let peak=0;
       for(let s=0;s<n;s++){
         let x=iL?(iL[s]+iR[s])*0.5:0;
         this.hp+=(x-this.hp)*0.02; x=x-this.hp; x=Math.tanh(dG*x)/Math.sqrt(dG);
-        const y=[0,0,0];
+        const y=this.y||(this.y=new Float64Array(3));
         for(let i=0;i<3;i++){
           const L=this.len[i], bf=this.b[i]; let r=this.w[i]-L; if(r<0) r+=L+8; let v=bf[r];
           const ap=this.ap[i];
